@@ -6,6 +6,9 @@ import SwiftUI
 @MainActor
 final class PopupPanelController {
     var onDismiss: (() -> Void)?
+    /// Called when a panel OCR run in copy-only mode actually copied text,
+    /// so the app can show the "Đã copy" toast (set by AppDelegate).
+    var onOCRCopyOnlySuccess: (() -> Void)?
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
@@ -130,7 +133,7 @@ final class PopupPanelController {
         coordinator.dismiss()
         onDismiss?()
 
-        // Restore focus only when MoePeek is still frontmost (user hasn't switched away manually).
+        // Restore focus only when PeekTrans is still frontmost (user hasn't switched away manually).
         if let previousApp = previouslyActiveApp, NSRunningApplication.current.isActive {
             previousApp.activate()
         }
@@ -139,6 +142,38 @@ final class PopupPanelController {
 
     var isVisible: Bool {
         panel?.isVisible ?? false
+    }
+
+    /// PeekTrans Phase 1: OCR from the float panel. Hide the panel so the
+    /// region selector is unobstructed, run OCR (respecting the user's
+    /// post-OCR mode), then show the panel again with the result — or, in
+    /// copy-only mode, stay hidden (the caller shows the "Đã copy" toast).
+    /// Unlike dismiss(), this does NOT clear the coordinator state.
+    func performPanelOCR() {
+        hidePanelTemporarily()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let outcome = await self.coordinator.ocrAndTranslateWithMode()
+            if Defaults[.ocrPostMode] == .copyOnly,
+               self.coordinator.lastCopyOnlyOutcome == .copied
+            {
+                self.onOCRCopyOnlySuccess?()
+            }
+            if outcome.shouldPresent {
+                self.showAtCursor()
+            }
+        }
+    }
+
+    private func hidePanelTemporarily() {
+        resizeTask?.cancel()
+        resizeTask = nil
+        copyShortcutDismissTask?.cancel()
+        copyShortcutDismissTask = nil
+        dismissMonitor?.stop()
+        dismissMonitor = nil
+        ttsCoordinator?.stop()
+        panel?.orderOut(nil)
     }
 
     // MARK: - Private
@@ -163,6 +198,9 @@ final class PopupPanelController {
                 onOpenSettings: { [weak self] in
                     self?.dismiss()
                     self?.settingsController?.showWindow()
+                },
+                onOCRRequested: { [weak self] in
+                    self?.performPanelOCR()
                 },
                 onResultLayoutChange: { [weak self] layout in
                     self?.resultLayout = layout
