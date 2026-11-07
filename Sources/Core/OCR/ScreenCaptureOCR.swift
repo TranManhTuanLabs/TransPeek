@@ -14,7 +14,7 @@ enum ScreenCaptureOCR {
     static func captureAndRecognize() async throws -> String {
         // Generate a unique temp file path to avoid concurrency conflicts
         let tmpURL = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("peektrans_ocr_\(UUID().uuidString).png")
+            .appendingPathComponent("transpeek_ocr_\(UUID().uuidString).png")
         defer { try? FileManager.default.removeItem(at: tmpURL) }
 
         // Run screencapture -i <tmpPath> (interactive selection → temp file, clipboard untouched)
