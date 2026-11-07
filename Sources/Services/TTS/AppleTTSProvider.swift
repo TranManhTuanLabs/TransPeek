@@ -72,7 +72,7 @@ final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
         return mapping[language] ?? language
     }
 
-    /// User-chosen voice for English/Vietnamese (PeekTrans Phase 1).
+    /// User-chosen voice for English/Vietnamese (TransPeek Phase 1).
     /// Returns nil when no voice is stored for the language, or when the
     /// stored identifier no longer matches an installed voice — callers then
     /// fall back to the existing best-voice selection.
