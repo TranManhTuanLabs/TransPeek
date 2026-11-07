@@ -97,7 +97,7 @@ final class TriggerTrackingView: NSView {
 @MainActor
 final class TriggerIconController {
     var onTranslateRequested: ((String) -> Void)?
-    /// Click-to-speak (PeekTrans Phase 1): invoked with the selected text when the
+    /// Click-to-speak (TransPeek Phase 1): invoked with the selected text when the
     /// user clicks the icon while `triggerClickAction` is `.speak`. The panel is
     /// not opened for this path.
     var onSpeakRequested: ((String) -> Void)?
@@ -291,7 +291,7 @@ final class TriggerIconController {
         cancelAutoDismissTimer()
     }
 
-    /// Click handling (PeekTrans Phase 1). In click-activation mode the click
+    /// Click handling (TransPeek Phase 1). In click-activation mode the click
     /// always means translate — that mode's whole point is click-to-translate.
     /// In hover mode the click action follows `triggerClickAction`: `.speak`
     /// cancels both timers and speaks immediately without opening the panel
