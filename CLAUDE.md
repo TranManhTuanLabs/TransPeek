@@ -14,13 +14,13 @@ tuist install && tuist generate
 tuist generate
 
 # Build from command line
-xcodebuild -workspace MoePeek.xcworkspace -scheme MoePeek -configuration Debug build
+xcodebuild -workspace TransPeek.xcworkspace -scheme TransPeek -configuration Debug build
 
 # Open in Xcode
-open MoePeek.xcworkspace
+open TransPeek.xcworkspace
 ```
 
-Unit tests live in `Tests/` (Swift Testing, target `MoePeekTests`); run with `xcodebuild test -workspace MoePeek.xcworkspace -scheme MoePeek`. No linting is configured.
+Unit tests live in `Tests/` (Swift Testing, target `TransPeekTests`); run with `xcodebuild test -workspace TransPeek.xcworkspace -scheme TransPeek`. No linting is configured.
 
 ## Tech Stack
 
@@ -50,7 +50,7 @@ User Action (shortcut / mouse selection / OCR)
 - **Coordinator pattern**: `TranslationCoordinator` owns all translation logic and exposes a single `State` enum consumed by views.
 - **Callback wiring in AppDelegate**: `AppDelegate.setupSelectionMonitor()` wires together SelectionMonitor → TriggerIconController → TranslationCoordinator → PopupPanelController via closures.
 - **3-tier text grabbing**: `AccessibilityGrabber` (AX API) → `AppleScriptGrabber` (Safari-specific) → `ClipboardGrabber` (⌘+C simulation). Each tier tried in order.
-- **Rich text capture** (opt-in, `captureRichText`): `ClipboardGrabber.grabRichViaClipboard()` → `RichTextImporter` (RTFD > RTF > HTML; HTML `<img>` becomes a Markdown link, every other remote reference is stripped, so the importer never fetches) → `AttributedStringMarkdownConverter` produces Markdown with `![img-N](moepeek-attachment:img-N)` placeholders; image bytes live in `TranslationCoordinator.sourceAttachments` for the request only. LLM providers receive the Markdown plus `TranslationRequestContext.markdownPromptAddendum` (via `@TaskLocal`); other providers get `MarkdownSupport.plainText(from:)`.
+- **Rich text capture** (opt-in, `captureRichText`): `ClipboardGrabber.grabRichViaClipboard()` → `RichTextImporter` (RTFD > RTF > HTML; HTML `<img>` becomes a Markdown link, every other remote reference is stripped, so the importer never fetches) → `AttributedStringMarkdownConverter` produces Markdown with `![img-N](transpeek-attachment:img-N)` placeholders; image bytes live in `TranslationCoordinator.sourceAttachments` for the request only. LLM providers receive the Markdown plus `TranslationRequestContext.markdownPromptAddendum` (via `@TaskLocal`); other providers get `MarkdownSupport.plainText(from:)`.
 - **NSViewRepresentable over TextEditor**: `TextEditor` has implicit insets; use custom `NSTextView` wrapper with `textContainerInset = .zero` / `lineFragmentPadding = 0` when precise spacing control is needed. See `SourceTextEditor`.
 - **Settings window activation**: `SettingsLink` is unreliable in LSUIElement / non-activating panel contexts. Use `NSApp.activate(ignoringOtherApps:)` → `sendAction("showPreferencesWindow:")` (private but stable selector) → fallback `openSettings()`.
 - **UI spacing constants**: PopupView uses `contentHorizontalPadding` for all edge insets; new subviews should reference it instead of hardcoding.
@@ -79,7 +79,7 @@ The app supports **English** (development language) and **Simplified Chinese** (
 - **SwiftUI views** use string literals as `LocalizedStringKey` (automatic lookup).
 - **Non-UI code** (errors, coordinators) uses `String(localized:)` for runtime localization.
 - **`SupportedLanguages`** in `Constants.swift` uses `Locale.current.localizedString(forIdentifier:)` for dynamic language names.
-- Strings that should **NOT** be localized: API technical labels (`"Base URL:"`, `"API Key:"`, `"Model:"`), LLM system prompts, provider IDs, copyright/license text, brand name "MoePeek".
+- Strings that should **NOT** be localized: API technical labels (`"Base URL:"`, `"API Key:"`, `"Model:"`), LLM system prompts, provider IDs, copyright/license text, brand name "TransPeek".
 
 ### Critical Files
 

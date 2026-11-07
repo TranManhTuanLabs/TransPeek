@@ -1,6 +1,6 @@
 import SwiftUI
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite(.serialized)
 @MainActor

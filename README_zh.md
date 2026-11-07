@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="Resources/AppIcon.icon/Assets/MoePeek.png" width="128" height="128" alt="MoePeek Icon" />
+  <img src="Resources/AppIcon.icon/Assets/MoePeek.png" width="128" height="128" alt="TransPeek Icon" />
 </p>
 
-<h1 align="center">MoePeek</h1>
+<h1 align="center">TransPeek</h1>
 
 <p align="center">
   轻量原生的 macOS 菜单栏翻译工具，选中即译。
@@ -13,8 +13,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cosZone/MoePeek/releases/latest"><img src="https://img.shields.io/github/v/release/cosZone/MoePeek" alt="GitHub Release" /></a>
-  <a href="https://github.com/cosZone/MoePeek/releases"><img src="https://img.shields.io/github/downloads/cosZone/MoePeek/total" alt="Downloads" /></a>
+  <a href="https://github.com/TranManhTuanLabs/TransPeek/releases/latest"><img src="https://img.shields.io/github/v/release/TranManhTuanLabs/TransPeek" alt="GitHub Release" /></a>
+  <a href="https://github.com/TranManhTuanLabs/TransPeek/releases"><img src="https://img.shields.io/github/downloads/TranManhTuanLabs/TransPeek/total" alt="Downloads" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%2015%2B-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/swift-6.0-orange" alt="Swift" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green" alt="License" /></a>
@@ -22,7 +22,7 @@
 
 
 <p align="center">
-  <img src="Resources/MoePeek-promo.webp" alt="MoePeek 预览" />
+  <img src="Resources/MoePeek-promo.webp" alt="TransPeek 预览" />
 </p>
 
 ## 功能
@@ -58,7 +58,7 @@
 - 所有快捷键均可自定义
 - 内置 Sparkle 自动更新
 
-## 为什么选择 MoePeek
+## 为什么选择 TransPeek
 
 - **约 7 MB 安装体积**：纯 Swift 6 构建，仅 4 个依赖。没有 Electron，没有 WebView。
 - **约 50 MB 后台内存**：系统性防控内存泄漏，长时间挂后台也稳定。
@@ -67,7 +67,7 @@
 
 ## 局限性与替代方案
 
-MoePeek 是一个纯 **AI vibe coding** 的自用项目。它能满足我个人的使用需求，但并不追求做成一个完善的商业级产品——划词、窗口交互中有大量的 edge case，商业工具花了多年时间才踩完这些坑，MoePeek 肯定还漏掉了不少。
+TransPeek 是一个纯 **AI vibe coding** 的自用项目。它能满足我个人的使用需求，但并不追求做成一个完善的商业级产品——划词、窗口交互中有大量的 edge case，商业工具花了多年时间才踩完这些坑，TransPeek 肯定还漏掉了不少。
 
 如果你需要更健壮的解决方案，以下工具非常优秀：
 
@@ -76,11 +76,11 @@ MoePeek 是一个纯 **AI vibe coding** 的自用项目。它能满足我个人�
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/cosZone/MoePeek/releases) 下载最新的 `.dmg` 或 `.zip`，将 `MoePeek.app` 拖入 `/Applications`。
+从 [GitHub Releases](https://github.com/TranManhTuanLabs/TransPeek/releases) 下载最新的 `.dmg` 或 `.zip`，将 `TransPeek.app` 拖入 `/Applications`。
 
 ## 使用
 
-首次启动时，MoePeek 会引导你完成权限设置：
+首次启动时，TransPeek 会引导你完成权限设置：
 
 - **辅助功能**：用于通过 Accessibility API 获取选中文本
 - **屏幕录制**：用于 OCR 截图翻译
@@ -99,29 +99,29 @@ MoePeek 是一个纯 **AI vibe coding** 的自用项目。它能满足我个人�
 
 ### OpenClip 集成
 
-使用 [OpenClip](https://github.com/ganeshmshetty/openclip) 时，可以将选中的文字直接交给 MoePeek 翻译：
+使用 [OpenClip](https://github.com/ganeshmshetty/openclip) 时，可以将选中的文字直接交给 TransPeek 翻译：
 
-1. 安装 MoePeek 并完成首次设置。
-2. 从最新 Release 下载 [`MoePeek.openclipext.zip`](https://github.com/cosZone/MoePeek/releases/latest/download/MoePeek.openclipext.zip) 并解压。
-3. 使用 OpenClip 打开 `MoePeek.openclipext`，确认安装扩展。
-4. 选中文字，在 OpenClip 中选择 **MoePeek**。译文会显示在 MoePeek 浮窗中，沿用已配置的翻译服务和目标语言。
+1. 安装 TransPeek 并完成首次设置。
+2. 从最新 Release 下载 [`TransPeek.openclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/TransPeek.openclipext.zip) 并解压。
+3. 使用 OpenClip 打开 `TransPeek.openclipext`，确认安装扩展。
+4. 选中文字，在 OpenClip 中选择 **TransPeek**。译文会显示在 TransPeek 浮窗中，沿用已配置的翻译服务和目标语言。
 
 ### PopClip 集成
 
-如果你使用 [PopClip](https://www.popclip.app/)，可以直接从 PopClip 菜单栏一键触发 MoePeek 翻译。
+如果你使用 [PopClip](https://www.popclip.app/)，可以直接从 PopClip 菜单栏一键触发 TransPeek 翻译。
 
 **安装扩展：**
 
-1. 确保 MoePeek 已安装并正在运行。
-2. 从最新 Release 下载 [`MoePeek.popclipext.zip`](https://github.com/cosZone/MoePeek/releases/latest/download/MoePeek.popclipext.zip) 并解压。
+1. 确保 TransPeek 已安装并正在运行。
+2. 从最新 Release 下载 [`TransPeek.popclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/TransPeek.popclipext.zip) 并解压。
 3. 移除隔离属性，否则 macOS 可能阻止加载扩展：
    ```bash
-   xattr -dr com.apple.quarantine /解压后的路径/MoePeek.popclipext
+   xattr -dr com.apple.quarantine /解压后的路径/TransPeek.popclipext
    ```
-4. 双击 `MoePeek.popclipext`，PopClip 会自动完成安装。
-5. 在任意应用中选中文字 → 点击 PopClip 栏中的 **MoePeek** 图标即可翻译。
+4. 双击 `TransPeek.popclipext`，PopClip 会自动完成安装。
+5. 在任意应用中选中文字 → 点击 PopClip 栏中的 **TransPeek** 图标即可翻译。
 
-> **提示：** 如果 PopClip 仍报错，请确认 MoePeek.app 本身也已移除隔离属性——参见下方[常见问题](#macos-提示已损坏无法打开)。（[相关 Issue](https://github.com/cosZone/MoePeek/issues/9#issuecomment-4167992729)）
+> **提示：** 如果 PopClip 仍报错，请确认 TransPeek.app 本身也已移除隔离属性——参见下方[常见问题](#macos-提示已损坏无法打开)。（[相关 Issue](https://github.com/TranManhTuanLabs/TransPeek/issues/9#issuecomment-4167992729)）
 
 ## 常见问题
 
@@ -133,7 +133,7 @@ MoePeek 是一个纯 **AI vibe coding** 的自用项目。它能满足我个人�
 2. 执行：
 
 ```bash
-sudo xattr -r -d com.apple.quarantine /Applications/MoePeek.app
+sudo xattr -r -d com.apple.quarantine /Applications/TransPeek.app
 ```
 
 之后即可正常打开。
@@ -143,7 +143,7 @@ sudo xattr -r -d com.apple.quarantine /Applications/MoePeek.app
 重置所有用户偏好设置，恢复到首次启动状态：
 
 ```bash
-defaults delete com.nahida.MoePeek
+defaults delete com.tranmanhtuanlabs.transpeek
 ```
 
 重新打开应用即可。
@@ -157,7 +157,7 @@ defaults delete com.nahida.MoePeek
 
 ## 致谢
 
-MoePeek 的诞生受到了 [Easydict](https://github.com/tisfeng/Easydict) 和 [Bob](https://github.com/ripperhe/Bob) 的启发，感谢这些项目的开拓与贡献。
+TransPeek 的诞生受到了 [Easydict](https://github.com/tisfeng/Easydict) 和 [Bob](https://github.com/ripperhe/Bob) 的启发，感谢这些项目的开拓与贡献。
 
 依赖库：
 
@@ -168,8 +168,8 @@ MoePeek 的诞生受到了 [Easydict](https://github.com/tisfeng/Easydict) 和 [
 
 ## 贡献者
 
-<a href="https://github.com/cosZone/MoePeek/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=cosZone/MoePeek" />
+<a href="https://github.com/TranManhTuanLabs/TransPeek/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=TranManhTuanLabs/TransPeek" />
 </a>
 
 ## 赞助
@@ -178,7 +178,7 @@ MoePeek 的诞生受到了 [Easydict](https://github.com/tisfeng/Easydict) 和 [
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cosZone/MoePeek&type=date&legend=top-left)](https://www.star-history.com/#cosZone/MoePeek&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=TranManhTuanLabs/TransPeek&type=date&legend=top-left)](https://www.star-history.com/#TranManhTuanLabs/TransPeek&type=date&legend=top-left)
 
 ## 许可证
 

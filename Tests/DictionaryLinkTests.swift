@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// URL building and JSON persistence for `DictionaryLink` (SPEC §3.2).
 /// Pure logic only — no `Defaults` writes, so these tests are hermetic.

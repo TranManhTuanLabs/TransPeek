@@ -1,7 +1,7 @@
 import ProjectDescription
 
 let project = Project(
-    name: "MoePeek",
+    name: "TransPeek",
     settings: .settings(
         base: [
             "INFOPLIST_KEY_LSUIElement": "YES",
@@ -18,7 +18,7 @@ let project = Project(
     ),
     targets: [
         .target(
-            name: "MoePeek",
+            name: "TransPeek",
             destinations: .macOS,
             product: .app,
             bundleId: "com.tranmanhtuanlabs.transpeek",
@@ -40,7 +40,7 @@ let project = Project(
             ]),
             sources: ["Sources/**"],
             resources: ["Resources/**"],
-            entitlements: .file(path: "Entitlements/MoePeek.entitlements"),
+            entitlements: .file(path: "Entitlements/TransPeek.entitlements"),
             dependencies: [
                 .external(name: "KeyboardShortcuts"),
                 .external(name: "Defaults"),
@@ -49,9 +49,9 @@ let project = Project(
             ],
             settings: .settings(
                 base: [
-                    "CODE_SIGN_STYLE": "$(MOEPEEK_CODE_SIGN_STYLE)",
-                    "CODE_SIGN_IDENTITY": "$(MOEPEEK_CODE_SIGN_IDENTITY)",
-                    "DEVELOPMENT_TEAM": "$(MOEPEEK_DEVELOPMENT_TEAM)",
+                    "CODE_SIGN_STYLE": "$(TRANSPEEK_CODE_SIGN_STYLE)",
+                    "CODE_SIGN_IDENTITY": "$(TRANSPEEK_CODE_SIGN_IDENTITY)",
+                    "DEVELOPMENT_TEAM": "$(TRANSPEEK_DEVELOPMENT_TEAM)",
                     "MARKETING_VERSION": "0.21.0",
                     "CURRENT_PROJECT_VERSION": "1",
                 ],
@@ -62,14 +62,14 @@ let project = Project(
             )
         ),
         .target(
-            name: "MoePeekTests",
+            name: "TransPeekTests",
             destinations: .macOS,
             product: .unitTests,
             bundleId: "com.tranmanhtuanlabs.transpeekTests",
             deploymentTargets: .macOS("15.0"),
             sources: ["Tests/**"],
             dependencies: [
-                .target(name: "MoePeek"),
+                .target(name: "TransPeek"),
             ]
         ),
     ]

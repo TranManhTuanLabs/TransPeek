@@ -8,7 +8,7 @@ enum TranslationRequestContext {
 
     static let markdownPromptAddendum = """
     The input is Markdown. Preserve its structure and inline formatting in the translation. \
-    Keep every image reference such as ![img-1](moepeek-attachment:img-1) exactly as written, in its original position.
+    Keep every image reference such as ![img-1](transpeek-attachment:img-1) exactly as written, in its original position.
     """
 }
 

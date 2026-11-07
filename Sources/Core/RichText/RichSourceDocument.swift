@@ -1,7 +1,7 @@
 import Foundation
 
 /// An image captured alongside rich source text. Markdown refers to it as
-/// `![img-N](moepeek-attachment:img-N)`; the bytes never leave the app.
+/// `![img-N](transpeek-attachment:img-N)`; the bytes never leave the app.
 struct SourceImageAttachment: Sendable, Equatable {
     let id: String
     let data: Data
@@ -18,7 +18,7 @@ struct RichSourceDocument: Sendable, Equatable {
 }
 
 enum SourceAttachmentReference {
-    static let scheme = "moepeek-attachment"
+    static let scheme = "transpeek-attachment"
 
     static func id(index: Int) -> String {
         "img-\(index)"

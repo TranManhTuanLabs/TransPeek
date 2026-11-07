@@ -104,8 +104,8 @@ All shortcuts can be customized in **Settings → General**. Smart Translation i
 Use [OpenClip](https://github.com/ganeshmshetty/openclip) to send selected text to TransPeek:
 
 1. Install TransPeek and complete its initial setup.
-2. Download [`MoePeek.openclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/MoePeek.openclipext.zip) from the latest release and unzip it.
-3. Open `MoePeek.openclipext` with OpenClip and confirm the installation.
+2. Download [`TransPeek.openclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/TransPeek.openclipext.zip) from the latest release and unzip it.
+3. Open `TransPeek.openclipext` with OpenClip and confirm the installation.
 4. Select text and choose **TransPeek** in OpenClip. The translation appears in TransPeek using your configured services and target language.
 
 ### PopClip Integration
@@ -115,15 +115,15 @@ If you use [PopClip](https://www.popclip.app/), you can translate selected text 
 **Install the extension:**
 
 1. Make sure TransPeek is installed and running.
-2. Download [`MoePeek.popclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/MoePeek.popclipext.zip) from the latest release and unzip it.
+2. Download [`TransPeek.popclipext.zip`](https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/TransPeek.popclipext.zip) from the latest release and unzip it.
 3. Remove the quarantine attribute so macOS allows the extension to load:
    ```bash
-   xattr -dr com.apple.quarantine /path/to/MoePeek.popclipext
+   xattr -dr com.apple.quarantine /path/to/TransPeek.popclipext
    ```
-4. Double-click `MoePeek.popclipext` — PopClip will install it automatically.
+4. Double-click `TransPeek.popclipext` — PopClip will install it automatically.
 5. Select any text in any app → click the **TransPeek** icon in the PopClip bar.
 
-> **Note:** If PopClip shows an error, also make sure TransPeek.app itself has been un-quarantined — see the [FAQ below](#moepeekapp-is-damaged-and-cant-be-opened). ([Related issue](https://github.com/TranManhTuanLabs/TransPeek/issues/9#issuecomment-4167992729))
+> **Note:** If PopClip shows an error, also make sure TransPeek.app itself has been un-quarantined — see the [FAQ below](#transpeekapp-is-damaged-and-cant-be-opened). ([Related issue](https://github.com/TranManhTuanLabs/TransPeek/issues/9#issuecomment-4167992729))
 
 ## FAQ
 
@@ -145,7 +145,7 @@ Then launch the app as usual.
 Reset all user preferences to restore the first-launch state:
 
 ```bash
-defaults delete com.nahida.TransPeek
+defaults delete com.tranmanhtuanlabs.transpeek
 ```
 
 Then relaunch the app.

@@ -1,5 +1,5 @@
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite struct LanguagePreferencesTests {
     @Test func preservesLegacyTargetDefaultsAndAddsPolishToCatalog() {

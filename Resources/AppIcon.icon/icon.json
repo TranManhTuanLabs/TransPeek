@@ -9,7 +9,7 @@
           "glass" : false,
           "hidden" : false,
           "image-name" : "MoePeek.png",
-          "name" : "MoePeek",
+          "name" : "TransPeek",
           "position" : {
             "scale" : 0.7,
             "translation-in-points" : [

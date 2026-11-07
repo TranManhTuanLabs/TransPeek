@@ -944,7 +944,7 @@
         }
       }
     },
-    "Copyright © 2025-2026 MoePeek. All rights reserved." : {
+    "Copyright © 2025-2026 TransPeek. All rights reserved." : {
 
     },
     "Could not decode image." : {
@@ -1659,39 +1659,39 @@
         }
       }
     },
-    "MoePeek" : {
+    "TransPeek" : {
 
     },
-    "MoePeek %@" : {
+    "TransPeek %@" : {
 
     },
-    "MoePeek is now listed in Screen Recording settings" : {
+    "TransPeek is now listed in Screen Recording settings" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MoePeek 现已出现在屏幕录制设置列表中"
+            "value" : "TransPeek 现已出现在屏幕录制设置列表中"
           }
         }
       }
     },
-    "MoePeek needs accessibility permission to read your selected text. This is essential for text selection translation." : {
+    "TransPeek needs accessibility permission to read your selected text. This is essential for text selection translation." : {
       "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MoePeek 需要辅助功能权限来读取你选中的文本，这是划词翻译的核心功能。"
+            "value" : "TransPeek 需要辅助功能权限来读取你选中的文本，这是划词翻译的核心功能。"
           }
         }
       }
     },
-    "MoePeek needs screen recording permission for OCR screenshot translation to recognize text on screen." : {
+    "TransPeek needs screen recording permission for OCR screenshot translation to recognize text on screen." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "MoePeek 需要屏幕录制权限来进行 OCR 截图翻译，识别屏幕上的文字。"
+            "value" : "TransPeek 需要屏幕录制权限来进行 OCR 截图翻译，识别屏幕上的文字。"
           }
         }
       }
@@ -2169,13 +2169,13 @@
         }
       }
     },
-    "Quit MoePeek" : {
+    "Quit TransPeek" : {
       "extractionState" : "stale",
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "退出 MoePeek"
+            "value" : "退出 TransPeek"
           }
         }
       }
