@@ -6,9 +6,9 @@ let project = Project(
         base: [
             "INFOPLIST_KEY_LSUIElement": "YES",
             "INFOPLIST_KEY_NSAccessibilityUsageDescription":
-                "PeekTrans needs accessibility access to read selected text.",
+                "TransPeek needs accessibility access to read selected text.",
             "INFOPLIST_KEY_NSScreenCaptureUsageDescription":
-                "PeekTrans needs screen capture for OCR translation.",
+                "TransPeek needs screen capture for OCR translation.",
             "SWIFT_STRICT_CONCURRENCY": "complete",
         ],
         configurations: [
@@ -21,20 +21,20 @@ let project = Project(
             name: "MoePeek",
             destinations: .macOS,
             product: .app,
-            bundleId: "com.tranmanhtuanlabs.peektrans",
+            bundleId: "com.tranmanhtuanlabs.transpeek",
             deploymentTargets: .macOS("15.0"),
             infoPlist: .extendingDefault(with: [
                 "CFBundleDevelopmentRegion": "en",
-                "CFBundleDisplayName": "PeekTrans",
-                "CFBundleName": "PeekTrans",
+                "CFBundleDisplayName": "TransPeek",
+                "CFBundleName": "TransPeek",
                 "CFBundleShortVersionString": "$(MARKETING_VERSION)",
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
-                "SUFeedURL": "https://github.com/TranManhTuanLabs/PeekTrans/releases/latest/download/appcast.xml",
+                "SUFeedURL": "https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/appcast.xml",
                 "SUPublicEDKey": "$(SPARKLE_ED_PUBLIC_KEY)",
                 "CFBundleURLTypes": [
                     [
-                        "CFBundleURLName": "com.tranmanhtuanlabs.peektrans",
-                        "CFBundleURLSchemes": ["peektrans"],
+                        "CFBundleURLName": "com.tranmanhtuanlabs.transpeek",
+                        "CFBundleURLSchemes": ["transpeek"],
                     ],
                 ],
             ]),
@@ -65,7 +65,7 @@ let project = Project(
             name: "MoePeekTests",
             destinations: .macOS,
             product: .unitTests,
-            bundleId: "com.tranmanhtuanlabs.peektransTests",
+            bundleId: "com.tranmanhtuanlabs.transpeekTests",
             deploymentTargets: .macOS("15.0"),
             sources: ["Tests/**"],
             dependencies: [
