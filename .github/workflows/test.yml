@@ -35,8 +35,8 @@ jobs:
         run: |
           # RFC 8032 public test vector for Sparkle's test-host initialization.
           xcodebuild test \
-            -workspace MoePeek.xcworkspace \
-            -scheme MoePeek \
+            -workspace TransPeek.xcworkspace \
+            -scheme TransPeek \
             -destination 'platform=macOS' \
             -resultBundlePath build/Tests.xcresult \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
