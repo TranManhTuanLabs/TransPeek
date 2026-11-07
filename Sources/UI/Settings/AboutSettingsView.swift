@@ -19,13 +19,13 @@ struct AboutSettingsView: View {
                 .resizable()
                 .frame(width: 96, height: 96)
 
-            Text("PeekTrans")
+            Text("TransPeek")
                 .font(.title.bold())
 
             Text("Version \(appVersion) (\(buildNumber))")
                 .foregroundStyle(.secondary)
 
-            Text("Copyright © 2025-2026 PeekTrans. Fork of MoePeek by cosZone, licensed under AGPL-3.0.")
+            Text("Copyright © 2025-2026 TransPeek. Fork of MoePeek by cosZone, licensed under AGPL-3.0.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
@@ -52,12 +52,12 @@ struct AboutSettingsView: View {
             Spacer()
 
             HStack(spacing: 16) {
-                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/PeekTrans/issues")!) {
+                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/issues")!) {
                     Label("Issue Feedback", systemImage: "ladybug")
                 }
                 .buttonStyle(.link)
 
-                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/PeekTrans/discussions")!) {
+                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/discussions")!) {
                     Label("Community Discussions", systemImage: "bubble.left.and.bubble.right")
                 }
                 .buttonStyle(.link)
