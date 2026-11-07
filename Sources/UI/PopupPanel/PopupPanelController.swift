@@ -133,7 +133,7 @@ final class PopupPanelController {
         coordinator.dismiss()
         onDismiss?()
 
-        // Restore focus only when PeekTrans is still frontmost (user hasn't switched away manually).
+        // Restore focus only when TransPeek is still frontmost (user hasn't switched away manually).
         if let previousApp = previouslyActiveApp, NSRunningApplication.current.isActive {
             previousApp.activate()
         }
@@ -144,7 +144,7 @@ final class PopupPanelController {
         panel?.isVisible ?? false
     }
 
-    /// PeekTrans Phase 1: OCR from the float panel. Hide the panel so the
+    /// TransPeek Phase 1: OCR from the float panel. Hide the panel so the
     /// region selector is unobstructed, run OCR (respecting the user's
     /// post-OCR mode), then show the panel again with the result — or, in
     /// copy-only mode, stay hidden (the caller shows the "Đã copy" toast).
