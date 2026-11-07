@@ -173,7 +173,7 @@ struct OnboardingView: View {
                 .resizable()
                 .frame(width: 80, height: 80)
 
-            Text("MoePeek")
+            Text("PeekTrans")
                 .font(.title.bold())
 
             Text("Menu Bar Translation Tool")
@@ -194,7 +194,7 @@ struct OnboardingView: View {
         permissionStep(
             icon: "hand.raised",
             title: "Accessibility Permission",
-            description: "MoePeek needs accessibility permission to read your selected text. This is essential for text selection translation.",
+            description: "PeekTrans needs accessibility permission to read your selected text. This is essential for text selection translation.",
             isGranted: permissionManager.isAccessibilityGranted,
             onOpenSettings: { permissionManager.openAccessibilitySettings() }
         )
@@ -211,7 +211,7 @@ struct OnboardingView: View {
             Text("Screen Recording Permission")
                 .font(.title2.bold())
 
-            Text("MoePeek needs screen recording permission for OCR screenshot translation to recognize text on screen.")
+            Text("PeekTrans needs screen recording permission for OCR screenshot translation to recognize text on screen.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -236,7 +236,7 @@ struct OnboardingView: View {
                     }
                     .controlSize(.large)
 
-                    Text("MoePeek is now listed in Screen Recording settings")
+                    Text("PeekTrans is now listed in Screen Recording settings")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
