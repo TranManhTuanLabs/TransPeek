@@ -53,6 +53,15 @@ final class TranslationCoordinator {
     private(set) var translationGeneration: Int = 0
     private(set) var copiedProviderID: String?
     private(set) var copyFeedbackGeneration: Int = 0
+    /// OCR-panel flow: recognized source text and its first completed translation.
+    /// Shown in the float panel with separate [Copy gốc] / [Copy dịch] buttons.
+    private(set) var ocrSourceText: String?
+    private(set) var ocrTranslationText: String?
+    /// Provider that produced `ocrTranslationText`, if any.
+    private(set) var lastOCRTranslationProviderID: String?
+    /// Outcome of the most recent copy-only OCR run, so the panel controller
+    /// can show the "Đã copy" toast only on a real copy (not on cancel).
+    private(set) var lastCopyOnlyOutcome: SilentOCROutcome?
     /// Single source of truth for popup pin state. PopupView toggles, PopupPanelController reads.
     var isPinned: Bool = false
 
@@ -217,6 +226,117 @@ final class TranslationCoordinator {
         }
     }
 
+    /// Triggered by the OCR entry point that respects the user's post-OCR mode
+    /// (`Defaults[.ocrPostMode]`): panel translation with optional auto-copy, or
+    /// copy-only. Existing `ocrAndTranslate()` / `ocrToClipboard()` stay untouched
+    /// for the ⌥S shortcuts.
+    @discardableResult
+    func ocrAndTranslateWithMode() async -> ActionOutcome {
+        switch Defaults[.ocrPostMode] {
+        case .copyOnly:
+            // Same behaviour as ocrToClipboard(); the caller shows the "Đã copy" toast.
+            let silentOutcome = await ocrToClipboard()
+            lastCopyOnlyOutcome = silentOutcome
+            switch silentOutcome {
+            case .copied, .cancelled:
+                return .preserve
+            case .failed:
+                return .present
+            }
+        case .panel:
+            let requestToken = beginAction()
+            guard permissionManager.isScreenRecordingGranted else {
+                phase = .active
+                sourceText = ""
+                globalError = String(localized: "Screen recording permission not granted. Open Settings to enable it.")
+                return .present
+            }
+
+            do {
+                let text = try await captureOCR()
+                guard !Task.isCancelled, requestToken == actionToken else {
+                    return .preserve
+                }
+                translate(text)
+                ocrSourceText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                // startTranslation() bumps actionToken; capture the post-translation
+                // token so the wait loop below is not invalidated by our own call.
+                let sessionToken = actionToken
+
+                // Wait for translation to finish (up to ~30s), then snapshot the
+                // first completed result for the panel's [Copy dịch] button.
+                let deadline = Date.now.addingTimeInterval(30)
+                while !allFinished, Date.now < deadline {
+                    try? await Task.sleep(for: .milliseconds(200))
+                    try Task.checkCancellation()
+                    guard sessionToken == actionToken else { return .preserve }
+                }
+
+                if let translation = firstCompletedTranslation() {
+                    ocrTranslationText = translation
+                    lastOCRTranslationProviderID = firstCompletedTranslationProviderID()
+                    if Defaults[.ocrAutoCopyTranslation] {
+                        NSPasteboard.general.clearContents()
+                        _ = NSPasteboard.general.setString(translation, forType: .string)
+                    }
+                }
+                return .present
+            } catch OCRError.captureCancelled {
+                return .preserve
+            } catch is CancellationError {
+                return .preserve
+            } catch {
+                guard requestToken == actionToken else { return .preserve }
+                phase = .active
+                sourceText = ""
+                globalError = String(localized: "OCR failed: \(error.localizedDescription)")
+                return .present
+            }
+        }
+    }
+
+    /// First completed provider result in `activeSlots` order, with attachment
+    /// placeholders stripped. Returns `nil` when no provider has completed with
+    /// non-empty text yet.
+    func firstCompletedTranslation() -> String? {
+        firstCompletedResult()?.text
+    }
+
+    /// Provider ID behind `firstCompletedTranslation()`, if any.
+    private func firstCompletedTranslationProviderID() -> String? {
+        firstCompletedResult()?.providerID
+    }
+
+    private func firstCompletedResult() -> (providerID: String, text: String)? {
+        for provider in activeSlots {
+            guard case let .completed(text) = providerStates[provider.id] else { continue }
+            let cleaned = MarkdownSupport.removingAttachmentPlaceholders(text)
+            guard !cleaned.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
+            return (provider.id, cleaned)
+        }
+        return nil
+    }
+
+    /// Copy the OCR source text (backs the panel's [Copy gốc] button).
+    @discardableResult
+    func copyOCRSource() -> Bool {
+        guard let text = ocrSourceText,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return false }
+        NSPasteboard.general.clearContents()
+        return NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    /// Copy the OCR translation (backs the panel's [Copy dịch] button).
+    @discardableResult
+    func copyOCRTranslation() -> Bool {
+        guard let text = ocrTranslationText,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else { return false }
+        NSPasteboard.general.clearContents()
+        return NSPasteboard.general.setString(text, forType: .string)
+    }
+
     /// Read clipboard text and translate directly.
     func translateClipboard() async {
         if Defaults[.captureRichText],
@@ -284,6 +404,9 @@ final class TranslationCoordinator {
 
         sourceText = trimmed
         sourceAttachments = attachments
+        ocrSourceText = nil
+        ocrTranslationText = nil
+        lastOCRTranslationProviderID = nil
 
         // Language detection: check sourceLanguage setting
         let forcedSource = Defaults[.sourceLanguage]
@@ -306,7 +429,10 @@ final class TranslationCoordinator {
         targetLanguage = resolveTargetLanguage(detected: detectedLanguage)
         phase = .active
 
-        let providers = registry.enabledSlots
+        let providers = registry.orderedSlots(
+            primaryID: Defaults[.primaryProviderID],
+            fallbackID: Defaults[.fallbackProviderID]
+        )
         activeSlots = providers
         translationGeneration += 1
         guard !providers.isEmpty else {
@@ -373,6 +499,9 @@ final class TranslationCoordinator {
         phase = .idle
         sourceText = ""
         sourceAttachments = [:]
+        ocrSourceText = nil
+        ocrTranslationText = nil
+        lastOCRTranslationProviderID = nil
         detectedLanguage = nil
         targetLanguage = ""
         providerStates = [:]
