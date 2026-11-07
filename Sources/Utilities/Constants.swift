@@ -145,6 +145,25 @@ enum TriggerActivationMode: String, CaseIterable, Defaults.Serializable {
     case click  // Click the trigger icon
 }
 
+/// What a click on the floating trigger icon does (PeekTrans Phase 1).
+/// Hover always opens the panel; click is a separate, faster action.
+enum TriggerClickAction: String, CaseIterable, Defaults.Serializable {
+    case speak     // Speak the selected text immediately (default)
+    case translate // Old behaviour: open the translation panel
+}
+
+/// How dictionary links are shown at the bottom of the float panel.
+enum DictionaryDisplayMode: String, CaseIterable, Defaults.Serializable {
+    case iconText // Icon + name
+    case iconOnly // Icon only
+}
+
+/// What happens after screenshot OCR finishes.
+enum OCRPostMode: String, CaseIterable, Defaults.Serializable {
+    case panel    // Translate + show the float panel (default)
+    case copyOnly // Copy the recognized text straight to the clipboard, no panel
+}
+
 // MARK: - Settings Tab
 
 enum SettingsTab: String, Defaults.Serializable {
@@ -152,6 +171,8 @@ enum SettingsTab: String, Defaults.Serializable {
     case excludedApps
     case services
     case providerOrder
+    case dictionary
+    case ocr
     case audio
     case about
 }
@@ -369,6 +390,27 @@ extension Defaults.Keys {
 
     // App language override
     static let appLanguage = Key<AppLanguage>("appLanguage", default: .system)
+
+    // PeekTrans Phase 1 — trigger icon click + hover delay
+    static let triggerClickAction = Key<TriggerClickAction>("peektrans_triggerClickAction", default: .speak)
+    static let hoverDelayMs = Key<Int>("peektrans_hoverDelayMs", default: 300)
+
+    // PeekTrans Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
+    static let primaryProviderID = Key<String>("peektrans_primaryProviderID", default: "")
+    static let fallbackProviderID = Key<String>("peektrans_fallbackProviderID", default: "")
+
+    // PeekTrans Phase 1 — dictionary links (JSON array of DictionaryLink, see DictionaryLink.swift)
+    static let dictionaryLinksJSON = Key<String>("peektrans_dictionaryLinksJSON", default: "")
+    static let dictionaryDisplayMode = Key<DictionaryDisplayMode>("peektrans_dictionaryDisplayMode", default: .iconText)
+
+    // PeekTrans Phase 1 — OCR
+    static let ocrPostMode = Key<OCRPostMode>("peektrans_ocrPostMode", default: .panel)
+    static let ocrAutoCopyTranslation = Key<Bool>("peektrans_ocrAutoCopyTranslation", default: true)
+    static let ocrLanguages = Key<[String]>("peektrans_ocrLanguages", default: ["vi-VN", "en-US"])
+
+    // PeekTrans Phase 1 — TTS voice choice per language (AVSpeechSynthesisVoice identifier, "" = system default)
+    static let ttsVoiceEN = Key<String>("peektrans_ttsVoiceEN", default: "")
+    static let ttsVoiceVI = Key<String>("peektrans_ttsVoiceVI", default: "")
 
     // TTS (Text-to-Speech)
     static let ttsProvider = Key<String>("tts_provider", default: "apple")
