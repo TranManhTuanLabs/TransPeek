@@ -81,7 +81,7 @@ final class OnboardingWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "MoePeek"
+        window.title = "PeekTrans"
         window.contentView = hostingView
         window.center()
         window.isReleasedWhenClosed = false
