@@ -60,10 +60,29 @@ enum ScreenCaptureOCR {
         return try await recognizeText(in: cgImage)
     }
 
-    /// Recognition is owned by `VisionOCRProvider`; this keeps the capture flow
-    /// (temp file, `screencapture -i`, cancellation) unchanged.
+    /// Recognition is routed through `OcrProviderRegistry` (M2+M3): Vision
+    /// by default, Tesseract when selected. On failure the other engine gets
+    /// one try (Vision -> Tesseract when fallback is enabled, Tesseract ->
+    /// Vision otherwise); the original error is reported if both fail.
     private static func recognizeText(in image: CGImage) async throws -> String {
-        try await VisionOCRProvider().recognizeText(in: image)
+        let primary = OcrProviderRegistry.activeProvider()
+        do {
+            return try await primary.recognizeText(in: image)
+        } catch {
+            let fallback: (any OcrProvider)?
+            if primary.id == OcrProviderID.vision.rawValue {
+                fallback = OcrProviderRegistry.tesseractFallbackAvailable
+                    ? TesseractOCRProvider() : nil
+            } else {
+                fallback = VisionOCRProvider()
+            }
+            guard let fallback else { throw error }
+            do {
+                return try await fallback.recognizeText(in: image)
+            } catch {
+                throw error
+            }
+        }
     }
 }
 
@@ -71,12 +90,20 @@ enum OCRError: LocalizedError {
     case captureCancelled
     case captureReadFailed
     case noTextRecognized
+    /// Tesseract engine or its language data is missing (M2+M3).
+    case tesseractNotInstalled
+    /// An OCR engine ran but failed (e.g. tesseract stderr).
+    case engineFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .captureCancelled:  String(localized: "Screen capture was cancelled")
         case .captureReadFailed: String(localized: "Failed to read the captured image")
         case .noTextRecognized:  String(localized: "No text was recognized in the captured image")
+        case .tesseractNotInstalled:
+            String(localized: "Tesseract is not installed or its language data is missing. Install it with: brew install tesseract tesseract-lang, or download languages in Settings → OCR.")
+        case let .engineFailed(detail):
+            String(localized: "OCR engine failed: \(detail)")
         }
     }
 }
