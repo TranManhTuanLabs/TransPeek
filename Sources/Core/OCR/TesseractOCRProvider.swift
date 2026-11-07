@@ -226,8 +226,8 @@ struct TesseractOCRProvider: OcrProvider {
         TesseractLanguageDataManager.ensureLanguageLinks(for: languages)
 
         let pngData: Data = try autoreleasepool {
-            guard let rep = NSBitmapImageRep(cgImage: cgImage),
-                  let data = rep.representation(using: .png, properties: [:])
+            let rep = NSBitmapImageRep(cgImage: cgImage)
+            guard let data = rep.representation(using: .png, properties: [:])
             else { throw OCRError.captureReadFailed }
             return data
         }
@@ -275,7 +275,7 @@ struct TesseractOCRProvider: OcrProvider {
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<(Int32, Data, Data), Error>) in
                 let resumed = OSAllocatedUnfairLock(initialState: false)
-                func claimOnce() -> Bool {
+                @Sendable func claimOnce() -> Bool {
                     resumed.withLock { val in
                         if val { return false }
                         val = true
