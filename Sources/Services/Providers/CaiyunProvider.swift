@@ -59,7 +59,7 @@ struct CaiyunProvider: TranslationProvider {
             "source": sourceLines,
             "trans_type": transType,
             "media": "text",
-            "request_id": "MoePeek",
+            "request_id": "PeekTrans",
             "detect": isAutoDetect,
         ]
 
