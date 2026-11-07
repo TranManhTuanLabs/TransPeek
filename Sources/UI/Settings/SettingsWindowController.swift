@@ -46,7 +46,7 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "PeekTrans \(String(localized: "Settings"))"
+        window.title = "TransPeek \(String(localized: "Settings"))"
         window.contentView = hostingView
         window.contentMinSize = NSSize(width: 720, height: 420)
         window.center()
