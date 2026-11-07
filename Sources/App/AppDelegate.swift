@@ -6,7 +6,7 @@ import KeyboardShortcuts
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // registry must be available before applicationDidFinishLaunching because
-    // SwiftUI evaluates PeekTransApp.body (which reads registry) during app init.
+    // SwiftUI evaluates TransPeekApp.body (which reads registry) during app init.
     lazy var registry = TranslationProviderRegistry.builtIn()
     lazy var ttsRegistry = TTSProviderRegistry.builtIn()
     lazy var ttsCoordinator = TTSCoordinator(registry: ttsRegistry)
@@ -75,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
-            guard url.scheme == "peektrans", url.host == "translate" else { continue }
+            guard url.scheme == "transpeek", url.host == "translate" else { continue }
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                   let text = components.queryItems?.first(where: { $0.name == "text" })?.value,
                   !text.isEmpty
@@ -373,7 +373,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Click-to-speak (PeekTrans Phase 1): no panel, no translation.
+        // Click-to-speak (TransPeek Phase 1): no panel, no translation.
         // No detection has run at icon time, so detect the text's language
         // now; "auto"/empty configured source falls back to English.
         triggerIconController.onSpeakRequested = { [weak self] text in
