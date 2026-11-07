@@ -112,6 +112,9 @@ private struct StubProvider: TranslationProvider {
     var displayName: String { id }
     let iconSystemName = "character.bubble"
     let isAvailable = true
+    // Stub never streams real content (translateStream finishes immediately),
+    // so it reports no streaming support like the other test stubs.
+    let supportsStreaming = false
     var activeModels: [String] { models }
     @MainActor var isConfigured: Bool { true }
 
