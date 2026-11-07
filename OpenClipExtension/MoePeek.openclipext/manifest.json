@@ -1,18 +1,18 @@
 {
-  "identifier": "com.nahida.openclip.extension.moepeek",
-  "name": "MoePeek",
+  "identifier": "com.tranmanhtuanlabs.openclip.extension.peektrans",
+  "name": "PeekTrans",
   "description": {
-    "en": "Translate selected text with MoePeek.",
-    "zh-Hans": "使用 MoePeek 翻译选中的文字。"
+    "en": "Translate selected text with PeekTrans.",
+    "zh-Hans": "使用 PeekTrans 翻译选中的文字。"
   },
   "version": "1.0.0",
   "actions": [
     {
-      "id": "com.nahida.openclip.extension.moepeek.translate",
-      "title": "MoePeek",
+      "id": "com.tranmanhtuanlabs.openclip.extension.peektrans.translate",
+      "title": "PeekTrans",
       "icon": "symbol(character.bubble)",
       "type": "url",
-      "url": "mopeek://translate?text={query}"
+      "url": "peektrans://translate?text={query}"
     }
   ]
 }
