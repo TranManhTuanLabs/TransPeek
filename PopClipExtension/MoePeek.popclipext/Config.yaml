@@ -1,8 +1,0 @@
-#popclip
-name: TransPeek
-identifier: com.tranmanhtuanlabs.popclip.extension.transpeek
-description: Translate selected text with TransPeek
-popclip version: 4586
-macos version: "14.0"
-icon: symbol:character.bubble
-url: transpeek://translate?text=***
