@@ -195,7 +195,7 @@ struct PopupView: View {
 
                     pinButton
 
-                    // PeekTrans Phase 1: screenshot OCR from the float panel.
+                    // TransPeek Phase 1: screenshot OCR from the float panel.
                     Button {
                         onOCRRequested?()
                     } label: {
@@ -275,7 +275,7 @@ struct PopupView: View {
                     }
                 }
 
-                // PeekTrans Phase 1: OCR result with two separate copy buttons.
+                // TransPeek Phase 1: OCR result with two separate copy buttons.
                 if let ocrSource = coordinator.ocrSourceText, !ocrSource.isEmpty {
                     Divider()
                         .padding(.horizontal, contentHorizontalPadding)
@@ -310,7 +310,7 @@ struct PopupView: View {
                     .padding(.vertical, 6)
                 }
 
-                // PeekTrans Phase 1: dictionary links at the bottom of the panel.
+                // TransPeek Phase 1: dictionary links at the bottom of the panel.
                 Divider()
                     .padding(.horizontal, contentHorizontalPadding)
                 DictionaryBarView(sourceText: coordinator.sourceText)
