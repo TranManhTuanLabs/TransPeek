@@ -7,6 +7,7 @@ struct PopupView: View {
     let coordinator: TranslationCoordinator
     var onDismiss: (() -> Void)?
     var onOpenSettings: (() -> Void)?
+    var onOCRRequested: (() -> Void)?
     @State private var editableText: String = ""
     @State private var expandedProviders: Set<String> = []
     @State private var autoPlayedGeneration: Int = -1
@@ -193,6 +194,18 @@ struct PopupView: View {
                     .background { InteractiveMarker() }
 
                     pinButton
+
+                    // PeekTrans Phase 1: screenshot OCR from the float panel.
+                    Button {
+                        onOCRRequested?()
+                    } label: {
+                        Image(systemName: "text.viewfinder")
+                            .font(.system(size: CGFloat(fontSize - 2)))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Screenshot OCR")
+                    .background { InteractiveMarker() }
                 }
                 .padding(.horizontal, contentHorizontalPadding)
                 .padding(.vertical, 4)
@@ -261,6 +274,48 @@ struct PopupView: View {
                             )
                     }
                 }
+
+                // PeekTrans Phase 1: OCR result with two separate copy buttons.
+                if let ocrSource = coordinator.ocrSourceText, !ocrSource.isEmpty {
+                    Divider()
+                        .padding(.horizontal, contentHorizontalPadding)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(alignment: .top, spacing: 8) {
+                            Text(ocrSource)
+                                .font(.system(size: CGFloat(fontSize)))
+                                .lineLimit(3)
+                            Spacer()
+                            Button("Copy gốc") { _ = coordinator.copyOCRSource() }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .help("Copy recognized text")
+                                .background { InteractiveMarker() }
+                        }
+                        if let ocrTranslation = coordinator.ocrTranslationText, !ocrTranslation.isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                Text(ocrTranslation)
+                                    .font(.system(size: CGFloat(fontSize)))
+                                    .lineLimit(3)
+                                Spacer()
+                                Button("Copy dịch") { _ = coordinator.copyOCRTranslation() }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .help("Copy translation")
+                                    .background { InteractiveMarker() }
+                            }
+                        }
+                    }
+                    .padding(.horizontal, contentHorizontalPadding)
+                    .padding(.vertical, 6)
+                }
+
+                // PeekTrans Phase 1: dictionary links at the bottom of the panel.
+                Divider()
+                    .padding(.horizontal, contentHorizontalPadding)
+                DictionaryBarView(sourceText: coordinator.sourceText)
+                    .padding(.horizontal, contentHorizontalPadding)
+                    .padding(.top, 6)
             }
         }
         .padding(.bottom, contentHorizontalPadding)
