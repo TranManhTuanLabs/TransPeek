@@ -203,8 +203,8 @@ final class TranslationProviderRegistry {
                 defaultModel: "openrouter/auto",
                 guideURL: "https://openrouter.ai/keys",
                 extraHeaders: [
-                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/PeekTrans",
-                    "X-OpenRouter-Title": "PeekTrans",
+                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/TransPeek",
+                    "X-OpenRouter-Title": "TransPeek",
                 ]
             ),
             OpenAICompatibleProvider(
@@ -216,8 +216,8 @@ final class TranslationProviderRegistry {
                 defaultModel: "deepseek/deepseek-chat",
                 guideURL: "https://app.requesty.ai/api-keys",
                 extraHeaders: [
-                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/PeekTrans",
-                    "X-Title": "PeekTrans",
+                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/TransPeek",
+                    "X-Title": "TransPeek",
                 ]
             ),
             AnthropicProvider(),
