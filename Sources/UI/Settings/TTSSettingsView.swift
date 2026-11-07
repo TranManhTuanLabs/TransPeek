@@ -1,3 +1,4 @@
+import AVFoundation
 import Defaults
 import SwiftUI
 
@@ -14,6 +15,8 @@ struct TTSSettingsView: View {
     @Default(.ttsAutoPlayTarget) private var autoPlayTarget
     @Default(.ttsAutoPlayTargetProvider) private var autoPlayTargetProvider
     @Default(.ttsLanguageRates) private var languageRates
+    @Default(.ttsVoiceEN) private var ttsVoiceEN
+    @Default(.ttsVoiceVI) private var ttsVoiceVI
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -123,6 +126,30 @@ struct TTSSettingsView: View {
                 Text("Preferences")
             }
 
+            // MARK: - Voices (EN / VI)
+
+            Section {
+                Picker("English voice", selection: $ttsVoiceEN) {
+                    Text("System default").tag("")
+                    ForEach(englishVoices, id: \.identifier) { voice in
+                        Text("\(voice.name) (\(voice.language))").tag(voice.identifier)
+                    }
+                }
+
+                Picker("Vietnamese voice", selection: $ttsVoiceVI) {
+                    Text("System default").tag("")
+                    ForEach(vietnameseVoices, id: \.identifier) { voice in
+                        Text("\(voice.name) (\(voice.language))").tag(voice.identifier)
+                    }
+                }
+
+                Text("Applies to Apple TTS. If a chosen voice is no longer installed, the system default voice for that language is used.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Voices (EN / VI)")
+            }
+
             // MARK: - Test
 
             Section {
@@ -176,4 +203,13 @@ struct TTSSettingsView: View {
             set: { languageRates[code] = $0 }
         )
     }
+
+    /// Installed system voices for a language prefix, in system order.
+    private func voices(forLanguagePrefix prefix: String) -> [AVSpeechSynthesisVoice] {
+        AVSpeechSynthesisVoice.speechVoices()
+            .filter { $0.language.lowercased().hasPrefix(prefix) }
+    }
+
+    private var englishVoices: [AVSpeechSynthesisVoice] { voices(forLanguagePrefix: "en") }
+    private var vietnameseVoices: [AVSpeechSynthesisVoice] { voices(forLanguagePrefix: "vi") }
 }
