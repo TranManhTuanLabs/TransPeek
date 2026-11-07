@@ -1,11 +1,13 @@
 <p align="center">
-  <img src="Resources/AppIcon.icon/Assets/MoePeek.png" width="128" height="128" alt="MoePeek Icon" />
+  <img src="Resources/AppIcon.icon/Assets/MoePeek.png" width="128" height="128" alt="PeekTrans Icon" />
 </p>
 
-<h1 align="center">MoePeek</h1>
+<h1 align="center">PeekTrans</h1>
 
 <p align="center">
   A lightweight, native macOS menu bar translator. Select text, get translation.
+  Peek at any text, translate instantly — with dictionary links, screenshot OCR and click-to-speak.
+  Fork of [MoePeek](https://github.com/cosZone/MoePeek) by cosZone, licensed under AGPL-3.0.
 </p>
 
 <p align="center">
@@ -13,15 +15,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/cosZone/MoePeek/releases/latest"><img src="https://img.shields.io/github/v/release/cosZone/MoePeek" alt="GitHub Release" /></a>
-  <a href="https://github.com/cosZone/MoePeek/releases"><img src="https://img.shields.io/github/downloads/cosZone/MoePeek/total" alt="Downloads" /></a>
+  <a href="https://github.com/TranManhTuanLabs/PeekTrans/releases/latest"><img src="https://img.shields.io/github/v/release/TranManhTuanLabs/PeekTrans" alt="GitHub Release" /></a>
+  <a href="https://github.com/TranManhTuanLabs/PeekTrans/releases"><img src="https://img.shields.io/github/downloads/TranManhTuanLabs/PeekTrans/total" alt="Downloads" /></a>
   <img src="https://img.shields.io/badge/platform-macOS%2015%2B-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/swift-6.0-orange" alt="Swift" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green" alt="License" /></a>
 </p>
 
 <p align="center">
-  <img src="Resources/MoePeek-promo.webp" alt="MoePeek Preview" />
+  <img src="Resources/MoePeek-promo.webp" alt="PeekTrans Preview" />
 </p>
 
 ## Features
@@ -30,7 +32,7 @@
 
 - **Smart Translation**: Use selected content first, fall back to the clipboard snapshot captured when invoked, or open manual input when both are empty
 - **Select & Translate**: Select text in any app, get instant translation in a floating panel
-- **OCR Screenshot**: Capture a screen region and translate the recognized text
+- **OCR Screenshot**: Capture a screen region and translate the recognized text — from the menu bar, ⌥S, or the OCR button in the float panel (Vision OCR, Vietnamese + English)
 - **Clipboard Translation**: Translate whatever's on your clipboard
 - **Manual Input**: Type or paste text to translate on demand
 
@@ -50,6 +52,7 @@
 **And More**
 
 - Smart language detection across 14 languages, auto-flips translation direction
+- Click the floating icon to hear the selected text spoken (System TTS); dictionary links (Oxford, Cambridge, Google Dictionary, YouGlish) at the bottom of the float panel
 - Text-to-speech playback for translated text using Apple's built-in speech synthesis
 - Non-activating floating panels that never steal focus from your current app
 - 3-tier text grabbing: Accessibility API → AppleScript → Clipboard fallback
@@ -57,7 +60,7 @@
 - Fully customizable keyboard shortcuts
 - Built-in auto-updater via Sparkle
 
-## Why MoePeek
+## Why PeekTrans
 
 - **~7 MB app size**: Pure Swift 6, only 4 dependencies. No Electron, no WebView.
 - **~50 MB background memory**: Systematic memory leak prevention for long-running sessions.
@@ -66,7 +69,7 @@
 
 ## Limitations & Alternatives
 
-MoePeek is a personal, **AI vibe-coded** side project. It works well for my own use cases, but it's not designed to be a polished, production-grade tool — there are plenty of edge cases in text selection and window handling that commercial tools have spent years ironing out, and MoePeek likely misses many of them.
+PeekTrans is a personal, **AI vibe-coded** side project. It works well for my own use cases, but it's not designed to be a polished, production-grade tool — there are plenty of edge cases in text selection and window handling that commercial tools have spent years ironing out, and PeekTrans likely misses many of them.
 
 If you need a more robust solution, these apps are excellent:
 
@@ -75,11 +78,11 @@ If you need a more robust solution, these apps are excellent:
 
 ## Installation
 
-Download the latest `.dmg` or `.zip` from [GitHub Releases](https://github.com/cosZone/MoePeek/releases) and drag `MoePeek.app` into `/Applications`.
+Download the latest `.dmg` or `.zip` from [GitHub Releases](https://github.com/TranManhTuanLabs/PeekTrans/releases) and drag `PeekTrans.app` into `/Applications`.
 
 ## Usage
 
-On first launch, MoePeek walks you through an onboarding flow to grant the required permissions:
+On first launch, PeekTrans walks you through an onboarding flow to grant the required permissions:
 
 - **Accessibility**: Needed to grab selected text via the Accessibility API
 - **Screen Recording**: Needed for OCR screenshot translation
@@ -98,12 +101,12 @@ All shortcuts can be customized in **Settings → General**. Smart Translation i
 
 ### OpenClip Integration
 
-Use [OpenClip](https://github.com/ganeshmshetty/openclip) to send selected text to MoePeek:
+Use [OpenClip](https://github.com/ganeshmshetty/openclip) to send selected text to PeekTrans:
 
-1. Install MoePeek and complete its initial setup.
-2. Download [`MoePeek.openclipext.zip`](https://github.com/cosZone/MoePeek/releases/latest/download/MoePeek.openclipext.zip) from the latest release and unzip it.
+1. Install PeekTrans and complete its initial setup.
+2. Download [`MoePeek.openclipext.zip`](https://github.com/TranManhTuanLabs/PeekTrans/releases/latest/download/MoePeek.openclipext.zip) from the latest release and unzip it.
 3. Open `MoePeek.openclipext` with OpenClip and confirm the installation.
-4. Select text and choose **MoePeek** in OpenClip. The translation appears in MoePeek using your configured services and target language.
+4. Select text and choose **PeekTrans** in OpenClip. The translation appears in PeekTrans using your configured services and target language.
 
 ### PopClip Integration
 
@@ -111,20 +114,20 @@ If you use [PopClip](https://www.popclip.app/), you can translate selected text 
 
 **Install the extension:**
 
-1. Make sure MoePeek is installed and running.
-2. Download [`MoePeek.popclipext.zip`](https://github.com/cosZone/MoePeek/releases/latest/download/MoePeek.popclipext.zip) from the latest release and unzip it.
+1. Make sure PeekTrans is installed and running.
+2. Download [`MoePeek.popclipext.zip`](https://github.com/TranManhTuanLabs/PeekTrans/releases/latest/download/MoePeek.popclipext.zip) from the latest release and unzip it.
 3. Remove the quarantine attribute so macOS allows the extension to load:
    ```bash
    xattr -dr com.apple.quarantine /path/to/MoePeek.popclipext
    ```
 4. Double-click `MoePeek.popclipext` — PopClip will install it automatically.
-5. Select any text in any app → click the **MoePeek** icon in the PopClip bar.
+5. Select any text in any app → click the **PeekTrans** icon in the PopClip bar.
 
-> **Note:** If PopClip shows an error, also make sure MoePeek.app itself has been un-quarantined — see the [FAQ below](#moepeekapp-is-damaged-and-cant-be-opened). ([Related issue](https://github.com/cosZone/MoePeek/issues/9#issuecomment-4167992729))
+> **Note:** If PopClip shows an error, also make sure PeekTrans.app itself has been un-quarantined — see the [FAQ below](#moepeekapp-is-damaged-and-cant-be-opened). ([Related issue](https://github.com/TranManhTuanLabs/PeekTrans/issues/9#issuecomment-4167992729))
 
 ## FAQ
 
-### "MoePeek.app is damaged and can't be opened"
+### "PeekTrans.app is damaged and can't be opened"
 
 The app is not notarized with Apple, so macOS Gatekeeper may block it. This does not mean the file is corrupted. To fix:
 
@@ -132,7 +135,7 @@ The app is not notarized with Apple, so macOS Gatekeeper may block it. This does
 2. Run:
 
 ```bash
-sudo xattr -r -d com.apple.quarantine /Applications/MoePeek.app
+sudo xattr -r -d com.apple.quarantine /Applications/PeekTrans.app
 ```
 
 Then launch the app as usual.
@@ -142,7 +145,7 @@ Then launch the app as usual.
 Reset all user preferences to restore the first-launch state:
 
 ```bash
-defaults delete com.nahida.MoePeek
+defaults delete com.nahida.PeekTrans
 ```
 
 Then relaunch the app.
@@ -156,7 +159,7 @@ Issues and PRs are welcome! A few things to know:
 
 ## Acknowledgements
 
-MoePeek was inspired by [Easydict](https://github.com/tisfeng/Easydict) and [Bob](https://github.com/ripperhe/Bob). Thank you for paving the way.
+PeekTrans was inspired by [Easydict](https://github.com/tisfeng/Easydict) and [Bob](https://github.com/ripperhe/Bob). Thank you for paving the way.
 
 Built with:
 
@@ -167,8 +170,8 @@ Built with:
 
 ## Contributors
 
-<a href="https://github.com/cosZone/MoePeek/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=cosZone/MoePeek" />
+<a href="https://github.com/TranManhTuanLabs/PeekTrans/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=TranManhTuanLabs/PeekTrans" />
 </a>
 
 ## Sponsor
@@ -177,7 +180,7 @@ Built with:
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=cosZone/MoePeek&type=date&legend=top-left)](https://www.star-history.com/#cosZone/MoePeek&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/svg?repos=TranManhTuanLabs/PeekTrans&type=date&legend=top-left)](https://www.star-history.com/#TranManhTuanLabs/PeekTrans&type=date&legend=top-left)
 
 ## License
 
