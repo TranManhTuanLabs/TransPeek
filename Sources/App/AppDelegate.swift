@@ -6,7 +6,7 @@ import KeyboardShortcuts
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // registry must be available before applicationDidFinishLaunching because
-    // SwiftUI evaluates MoePeekApp.body (which reads registry) during app init.
+    // SwiftUI evaluates PeekTransApp.body (which reads registry) during app init.
     lazy var registry = TranslationProviderRegistry.builtIn()
     lazy var ttsRegistry = TTSProviderRegistry.builtIn()
     lazy var ttsCoordinator = TTSCoordinator(registry: ttsRegistry)
@@ -41,6 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ttsCoordinator: ttsCoordinator,
             settingsController: settingsController
         )
+        panelController.onOCRCopyOnlySuccess = { [weak self] in
+            self?.copyToastController.show(message: String(localized: "Đã copy"))
+        }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()
         triggerIconController = TriggerIconController()
@@ -72,7 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
-            guard url.scheme == "mopeek", url.host == "translate" else { continue }
+            guard url.scheme == "peektrans", url.host == "translate" else { continue }
             guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                   let text = components.queryItems?.first(where: { $0.name == "text" })?.value,
                   !text.isEmpty
@@ -370,6 +373,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
+        // Click-to-speak (PeekTrans Phase 1): no panel, no translation.
+        // No detection has run at icon time, so detect the text's language
+        // now; "auto"/empty configured source falls back to English.
+        triggerIconController.onSpeakRequested = { [weak self] text in
+            guard let self else { return }
+            self.ttsCoordinator.speak(text, language: Self.speakLanguage(for: text))
+        }
+
+        triggerIconController.onStopSpeakRequested = { [weak self] in
+            guard let self else { return }
+            self.ttsCoordinator.stop()
+            self.triggerIconController.setSpeaking(false)
+        }
+
+        // Natural end of playback (finished or failed) clears the icon state.
+        // Cancellation via stop() already clears it through onStopSpeakRequested.
+        ttsCoordinator.onPlaybackEnded = { [weak self] in
+            self?.triggerIconController.speakingDidStop()
+        }
+
         triggerIconController.onDismissed = { [weak self] in
             self?.selectionMonitor.suppressBriefly()
         }
@@ -382,5 +405,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         selectionMonitor.start()
+    }
+
+    /// Language for click-to-speak: detect the text itself first, then the
+    /// configured source language when it names a real language. "auto" (or an
+    /// empty value) cannot be spoken — AppleTTSProvider would resolve it to no
+    /// voice and fall back to the system default — so default to English.
+    private static func speakLanguage(for text: String) -> String {
+        if let detected = LanguageDetector.detect(text), !detected.isEmpty {
+            return detected
+        }
+        let configured = Defaults[.sourceLanguage]
+        if !configured.isEmpty, configured != "auto" {
+            return configured
+        }
+        return "en"
     }
 }
