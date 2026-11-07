@@ -14,9 +14,37 @@ struct VisionOCRProvider: OcrProvider {
     let needsAPIKey = false
 
     /// Languages Vision reports as supported on this Mac.
+    ///
+    /// NOTE (Xcode 26 / macOS 26 SDK): the old static property
+    /// `VNRecognizeTextRequest.supportedRecognitionLanguages` no longer exists.
+    /// Supported languages are now queried per-request with the throwing
+    /// instance method `supportedRecognitionLanguages()`, because the set
+    /// depends on the request's recognition level and revision; the static
+    /// `supportedRecognitionLanguages(for:revision:)` method still exists but
+    /// is deprecated. The old property-style access resolves to that static
+    /// method as an unapplied function value, so `Array(...)` around it fails
+    /// with "No exact matches in call to initializer" (CI run 42387292987).
+    /// The probe is configured with `.accurate`, the level this provider uses,
+    /// so the queried set matches what recognition will actually support.
+    /// If the query ever throws, fall back to Vision's documented 18-language
+    /// set instead of failing: filtering against a slightly stale list is far
+    /// better than no OCR at all.
     var supportedLanguages: [String] {
-        Array(VNRecognizeTextRequest.supportedRecognitionLanguages)
+        let probe = VNRecognizeTextRequest()
+        probe.recognitionLevel = .accurate
+        if let languages = try? probe.supportedRecognitionLanguages() {
+            return Array(languages).sorted()
+        }
+        return Self.fallbackSupportedLanguages
     }
+
+    /// Vision's documented language set (18 languages, iOS 18+ / macOS 15+).
+    /// Only used if the runtime query above throws.
+    private static let fallbackSupportedLanguages: [String] = [
+        "ar-SA", "ars-SA", "de-DE", "en-US", "es-ES", "fr-FR", "it-IT",
+        "ja-JP", "ko-KR", "pt-BR", "ru-RU", "th-TH", "uk-UA", "vi-VN",
+        "yue-Hans", "yue-Hant", "zh-Hans", "zh-Hant",
+    ]
 
     var status: String { String(localized: "Ready") }
 
