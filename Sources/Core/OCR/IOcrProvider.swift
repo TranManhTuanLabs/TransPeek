@@ -1,9 +1,12 @@
 import CoreGraphics
 import Foundation
 
-/// Identifies an OCR engine. New providers (e.g. Tesseract, Phase 2) add a case here.
+/// Identifies an OCR engine. New providers add a case here.
 enum OcrProviderID: String, Sendable, CaseIterable {
     case vision
+    /// Tesseract fallback (M2+M3): Homebrew `tesseract` CLI engine, only
+    /// when explicitly enabled in Settings. Never the default.
+    case tesseract
 }
 
 /// A screenshot-OCR engine behind the common provider interface (SPEC v0.1 §3.3).

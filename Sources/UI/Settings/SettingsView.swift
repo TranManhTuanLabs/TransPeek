@@ -16,8 +16,8 @@ struct SettingsView: View {
         case .services: return 580
         case .providerOrder: return 520
         case .dictionary: return 520
-        case .ocr: return 520
-        case .audio: return 520
+        case .ocr: return 620
+        case .audio: return 680
         case .about: return 420
         }
     }

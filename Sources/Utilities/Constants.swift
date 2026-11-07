@@ -412,6 +412,21 @@ extension Defaults.Keys {
     static let ttsVoiceEN = Key<String>("transpeek_ttsVoiceEN", default: "")
     static let ttsVoiceVI = Key<String>("transpeek_ttsVoiceVI", default: "")
 
+    // TransPeek M2+M3 — TTS autoswitch (develop, OFF by default) + extra voices
+    // Voice per language for the System provider, keyed by 2-letter prefix ("ja", "fr", ...).
+    // EN/VI keep their dedicated keys above; this map covers any other installed OS voice.
+    static let ttsVoiceByLanguage = Key<[String: String]>("transpeek_ttsVoiceByLanguage", default: [:])
+    // Autoswitch voice by detected language (SPEC §4.2, develop feature). OFF by default:
+    // short text is often mis-detected, and a wrong voice is worse than the requested one.
+    static let ttsAutoswitchEnabled = Key<Bool>("transpeek_ttsAutoswitchEnabled", default: false)
+    // Edge TTS voice per language, keyed by 2-letter prefix ("" = Edge default for that language).
+    static let edgeVoiceByLanguage = Key<[String: String]>("transpeek_edgeVoiceByLanguage", default: [:])
+
+    // TransPeek M2+M3 — OCR provider selection (SPEC §3.3). Vision stays the default;
+    // Tesseract is a fallback only, and only runs when explicitly enabled below.
+    static let ocrProvider = Key<String>("transpeek_ocrProvider", default: "vision")
+    static let ocrTesseractEnabled = Key<Bool>("transpeek_ocrTesseractEnabled", default: false)
+
     // TTS (Text-to-Speech)
     static let ttsProvider = Key<String>("tts_provider", default: "apple")
     static let ttsAccent = Key<TTSAccent>("tts_accent", default: .american)

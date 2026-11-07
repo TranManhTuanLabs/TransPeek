@@ -6,10 +6,23 @@ final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
     static let providerID = "apple"
 
     let id = providerID
-    let displayName = "Apple TTS"
+    /// The System provider (SPEC §4.3): offline, free, the default and the
+    /// last-resort fallback in the TTS chain. Never remove it from the registry.
+    let displayName = "System (Apple TTS)"
     let iconSystemName = "apple.logo"
     let isAvailable = true
     @MainActor var isConfigured: Bool { true }
+
+    var needsNetwork: Bool { false }
+    var needsAPIKey: Bool { false }
+    var quality: TTSQuality { .standard }
+
+    /// 2-letter prefixes of the voices installed on this Mac (e.g. "en", "vi").
+    var supportedLanguages: [String] {
+        Array(Set(
+            AVSpeechSynthesisVoice.speechVoices().map { String($0.language.prefix(2)).lowercased() }
+        )).sorted()
+    }
 
     private let synthesizer = AVSpeechSynthesizer()
     private lazy var cachedVoices = AVSpeechSynthesisVoice.speechVoices()
@@ -72,16 +85,18 @@ final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
         return mapping[language] ?? language
     }
 
-    /// User-chosen voice for English/Vietnamese (TransPeek Phase 1).
+    /// User-chosen voice for a language (TransPeek Phase 1 EN/VI, M2+M3 any
+    /// other installed language via `Defaults[.ttsVoiceByLanguage]`).
     /// Returns nil when no voice is stored for the language, or when the
     /// stored identifier no longer matches an installed voice — callers then
     /// fall back to the existing best-voice selection.
     private func preferredVoice(for voiceLang: String) -> AVSpeechSynthesisVoice? {
+        let prefix = String(voiceLang.lowercased().prefix(2))
         let storedID: String
-        switch voiceLang.lowercased().prefix(2) {
+        switch prefix {
         case "en": storedID = Defaults[.ttsVoiceEN]
         case "vi": storedID = Defaults[.ttsVoiceVI]
-        default: return nil
+        default: storedID = Defaults[.ttsVoiceByLanguage][prefix] ?? ""
         }
         guard !storedID.isEmpty else { return nil }
         return AVSpeechSynthesisVoice.speechVoices().first { $0.identifier == storedID }

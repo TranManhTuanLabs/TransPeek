@@ -28,39 +28,69 @@ final class TTSCoordinator {
         self.registry = registry
     }
 
+    /// Speak `text`, walking the fallback chain (SPEC §4.3, M2+M3):
+    /// chosen engine -> EdgeTTS (if online) -> System -> dictionary audio
+    /// (single word only) -> clear error. Never fails silently: when every
+    /// step fails, `playbackState` carries the last error's message.
+    ///
+    /// When autoswitch is enabled (develop, OFF by default), the language
+    /// actually spoken is the detected language, not the requested one.
     func speak(_ text: String, language: String) {
         stop()
         currentText = text
 
         speakTask = Task { [weak self] in
             guard let self else { return }
-            let provider = registry.activeProvider
-            activePlaybackProvider = provider
+            let detected = Defaults[.ttsAutoswitchEnabled] ? LanguageDetector.detect(text) : nil
+            let effectiveLanguage = TTSAutoswitch.effectiveLanguage(
+                requested: language,
+                detected: detected,
+                enabled: Defaults[.ttsAutoswitchEnabled]
+            )
+            let steps = TTSFallbackChain.steps(
+                chosenID: registry.activeProvider.id,
+                availableIDs: registry.providers.map(\.id)
+            )
             playbackState = .loading
 
-            do {
-                try await performSpeak(provider, text: text, language: language)
-            } catch {
+            var lastError: Error?
+            for step in steps {
                 guard !Task.isCancelled else { return }
-
-                // Fallback to Apple TTS if the current provider isn't Apple
-                if provider.id != AppleTTSProvider.providerID,
-                   let apple = registry.provider(withID: AppleTTSProvider.providerID)
-                {
-                    print("[TTS] \(provider.displayName) failed: \(error.localizedDescription), falling back to Apple TTS")
-                    do {
-                        try await performSpeak(apple, text: text, language: language)
-                    } catch {
-                        if !Task.isCancelled {
-                            playbackState = .error(error.localizedDescription)
-                        }
+                do {
+                    switch step {
+                    case let .provider(id):
+                        guard let provider = registry.provider(withID: id) else { continue }
+                        activePlaybackProvider = provider
+                        try await performSpeak(provider, text: text, language: effectiveLanguage)
+                    case .dictionaryAudio:
+                        guard DictionaryAudioService.isSingleWord(text) else { continue }
+                        activePlaybackProvider = nil
+                        playbackState = .playing(providerID: "dictionary")
+                        try await DictionaryAudioService.speak(
+                            word: text,
+                            rate: effectiveRate(for: effectiveLanguage)
+                        )
+                        playbackState = .idle
                     }
-                } else {
-                    playbackState = .error(error.localizedDescription)
+                    // A step succeeded: done, no further fallback.
+                    if !Task.isCancelled {
+                        self.onPlaybackEnded?()
+                    }
+                    self.speakTask = nil
+                    return
+                } catch {
+                    // User pressed stop: do not fall through to the next engine.
+                    if Task.isCancelled { return }
+                    lastError = error
+                    print("[TTS] step \(step) failed: \(error.localizedDescription), trying next fallback")
                 }
             }
 
             if !Task.isCancelled {
+                playbackState = .error(
+                    lastError?.localizedDescription
+                        ?? String(localized: "Text-to-speech failed")
+                )
                 self.onPlaybackEnded?()
             }
             self.speakTask = nil
@@ -72,6 +102,7 @@ final class TTSCoordinator {
         speakTask = nil
         activePlaybackProvider?.stop()
         activePlaybackProvider = nil
+        DictionaryAudioService.stop()
         currentText = nil
         playbackState = .idle
     }

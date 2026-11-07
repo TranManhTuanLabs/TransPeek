@@ -25,6 +25,9 @@ final class TTSProviderRegistry {
     static func builtIn() -> TTSProviderRegistry {
         TTSProviderRegistry(providers: [
             AppleTTSProvider(),
+            // Edge is optional and never the default (SPEC §4.3 / §5 M2+M3):
+            // it sits in the fallback chain after the chosen engine.
+            EdgeTTSProvider(),
         ])
     }
 }
