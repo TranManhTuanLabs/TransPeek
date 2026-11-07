@@ -3,7 +3,7 @@ import ApplicationServices
 import os
 
 enum AccessibilityGrabber {
-    private static let log = Logger(subsystem: "com.tranmanhtuanlabs.peektrans", category: "AccessibilityGrabber")
+    private static let log = Logger(subsystem: "com.tranmanhtuanlabs.transpeek", category: "AccessibilityGrabber")
 
     /// Read the selected text from the frontmost application using the Accessibility API.
     /// Returns nil if no text is selected or the app doesn't support AX text selection.
