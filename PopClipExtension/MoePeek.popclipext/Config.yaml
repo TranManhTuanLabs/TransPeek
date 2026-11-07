@@ -1,8 +1,8 @@
 #popclip
-name: PeekTrans
-identifier: com.tranmanhtuanlabs.popclip.extension.peektrans
-description: Translate selected text with PeekTrans
+name: TransPeek
+identifier: com.tranmanhtuanlabs.popclip.extension.transpeek
+description: Translate selected text with TransPeek
 popclip version: 4586
 macos version: "14.0"
 icon: symbol:character.bubble
-url: peektrans://translate?text=***
+url: transpeek://translate?text=***
