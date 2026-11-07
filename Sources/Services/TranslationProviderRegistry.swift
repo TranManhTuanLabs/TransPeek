@@ -64,6 +64,37 @@ final class TranslationProviderRegistry {
         return result
     }
 
+    /// Enabled slots reordered so the primary provider (if enabled) comes first,
+    /// the fallback provider second, and the rest keep their existing order.
+    /// Unknown or empty IDs are ignored. A slot matches an ID by its
+    /// `configurationID` (so all model slots of a multi-model provider move
+    /// together) or by its exact slot `id`. If primary and fallback are the
+    /// same ID, that provider appears once, first.
+    /// This is an ordering layer only: the coordinator still translates with
+    /// all enabled providers in parallel and surfaces per-provider errors.
+    func orderedSlots(primaryID: String, fallbackID: String) -> [any TranslationProvider] {
+        let slots = enabledSlots
+        guard !primaryID.isEmpty || !fallbackID.isEmpty else { return slots }
+
+        func matches(_ slot: any TranslationProvider, _ id: String) -> Bool {
+            !id.isEmpty && (slot.configurationID == id || slot.id == id)
+        }
+
+        var primary: [any TranslationProvider] = []
+        var fallback: [any TranslationProvider] = []
+        var rest: [any TranslationProvider] = []
+        for slot in slots {
+            if matches(slot, primaryID) {
+                primary.append(slot)
+            } else if matches(slot, fallbackID) {
+                fallback.append(slot)
+            } else {
+                rest.append(slot)
+            }
+        }
+        return primary + fallback + rest
+    }
+
     func translatesAutomatically(_ provider: any TranslationProvider) -> Bool {
         !onDemandProviderIDs().contains(provider.configurationID)
     }
@@ -172,8 +203,8 @@ final class TranslationProviderRegistry {
                 defaultModel: "openrouter/auto",
                 guideURL: "https://openrouter.ai/keys",
                 extraHeaders: [
-                    "HTTP-Referer": "https://github.com/cosZone/MoePeek",
-                    "X-OpenRouter-Title": "MoePeek",
+                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/PeekTrans",
+                    "X-OpenRouter-Title": "PeekTrans",
                 ]
             ),
             OpenAICompatibleProvider(
@@ -185,8 +216,8 @@ final class TranslationProviderRegistry {
                 defaultModel: "deepseek/deepseek-chat",
                 guideURL: "https://app.requesty.ai/api-keys",
                 extraHeaders: [
-                    "HTTP-Referer": "https://github.com/cosZone/MoePeek",
-                    "X-Title": "MoePeek",
+                    "HTTP-Referer": "https://github.com/TranManhTuanLabs/PeekTrans",
+                    "X-Title": "PeekTrans",
                 ]
             ),
             AnthropicProvider(),
