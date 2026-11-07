@@ -1,4 +1,5 @@
 import AVFoundation
+import Defaults
 import SwiftUI
 
 final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
@@ -22,7 +23,9 @@ final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
         let voiceLang = resolveVoiceLanguage(language: language, accent: accent)
         let utterance = AVSpeechUtterance(string: text)
 
-        if let voice = bestVoice(for: voiceLang) {
+        if let voice = preferredVoice(for: voiceLang) {
+            utterance.voice = voice
+        } else if let voice = bestVoice(for: voiceLang) {
             utterance.voice = voice
         } else if let voice = AVSpeechSynthesisVoice(language: voiceLang) {
             utterance.voice = voice
@@ -67,6 +70,21 @@ final class AppleTTSProvider: TTSProvider, @unchecked Sendable {
             "zh-Hant": "zh-TW",
         ]
         return mapping[language] ?? language
+    }
+
+    /// User-chosen voice for English/Vietnamese (PeekTrans Phase 1).
+    /// Returns nil when no voice is stored for the language, or when the
+    /// stored identifier no longer matches an installed voice — callers then
+    /// fall back to the existing best-voice selection.
+    private func preferredVoice(for voiceLang: String) -> AVSpeechSynthesisVoice? {
+        let storedID: String
+        switch voiceLang.lowercased().prefix(2) {
+        case "en": storedID = Defaults[.ttsVoiceEN]
+        case "vi": storedID = Defaults[.ttsVoiceVI]
+        default: return nil
+        }
+        guard !storedID.isEmpty else { return nil }
+        return AVSpeechSynthesisVoice.speechVoices().first { $0.identifier == storedID }
     }
 
     private func bestVoice(for language: String) -> AVSpeechSynthesisVoice? {
