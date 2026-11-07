@@ -3,7 +3,7 @@ import Defaults
 import SwiftUI
 
 @main
-struct MoePeekApp: App {
+struct PeekTransApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     @Default(.menuBarIconStyle) private var menuBarIconStyle
