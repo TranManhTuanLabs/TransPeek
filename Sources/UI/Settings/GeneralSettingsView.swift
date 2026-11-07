@@ -9,6 +9,8 @@ struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
     @Default(.textDetectionMode) private var textDetectionMode
     @Default(.triggerActivationMode) private var triggerActivationMode
+    @Default(.triggerClickAction) private var triggerClickAction
+    @Default(.hoverDelayMs) private var hoverDelayMs
     @Default(.showInDock) private var showInDock
     @Default(.popupDefaultWidth) private var popupDefaultWidth
     @Default(.popupDefaultHeight) private var popupDefaultHeight
@@ -130,6 +132,16 @@ struct GeneralSettingsView: View {
                     Picker("Floating Icon Activation:", selection: $triggerActivationMode) {
                         Text("Hover").tag(TriggerActivationMode.hover)
                         Text("Click").tag(TriggerActivationMode.click)
+                    }
+
+                    Picker("Click icon:", selection: $triggerClickAction) {
+                        Text("Phát âm").tag(TriggerClickAction.speak)
+                        Text("Dịch (kiểu cũ)").tag(TriggerClickAction.translate)
+                    }
+
+                    Picker("Hover delay:", selection: $hoverDelayMs) {
+                        Text("300ms").tag(300)
+                        Text("500ms").tag(500)
                     }
 
                     Picker("Text Detection Mode:", selection: $textDetectionMode) {
