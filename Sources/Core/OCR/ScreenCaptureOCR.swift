@@ -1,5 +1,4 @@
 import AppKit
-import Vision
 import os
 
 enum ScreenCaptureOCR {
@@ -15,7 +14,7 @@ enum ScreenCaptureOCR {
     static func captureAndRecognize() async throws -> String {
         // Generate a unique temp file path to avoid concurrency conflicts
         let tmpURL = URL(fileURLWithPath: NSTemporaryDirectory())
-            .appendingPathComponent("moepeek_ocr_\(UUID().uuidString).png")
+            .appendingPathComponent("peektrans_ocr_\(UUID().uuidString).png")
         defer { try? FileManager.default.removeItem(at: tmpURL) }
 
         // Run screencapture -i <tmpPath> (interactive selection → temp file, clipboard untouched)
@@ -61,43 +60,10 @@ enum ScreenCaptureOCR {
         return try await recognizeText(in: cgImage)
     }
 
+    /// Recognition is owned by `VisionOCRProvider`; this keeps the capture flow
+    /// (temp file, `screencapture -i`, cancellation) unchanged.
     private static func recognizeText(in image: CGImage) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            let resumed = OSAllocatedUnfairLock(initialState: false)
-
-            let request = VNRecognizeTextRequest { request, error in
-                guard claimOnce(resumed) else { return }
-
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let text = observations
-                    .compactMap { $0.topCandidates(1).first?.string }
-                    .joined(separator: "\n")
-
-                if text.isEmpty {
-                    continuation.resume(throwing: OCRError.noTextRecognized)
-                } else {
-                    continuation.resume(returning: text)
-                }
-            }
-
-            request.recognitionLevel = .accurate
-            request.automaticallyDetectsLanguage = true
-            request.recognitionLanguages = ["zh-Hans", "zh-Hant", "en-US", "ja-JP", "ko-KR"]
-            request.usesLanguageCorrection = true
-
-            let handler = VNImageRequestHandler(cgImage: image, options: [:])
-            do {
-                try handler.perform([request])
-            } catch {
-                guard claimOnce(resumed) else { return }
-                continuation.resume(throwing: error)
-            }
-        }
+        try await VisionOCRProvider().recognizeText(in: image)
     }
 }
 
