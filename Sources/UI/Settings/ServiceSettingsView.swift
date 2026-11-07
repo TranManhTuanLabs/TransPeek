@@ -7,19 +7,28 @@ struct ServiceSettingsView: View {
 
     @Default(.enabledProviders) private var enabledProviders
     @Default(.onDemandProviderIDs) private var onDemandProviderIDs
+    @Default(.primaryProviderID) private var primaryProviderID
+    @Default(.fallbackProviderID) private var fallbackProviderID
     @State private var selectedProviderID: String?
     @State private var showingAddSheet = false
     @State private var providerToDelete: (any TranslationProvider)?
 
     var body: some View {
-        HSplitView {
-            // Left: Provider list
-            providerList
-                .frame(minWidth: 180, idealWidth: 200, maxWidth: 220)
+        VStack(alignment: .leading, spacing: 0) {
+            fallbackSection
+                .padding(12)
 
-            // Right: Selected provider settings
-            providerDetail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+
+            HSplitView {
+                // Left: Provider list
+                providerList
+                    .frame(minWidth: 180, idealWidth: 200, maxWidth: 220)
+
+                // Right: Selected provider settings
+                providerDetail
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .onAppear {
             if selectedProviderID == nil {
@@ -42,6 +51,38 @@ struct ServiceSettingsView: View {
             if let provider = providerToDelete {
                 Text("Are you sure you want to delete \"\(provider.displayName)\"? This will remove all its settings.")
             }
+        }
+    }
+
+    // MARK: - Fallback
+
+    /// Primary/fallback provider choice (PeekTrans Phase 1). This only sets
+    /// the display order of the enabled providers; it does not add a second
+    /// translation pass — the coordinator already translates with all enabled
+    /// providers in parallel and shows per-provider errors.
+    @ViewBuilder
+    private var fallbackSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Fallback")
+                .font(.headline)
+
+            Picker("Primary provider:", selection: $primaryProviderID) {
+                Text("None").tag("")
+                ForEach(registry.providers, id: \.id) { provider in
+                    Text(provider.displayName).tag(provider.id)
+                }
+            }
+
+            Picker("Fallback provider:", selection: $fallbackProviderID) {
+                Text("None").tag("")
+                ForEach(registry.providers, id: \.id) { provider in
+                    Text(provider.displayName).tag(provider.id)
+                }
+            }
+
+            Text("Primary is shown first, fallback second; the rest follow the enabled provider order. All enabled providers still translate in parallel, and each shows its own error if it fails — the fallback is the display order, not a retry. Leave empty to use the enabled provider order.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
