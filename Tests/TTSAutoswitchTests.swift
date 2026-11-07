@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// M2+M3: autoswitch voice by detected language (develop, OFF by default).
 @Suite struct TTSAutoswitchTests {

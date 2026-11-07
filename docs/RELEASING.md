@@ -48,7 +48,7 @@ security find-identity -v -p codesigning
 
 ## 合并前验证
 
-`Tests` workflow 在 PR 和 main 分支推送时运行完整 `MoePeekTests`，也支持手动触发。它使用示例签名配置并关闭代码签名，提供公开测试公钥供 Sparkle 测试宿主初始化，不读取 Prod secrets；xcresult 报告保留 14 天。
+`Tests` workflow 在 PR 和 main 分支推送时运行完整 `TransPeekTests`，也支持手动触发。它使用示例签名配置并关闭代码签名，提供公开测试公钥供 Sparkle 测试宿主初始化，不读取 Prod secrets；xcresult 报告保留 14 天。
 
 合并前检查最新提交的测试结果。Release workflow 会在正式签名归档前再次运行完整测试，失败时停止发布。
 
@@ -66,7 +66,7 @@ git push origin v0.2.0
 ```
 
 CI 会自动完成以下步骤：
-1. 导入签名证书，运行完整 `MoePeekTests`；失败则停止发布，并保留 xcresult 报告
+1. 导入签名证书，运行完整 `TransPeekTests`；失败则停止发布，并保留 xcresult 报告
 2. 构建 Release archive，验证代码签名（确保 Authority 和 TeamIdentifier 正确）
 3. 生成 ZIP、DMG、PopClip 和 OpenClip 扩展包
 4. 下载 Sparkle CLI 工具（版本自动匹配 `Package.resolved`）
@@ -87,7 +87,7 @@ CI 会自动完成以下步骤：
 
 1. 应用的 `Info.plist` 中 `SUFeedURL` 指向：
    ```
-   https://github.com/cosZone/MoePeek/releases/latest/download/appcast.xml
+   https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/appcast.xml
    ```
 2. GitHub 的 `releases/latest/download/{asset}` 会重定向到最新 **非 draft** release 的资源文件
 3. Sparkle 拉取 `appcast.xml`，比对版本号，如有更新则提示用户

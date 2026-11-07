@@ -83,7 +83,7 @@ with branch `m2-m3-tts-ocr`, or open a draft PR to main.
 ```sh
 git fetch origin && git checkout m2-m3-tts-ocr
 tuist install && tuist generate
-xcodebuild test -scheme MoePeek -destination 'platform=macOS'   # scheme/target still named MoePeek (M5 debt)
+xcodebuild test -scheme TransPeek -destination 'platform=macOS'
 ```
 
 Live checks (all need a Mac; none were possible on the VM):
@@ -115,8 +115,7 @@ Live checks (all need a Mac; none were possible on the VM):
 
 - ElevenLabs, VieNeu-TTS, external-engine download button: M4.
 - API keys still in per-provider Defaults, not Keychain: M1 debt, M5.
-- Tuist target/scheme still named `MoePeek`: M5 (workflow files can't be
-  edited via the GitHub connector — 403).
+- Tuist target/scheme renamed `MoePeek` → `TransPeek` on 2026-11-08 (before live test; the old M5 debt is done).
 - Edge TTS `TrustedClientToken` is the public Edge client token; if Microsoft
   rotates it, synthesis will start failing and the token in
   `EdgeTTSProvider.trustedClientToken` is the first thing to refresh.

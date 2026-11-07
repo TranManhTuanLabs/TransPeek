@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// M2+M3: Edge TTS voice resolution, SSML building, and audio-frame parsing.
 /// No network: the WebSocket itself is only exercised live on a Mac.

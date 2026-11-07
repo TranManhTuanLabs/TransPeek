@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite struct AttributedStringMarkdownConverterTests {
     private let body = NSFont.systemFont(ofSize: 12)
@@ -100,7 +100,7 @@ import Testing
             NSAttributedString(attachment: attachment),
             run(" 图后"),
         ]))
-        #expect(output.markdown == "图前 ![img-1](moepeek-attachment:img-1) 图后")
+        #expect(output.markdown == "图前 ![img-1](transpeek-attachment:img-1) 图后")
         #expect(output.attachments["img-1"]?.data == pngData())
         #expect(output.omittedImageCount == 0)
         #expect(output.isRich)
@@ -131,8 +131,8 @@ import Testing
 @Suite struct SourceAttachmentReferenceTests {
     @Test func placeholderRoundTrips() {
         let placeholder = SourceAttachmentReference.placeholder(id: "img-2")
-        #expect(placeholder == "![img-2](moepeek-attachment:img-2)")
-        #expect(SourceAttachmentReference.id(from: URL(string: "moepeek-attachment:img-2")!) == "img-2")
+        #expect(placeholder == "![img-2](transpeek-attachment:img-2)")
+        #expect(SourceAttachmentReference.id(from: URL(string: "transpeek-attachment:img-2")!) == "img-2")
         #expect(SourceAttachmentReference.id(from: URL(string: "https://example.com/img-2")!) == nil)
     }
 
@@ -143,10 +143,10 @@ import Testing
             "img-10": SourceImageAttachment(id: "img-10", data: Data([10])),
         ]
         let retained = SourceAttachmentReference.retainedAttachments(
-            attachments, referencedIn: "text ![img-10](moepeek-attachment:img-10) ![img-2](moepeek-attachment:img-2)"
+            attachments, referencedIn: "text ![img-10](transpeek-attachment:img-10) ![img-2](transpeek-attachment:img-2)"
         )
         #expect(retained.keys.sorted() == ["img-10", "img-2"])
-        #expect(!SourceAttachmentReference.references("img-1", in: "![img-10](moepeek-attachment:img-10)"))
+        #expect(!SourceAttachmentReference.references("img-1", in: "![img-10](transpeek-attachment:img-10)"))
     }
 }
 
@@ -170,7 +170,7 @@ import Testing
 
         let document = await RichTextImporter.document(from: .init(rtfd: rtfd, plain: source.string))
 
-        #expect(document?.markdown == "**标题前** ![img-1](moepeek-attachment:img-1) 之后")
+        #expect(document?.markdown == "**标题前** ![img-1](transpeek-attachment:img-1) 之后")
         #expect(document?.attachments["img-1"] != nil)
     }
 
@@ -219,7 +219,7 @@ import Testing
 
         let document = await RichTextImporter.document(from: .init(html: html, plain: "A B C"))
 
-        #expect(document?.markdown == "A ![img-1](moepeek-attachment:img-1) B ![img-2](moepeek-attachment:img-2) C")
+        #expect(document?.markdown == "A ![img-1](transpeek-attachment:img-1) B ![img-2](transpeek-attachment:img-2) C")
         #expect(document?.attachments.isEmpty == true)
     }
 

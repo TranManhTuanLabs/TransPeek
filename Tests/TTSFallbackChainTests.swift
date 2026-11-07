@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// M2+M3: `TTSFallbackChain.steps` ordering — chosen engine first, then
 /// EdgeTTS, then System, then dictionary audio; never duplicated, never

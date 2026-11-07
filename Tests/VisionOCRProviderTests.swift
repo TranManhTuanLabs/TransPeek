@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// Pure-logic tests for `VisionOCRProvider.effectiveLanguages`.
 /// No Vision calls, no screenshots: the runtime language check is injected

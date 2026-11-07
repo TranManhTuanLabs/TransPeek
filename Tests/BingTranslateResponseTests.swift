@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite struct BingTranslateResponseTests {
     @Test func decodesEnglishToChinese() throws {

@@ -2,7 +2,7 @@
 @preconcurrency import PackageDescription
 
 let package = Package(
-    name: "MoePeek",
+    name: "TransPeek",
     dependencies: [
         .package(url: "https://github.com/sindresorhus/KeyboardShortcuts", exact: "2.3.0"),
         .package(url: "https://github.com/sindresorhus/Defaults", from: "9.0.0"),

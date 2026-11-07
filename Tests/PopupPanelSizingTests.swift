@@ -1,6 +1,6 @@
 import AppKit
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite struct PopupPanelSizingTests {
     private let visibleFrame = NSRect(x: 0, y: 0, width: 1_440, height: 900)

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// M2+M3: OCR provider selection + Tesseract language mapping.
 /// No engine calls: availability is injected via the `tesseractAvailable`

@@ -1,5 +1,5 @@
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @MainActor
 @Suite struct SmartTranslationTaskCleanupTests {

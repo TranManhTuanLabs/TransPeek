@@ -1,6 +1,6 @@
 import SwiftUI
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// TransPeek Phase 1: `orderedSlots(primaryID:fallbackID:)` reorders the
 /// enabled slots so the primary provider comes first, the fallback second,

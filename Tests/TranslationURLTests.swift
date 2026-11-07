@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @MainActor
 @Suite(.serialized)

@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 /// M2+M3: dictionary-audio fallback — single-word gate and audio-URL parsing.
 /// No network: `fetchAudioURL` is only exercised live on a Mac.

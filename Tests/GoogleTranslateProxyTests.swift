@@ -1,7 +1,7 @@
 import Foundation
 import Network
 import Testing
-@testable import MoePeek
+@testable import TransPeek
 
 @Suite struct GoogleTranslateProxyTests {
     @Test func disabledProxyIgnoresUnfinishedFieldsAndPreservesSystemRouting() throws {
