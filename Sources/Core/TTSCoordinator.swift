@@ -16,7 +16,7 @@ final class TTSCoordinator {
     private(set) var currentText: String?
     /// Called when a speak request ends on its own (finished or failed), but
     /// not when it is cancelled via `stop()` — the stop path already clears
-    /// any UI that was waiting on playback. PeekTrans Phase 1 uses this to
+    /// any UI that was waiting on playback. TransPeek Phase 1 uses this to
     /// clear the trigger icon's speaking state.
     @ObservationIgnored var onPlaybackEnded: (() -> Void)?
     private var speakTask: Task<Void, Never>?
