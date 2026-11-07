@@ -6,7 +6,7 @@ import Foundation
 /// Lookup order per host: `<host>/favicon.ico`, Google's s2 favicon service,
 /// then DuckDuckGo's icon service. Results are cached in memory (published so
 /// `DictionaryBarView` refreshes when a favicon lands) and on disk under
-/// `Application Support/PeekTrans/Favicons/<host>.png`.
+/// `Application Support/TransPeek/Favicons/<host>.png`.
 ///
 /// All network and disk work happens off the main actor; only the published
 /// in-memory cache is touched on it. Failures are swallowed and reported as
@@ -87,7 +87,7 @@ final class FaviconService: ObservableObject {
 
     private nonisolated static var faviconsDirectory: URL? {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
-            .appendingPathComponent("PeekTrans/Favicons", isDirectory: true)
+            .appendingPathComponent("TransPeek/Favicons", isDirectory: true)
     }
 
     private nonisolated static func diskURL(forHost host: String) -> URL? {
