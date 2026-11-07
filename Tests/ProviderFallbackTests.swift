@@ -2,7 +2,7 @@ import SwiftUI
 import Testing
 @testable import MoePeek
 
-/// PeekTrans Phase 1: `orderedSlots(primaryID:fallbackID:)` reorders the
+/// TransPeek Phase 1: `orderedSlots(primaryID:fallbackID:)` reorders the
 /// enabled slots so the primary provider comes first, the fallback second,
 /// and the rest keep their existing order. Pure ordering logic — it does not
 /// change which providers translate (the coordinator still runs all enabled
