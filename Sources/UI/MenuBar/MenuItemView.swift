@@ -12,7 +12,7 @@ struct MenuItemView: View {
     }
 
     var body: some View {
-        Text("MoePeek \(appVersion)")
+        Text("PeekTrans \(appVersion)")
             .font(.headline)
 
         Divider()
@@ -109,7 +109,7 @@ struct MenuItemView: View {
 
         Divider()
 
-        Button("Quit MoePeek") {
+        Button("Quit PeekTrans") {
             NSApplication.shared.terminate(nil)
         }
         .keyboardShortcut("q")
