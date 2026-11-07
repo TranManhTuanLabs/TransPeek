@@ -4,7 +4,7 @@ import Foundation
 
 /// Manages on-disk storage for the user-supplied menu bar icon.
 ///
-/// Files are stored under `Application Support/MoePeek/` with a fixed basename
+/// Files are stored under `Application Support/PeekTrans/` with a fixed basename
 /// (`menuBarIcon.<ext>`) so we can locate the icon without persisting a path.
 @MainActor
 enum MenuBarIconStore {
@@ -105,7 +105,7 @@ enum MenuBarIconStore {
         guard let supportDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             preconditionFailure("Application Support directory unavailable")
         }
-        return supportDir.appendingPathComponent("MoePeek", isDirectory: true)
+        return supportDir.appendingPathComponent("PeekTrans", isDirectory: true)
     }
 
     private static func ensureCustomIconDirectory() throws -> URL {
