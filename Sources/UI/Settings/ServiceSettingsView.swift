@@ -56,7 +56,7 @@ struct ServiceSettingsView: View {
 
     // MARK: - Fallback
 
-    /// Primary/fallback provider choice (PeekTrans Phase 1). This only sets
+    /// Primary/fallback provider choice (TransPeek Phase 1). This only sets
     /// the display order of the enabled providers; it does not add a second
     /// translation pass — the coordinator already translates with all enabled
     /// providers in parallel and shows per-provider errors.
