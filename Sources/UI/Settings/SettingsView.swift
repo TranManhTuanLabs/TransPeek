@@ -15,6 +15,8 @@ struct SettingsView: View {
         case .excludedApps: return 480
         case .services: return 580
         case .providerOrder: return 520
+        case .dictionary: return 520
+        case .ocr: return 520
         case .audio: return 520
         case .about: return 420
         }
@@ -45,6 +47,20 @@ struct SettingsView: View {
                     Label("Order", systemImage: "list.number")
                 }
                 .tag(SettingsTab.providerOrder)
+
+            Form {
+                DictionarySettingsView()
+            }
+            .tabItem {
+                Label("Dictionary", systemImage: "book")
+            }
+            .tag(SettingsTab.dictionary)
+
+            OCRSettingsView()
+                .tabItem {
+                    Label("OCR", systemImage: "text.viewfinder")
+                }
+                .tag(SettingsTab.ocr)
 
             TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
                 .tabItem {
