@@ -63,16 +63,16 @@ jobs:
           SIGNING_IDENTITY_HASH=$SIGNING_IDENTITIES
 
           cat > Configurations/Signing.xcconfig << EOF
-          MOEPEEK_CODE_SIGN_STYLE = Manual
-          MOEPEEK_CODE_SIGN_IDENTITY = $SIGNING_IDENTITY_HASH
-          MOEPEEK_DEVELOPMENT_TEAM = $DEVELOPMENT_TEAM
+          TransPeek_CODE_SIGN_STYLE = Manual
+          TransPeek_CODE_SIGN_IDENTITY = $SIGNING_IDENTITY_HASH
+          TransPeek_DEVELOPMENT_TEAM = $DEVELOPMENT_TEAM
           SPARKLE_ED_PUBLIC_KEY = $SPARKLE_ED_PUBLIC_KEY
           EOF
 
       - name: Resolve dependencies and generate project
         run: tuist install && tuist generate
 
-      # Textual pulls in swiftui-math, whose bundled math fonts add ~7 MB. MoePeek never enables
+      # Textual pulls in swiftui-math, whose bundled math fonts add ~7 MB. TransPeek never enables
       # the math syntax extension and SwiftUIMath loads fonts lazily, so the files are dead weight.
       # Deleting them before the build keeps the code signature intact.
       - name: Strip unused math fonts
@@ -95,8 +95,8 @@ jobs:
         timeout-minutes: 15
         run: |
           xcodebuild test \
-            -workspace MoePeek.xcworkspace \
-            -scheme MoePeek \
+            -workspace TransPeek.xcworkspace \
+            -scheme TransPeek \
             -destination 'platform=macOS' \
             -resultBundlePath build/Tests.xcresult \
             MACOSX_DEPLOYMENT_TARGET=15.0
@@ -113,17 +113,17 @@ jobs:
       - name: Archive
         run: |
           xcodebuild archive \
-            -workspace MoePeek.xcworkspace \
-            -scheme MoePeek \
+            -workspace TransPeek.xcworkspace \
+            -scheme TransPeek \
             -configuration Release \
-            -archivePath build/MoePeek.xcarchive \
+            -archivePath build/TransPeek.xcarchive \
             VALIDATE_STRINGS_FILES_WHILE_COPYING=NO \
             MARKETING_VERSION=${{ steps.version.outputs.version }} \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
       - name: Verify code signature
         run: |
-          APP="build/MoePeek.xcarchive/Products/Applications/MoePeek.app"
+          APP="build/TransPeek.xcarchive/Products/Applications/TransPeek.app"
           codesign --verify --strict "$APP"
 
           SIGN_INFO=$(codesign -dvvv "$APP" 2>&1)
@@ -137,24 +137,24 @@ jobs:
       - name: Prepare app bundle
         run: |
           mkdir -p build/app
-          cp -R build/MoePeek.xcarchive/Products/Applications/MoePeek.app build/app/
+          cp -R build/TransPeek.xcarchive/Products/Applications/TransPeek.app build/app/
 
       - name: Create ZIP
         run: |
-          ditto -c -k --sequesterRsrc --keepParent build/app/MoePeek.app \
-            "MoePeek-v${{ steps.version.outputs.version }}-macOS.zip"
+          ditto -c -k --sequesterRsrc --keepParent build/app/TransPeek.app \
+            "TransPeek-v${{ steps.version.outputs.version }}-macOS.zip"
 
       - name: Package PopClip Extension
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
-            PopClipExtension/MoePeek.popclipext \
-            "MoePeek.popclipext.zip"
+            PopClipExtension/TransPeek.popclipext \
+            "TransPeek.popclipext.zip"
 
       - name: Package OpenClip Extension
         run: |
           ditto -c -k --sequesterRsrc --keepParent \
-            OpenClipExtension/MoePeek.openclipext \
-            "MoePeek.openclipext.zip"
+            OpenClipExtension/TransPeek.openclipext \
+            "TransPeek.openclipext.zip"
 
       - name: Check Sparkle signing key
         id: sparkle
@@ -176,14 +176,14 @@ jobs:
       - name: Create DMG
         run: |
           create-dmg \
-            --volname "MoePeek" \
+            --volname "TransPeek" \
             --window-pos 200 120 \
             --window-size 660 400 \
             --icon-size 160 \
-            --icon "MoePeek.app" 180 170 \
+            --icon "TransPeek.app" 180 170 \
             --app-drop-link 480 170 \
-            --hide-extension "MoePeek.app" \
-            "MoePeek-v${{ steps.version.outputs.version }}-macOS.dmg" \
+            --hide-extension "TransPeek.app" \
+            "TransPeek-v${{ steps.version.outputs.version }}-macOS.dmg" \
             build/app/ \
             || test $? -eq 1
 
@@ -193,13 +193,13 @@ jobs:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           mkdir -p build/release
-          cp "MoePeek-v${{ steps.version.outputs.version }}-macOS.zip" build/release/
+          cp "TransPeek-v${{ steps.version.outputs.version }}-macOS.zip" build/release/
 
           # Download existing appcast to preserve history (skip if first release or invalid)
-          curl -sfL "https://github.com/cosZone/MoePeek/releases/latest/download/appcast.xml" \
+          curl -sfL "https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/appcast.xml" \
             -o appcast.xml || rm -f appcast.xml
 
-          DOWNLOAD_URL="https://github.com/cosZone/MoePeek/releases/download/v${{ steps.version.outputs.version }}"
+          DOWNLOAD_URL="https://github.com/TranManhTuanLabs/TransPeek/releases/download/v${{ steps.version.outputs.version }}"
           /tmp/sparkle/bin/generate_appcast \
             --ed-key-file <(echo "$SPARKLE_ED_PRIVATE_KEY") \
             --download-url-prefix "$DOWNLOAD_URL/" \
@@ -214,8 +214,8 @@ jobs:
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           generate_release_notes: true
           files: |
-            MoePeek-v${{ steps.version.outputs.version }}-macOS.zip
-            MoePeek-v${{ steps.version.outputs.version }}-macOS.dmg
-            MoePeek.popclipext.zip
-            MoePeek.openclipext.zip
+            TransPeek-v${{ steps.version.outputs.version }}-macOS.zip
+            TransPeek-v${{ steps.version.outputs.version }}-macOS.dmg
+            TransPeek.popclipext.zip
+            TransPeek.openclipext.zip
             appcast.xml
