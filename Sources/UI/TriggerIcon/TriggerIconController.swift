@@ -10,6 +10,15 @@ final class TriggerTrackingView: NSView {
     var onMouseExited: (() -> Void)?
     var onMouseDown: (() -> Void)?
 
+    /// When true the icon shows a speaker symbol (TTS playing) instead of the bubble.
+    var isSpeaking = false {
+        didSet {
+            if isSpeaking != oldValue {
+                needsDisplay = true
+            }
+        }
+    }
+
     private var trackingArea: NSTrackingArea?
 
     override init(frame frameRect: NSRect) {
@@ -50,10 +59,12 @@ final class TriggerTrackingView: NSView {
         ctx.setLineWidth(0.5)
         ctx.strokeEllipse(in: rect)
 
-        // SF Symbol icon
+        // SF Symbol icon — speaker while TTS is playing, bubble otherwise.
+        let symbolName = isSpeaking ? "speaker.wave.2.fill" : "character.bubble"
+        let symbolColor: NSColor = isSpeaking ? .controlAccentColor : .labelColor
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-        let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: .labelColor)
-        if let image = NSImage(systemSymbolName: "character.bubble", accessibilityDescription: "Translate")?
+        let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
+        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isSpeaking ? "Stop speaking" : "Translate")?
             .withSymbolConfiguration(sizeConfig.applying(colorConfig))
         {
             let imageSize = image.size
@@ -86,11 +97,43 @@ final class TriggerTrackingView: NSView {
 @MainActor
 final class TriggerIconController {
     var onTranslateRequested: ((String) -> Void)?
+    /// Click-to-speak (PeekTrans Phase 1): invoked with the selected text when the
+    /// user clicks the icon while `triggerClickAction` is `.speak`. The panel is
+    /// not opened for this path.
+    var onSpeakRequested: ((String) -> Void)?
+    /// Second click while speaking: the app should stop playback.
+    var onStopSpeakRequested: (() -> Void)?
     var onDismissed: (() -> Void)?
+
+    /// True while click-to-speak playback is in progress. The icon shows a
+    /// speaker symbol and does not auto-dismiss until playback stops.
+    private(set) var isSpeaking = false {
+        didSet { trackingView?.isSpeaking = isSpeaking }
+    }
+
+    /// Set the speaking state and redraw the icon. While speaking the icon does
+    /// not auto-dismiss; when speaking stops the 3s auto-dismiss timer restarts
+    /// (only if the icon is still visible).
+    func setSpeaking(_ speaking: Bool) {
+        guard isSpeaking != speaking else { return }
+        isSpeaking = speaking
+        if speaking {
+            cancelAutoDismissTimer()
+        } else if panel != nil {
+            startAutoDismissTimer()
+        }
+    }
+
+    /// Called when TTS playback ends on its own (finished or failed) so the icon
+    /// returns to its normal state.
+    func speakingDidStop() {
+        setSpeaking(false)
+    }
 
     private var panel: TriggerIconPanel?
     private var trackingView: TriggerTrackingView?
     private var currentText: String = ""
+    private var activationMode: TriggerActivationMode = .hover
     private var hoverTimer: Timer?
     private var autoDismissTimer: Timer?
 
@@ -101,11 +144,13 @@ final class TriggerIconController {
         dismissSilently()
 
         currentText = text
+        isSpeaking = false
 
         let panel = TriggerIconPanel()
         let trackingView = TriggerTrackingView(frame: NSRect(x: 0, y: 0, width: TriggerIconPanel.size, height: TriggerIconPanel.size))
 
         let activationMode = Defaults[.triggerActivationMode]
+        self.activationMode = activationMode
 
         trackingView.onMouseEntered = { [weak self] in
             guard let self else { return }
@@ -129,7 +174,7 @@ final class TriggerIconController {
             }
         }
         trackingView.onMouseDown = { [weak self] in
-            self?.triggerTranslation()
+            self?.handleIconClick()
         }
 
         panel.contentView = trackingView
@@ -193,6 +238,7 @@ final class TriggerIconController {
     }
 
     private func cleanup() {
+        isSpeaking = false
         panel = nil
         trackingView = nil
         currentText = ""
@@ -205,9 +251,13 @@ final class TriggerIconController {
     // MARK: - Timers
 
     private func startHoverTimer() {
+        // While speaking, hover must not re-trigger translation (the click
+        // already consumed the interaction and the panel must stay closed).
+        guard !isSpeaking else { return }
         cancelHoverTimer()
         cancelAutoDismissTimer()
-        hoverTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { [weak self] _ in
+        let delayMs = min(max(Defaults[.hoverDelayMs], 100), 1000)
+        hoverTimer = Timer.scheduledTimer(withTimeInterval: Double(delayMs) / 1000, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.triggerTranslation()
             }
@@ -220,6 +270,9 @@ final class TriggerIconController {
     }
 
     private func startAutoDismissTimer() {
+        // While speaking the icon must stay visible so the user can click
+        // again to stop playback.
+        guard !isSpeaking else { return }
         cancelAutoDismissTimer()
         autoDismissTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
             Task { @MainActor in
@@ -236,6 +289,32 @@ final class TriggerIconController {
     private func cancelAllTimers() {
         cancelHoverTimer()
         cancelAutoDismissTimer()
+    }
+
+    /// Click handling (PeekTrans Phase 1). In click-activation mode the click
+    /// always means translate — that mode's whole point is click-to-translate.
+    /// In hover mode the click action follows `triggerClickAction`: `.speak`
+    /// cancels both timers and speaks immediately without opening the panel
+    /// (a second click while speaking stops playback); `.translate` keeps the
+    /// old behaviour.
+    private func handleIconClick() {
+        guard activationMode != .click else {
+            triggerTranslation()
+            return
+        }
+        switch Defaults[.triggerClickAction] {
+        case .speak:
+            if isSpeaking {
+                onStopSpeakRequested?()
+                setSpeaking(false)
+            } else {
+                cancelAllTimers()
+                setSpeaking(true)
+                onSpeakRequested?(currentText)
+            }
+        case .translate:
+            triggerTranslation()
+        }
     }
 
     private func triggerTranslation() {
