@@ -14,7 +14,7 @@ struct TranslationURLTests {
     func externalURLPreservesSelectedText(_ text: String) throws {
         let delegate = makeDelegate()
         defer { delegate.panelController.dismiss() }
-        var components = URLComponents(string: "mopeek://translate")!
+        var components = URLComponents(string: "transpeek://translate")!
         components.queryItems = [URLQueryItem(name: "text", value: text)]
 
         delegate.application(NSApplication.shared, open: [try #require(components.url)])
@@ -26,9 +26,9 @@ struct TranslationURLTests {
 
     @Test(arguments: [
         "https://translate?text=hello",
-        "mopeek://settings?text=hello",
-        "mopeek://translate",
-        "mopeek://translate?text=",
+        "transpeek://settings?text=hello",
+        "transpeek://translate",
+        "transpeek://translate?text=",
     ])
     func unrelatedOrEmptyURLsLeaveTheCurrentTranslationAlone(_ rawURL: String) throws {
         let delegate = makeDelegate()
