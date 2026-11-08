@@ -43,6 +43,18 @@ struct AboutSettingsView: View {
             Text("Version \(appVersion) (\(buildNumber))")
                 .foregroundStyle(.secondary)
 
+            // Build stamp: CI sets CFBundleVersion to the GitHub Actions
+            // run number (see test.yml), so the About tab always shows
+            // exactly which CI build this is — the marketing version
+            // alone (0.21.0) is the same for every build, so it cannot
+            // tell builds apart. Local builds keep the project default
+            // ("1") and hide the line.
+            if buildNumber != "1" {
+                Text("Build CI #\(buildNumber)")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+
             Text("Copyright © 2025-2026 TransPeek. Fork of MoePeek by cosZone, licensed under AGPL-3.0.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
