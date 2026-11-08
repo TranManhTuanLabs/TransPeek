@@ -2,12 +2,14 @@ name: Tests
 
 on:
   pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: tests-${{ github.event.pull_request.number || github.ref }}
@@ -42,6 +44,34 @@ jobs:
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo= \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Build app
+        run: |
+          xcodebuild build \
+            -workspace TransPeek.xcworkspace \
+            -scheme TransPeek \
+            -configuration Debug \
+            -derivedDataPath build \
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload app
+        uses: actions/upload-artifact@v4
+        with:
+          name: TransPeek-macOS
+          path: build/Build/Products/Debug/TransPeek.app
+          retention-days: 7
+
+      - name: Delete older app artifacts (keep only the newest)
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="TransPeek-macOS")) | sort_by(.created_at) | reverse | .[1:] | .[].id')
+          for id in $ids; do
+            echo "Deleting old artifact $id"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
+          done
 
       - name: Upload test results
         if: always()
