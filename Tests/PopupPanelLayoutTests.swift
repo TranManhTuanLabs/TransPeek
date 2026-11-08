@@ -39,20 +39,27 @@ struct PopupPanelLayoutTests {
         }
         #expect(coordinator.allFinished)
         // Wait for the layout to settle: poll until the resize history
-        // is unchanged for a full 200ms window, up to 2s. A single fixed
-        // 100ms check was flaky on loaded CI runners — a late resize
-        // could land inside the check window even though the layout was
-        // still converging (failed in runs #61 and #66, passed in #62
-        // and #65 with the same code).
+        // is unchanged across two consecutive 200ms polls (400ms of
+        // stability), up to 5s. A single fixed 100ms check was flaky on
+        // loaded CI runners, and a single 200ms window was not enough —
+        // a stray late resize could land inside the window even though
+        // the layout had mostly converged (failed in runs #61, #66 and
+        // #70; passed in #62, #65, #67 and #68 with the same code).
         var settledCount = probe.heights.count
+        var stablePolls = 0
         var settled = false
-        for _ in 0..<10 {
+        for _ in 0..<25 {
             try await Task.sleep(for: .milliseconds(200))
             if probe.heights.count == settledCount {
-                settled = true
-                break
+                stablePolls += 1
+                if stablePolls >= 2 {
+                    settled = true
+                    break
+                }
+            } else {
+                settledCount = probe.heights.count
+                stablePolls = 0
             }
-            settledCount = probe.heights.count
         }
         #expect(settled, "Popup kept resizing: \(probe.heights)")
         #expect(controller.isVisible)
