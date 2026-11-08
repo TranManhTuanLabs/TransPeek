@@ -57,12 +57,24 @@ struct DictionarySettingsView: View {
             }
 
             Section(String(localized: "Add Link")) {
-                TextField(String(localized: "Name (e.g. Oxford)"), text: $newName)
-                TextField(
-                    String(localized: "URL template (e.g. https://…/{word})"),
-                    text: $newTemplate
-                )
-                .autocorrectionDisabled()
+                // Label above the field (not label + field on one stretched
+                // row): the two fields used to run label and placeholder
+                // side by side across the whole window.
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Name")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("", text: $newName, prompt: Text("e.g. Oxford"))
+                        .textFieldStyle(.roundedBorder)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("URL template")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("", text: $newTemplate, prompt: Text("e.g. https://…/{word}"))
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                }
                 Text("Use {word} for the first word of the selected text, or {text} for the whole selection. Example: https://dictionary.cambridge.org/dictionary/english/{word}")
                     .font(.caption)
                     .foregroundStyle(.secondary)

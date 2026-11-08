@@ -10,8 +10,9 @@ struct PopupView: View {
     var onOCRRequested: (() -> Void)?
     @State private var editableText: String = ""
     /// Text the dictionary links look up (SPEC §3.2): the text selected
-    /// inside the source editor when there is one, otherwise `nil` and the
-    /// bar falls back to the source text that opened the panel.
+    /// inside the source editor or a translation result when there is one,
+    /// otherwise `nil` and the bar falls back to the source text that
+    /// opened the panel.
     @State private var lookupText: String? = nil
     @State private var expandedProviders: Set<String> = []
     @State private var autoPlayedGeneration: Int = -1
@@ -258,7 +259,10 @@ struct PopupView: View {
                                     onRetry: {
                                         coordinator.retryProvider(provider)
                                     },
-                                    attachments: coordinator.sourceAttachments
+                                    attachments: coordinator.sourceAttachments,
+                                    onSelectionChange: { selected in
+                                        lookupText = selected
+                                    }
                                 )
                             }
                         }

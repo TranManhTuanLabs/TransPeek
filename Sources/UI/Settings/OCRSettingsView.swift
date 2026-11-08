@@ -42,6 +42,11 @@ struct OCRSettingsView: View {
                 Text("Hỗ trợ tiếng Việt phụ thuộc vào phiên bản macOS và được kiểm tra lúc chạy: nếu máy không hỗ trợ tiếng Việt, Vision sẽ chỉ dùng các ngôn ngữ còn lại.")
             }
         }
+        // Same grouped look as the General tab: the plain form style
+        // stretches the rows across the whole window, which is what made
+        // this tab look bare and off-center.
+        .formStyle(.grouped)
+        .padding()
     }
 
     private func languageName(for code: String) -> String {

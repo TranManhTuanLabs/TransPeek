@@ -1,3 +1,4 @@
+import AppKit
 import Defaults
 import SwiftUI
 
@@ -13,8 +14,14 @@ struct ProviderResultCard: View {
     var onTranslate: (() -> Void)?
     var onRetry: (() -> Void)?
     var attachments: [String: SourceImageAttachment] = [:]
+    /// Reports the text selected inside the result, or `nil` for an empty
+    /// selection, so the dictionary links can follow it (SPEC §3.2).
+    var onSelectionChange: ((String?) -> Void)?
     @State private var isCopyPulsing = false
     @State private var pulseTask: Task<Void, Never>?
+    /// Measured height of the selectable result text (an estimate until the
+    /// text view reports its real height after layout).
+    @State private var resultTextHeight: CGFloat = 48
     @Default(.popupFontSize) private var fontSize
     @Default(.popupFontName) private var fontName
     @Default(.ttsAccent) private var ttsAccent
@@ -190,15 +197,25 @@ struct ProviderResultCard: View {
         let spokenText = MarkdownSupport.speakableText(text)
 
         return VStack(alignment: .leading, spacing: 4) {
-            if offersMarkdown && viewMode != .source {
-                MarkdownResultView(text: text, font: font, attachments: attachments, showsAttachments: viewMode == .rich)
+            if offersMarkdown && viewMode == .rich {
+                // Inline images need Textual's image rendering; selection
+                // tracking is not available in this mode.
+                MarkdownResultView(text: text, font: font, attachments: attachments, showsAttachments: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text(text)
-                    .font(font)
-                    .foregroundStyle(.primary)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                // Selectable result text: a read-only NSTextView that reports
+                // the selection, so the dictionary links follow a selection
+                // made inside the translation (SPEC §3.2). SwiftUI Text and
+                // Textual's StructuredText cannot report their selection.
+                SelectableResultTextView(
+                    text: text,
+                    font: NSFont.popup(name: fontName, size: CGFloat(fontSize)),
+                    isMarkdown: offersMarkdown && viewMode != .source,
+                    onSelectionChange: onSelectionChange,
+                    onContentHeightChange: { height in resultTextHeight = height }
+                )
+                .frame(height: resultTextHeight, alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
 
             if offersMarkdown || (canSpeak && ttsCoordinator != nil) || onCopy != nil {

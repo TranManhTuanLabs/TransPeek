@@ -80,6 +80,12 @@ struct SettingsView: View {
                         Form {
                             DictionarySettingsView()
                         }
+                        // Same grouped look as the General tab: the plain
+                        // form style stretches label + field across the
+                        // whole window, which is what made this tab look
+                        // bare and off-center.
+                        .formStyle(.grouped)
+                        .padding()
                     }
                 case .ocr:
                     ScrollView {
