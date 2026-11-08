@@ -20,14 +20,14 @@ struct SettingsView: View {
 
     private var tabHeight: CGFloat {
         switch selectedTab {
-        case .general: return 840
-        case .excludedApps: return 480
-        case .services: return 580
-        case .providerOrder: return 520
-        case .dictionary: return 520
-        case .ocr: return 520
-        case .audio: return 520
-        case .about: return 420
+        case .general: return 860
+        case .excludedApps: return 500
+        case .services: return 600
+        case .providerOrder: return 540
+        case .dictionary: return 540
+        case .ocr: return 540
+        case .audio: return 540
+        case .about: return 440
         }
     }
 
@@ -97,26 +97,31 @@ struct SettingsView: View {
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
     }
 
-    /// One section tab: icon + title, centered in its equal share of
-    /// the bar. The icon is .imageScale(.large) so it reads at a
-    /// glance instead of the small native-toolbar size; hovering shows
-    /// the section name as a tooltip. Kept as a helper so the type
-    /// checker sees a small expression (inlining the whole Button
-    /// inside a builder made it give up, run #57).
+    /// One section tab: icon on top, title underneath, centered in
+    /// its equal share of the bar. The icon is .imageScale(.large)
+    /// so it reads at a glance instead of the small native-toolbar
+    /// size; hovering shows the section name as a tooltip. Kept as
+    /// a helper so the type checker sees a small expression
+    /// (inlining the whole Button inside a builder made it give up,
+    /// run #57).
     private func tabButton(_ tab: SettingsTab) -> some View {
         Button {
             selectedTab = tab
         } label: {
-            Label(tab.title, systemImage: tab.icon)
-                .font(.subheadline)
-                .imageScale(.large)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
-                .padding(.vertical, 6)
-                .padding(.horizontal, 8)
-                .frame(maxWidth: .infinity)
-                .background(tabBackground(for: tab), in: RoundedRectangle(cornerRadius: 8))
-                .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+            VStack(spacing: 3) {
+                Image(systemName: tab.icon)
+                    .font(.title3)
+                    .imageScale(.large)
+                Text(tab.title)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .background(tabBackground(for: tab), in: RoundedRectangle(cornerRadius: 8))
+            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
         }
         .buttonStyle(.plain)
         .help(tab.title)
