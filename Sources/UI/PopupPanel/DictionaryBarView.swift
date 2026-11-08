@@ -5,16 +5,18 @@ import SwiftUI
 /// Bottom row of dictionary links in the float panel (SPEC §3.2).
 ///
 /// One button per link from `DictionaryLink.load()`. Tapping opens the link
-/// for the current source text in the default browser (new tab vs. window is
-/// the browser's choice). Favicons load asynchronously via `FaviconService`;
-/// until one arrives the button shows the link's SF Symbol, or the first
-/// letter of its name in a rounded tile.
+/// for the current lookup text in the default browser (new tab vs. window is
+/// the browser's choice). The lookup text is the text the user selected
+/// inside the panel when there is one, otherwise the source text that opened
+/// the panel — see `PopupView.lookupText`. Favicons load asynchronously via
+/// `FaviconService`; until one arrives the button shows the link's SF Symbol,
+/// or the first letter of its name in a rounded tile.
 ///
-/// Renders nothing for empty source text. The parent (`PopupView`) places this
+/// Renders nothing for empty lookup text. The parent (`PopupView`) places this
 /// at the bottom of the panel; links are reloaded whenever the panel opens so
 /// Settings changes apply without relaunching.
 struct DictionaryBarView: View {
-    let sourceText: String
+    let lookupText: String
 
     @Default(.dictionaryDisplayMode) private var displayMode
     @Default(.popupFontSize) private var fontSize
@@ -22,7 +24,7 @@ struct DictionaryBarView: View {
     @State private var links: [DictionaryLink] = DictionaryLink.load()
 
     var body: some View {
-        if sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if lookupText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             EmptyView()
         } else {
             HStack(spacing: 12) {
@@ -42,7 +44,7 @@ struct DictionaryBarView: View {
 
     private func dictionaryButton(for link: DictionaryLink) -> some View {
         Button {
-            guard let url = link.url(for: sourceText) else { return }
+            guard let url = link.url(for: lookupText) else { return }
             NSWorkspace.shared.open(url)
         } label: {
             HStack(spacing: 4) {
