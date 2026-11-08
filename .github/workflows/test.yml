@@ -28,10 +28,27 @@ jobs:
         with:
           install: true
 
+      - name: Cache Swift Package Manager artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
       - name: Resolve dependencies and generate project
         run: |
           cp Configurations/Signing.xcconfig.example Configurations/Signing.xcconfig
-          tuist install && tuist generate --no-open
+          attempt=1
+          until tuist install && tuist generate --no-open; do
+            if [ "$attempt" -ge 3 ]; then
+              echo "Dependency resolve failed after 3 attempts"
+              exit 1
+            fi
+            echo "Dependency resolve failed (attempt $attempt/3); retrying in 30s..."
+            attempt=$((attempt + 1))
+            sleep 30
+          done
 
       - name: Run tests
         run: |
