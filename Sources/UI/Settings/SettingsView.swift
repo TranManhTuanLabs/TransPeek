@@ -32,93 +32,94 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        // Content of the selected section. The Dictionary and OCR
-        // tabs are wrapped in a ScrollView so their content can
-        // always be scrolled to the bottom (the link list grows as
-        // links are added); the other sections are Forms/Lists that
-        // scroll on their own.
-        Group {
-            switch selectedTab {
-            case .general:
-                GeneralSettingsView()
-            case .excludedApps:
-                ExcludedAppsSettingsView()
-            case .services:
-                ServiceSettingsView(registry: registry)
-            case .providerOrder:
-                ProviderOrderSettingsView(registry: registry)
-            case .dictionary:
-                ScrollView {
-                    Form {
-                        DictionarySettingsView()
-                    }
-                    // Same grouped look as the General tab: the plain
-                    // form style stretches label + field across the
-                    // whole window, which is what made this tab look
-                    // bare and off-center.
-                    .formStyle(.grouped)
-                    .padding()
+        VStack(spacing: 0) {
+            // Top tab bar, favorites-bar style: one tab per section,
+            // spread evenly across the full width of the window, each
+            // tab centered in its share — like a browser's favorites
+            // bar. This replaces the native toolbar (run #65), whose
+            // icons came out small and whose labels collapsed to
+            // icon-only when the window was narrow. The window title
+            // stays hidden (see SettingsWindowController), so the bar
+            // is the whole top of the window.
+            HStack(spacing: 4) {
+                ForEach(tabs, id: \.self) { tab in
+                    tabButton(tab)
                 }
-            case .ocr:
-                ScrollView {
-                    OCRSettingsView()
-                }
-            case .audio:
-                TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
-            case .about:
-                AboutSettingsView(updaterController: updaterController)
             }
+            .padding([.top, .horizontal], 12)
+
+            Divider()
+                .padding(.top, 8)
+
+            // Content of the selected section. The Dictionary and OCR
+            // tabs are wrapped in a ScrollView so their content can
+            // always be scrolled to the bottom (the link list grows as
+            // links are added); the other sections are Forms/Lists that
+            // scroll on their own.
+            Group {
+                switch selectedTab {
+                case .general:
+                    GeneralSettingsView()
+                case .excludedApps:
+                    ExcludedAppsSettingsView()
+                case .services:
+                    ServiceSettingsView(registry: registry)
+                case .providerOrder:
+                    ProviderOrderSettingsView(registry: registry)
+                case .dictionary:
+                    ScrollView {
+                        Form {
+                            DictionarySettingsView()
+                        }
+                        // Same grouped look as the General tab: the plain
+                        // form style stretches label + field across the
+                        // whole window, which is what made this tab look
+                        // bare and off-center.
+                        .formStyle(.grouped)
+                        .padding()
+                    }
+                case .ocr:
+                    ScrollView {
+                        OCRSettingsView()
+                    }
+                case .audio:
+                    TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
+                case .about:
+                    AboutSettingsView(updaterController: updaterController)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         // The window is resizable (see SettingsWindowController): the
         // 420 floor lets it shrink below a section's ideal height, and
         // the scrolling Form/List content takes over instead of clipping
         // the bottom of the window off-screen.
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
-        // Native toolbar (SeekZip topbar pattern): the section tabs live
-        // in the window's toolbar instead of a hand-made HStack row, so
-        // they sit in the title bar like Xcode's Settings. The selected /
-        // hover styling is the same as the old tab bar. The tab button is
-        // a separate helper — inlining the whole Button (with its nested
-        // ternary background) inside the toolbar builder made the type
-        // checker give up ("unable to type-check this expression in
-        // reasonable time", run #57). A ForEach of ToolbarItems directly
-        // inside .toolbar is not allowed either — the toolbar builder
-        // treats the ForEach as a View and demands ToolbarItem conform to
-        // View ("buildExpression requires ToolbarItem conform to View",
-        // run #58) — so the ForEach lives inside a ToolbarItemGroup, whose
-        // content is a plain ViewBuilder.
-        // Placement is .principal (centered) rather than .navigation
-        // (leading): the tab group sits centered in the toolbar, and
-        // hiding the window title (see SettingsWindowController) leaves
-        // the toolbar clear for it.
-        .toolbar {
-            ToolbarItemGroup(placement: .principal) {
-                ForEach(tabs, id: \.self) { tab in
-                    tabButton(tab)
-                }
-            }
-        }
     }
 
-    /// One section tab for the toolbar: icon + title, with the selected /
-    /// hover tint. The title text stays — only the window title
-    /// ("TransPeek Settings") is hidden, not the tab labels. Kept out of
-    /// the toolbar builder so the type checker sees a small expression.
+    /// One section tab: icon + title, centered in its equal share of
+    /// the bar. The icon is .imageScale(.large) so it reads at a
+    /// glance instead of the small native-toolbar size; hovering shows
+    /// the section name as a tooltip. Kept as a helper so the type
+    /// checker sees a small expression (inlining the whole Button
+    /// inside a builder made it give up, run #57).
     private func tabButton(_ tab: SettingsTab) -> some View {
         Button {
             selectedTab = tab
         } label: {
             Label(tab.title, systemImage: tab.icon)
                 .font(.subheadline)
+                .imageScale(.large)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
                 .padding(.vertical, 6)
                 .padding(.horizontal, 8)
+                .frame(maxWidth: .infinity)
                 .background(tabBackground(for: tab), in: RoundedRectangle(cornerRadius: 8))
                 .foregroundStyle(selectedTab == tab ? .primary : .secondary)
         }
         .buttonStyle(.plain)
+        .help(tab.title)
         .onHover { hovering in
             if hovering {
                 hoveredTab = tab
