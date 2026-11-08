@@ -88,8 +88,11 @@ struct SettingsView: View {
         // View ("buildExpression requires ToolbarItem conform to View",
         // run #58) — so the ForEach lives inside a ToolbarItemGroup, whose
         // content is a plain ViewBuilder.
+        // Placement is .principal (centered) rather than .navigation
+        // (leading): with icon-only tabs the group is narrow, and the
+        // centered placement spreads it evenly across the toolbar.
         .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
+            ToolbarItemGroup(placement: .principal) {
                 ForEach(tabs, id: \.self) { tab in
                     tabButton(tab)
                 }
@@ -97,23 +100,27 @@ struct SettingsView: View {
         }
     }
 
-    /// One section tab for the toolbar: icon + title, with the selected /
-    /// hover tint. Kept out of the toolbar builder so the type checker
-    /// sees a small expression.
+    /// One section tab for the toolbar: icon only, no title text, with
+    /// the selected / hover tint. Icon-only keeps the eight tabs narrow
+    /// so they spread evenly across the toolbar instead of crowding the
+    /// leading edge. The title is kept as a hover tooltip (.help) and as
+    /// the accessibility label, so the tab is still identifiable without
+    /// text. Kept out of the toolbar builder so the type checker sees a
+    /// small expression.
     private func tabButton(_ tab: SettingsTab) -> some View {
         Button {
             selectedTab = tab
         } label: {
-            Label(tab.title, systemImage: tab.icon)
-                .font(.subheadline)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+            Image(systemName: tab.icon)
+                .font(.title3)
                 .padding(.vertical, 6)
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 10)
                 .background(tabBackground(for: tab), in: RoundedRectangle(cornerRadius: 8))
                 .foregroundStyle(selectedTab == tab ? .primary : .secondary)
         }
         .buttonStyle(.plain)
+        .help(tab.title)
+        .accessibilityLabel(tab.title)
         .onHover { hovering in
             if hovering {
                 hoveredTab = tab

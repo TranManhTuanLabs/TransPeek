@@ -22,12 +22,20 @@ struct AboutSettingsView: View {
             Text("TransPeek")
                 .font(.title.bold())
 
-            // GitHub as an icon right under the app name (not a
-            // text-style link like the ones at the bottom).
+            // GitHub mark (the Octocat, drawn as GitHubMarkShape so it
+            // scales crisply) + the word "GitHub", right under the app
+            // name — not a text-style link like the ones at the bottom,
+            // and not the generic </> symbol, which reads as "code"
+            // rather than GitHub.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
-                Image(systemName: "chevron.left.forwardslash.chevron.right")
-                    .font(.system(size: 22))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 6) {
+                    GitHubMarkShape()
+                        .fill(.secondary)
+                        .frame(width: 20, height: 20)
+                    Text("GitHub")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             .buttonStyle(.plain)
             .help("View TransPeek on GitHub")
