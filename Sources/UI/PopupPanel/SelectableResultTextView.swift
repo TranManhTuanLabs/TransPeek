@@ -150,7 +150,7 @@ struct SelectableResultTextView: NSViewRepresentable {
         var styledRanges: [(range: NSRange, traits: NSFontDescriptor.SymbolicTraits)] = []
         mutable.enumerateAttributes(in: fullRange, options: []) { attrs, range, _ in
             var traits: NSFontDescriptor.SymbolicTraits = []
-            if let intent = attrs[.inlinePresentationIntent] as? NSInlinePresentationIntent {
+            if let intent = attrs[.inlinePresentationIntent] as? InlinePresentationIntent {
                 if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
                 if intent.contains(.emphasized) { traits.insert(.italic) }
                 if intent.contains(.code) { traits.insert(.monoSpace) }
