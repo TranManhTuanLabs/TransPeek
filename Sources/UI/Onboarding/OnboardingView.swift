@@ -242,9 +242,11 @@ struct OnboardingView: View {
                 }
             }
 
-            Text("Status updates automatically after granting")
+            Text("Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
 
             Spacer()
         }

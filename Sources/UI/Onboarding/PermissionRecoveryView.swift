@@ -42,6 +42,12 @@ struct PermissionRecoveryView: View {
             }
             .padding(.horizontal, 24)
 
+            Text("Status updates automatically after granting. If a status stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
+
             Spacer()
         }
         .onChange(of: permissionManager.allPermissionsGranted) {

@@ -11,6 +11,9 @@ final class PermissionManager: PermissionChecking {
     private(set) var isAccessibilityGranted = false
     private(set) var isScreenRecordingGranted = false
     private var pollTimer: Timer?
+    /// Kept for the app's lifetime; the manager is created once at launch
+    /// and never deallocated, so this observer needs no removal.
+    private var activationObserver: NSObjectProtocol?
 
     var allPermissionsGranted: Bool {
         isAccessibilityGranted && isScreenRecordingGranted
@@ -19,6 +22,36 @@ final class PermissionManager: PermissionChecking {
     init() {
         isAccessibilityGranted = AXIsProcessTrusted()
         isScreenRecordingGranted = CGPreflightScreenCaptureAccess()
+        // Re-check when the app comes to the foreground: the user may have
+        // granted a permission in System Settings while TransPeek was in the
+        // background, after polling already stopped. Without this, a grant
+        // made outside the app is never picked up until relaunch.
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refresh()
+            }
+        }
+    }
+
+    /// Re-read both permissions right now, and restart polling if either
+    /// is still missing (e.g. revoked after an update, or granted while
+    /// the app was inactive).
+    func refresh() {
+        let accessibility = AXIsProcessTrusted()
+        let screenRecording = CGPreflightScreenCaptureAccess()
+        if accessibility != isAccessibilityGranted {
+            isAccessibilityGranted = accessibility
+        }
+        if screenRecording != isScreenRecordingGranted {
+            isScreenRecordingGranted = screenRecording
+        }
+        if !allPermissionsGranted {
+            startPolling()
+        }
     }
 
     /// Prompt the system accessibility permission dialog.
@@ -56,14 +89,7 @@ final class PermissionManager: PermissionChecking {
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                let accessibility = AXIsProcessTrusted()
-                let screenRecording = CGPreflightScreenCaptureAccess()
-                if accessibility != self.isAccessibilityGranted {
-                    self.isAccessibilityGranted = accessibility
-                }
-                if screenRecording != self.isScreenRecordingGranted {
-                    self.isScreenRecordingGranted = screenRecording
-                }
+                self.refresh()
                 if self.allPermissionsGranted {
                     self.stopPolling()
                 }

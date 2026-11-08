@@ -52,6 +52,11 @@ struct AboutSettingsView: View {
             Spacer()
 
             HStack(spacing: 16) {
+                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
+                    Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
+                }
+                .buttonStyle(.link)
+
                 Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/issues")!) {
                     Label("Issue Feedback", systemImage: "ladybug")
                 }
