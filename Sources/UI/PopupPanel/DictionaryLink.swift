@@ -34,7 +34,7 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
         ),
         DictionaryLink(
             name: "YouGlish",
-            urlTemplate: "https://youglish.com/pronounce/{word}/english"
+            urlTemplate: "https://youglish.com/pronounce/{text}/english"
         ),
     ]
 
