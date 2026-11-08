@@ -153,9 +153,6 @@ struct PopupView: View {
                     onSubmit: {
                         coordinator.translate(editableText)
                     },
-                    onSelectionChange: { selected in
-                        lookupText = selected
-                    },
                     onCopyAndClose: {
                         copySourceAndClose()
                     },
@@ -165,7 +162,10 @@ struct PopupView: View {
                     onContentHeightChange: { preferredHeight in
                         expandInputHeightIfNeeded(for: preferredHeight)
                     },
-                    attachments: coordinator.sourceAttachments
+                    attachments: coordinator.sourceAttachments,
+                    onSelectionChange: { selected in
+                        lookupText = selected
+                    }
                 )
                 .frame(height: inputHeight)
                 .padding(.horizontal, contentHorizontalPadding)
