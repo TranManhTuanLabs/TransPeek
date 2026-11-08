@@ -108,7 +108,18 @@ final class PermissionManager: PermissionChecking {
     }
 
     /// Open System Settings > Screen Recording.
+    ///
+    /// The request comes FIRST, while TransPeek is still frontmost:
+    /// `CGRequestScreenCaptureAccess()` is what registers this build in
+    /// the Screen Recording list. A read-only check never registers it,
+    /// and a request fired after Settings opens (app backgrounded) does
+    /// not register the TCC row either — so opening Settings first would
+    /// leave the user staring at a list the app is not in. The request
+    /// is idempotent: if already granted or denied it just returns, and
+    /// Settings (opened right after) then shows the app in the list to
+    /// toggle by hand.
     func openScreenRecordingSettings() {
+        CGRequestScreenCaptureAccess()
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
             NSWorkspace.shared.open(url)
         }
