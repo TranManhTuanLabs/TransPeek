@@ -58,8 +58,12 @@ jobs:
             sleep 30
           done
 
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
       - name: Run tests
         run: |
+          set -o pipefail
           # RFC 8032 public test vector for Sparkle's test-host initialization.
           xcodebuild test \
             -workspace TransPeek.xcworkspace \
@@ -68,7 +72,8 @@ jobs:
             -resultBundlePath build/Tests.xcresult \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo= \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+          | xcbeautify
 
       - name: Build app
         run: |
