@@ -51,6 +51,11 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
             defer: false
         )
         window.title = "TransPeek \(String(localized: "Settings"))"
+        // Hide the title text from the title bar: the tab bar in the
+        // toolbar is the navigation, and the "TransPeek Settings" text
+        // crowding it is what looked off. The title is still set (used
+        // for the Window menu / miniaturized window), just not displayed.
+        window.titleVisibility = .hidden
         window.contentView = hostingView
         window.contentMinSize = NSSize(width: 720, height: 420)
         // Follow the user across Spaces, like the popup panel and trigger
