@@ -83,6 +83,7 @@ jobs:
             -configuration Release \
             -derivedDataPath build \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Zip app
