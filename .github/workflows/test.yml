@@ -26,8 +26,8 @@ jobs:
       - name: Cache mise tools (Tuist)
         uses: actions/cache@v4
         with:
-          path: ~/.local/share/mise
-          key: mise-${{ runner.os }}-${{ hashFiles('.mise.toml', '.tuist-version') }}
+          path: ~/.local/share/mise/installs
+          key: mise-${{ runner.os }}-${{ hashFiles('.mise.toml', '.tuist-version') }}-v2
           restore-keys: |
             mise-${{ runner.os }}-
 
@@ -39,8 +39,8 @@ jobs:
       - name: Cache Swift Package Manager artifacts
         uses: actions/cache@v4
         with:
-          path: ~/Library/Caches/org.swift.swiftpm
-          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}
+          path: ~/Library/Caches/org.swift.swiftpm/artifacts
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved') }}-v2
           restore-keys: |
             spm-${{ runner.os }}-
 
