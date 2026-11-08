@@ -82,10 +82,15 @@ struct SettingsView: View {
         // a separate helper — inlining the whole Button (with its nested
         // ternary background) inside the toolbar builder made the type
         // checker give up ("unable to type-check this expression in
-        // reasonable time", run #57).
+        // reasonable time", run #57). A ForEach of ToolbarItems directly
+        // inside .toolbar is not allowed either — the toolbar builder
+        // treats the ForEach as a View and demands ToolbarItem conform to
+        // View ("buildExpression requires ToolbarItem conform to View",
+        // run #58) — so the ForEach lives inside a ToolbarItemGroup, whose
+        // content is a plain ViewBuilder.
         .toolbar {
-            ForEach(tabs, id: \.self) { tab in
-                ToolbarItem(placement: .navigation) {
+            ToolbarItemGroup(placement: .navigation) {
+                ForEach(tabs, id: \.self) { tab in
                     tabButton(tab)
                 }
             }
