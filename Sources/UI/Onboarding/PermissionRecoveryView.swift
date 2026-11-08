@@ -42,7 +42,26 @@ struct PermissionRecoveryView: View {
             }
             .padding(.horizontal, 24)
 
-            Text("Status updates automatically after granting. If a status stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch.")
+            // A grant made while TransPeek is running only takes effect
+            // after a relaunch, so do not close as if it were already
+            // usable — offer a one-click relaunch instead.
+            if permissionManager.allPermissionsGranted && permissionManager.needsRelaunch {
+                VStack(spacing: 8) {
+                    Text("Permissions granted — relaunch so macOS applies them.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+
+                    Button("Relaunch TransPeek") {
+                        AppRelaunch.relaunch()
+                    }
+                    .controlSize(.large)
+                    .buttonStyle(.borderedProminent)
+                }
+                .padding(.horizontal, 24)
+            }
+
+            Text("Status updates automatically after granting. If a status stays unchanged after granting and relaunching, remove TransPeek from that list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches the current build.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -51,7 +70,10 @@ struct PermissionRecoveryView: View {
             Spacer()
         }
         .onChange(of: permissionManager.allPermissionsGranted) {
-            if permissionManager.allPermissionsGranted {
+            // Close once everything is granted and usable. When a grant
+            // appeared while running, it only takes effect after a
+            // relaunch — stay open and show the relaunch button instead.
+            if permissionManager.allPermissionsGranted && !permissionManager.needsRelaunch {
                 onAllGranted()
             }
         }

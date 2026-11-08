@@ -242,7 +242,7 @@ struct OnboardingView: View {
                 }
             }
 
-            Text("Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch.")
+            Text("Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch. If it still stays unchanged after relaunching, remove TransPeek from the Screen Recording list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches it.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -482,7 +482,7 @@ struct OnboardingView: View {
                 .controlSize(.large)
             }
 
-            Text("Status updates automatically after granting")
+            Text("Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies the permission on relaunch. If it still stays unchanged after relaunching, remove TransPeek from that list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches it.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 

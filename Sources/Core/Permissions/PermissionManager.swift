@@ -5,23 +5,51 @@ import AppKit
 nonisolated(unsafe) private let axTrustedPromptKey = "AXTrustedCheckOptionPrompt" as CFString
 
 /// Manages Accessibility and Screen Recording permission states with polling.
+///
+/// Two macOS realities shape this class, and both are why a grant made
+/// outside the app is not enough on its own:
+/// - Screen Recording (and Accessibility) only take effect when the app
+///   launches. A grant made while TransPeek is running is visible to the
+///   permission checks, but the features do not work until relaunch.
+///   `needsRelaunch` tracks exactly that: a permission that flipped from
+///   denied to granted while this process was running.
+/// - This build is unsigned, so macOS has no stable code-signing identity
+///   to attach a grant to. A grant made for a previous build can stay
+///   switched on in System Settings while binding to the old binary, so
+///   the new build still reads as denied. The signed upstream releases
+///   do not have this problem; until TransPeek is signed, a stale entry
+///   has to be removed and re-added by hand (see the recovery view).
 @MainActor
 @Observable
 final class PermissionManager: PermissionChecking {
     private(set) var isAccessibilityGranted = false
     private(set) var isScreenRecordingGranted = false
+    /// True once a permission flips from denied to granted while this
+    /// process is running. The grant only takes effect after a relaunch.
+    /// False at launch (any grant is already in effect) and after a
+    /// permission is revoked again.
+    private(set) var needsRelaunch = false
     private var pollTimer: Timer?
     /// Kept for the app's lifetime; the manager is created once at launch
     /// and never deallocated, so this observer needs no removal.
     private var activationObserver: NSObjectProtocol?
+    /// Permission checks, injectable so tests can flip them. Default to
+    /// the real system calls.
+    private let checkAccessibility: () -> Bool
+    private let checkScreenRecording: () -> Bool
 
     var allPermissionsGranted: Bool {
         isAccessibilityGranted && isScreenRecordingGranted
     }
 
-    init() {
-        isAccessibilityGranted = AXIsProcessTrusted()
-        isScreenRecordingGranted = CGPreflightScreenCaptureAccess()
+    init(
+        checkAccessibility: @escaping () -> Bool = AXIsProcessTrusted,
+        checkScreenRecording: @escaping () -> Bool = CGPreflightScreenCaptureAccess
+    ) {
+        self.checkAccessibility = checkAccessibility
+        self.checkScreenRecording = checkScreenRecording
+        isAccessibilityGranted = checkAccessibility()
+        isScreenRecordingGranted = checkScreenRecording()
         // Re-check when the app comes to the foreground: the user may have
         // granted a permission in System Settings while TransPeek was in the
         // background, after polling already stopped. Without this, a grant
@@ -41,8 +69,20 @@ final class PermissionManager: PermissionChecking {
     /// is still missing (e.g. revoked after an update, or granted while
     /// the app was inactive).
     func refresh() {
-        let accessibility = AXIsProcessTrusted()
-        let screenRecording = CGPreflightScreenCaptureAccess()
+        let accessibility = checkAccessibility()
+        let screenRecording = checkScreenRecording()
+        // A grant that appears while this process is running only takes
+        // effect after a relaunch; remember that so the UI can offer one
+        // instead of closing as if the permission were already usable.
+        // A revocation clears it again — relaunching cannot restore a
+        // permission that is no longer granted.
+        if (!isAccessibilityGranted && accessibility)
+            || (!isScreenRecordingGranted && screenRecording) {
+            needsRelaunch = true
+        } else if (isAccessibilityGranted && !accessibility)
+            || (isScreenRecordingGranted && !screenRecording) {
+            needsRelaunch = false
+        }
         if accessibility != isAccessibilityGranted {
             isAccessibilityGranted = accessibility
         }
