@@ -6,6 +6,14 @@ nonisolated(unsafe) private let axTrustedPromptKey = "AXTrustedCheckOptionPrompt
 
 /// Manages Accessibility and Screen Recording permission states with polling.
 ///
+/// One mechanism only, like upstream MoePeek: a 1.5 s poll that starts
+/// whenever a permission is missing and stops once all are granted. An
+/// earlier version also re-checked on `didBecomeActive`, but that was a
+/// second mechanism doing the same job — removed to match upstream.
+/// (Tradeoff, same as upstream: if a permission is revoked after all
+/// were granted, polling has already stopped, so the revocation is only
+/// noticed after a relaunch.)
+///
 /// Two macOS realities shape this class, and both are why a grant made
 /// outside the app is not enough on its own:
 /// - Screen Recording (and Accessibility) only take effect when the app
@@ -30,9 +38,6 @@ final class PermissionManager: PermissionChecking {
     /// permission is revoked again.
     private(set) var needsRelaunch = false
     private var pollTimer: Timer?
-    /// Kept for the app's lifetime; the manager is created once at launch
-    /// and never deallocated, so this observer needs no removal.
-    private var activationObserver: NSObjectProtocol?
     /// Permission checks, injectable so tests can flip them. Default to
     /// the real system calls.
     private let checkAccessibility: () -> Bool
@@ -50,19 +55,6 @@ final class PermissionManager: PermissionChecking {
         self.checkScreenRecording = checkScreenRecording
         isAccessibilityGranted = checkAccessibility()
         isScreenRecordingGranted = checkScreenRecording()
-        // Re-check when the app comes to the foreground: the user may have
-        // granted a permission in System Settings while TransPeek was in the
-        // background, after polling already stopped. Without this, a grant
-        // made outside the app is never picked up until relaunch.
-        activationObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refresh()
-            }
-        }
     }
 
     /// Re-read both permissions right now, and restart polling if either

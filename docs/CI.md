@@ -36,16 +36,20 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
 
 ## Caching (rule: cache needed dependencies under ~80 MB)
 
-- SPM artifacts: `~/Library/Caches/org.swift.swiftpm`, key by
-  `Package.resolved` (+ `spm-<os>-` restore key).
-- mise tools (Tuist): `~/.local/share/mise`, key by `.mise.toml` +
-  `.tuist-version` (+ `mise-<os>-` restore key).
+- SPM artifacts: `~/Library/Caches/org.swift.swiftpm/artifacts`, key by
+  `Package.resolved` (+ `spm-<os>-` restore key). Narrowed from the whole
+  `org.swift.swiftpm` dir (measured ~143 MB in run #53) — only the
+  downloaded artifact zips are cached, which is what the Sparkle 504
+  was about; checkouts re-clone fast and resolve already retries 3 times.
+- mise tools (Tuist): `~/.local/share/mise/installs`, key by `.mise.toml` +
+  `.tuist-version` (+ `mise-<os>-` restore key). Narrowed from the whole
+  `~/.local/share/mise` dir (measured ~94 MB in run #53).
+- Both keys carry a `-v2` suffix so the narrowed cache is stored under a
+  new key; the restore-keys fall back to the old cache on the first run.
 - The resolve step retries 3 times with 30 s between tries: the Sparkle
   binary zip download used to fail intermittently with HTTP 504 from GitHub,
   and the retry + cache made that go away. A red run at "Resolve
   dependencies" is usually that flake — re-run before touching code.
-- Open debt: verify the real sizes of both caches from a run log; if either
-  is over ~80 MB, narrow the cached paths.
 
 ## Reading a red run
 
@@ -74,3 +78,14 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   type and reads the intent from its runs directly instead of bridging.
 - `upload-artifact` with a directory path loses the directory itself — zip
   the `.app` first (`ditto -c -k --keepParent`).
+- Do not inline a whole `Button` (with a nested ternary in `.background`)
+  inside a `.toolbar` builder: the type checker gives up with "unable to
+  type-check this expression in reasonable time" (run #57). Extract the tab
+  button into a helper function (and a helper for the background tint) so
+  the toolbar builder only sees small expressions.
+- Do not put a `ForEach` of `ToolbarItem`s directly inside `.toolbar { }`:
+  the toolbar builder treats the `ForEach` as a `View` and demands
+  `ToolbarItem` conform to `View` ("static method 'buildExpression'
+  requires that 'ToolbarItem<...>' conform to 'View'", run #58). Put the
+  `ForEach` inside a `ToolbarItemGroup(placement: .navigation)`, whose
+  content is a plain `@ViewBuilder`.
