@@ -42,13 +42,21 @@ final class SettingsWindowController: NSObject, NSWindowDelegate {
 
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: NSSize(width: 720, height: 680)),
-            styleMask: [.titled, .closable],
+            // Resizable + miniaturizable, like a normal app window: drag a
+            // corner/edge to shrink or enlarge it. (Previously only
+            // .titled + .closable, so the tall fixed-height content could
+            // run off the bottom of the screen with no way to shrink it.)
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
         window.title = "TransPeek \(String(localized: "Settings"))"
         window.contentView = hostingView
         window.contentMinSize = NSSize(width: 720, height: 420)
+        // Follow the user across Spaces, like the popup panel and trigger
+        // icon do, so Settings opened from the menu bar while another app
+        // is fullscreen appears on that Space instead of nowhere.
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.center()
         window.isReleasedWhenClosed = false
         window.delegate = self
