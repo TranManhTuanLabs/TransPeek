@@ -2,7 +2,7 @@ import AppKit
 import Testing
 @testable import TransPeek
 
-@Suite struct SelectableResultTextViewTests {
+@Suite @MainActor struct SelectableResultTextViewTests {
     private var baseFont: NSFont {
         .systemFont(ofSize: 14)
     }

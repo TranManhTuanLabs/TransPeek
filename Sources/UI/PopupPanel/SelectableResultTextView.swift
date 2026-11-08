@@ -141,8 +141,31 @@ struct SelectableResultTextView: NSViewRepresentable {
         else { return nil }
         let mutable = NSMutableAttributedString(attributedString: parsed)
         let fullRange = NSRange(location: 0, length: mutable.length)
-        mutable.enumerateAttribute(.font, in: fullRange) { value, range, _ in
-            let traits = (value as? NSFont)?.fontDescriptor.symbolicTraits ?? []
+        // The Markdown parser marks bold/italic/code with the
+        // `.inlinePresentationIntent` attribute; the `.font` runs it
+        // produces are a uniform default font, so reading font traits
+        // alone finds no bold/monospace (run #51). Collect the styled
+        // ranges first and apply afterwards — never mutate the string
+        // while enumerating it.
+        var styledRanges: [(range: NSRange, traits: NSFontDescriptor.SymbolicTraits)] = []
+        mutable.enumerateAttributes(in: fullRange, options: []) { attrs, range, _ in
+            var traits: NSFontDescriptor.SymbolicTraits = []
+            if let intent = attrs[.inlinePresentationIntent] as? NSInlinePresentationIntent {
+                if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
+                if intent.contains(.emphasized) { traits.insert(.italic) }
+                if intent.contains(.code) { traits.insert(.monoSpace) }
+            }
+            // Fall back to the parsed font's own traits, in case the
+            // parser styled a run with a concrete font instead.
+            if let font = attrs[.font] as? NSFont {
+                traits.formUnion(font.fontDescriptor.symbolicTraits)
+            }
+            if !traits.isEmpty {
+                styledRanges.append((range, traits))
+            }
+        }
+        mutable.addAttribute(.font, value: baseFont, range: fullRange)
+        for (range, traits) in styledRanges {
             mutable.addAttribute(.font, value: font(base: baseFont, traits: traits), range: range)
         }
         mutable.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
@@ -150,18 +173,25 @@ struct SelectableResultTextView: NSViewRepresentable {
     }
 
     /// The base popup font with the given symbolic traits applied (bold /
-    /// italic / monospace). Falls back to the base font when the family has
-    /// no matching variant.
+    /// italic / monospace). The system font family has no monospace
+    /// variant, so a monospace run gets an explicit monospace font
+    /// (keeping the bold weight when present) instead of relying on
+    /// `NSFontManager.convert`, which may return the base font unchanged.
     private static func font(base: NSFont, traits: NSFontDescriptor.SymbolicTraits) -> NSFont {
+        if traits.contains(.monoSpace) {
+            let weight: NSFont.Weight = traits.contains(.bold) ? .bold : .regular
+            var result = NSFont.monospacedSystemFont(ofSize: base.pointSize, weight: weight)
+            if traits.contains(.italic) {
+                result = NSFontManager.shared.convert(result, toHaveTrait: .italicFontMask)
+            }
+            return result
+        }
         var result = base
         if traits.contains(.bold) {
             result = NSFontManager.shared.convert(result, toHaveTrait: .boldFontMask)
         }
         if traits.contains(.italic) {
             result = NSFontManager.shared.convert(result, toHaveTrait: .italicFontMask)
-        }
-        if traits.contains(.monoSpace) {
-            result = NSFont.monospacedSystemFont(ofSize: base.pointSize, weight: .regular)
         }
         return result
     }
