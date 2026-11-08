@@ -32,11 +32,56 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Top tab bar: one tab per section, spread horizontally
-            // across the top. Clicking a tab opens its section.
-            HStack(spacing: 4) {
-                ForEach(tabs, id: \.self) { tab in
+        // Content of the selected section. The Dictionary and OCR
+        // tabs are wrapped in a ScrollView so their content can
+        // always be scrolled to the bottom (the link list grows as
+        // links are added); the other sections are Forms/Lists that
+        // scroll on their own.
+        Group {
+            switch selectedTab {
+            case .general:
+                GeneralSettingsView()
+            case .excludedApps:
+                ExcludedAppsSettingsView()
+            case .services:
+                ServiceSettingsView(registry: registry)
+            case .providerOrder:
+                ProviderOrderSettingsView(registry: registry)
+            case .dictionary:
+                ScrollView {
+                    Form {
+                        DictionarySettingsView()
+                    }
+                    // Same grouped look as the General tab: the plain
+                    // form style stretches label + field across the
+                    // whole window, which is what made this tab look
+                    // bare and off-center.
+                    .formStyle(.grouped)
+                    .padding()
+                }
+            case .ocr:
+                ScrollView {
+                    OCRSettingsView()
+                }
+            case .audio:
+                TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
+            case .about:
+                AboutSettingsView(updaterController: updaterController)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // The window is resizable (see SettingsWindowController): the
+        // 420 floor lets it shrink below a section's ideal height, and
+        // the scrolling Form/List content takes over instead of clipping
+        // the bottom of the window off-screen.
+        .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
+        // Native toolbar (SeekZip topbar pattern): the section tabs live
+        // in the window's toolbar instead of a hand-made HStack row, so
+        // they sit in the title bar like Xcode's Settings. The selected /
+        // hover styling is the same as the old tab bar.
+        .toolbar {
+            ForEach(tabs, id: \.self) { tab in
+                ToolbarItem(placement: .navigation) {
                     Button {
                         selectedTab = tab
                     } label: {
@@ -46,7 +91,6 @@ struct SettingsView: View {
                             .minimumScaleFactor(0.85)
                             .padding(.vertical, 6)
                             .padding(.horizontal, 8)
-                            .frame(maxWidth: .infinity)
                             .background(
                                 selectedTab == tab
                                     ? Color.accentColor.opacity(0.18)
@@ -67,55 +111,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            .padding([.top, .horizontal], 12)
-
-            Divider()
-                .padding(.top, 8)
-
-            // Content of the selected section. The Dictionary and OCR
-            // tabs are wrapped in a ScrollView so their content can
-            // always be scrolled to the bottom (the link list grows as
-            // links are added); the other sections are Forms/Lists that
-            // scroll on their own.
-            Group {
-                switch selectedTab {
-                case .general:
-                    GeneralSettingsView()
-                case .excludedApps:
-                    ExcludedAppsSettingsView()
-                case .services:
-                    ServiceSettingsView(registry: registry)
-                case .providerOrder:
-                    ProviderOrderSettingsView(registry: registry)
-                case .dictionary:
-                    ScrollView {
-                        Form {
-                            DictionarySettingsView()
-                        }
-                        // Same grouped look as the General tab: the plain
-                        // form style stretches label + field across the
-                        // whole window, which is what made this tab look
-                        // bare and off-center.
-                        .formStyle(.grouped)
-                        .padding()
-                    }
-                case .ocr:
-                    ScrollView {
-                        OCRSettingsView()
-                    }
-                case .audio:
-                    TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
-                case .about:
-                    AboutSettingsView(updaterController: updaterController)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        // The window is resizable (see SettingsWindowController): the
-        // 420 floor lets it shrink below a section's ideal height, and
-        // the scrolling Form/List content takes over instead of clipping
-        // the bottom of the window off-screen.
-        .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
     }
 }
 
