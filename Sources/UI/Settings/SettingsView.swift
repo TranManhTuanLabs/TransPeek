@@ -9,6 +9,9 @@ struct SettingsView: View {
 
     @Default(.selectedSettingsTab) private var selectedTab
 
+    /// The tab the mouse is currently hovering, for a subtle hover tint.
+    @State private var hoveredTab: SettingsTab?
+
     /// Sections in the order they appear in the top bar.
     private let tabs: [SettingsTab] = [
         .general, .excludedApps, .services, .providerOrder,
@@ -47,12 +50,21 @@ struct SettingsView: View {
                             .background(
                                 selectedTab == tab
                                     ? Color.accentColor.opacity(0.18)
-                                    : Color.clear,
+                                    : hoveredTab == tab
+                                        ? Color.secondary.opacity(0.08)
+                                        : Color.clear,
                                 in: RoundedRectangle(cornerRadius: 8)
                             )
                             .foregroundStyle(selectedTab == tab ? .primary : .secondary)
                     }
                     .buttonStyle(.plain)
+                    .onHover { hovering in
+                        if hovering {
+                            hoveredTab = tab
+                        } else if hoveredTab == tab {
+                            hoveredTab = nil
+                        }
+                    }
                 }
             }
             .padding([.top, .horizontal], 12)

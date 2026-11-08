@@ -128,7 +128,11 @@ struct SelectableResultTextView: NSViewRepresentable {
     /// fails or yields nothing, so the caller falls back to plain text.
     static func attributedString(from markdown: String, baseFont: NSFont) -> NSAttributedString? {
         let hardened = MarkdownSupport.hardenLineBreaks(markdown)
-        let options = NSAttributedString.MarkdownOptions(
+        // NB: the options type lives on the Swift value type
+        // `AttributedString` (`MarkdownParsingOptions`) — there is no
+        // `NSAttributedString.MarkdownOptions`, and using that name fails
+        // to compile (run #50).
+        let options = AttributedString.MarkdownParsingOptions(
             interpretedSyntax: .full,
             failurePolicy: .returnPartiallyParsedIfPossible
         )
