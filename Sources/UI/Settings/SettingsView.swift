@@ -30,24 +30,41 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Apple-style top tab bar: the sections spread horizontally
-            // across the top as a segmented control, instead of the
-            // TabView sidebar list that hid sections on the side.
-            Picker("", selection: $selectedTab) {
+            // Top tab bar: one tab per section, spread horizontally
+            // across the top. Clicking a tab opens its section.
+            HStack(spacing: 4) {
                 ForEach(tabs, id: \.self) { tab in
-                    Label(tab.title, systemImage: tab.icon).tag(tab)
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        Label(tab.title, systemImage: tab.icon)
+                            .font(.subheadline)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                selectedTab == tab
+                                    ? Color.accentColor.opacity(0.18)
+                                    : Color.clear,
+                                in: RoundedRectangle(cornerRadius: 8)
+                            )
+                            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
             .padding([.top, .horizontal], 12)
 
             Divider()
                 .padding(.top, 8)
 
-            // Content of the selected section. Each section is a Form
-            // (or List) that scrolls, so a shorter window never hides
-            // content at the bottom.
+            // Content of the selected section. The Dictionary and OCR
+            // tabs are wrapped in a ScrollView so their content can
+            // always be scrolled to the bottom (the link list grows as
+            // links are added); the other sections are Forms/Lists that
+            // scroll on their own.
             Group {
                 switch selectedTab {
                 case .general:
@@ -59,11 +76,15 @@ struct SettingsView: View {
                 case .providerOrder:
                     ProviderOrderSettingsView(registry: registry)
                 case .dictionary:
-                    Form {
-                        DictionarySettingsView()
+                    ScrollView {
+                        Form {
+                            DictionarySettingsView()
+                        }
                     }
                 case .ocr:
-                    OCRSettingsView()
+                    ScrollView {
+                        OCRSettingsView()
+                    }
                 case .audio:
                     TTSSettingsView(registry: ttsRegistry, translationRegistry: registry, coordinator: ttsCoordinator)
                 case .about:
