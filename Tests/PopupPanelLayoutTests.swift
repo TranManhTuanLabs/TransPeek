@@ -38,12 +38,25 @@ struct PopupPanelLayoutTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(coordinator.allFinished)
-        try await Task.sleep(for: .milliseconds(300))
-        let settledCount = probe.heights.count
-        try await Task.sleep(for: .milliseconds(100))
+        // Wait for the layout to settle: poll until the resize history
+        // is unchanged for a full 200ms window, up to 2s. A single fixed
+        // 100ms check was flaky on loaded CI runners — a late resize
+        // could land inside the check window even though the layout was
+        // still converging (failed in runs #61 and #66, passed in #62
+        // and #65 with the same code).
+        var settledCount = probe.heights.count
+        var settled = false
+        for _ in 0..<10 {
+            try await Task.sleep(for: .milliseconds(200))
+            if probe.heights.count == settledCount {
+                settled = true
+                break
+            }
+            settledCount = probe.heights.count
+        }
+        #expect(settled, "Popup kept resizing: \(probe.heights)")
         #expect(controller.isVisible)
         #expect(probe.heights.count <= 30, "Resize history: \(probe.heights)")
-        #expect(probe.heights.count == settledCount)
         #expect(!probe.resizedDuringViewUpdate, "Automatic resizing reentered AppKit from a SwiftUI update action")
         if baselineHeight == 350 {
             #expect(!probe.heights.isEmpty, "Long results must still grow the popup")
