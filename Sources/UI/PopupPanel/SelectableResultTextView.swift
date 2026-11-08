@@ -144,25 +144,26 @@ struct SelectableResultTextView: NSViewRepresentable {
         // and assigns NO font at all — and the `NSAttributedString` bridge
         // does not reliably carry that intent (runs #51 and #53 both found
         // no traits when reading the bridged attributes). So build the
-        // NSAttributedString from the runs directly instead of bridging.
-        let plain = String(parsed.characters)
-        let mutable = NSMutableAttributedString(string: plain)
-        let fullRange = NSRange(location: 0, length: mutable.length)
-        mutable.addAttribute(.font, value: baseFont, range: fullRange)
+        // NSAttributedString run by run instead of bridging — and instead
+        // of converting run ranges to NSRange, which does not work:
+        // `AttributedString.Index` has no `utf16Offset` (run #55).
+        let result = NSMutableAttributedString()
         for run in parsed.runs {
-            guard let intent = run.inlinePresentationIntent else { continue }
+            let text = String(parsed[run.range].characters)
+            guard !text.isEmpty else { continue }
             var traits: NSFontDescriptor.SymbolicTraits = []
-            if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
-            if intent.contains(.emphasized) { traits.insert(.italic) }
-            if intent.contains(.code) { traits.insert(.monoSpace) }
-            guard !traits.isEmpty else { continue }
-            let lower = run.range.lowerBound.utf16Offset(in: parsed)
-            let upper = run.range.upperBound.utf16Offset(in: parsed)
-            let range = NSRange(location: lower, length: upper - lower)
-            mutable.addAttribute(.font, value: font(base: baseFont, traits: traits), range: range)
+            if let intent = run.inlinePresentationIntent {
+                if intent.contains(.stronglyEmphasized) { traits.insert(.bold) }
+                if intent.contains(.emphasized) { traits.insert(.italic) }
+                if intent.contains(.code) { traits.insert(.monoSpace) }
+            }
+            let runFont = traits.isEmpty ? baseFont : font(base: baseFont, traits: traits)
+            result.append(NSAttributedString(string: text, attributes: [
+                .font: runFont,
+                .foregroundColor: NSColor.labelColor,
+            ]))
         }
-        mutable.addAttribute(.foregroundColor, value: NSColor.labelColor, range: fullRange)
-        return mutable
+        return result.length > 0 ? result : nil
     }
 
     /// The base popup font with the given symbolic traits applied (bold /
