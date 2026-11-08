@@ -78,40 +78,56 @@ struct SettingsView: View {
         // Native toolbar (SeekZip topbar pattern): the section tabs live
         // in the window's toolbar instead of a hand-made HStack row, so
         // they sit in the title bar like Xcode's Settings. The selected /
-        // hover styling is the same as the old tab bar.
+        // hover styling is the same as the old tab bar. The tab button is
+        // a separate helper — inlining the whole Button (with its nested
+        // ternary background) inside the toolbar builder made the type
+        // checker give up ("unable to type-check this expression in
+        // reasonable time", run #57).
         .toolbar {
             ForEach(tabs, id: \.self) { tab in
                 ToolbarItem(placement: .navigation) {
-                    Button {
-                        selectedTab = tab
-                    } label: {
-                        Label(tab.title, systemImage: tab.icon)
-                            .font(.subheadline)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                            .padding(.vertical, 6)
-                            .padding(.horizontal, 8)
-                            .background(
-                                selectedTab == tab
-                                    ? Color.accentColor.opacity(0.18)
-                                    : hoveredTab == tab
-                                        ? Color.secondary.opacity(0.08)
-                                        : Color.clear,
-                                in: RoundedRectangle(cornerRadius: 8)
-                            )
-                            .foregroundStyle(selectedTab == tab ? .primary : .secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .onHover { hovering in
-                        if hovering {
-                            hoveredTab = tab
-                        } else if hoveredTab == tab {
-                            hoveredTab = nil
-                        }
-                    }
+                    tabButton(tab)
                 }
             }
         }
+    }
+
+    /// One section tab for the toolbar: icon + title, with the selected /
+    /// hover tint. Kept out of the toolbar builder so the type checker
+    /// sees a small expression.
+    private func tabButton(_ tab: SettingsTab) -> some View {
+        Button {
+            selectedTab = tab
+        } label: {
+            Label(tab.title, systemImage: tab.icon)
+                .font(.subheadline)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .padding(.vertical, 6)
+                .padding(.horizontal, 8)
+                .background(tabBackground(for: tab), in: RoundedRectangle(cornerRadius: 8))
+                .foregroundStyle(selectedTab == tab ? .primary : .secondary)
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in
+            if hovering {
+                hoveredTab = tab
+            } else if hoveredTab == tab {
+                hoveredTab = nil
+            }
+        }
+    }
+
+    /// Background tint for a tab: selected gets the accent tint, a
+    /// hovered (but unselected) tab gets a faint secondary tint.
+    private func tabBackground(for tab: SettingsTab) -> Color {
+        if selectedTab == tab {
+            return Color.accentColor.opacity(0.18)
+        }
+        if hoveredTab == tab {
+            return Color.secondary.opacity(0.08)
+        }
+        return Color.clear
     }
 }
 

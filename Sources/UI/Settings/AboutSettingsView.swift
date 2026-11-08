@@ -22,6 +22,16 @@ struct AboutSettingsView: View {
             Text("TransPeek")
                 .font(.title.bold())
 
+            // GitHub as an icon right under the app name (not a
+            // text-style link like the ones at the bottom).
+            Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
+                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("View TransPeek on GitHub")
+
             Text("Version \(appVersion) (\(buildNumber))")
                 .foregroundStyle(.secondary)
 
@@ -52,11 +62,6 @@ struct AboutSettingsView: View {
             Spacer()
 
             HStack(spacing: 16) {
-                Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
-                    Label("GitHub", systemImage: "chevron.left.forwardslash.chevron.right")
-                }
-                .buttonStyle(.link)
-
                 Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/issues")!) {
                     Label("Issue Feedback", systemImage: "ladybug")
                 }
