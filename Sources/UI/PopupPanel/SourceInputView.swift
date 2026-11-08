@@ -12,6 +12,11 @@ struct SourceInputView: View {
     let onSwapLanguages: () -> Void
     var onContentHeightChange: ((CGFloat) -> Void)?
     var attachments: [String: SourceImageAttachment] = [:]
+    /// Reports the text currently selected inside the source editor, or `nil`
+    /// when the selection is empty. `PopupView` uses it to retarget the
+    /// dictionary links (SPEC §3.2): links follow the in-panel selection
+    /// while there is one, and fall back to the source text otherwise.
+    var onSelectionChange: ((String?) -> Void)?
     @Default(.popupFontSize) private var fontSize
     @Default(.sourceViewMode) private var sourceViewMode
     @Default(.captureRichText) private var captureRichText
@@ -50,6 +55,7 @@ struct SourceInputView: View {
                     onSubmit: onSubmit,
                     onCopyAndClose: onCopyAndClose,
                     onSwapLanguages: onSwapLanguages,
+                    onSelectionChange: onSelectionChange,
                     onWindowKeyChange: { isKey in
                         isWindowKey = isKey
                     },
@@ -139,6 +145,7 @@ private struct SourceTextEditor: NSViewRepresentable {
     let onSubmit: () -> Void
     let onCopyAndClose: () -> Void
     let onSwapLanguages: () -> Void
+    let onSelectionChange: ((String?) -> Void)?
     let onWindowKeyChange: (Bool) -> Void
     let onContentHeightChange: (CGFloat) -> Void
 
@@ -198,6 +205,7 @@ private struct SourceTextEditor: NSViewRepresentable {
         scrollView.documentView = textView
         coordinator.textView = textView
         coordinator.onContentHeightChange = onContentHeightChange
+        coordinator.onSelectionChange = onSelectionChange
 
         // First-responder is established by `SubmitAwareTextView.viewDidMoveToWindow`
         // (event-driven, no polling). Initial content height is reported here as soon
@@ -214,6 +222,7 @@ private struct SourceTextEditor: NSViewRepresentable {
 
         let coordinator = context.coordinator
         coordinator.onContentHeightChange = onContentHeightChange
+        coordinator.onSelectionChange = onSelectionChange
         textView.applyDisplayAttributes(font: resolvedFont)
         textView.updateLayout(for: nsView.contentSize)
 
@@ -234,6 +243,7 @@ private struct SourceTextEditor: NSViewRepresentable {
         @Binding var text: String
         weak var textView: SubmitAwareTextView?
         var onContentHeightChange: ((CGFloat) -> Void)?
+        var onSelectionChange: ((String?) -> Void)?
         private var lastReportedContentHeight: CGFloat?
 
         init(text: Binding<String>) {
@@ -245,6 +255,21 @@ private struct SourceTextEditor: NSViewRepresentable {
             textView.refreshDisplay()
             text = textView.string
             reportContentHeight()
+        }
+
+        /// Reports the selected text (or `nil` for an empty selection) so the
+        /// dictionary links can follow the in-panel selection (SPEC §3.2).
+        /// Also fires when `setExternalText` moves the cursor to the end with
+        /// an empty selection — that resets the lookup to the source text.
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let textView = notification.object as? SubmitAwareTextView else { return }
+            let range = textView.selectedRange()
+            guard range.length > 0 else {
+                onSelectionChange?(nil)
+                return
+            }
+            let selected = (textView.string as NSString).substring(with: range)
+            onSelectionChange?(selected.isEmpty ? nil : selected)
         }
 
         func reportContentHeight() {
