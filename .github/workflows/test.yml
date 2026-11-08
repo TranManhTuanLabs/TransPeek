@@ -50,16 +50,20 @@ jobs:
           xcodebuild build \
             -workspace TransPeek.xcworkspace \
             -scheme TransPeek \
-            -configuration Debug \
+            -configuration Release \
             -derivedDataPath build \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Zip app
+        run: |
+          ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app TransPeek-macOS.zip
 
       - name: Upload app
         uses: actions/upload-artifact@v4
         with:
           name: TransPeek-macOS
-          path: build/Build/Products/Debug/TransPeek.app
+          path: TransPeek-macOS.zip
           retention-days: 7
 
       - name: Delete older app artifacts (keep only the newest)
