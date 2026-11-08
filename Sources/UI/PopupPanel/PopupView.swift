@@ -9,6 +9,10 @@ struct PopupView: View {
     var onOpenSettings: (() -> Void)?
     var onOCRRequested: (() -> Void)?
     @State private var editableText: String = ""
+    /// Text the dictionary links look up (SPEC §3.2): the text selected
+    /// inside the source editor when there is one, otherwise `nil` and the
+    /// bar falls back to the source text that opened the panel.
+    @State private var lookupText: String? = nil
     @State private var expandedProviders: Set<String> = []
     @State private var autoPlayedGeneration: Int = -1
     @Environment(\.ttsCoordinator) private var ttsCoordinator
@@ -74,6 +78,9 @@ struct PopupView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .onChange(of: coordinator.sourceText) { _, newValue in
             editableText = newValue
+            // A new source text means a new lookup: forget any in-panel
+            // selection from the previous text (SPEC §3.2).
+            lookupText = nil
             if Defaults[.ttsAutoPlaySource],
                !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                let tts = ttsCoordinator
@@ -145,6 +152,9 @@ struct PopupView: View {
                     sourceLanguage: coordinator.detectedLanguage ?? sourceLang,
                     onSubmit: {
                         coordinator.translate(editableText)
+                    },
+                    onSelectionChange: { selected in
+                        lookupText = selected
                     },
                     onCopyAndClose: {
                         copySourceAndClose()
@@ -313,7 +323,7 @@ struct PopupView: View {
                 // TransPeek Phase 1: dictionary links at the bottom of the panel.
                 Divider()
                     .padding(.horizontal, contentHorizontalPadding)
-                DictionaryBarView(sourceText: coordinator.sourceText)
+                DictionaryBarView(lookupText: lookupText ?? coordinator.sourceText)
                     .padding(.horizontal, contentHorizontalPadding)
                     .padding(.top, 6)
             }
