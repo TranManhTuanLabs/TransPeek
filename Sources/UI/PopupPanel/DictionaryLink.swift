@@ -22,7 +22,7 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
     static let defaults: [DictionaryLink] = [
         DictionaryLink(
             name: "Oxford",
-            urlTemplate: "https://www.oxfordlearnersdictionaries.com/definition/english/{word}"
+            urlTemplate: "https://www.oxfordlearnersdictionaries.com/definition/english/{word}?q={word}"
         ),
         DictionaryLink(
             name: "Cambridge",
@@ -83,8 +83,11 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
 
         var substituted = urlTemplate
         if hasWord {
+            // Dictionary headwords are lowercase and the word-dictionary
+            // sites match the path case-sensitively: "Word" must open
+            // .../word, not .../Word ("Word not found in the dictionary").
             guard let firstWord = trimmed.split(whereSeparator: \.isWhitespace).first,
-                  let encoded = Self.percentEncode(String(firstWord))
+                  let encoded = Self.percentEncode(String(firstWord).lowercased())
             else { return nil }
             substituted = substituted.replacingOccurrences(of: "{word}", with: encoded)
         }
