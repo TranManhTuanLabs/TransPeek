@@ -17,6 +17,12 @@ struct DictionaryLinkTests {
             == "https://www.oxfordlearnersdictionaries.com/definition/english/spaced")
         #expect(link.url(for: "café")?.absoluteString
             == "https://www.oxfordlearnersdictionaries.com/definition/english/caf%C3%A9")
+        // Word-dictionary sites match the path case-sensitively, so the
+        // word is lowercased: "Word" must open .../word, not .../Word.
+        #expect(link.url(for: "Word")?.absoluteString
+            == "https://www.oxfordlearnersdictionaries.com/definition/english/word")
+        #expect(link.url(for: "HELLO WORLD")?.absoluteString
+            == "https://www.oxfordlearnersdictionaries.com/definition/english/hello")
     }
 
     @Test func textPlaceholderUsesWholeTextEncoded() {
@@ -55,7 +61,7 @@ struct DictionaryLinkTests {
         #expect(decoded.count == 4)
         #expect(decoded.map(\.name) == ["Oxford", "Cambridge", "Google Dictionary", "YouGlish"])
         #expect(decoded[0].url(for: "hello world")?.absoluteString
-            == "https://www.oxfordlearnersdictionaries.com/definition/english/hello")
+            == "https://www.oxfordlearnersdictionaries.com/definition/english/hello?q=hello")
         #expect(decoded[2].url(for: "hello world")?.absoluteString
             == "https://www.google.com/search?q=define+hello%20world")
         #expect(decoded[3].url(for: "hello world")?.absoluteString
