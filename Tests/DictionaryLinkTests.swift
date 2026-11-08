@@ -65,7 +65,7 @@ struct DictionaryLinkTests {
         #expect(decoded[2].url(for: "hello world")?.absoluteString
             == "https://www.google.com/search?q=define+hello%20world")
         #expect(decoded[3].url(for: "hello world")?.absoluteString
-            == "https://youglish.com/pronounce/hello/english")
+            == "https://youglish.com/pronounce/hello%20world/english")
     }
 
     @Test func validationRejectsBadLinks() {
