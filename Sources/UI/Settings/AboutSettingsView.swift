@@ -1,5 +1,11 @@
 import SwiftUI
 
+// Note: the app binary is signed in CI (see the "Sign app with
+// self-signed certificate" step in .github/workflows/test.yml) with
+// the self-signed "TransPeek Local 100Y" certificate. That stable
+// signing identity is what makes the Accessibility / Screen Recording
+// permissions persist across builds — an unsigned build gets a fresh
+// cdhash every time and TCC treats it as a different app.
 struct AboutSettingsView: View {
     let updaterController: UpdaterController?
 
