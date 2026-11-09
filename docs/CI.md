@@ -18,6 +18,18 @@ rediscover any of this.
   (7-day retention) + delete older app artifacts, keeping only the newest →
   Upload test results (`macOS-test-results`).
 
+## The artifact is unsigned — sign it locally before testing
+
+The CI build is unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned build
+gets a new TCC identity (code hash) on every rebuild, so Accessibility and
+Screen Recording permissions granted for one build do not carry over to
+the next — the app will keep saying permissions are missing even though
+the toggles in System Settings look ON. Sign the downloaded app with a
+stable self-signed certificate (free, one command per build) and grant
+permissions once for the signed app; see [SIGNING.md](SIGNING.md) for the
+full guide, including how to create the certificate yourself with the
+correct Key Usage (`digitalSignature` + `codeSigning`).
+
 ## Log policy: xcbeautify, never errors-only
 
 Do NOT configure the build to output only error lines. A failing test does
