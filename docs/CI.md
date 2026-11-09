@@ -26,7 +26,7 @@ Screen Recording permissions granted for one build do not carry over to
 the next — the app will keep saying permissions are missing even though
 the toggles in System Settings look ON. Sign the downloaded app with a
 stable self-signed certificate (free, one command per build) and grant
-permissions once for the signed app; see [SIGNING.md](SIGNING.md) for the
+permissions once for the signed app; see [CODE-SIGNING.md](CODE-SIGNING.md) for the
 full guide, including how to create the certificate yourself with the
 correct Key Usage (`digitalSignature` + `codeSigning`).
 
