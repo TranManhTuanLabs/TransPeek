@@ -61,6 +61,10 @@ struct PopupPanelLayoutTests {
                 stablePolls = 0
             }
         }
+        // Diagnostic output: xcbeautify strips Swift Testing #expect
+        // messages from the CI log (run #77 showed only "Recorded an
+        // issue"), so print the values here to identify which check fails.
+        print("[PopupPanelLayoutTests] baselineHeight=\(baselineHeight) fontSize=\(fontSize) heights.count=\(probe.heights.count) isVisible=\(controller.isVisible) resizedDuringViewUpdate=\(probe.resizedDuringViewUpdate) heights=\(probe.heights)")
         #expect(controller.isVisible)
         #expect(probe.heights.count <= 30, "Resize history: \(probe.heights)")
         #expect(!probe.resizedDuringViewUpdate, "Automatic resizing reentered AppKit from a SwiftUI update action")
