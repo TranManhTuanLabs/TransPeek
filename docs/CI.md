@@ -18,6 +18,20 @@ rediscover any of this.
   (7-day retention) + delete older app artifacts, keeping only the newest →
   Upload test results (`macOS-test-results`).
 
+## When CI runs, and when the app is built
+
+To avoid wasting CI runs (and other people's runners):
+
+- **Docs-only changes do not trigger CI at all.** The `push` and
+  `pull_request` triggers have `paths-ignore` for `docs/**` and `*.md`.
+  Renaming a doc or editing docs costs zero CI runs.
+- **Tests run on every code commit**, but the app artifact is only built
+  when the commit message contains `[build-app]`. The Build app / Zip app
+  / Upload app / Delete older artifacts steps have
+  `if: contains(github.event.head_commit.message, '[build-app]')`.
+  A plain code commit runs tests only; add `[build-app]` to the message
+  when a testable app build is actually needed. (Same pattern as SeekZip.)
+
 ## The artifact is unsigned — sign it locally before testing
 
 The CI build is unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned build
@@ -26,7 +40,7 @@ Screen Recording permissions granted for one build do not carry over to
 the next — the app will keep saying permissions are missing even though
 the toggles in System Settings look ON. Sign the downloaded app with a
 stable self-signed certificate (free, one command per build) and grant
-permissions once for the signed app; see [CODE-SIGNING.md](CODE-SIGNING.md) for the
+permissions once for the signed app; see [APP-SIGN-KEY-IDENTIFY.md](APP-SIGN-KEY-IDENTIFY.md) for the
 full guide, including how to create the certificate yourself with the
 correct Key Usage (`digitalSignature` + `codeSigning`).
 
