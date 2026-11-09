@@ -76,6 +76,7 @@ jobs:
           | xcbeautify
 
       - name: Build app
+        if: contains(github.event.head_commit.message, '[build-app]')
         run: |
           xcodebuild build \
             -workspace TransPeek.xcworkspace \
@@ -87,10 +88,12 @@ jobs:
             CODE_SIGNING_ALLOWED=NO
 
       - name: Zip app
+        if: contains(github.event.head_commit.message, '[build-app]')
         run: |
           ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app TransPeek-macOS.zip
 
       - name: Upload app
+        if: contains(github.event.head_commit.message, '[build-app]')
         uses: actions/upload-artifact@v4
         with:
           name: TransPeek-macOS
@@ -98,6 +101,7 @@ jobs:
           retention-days: 7
 
       - name: Delete older app artifacts (keep only the newest)
+        if: contains(github.event.head_commit.message, '[build-app]')
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
