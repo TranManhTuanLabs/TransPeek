@@ -93,6 +93,23 @@ jobs:
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO
 
+      - name: Sign app with self-signed certificate
+        if: contains(github.event.head_commit.message, '[build-app]')
+        env:
+          MACOS_CODESIGN_CERT_P12: ${{ secrets.MACOS_CODESIGN_CERT_P12 }}
+        run: |
+          printf '%s' "$MACOS_CODESIGN_CERT_P12" | base64 --decode > /tmp/TransPeek-signing.p12
+          KEYCHAIN_PASSWORD="ci-signing-temp"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security set-keychain-settings -lut 3600 /tmp/ci-signing.keychain-db
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security default-keychain -s /tmp/ci-signing.keychain-db
+          codesign --force --deep --sign "TransPeek Local 100Y" build/Build/Products/Release/TransPeek.app
+          codesign --verify --verbose build/Build/Products/Release/TransPeek.app
+          rm -f /tmp/TransPeek-signing.p12
+
       - name: Zip app
         if: contains(github.event.head_commit.message, '[build-app]')
         run: |
