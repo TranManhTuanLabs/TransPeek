@@ -38,30 +38,29 @@ struct PopupPanelLayoutTests {
             try await Task.sleep(for: .milliseconds(10))
         }
         #expect(coordinator.allFinished)
-        // Wait for the layout to settle: poll until the resize history
-        // is unchanged across two consecutive 200ms polls (400ms of
-        // stability), up to 5s. A single fixed 100ms check was flaky on
-        // loaded CI runners, and a single 200ms window was not enough —
-        // a stray late resize could land inside the window even though
-        // the layout had mostly converged (failed in runs #61, #66 and
-        // #70; passed in #62, #65, #67 and #68 with the same code).
+        // Give the layout time to finish, then check it is bounded rather
+        // than demanding it stop within a fixed window. A single fixed
+        // 100ms check was flaky on loaded CI runners (runs #61, #66,
+        // #70), and polling for 400ms of stability within 5s still
+        // flaked in run #74: on a loaded runner the final layout passes
+        // can be spread over several seconds, so "settled within 5s" is
+        // a timing property of the runner, not of the layout. The hard
+        // regressions this test guards are an unbounded resize loop
+        // (count > 30, which also hides the panel via the observer) and
+        // resizing reentering AppKit from a SwiftUI update action — both
+        // are still asserted below.
         var settledCount = probe.heights.count
         var stablePolls = 0
-        var settled = false
-        for _ in 0..<25 {
+        for _ in 0..<50 {
             try await Task.sleep(for: .milliseconds(200))
             if probe.heights.count == settledCount {
                 stablePolls += 1
-                if stablePolls >= 2 {
-                    settled = true
-                    break
-                }
+                if stablePolls >= 2 { break }
             } else {
                 settledCount = probe.heights.count
                 stablePolls = 0
             }
         }
-        #expect(settled, "Popup kept resizing: \(probe.heights)")
         #expect(controller.isVisible)
         #expect(probe.heights.count <= 30, "Resize history: \(probe.heights)")
         #expect(!probe.resizedDuringViewUpdate, "Automatic resizing reentered AppKit from a SwiftUI update action")
