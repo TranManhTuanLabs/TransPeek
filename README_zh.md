@@ -4,6 +4,8 @@
 
 <h1 align="center">TransPeek</h1>
 
+<p align="center"><em>随处翻译，一瞥即得。</em></p>
+
 <p align="center">
   轻量原生的 macOS 菜单栏翻译工具，选中即译。
 </p>

@@ -4,6 +4,8 @@
 
 <h1 align="center">TransPeek</h1>
 
+<p align="center"><em>Translate anywhere, peek instantly.</em></p>
+
 <p align="center">
   A lightweight, native macOS menu bar translator. Select text, get translation.
   Peek at any text, translate instantly — with dictionary links, screenshot OCR and click-to-speak.

@@ -22,6 +22,13 @@ struct AboutSettingsView: View {
             Text("TransPeek")
                 .font(.title.bold())
 
+            // Tagline: "Translate anywhere, peek instantly."
+            // (SPEC v0.1; also the README tagline.)
+            Text("Translate anywhere, peek instantly.")
+                .font(.subheadline)
+                .italic()
+                .foregroundStyle(.secondary)
+
             // GitHub mark (the Octocat, drawn as GitHubMarkShape so it
             // scales crisply) + the word "GitHub", right under the app
             // name — not a text-style link like the ones at the bottom,
