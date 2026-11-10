@@ -91,7 +91,8 @@ jobs:
             -derivedDataPath build \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=NO \
+            SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=
 
       - name: Sign app with self-signed certificate
         if: contains(github.event.head_commit.message, '[build-app]')
