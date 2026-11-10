@@ -8,7 +8,7 @@ rediscover any of this.
 
 - Trigger: push to `main`, PRs, `workflow_dispatch`.
 - Runner: `macos-26`. One job (`test`).
-- Concurrency group `tests-refs/heads/main` with `cancel-in-progress`: a new
+- Concurrency group `tests-${{ github.event.pull_request.number || github.ref }}` with `cancel-in-progress`: a new
   push cancels the run that is still going. Push related files in ONE commit
   so CI only ever sees a complete version.
 - Steps: Checkout → Cache mise tools (Tuist) → Install Tuist via mise →
@@ -32,17 +32,28 @@ To avoid wasting CI runs (and other people's runners):
   A plain code commit runs tests only; add `[build-app]` to the message
   when a testable app build is actually needed. (Same pattern as SeekZip.)
 
-## The artifact is unsigned — sign it locally before testing
+## The artifact is signed by CI now — but the signing step is still untested
 
-The CI build is unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned build
-gets a new TCC identity (code hash) on every rebuild, so Accessibility and
-Screen Recording permissions granted for one build do not carry over to
+The CI build used to be unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned
+build gets a new TCC identity (code hash) on every rebuild, so Accessibility
+and Screen Recording permissions granted for one build do not carry over to
 the next — the app will keep saying permissions are missing even though
-the toggles in System Settings look ON. Sign the downloaded app with a
-stable self-signed certificate (free, one command per build) and grant
-permissions once for the signed app; see [APP-SIGN-KEY-PERMISSIONS.md](APP-SIGN-KEY-PERMISSIONS.md) for the
-full guide, including how to create the certificate yourself with the
-correct Key Usage (`digitalSignature` + `codeSigning`).
+the toggles in System Settings look ON.
+
+Since 2026-11-09 (commit `414e364`) the workflow has a "Sign app with
+self-signed certificate" step (after Build app, before Zip app, gated on
+`[build-app]`): it decodes the secret `MACOS_CODESIGN_CERT_P12` (base64
+`.p12`) into a temp keychain on the runner and signs the app with the
+identity `TransPeek Local 100Years`. **Status (2026-11-10): the step has
+never run successfully yet** — runs #85/#88 failed at the `.p12` import
+("MAC verification failed"), and runs #89/#90/#91 never got a macOS
+runner (0 steps, capacity). Two `.p12` directions are being tested; see
+[SELF-SIGNED-CERTIFICATE-GUIDE.md](SELF-SIGNED-CERTIFICATE-GUIDE.md) §7
+for the full story, and [APP-SIGN-KEY-PERMISSIONS.md](APP-SIGN-KEY-PERMISSIONS.md)
+for how to sign a downloaded build locally yourself (one `codesign`
+command per build, grant the two permissions once for the signed app),
+including how to create the certificate yourself with the correct Key
+Usage (`digitalSignature` + `codeSigning`).
 
 ## Log policy: xcbeautify, never errors-only
 

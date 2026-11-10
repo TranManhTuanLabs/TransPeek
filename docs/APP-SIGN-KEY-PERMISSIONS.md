@@ -1,5 +1,12 @@
 # Signing TransPeek locally (self-signed certificate)
 
+> **Full A–Z guide:** `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` covers
+> everything in this file plus the Keychain GUI 100-year path, the
+> `.p12` format problem (two directions, §7), CI signing on GitHub, and
+> the full history. This file stays as the shorter local-signing
+> reference — read the guide when you need the why, the GUI steps, or
+> the CI side.
+
 This guide is for anyone building and testing TransPeek from source — the
 maintainer and community contributors alike. It covers why local signing is
 needed, how to create your own signing certificate from scratch (no
@@ -231,8 +238,18 @@ re-add, and relaunch — do not just toggle the old entry.
   "Sign app with self-signed certificate"). The `.p12` lives in the GitHub
   secret `MACOS_CODESIGN_CERT_P12`. The first `.p12` (OpenSSL 3.x default
   format, SHA-256 MAC + AES-256) was rejected by macOS `security import`
-  with "MAC verification failed" (run #85); the fix is a **legacy-format**
-  `.p12` (`openssl pkcs12 -export -legacy`, no password). The certificate
+  with "MAC verification failed" (run #85). **Correction (2026-11-10,
+  learned from run #88): switching only the format to legacy, still
+  with an empty password, is NOT enough** — run #88 failed at import
+  identically to #85. On recent macOS a `.p12` with an empty password
+  cannot be imported at all. Two directions are now being tested (see
+  `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7): direction 1, an
+  unencrypted `.p12` (`-legacy -keypbe NONE -certpbe NONE`, no password),
+  and direction 2, a legacy `.p12` with a non-empty password
+  (`-legacy -macalg sha1`, secret `MACOS_CODESIGN_CERT_PASSWORD`).
+  **Neither has been tested yet** — runs #89 (direction 1), #90
+  (direction 2) and #91 (direction 1) all died with 0 steps run because
+  GitHub had no free macOS runner (capacity). The certificate
   was renamed from "TransPeek Local 100Y" to **"TransPeek Local 100Years"**
   (2026-11-10) because "100Y" was unclear; fingerprint SHA256
   `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,

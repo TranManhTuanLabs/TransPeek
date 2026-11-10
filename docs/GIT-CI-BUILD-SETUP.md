@@ -8,6 +8,9 @@ rediscovering everything.
 
 Related docs:
 
+- `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` — the A–Z signing guide (why
+  signing, certificate anatomy, openssl + Keychain GUI methods, local
+  signing, CI signing, the two `.p12` directions).
 - `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md` — the CI workflow in detail (how
   to read a red run, caching, Swift/API gotchas).
 - `docs/APP-SIGN-KEY-PERMISSIONS.md` — code signing and macOS permissions
@@ -153,6 +156,15 @@ Related docs:
   jobs targeting macOS arm64 runners may experience longer queue times."
   A long queue is a capacity problem, NOT a failure and NOT a usage
   limit. Do not "fix" the code for a queued run — wait, or re-check later.
+  Since 2026-11-10 the failure mode got worse: if no runner picks the
+  job up within ~15 minutes, GitHub **cancels** it (0 steps run,
+  annotation "The job was not acquired by Runner of type hosted even
+  after multiple attempts" + "Internal server error"). Runs #89, #90
+  and #91 all died this way. A cancelled-with-0-steps run says nothing
+  about the code or the signing direction — re-run it (prefer off-peak
+  US hours: late night VN is still US business hours; 08:00 +07 VN is
+  US evening and quieter) and wait. Never switch direction on a
+  capacity failure — only on a real failure at the step itself.
 
 ## 3. Build workflow (app artifact + CI signing)
 
@@ -170,10 +182,11 @@ Related docs:
 - **Sign app with self-signed certificate** (added 2026-11-09, commit
   `414e364`): decodes the secret `MACOS_CODESIGN_CERT_P12` (base64 of the
   `.p12`) to a temp file → creates a temporary keychain → imports the
-  certificate (no password) → signs the app with identity `TransPeek
-  Local 100Y` (`codesign --force --deep --sign`) → verifies (`codesign
-  --verify --verbose`) → deletes the temp `.p12`. Runs after Build app,
-  before Zip app.
+  certificate → signs the app with identity `TransPeek Local 100Years`
+  (`codesign --force --deep --sign`) → verifies (`codesign --verify
+  --verbose`) → deletes the temp `.p12`. Runs after Build app,
+  before Zip app. Full A–Z guide (why, the `.p12` format problem, the
+  two directions being tested): `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
 - **Zip app:** `ditto -c -k --keepParent` (keeps the `.app` bundle;
   `upload-artifact` with a directory path would lose the directory
   itself).
@@ -185,35 +198,43 @@ Related docs:
 
 ### CI signing — the secret and the certificate
 
-- Secret: `MACOS_CODESIGN_CERT_P12` (repo Settings → Secrets and
-  variables → Actions → Secrets). Value = base64 of the `.p12` file.
-  Only ONE secret is needed (the `.p12` has no password, so no password
-  secret).
-- Certificate: self-signed **"TransPeek Local 100Y"**, SHA256 fingerprint
-  `8C:02:CD:18:D7:FF:B8:C9:17:2B:5F:0E:45:1A:01:A4:01:D5:F1:78:B2:F1:7E:A3:CC:41:50:20:7D:BD:DD:AE`,
-  valid 9 Nov 2026 → 16 Oct 2126 (100 years, `-days 36500`).
+- Secrets (repo Settings → Secrets and variables → Actions → Secrets):
+  `MACOS_CODESIGN_CERT_P12` (base64 of the `.p12` file) and, only for
+  direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. The secret and the
+  `test.yml` on `main` are a pair — always update both together.
+- Certificate: self-signed **"TransPeek Local 100Years"**, SHA256
+  fingerprint
+  `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
+  valid 10 Nov 2026 → 17 Oct 2126 (100 years, `-days 36500`).
   Extensions: `keyUsage=critical,digitalSignature,keyCertSign`,
-  `extendedKeyUsage=codeSigning`. This REPLACES the old 10-year
-  "TransPeek Local" certificate (fingerprint `B1AB87...`, valid to 2036)
-  — the new certificate is a NEW identity, so an app signed with it
-  needs Accessibility + Screen Recording granted once.
-- Source file (do not commit to the repo):
-  `signing/transpeek-signing-100y.p12` (no password, 2595 bytes) + `.crt`
-  + `.key`, kept in the local workspace
-  `~/workspace/projects/moepeek-translator/signing/` and as a base64 text
-  file `transpeek-cert-100y-b64.txt` (3460 chars). Keep a backup of the
-  `.p12` somewhere safe. If it is lost, a new certificate can be created
-  and the secret updated — macOS does not limit self-signed certificates
-  and GitHub does not limit secrets; the cost is only re-creating the
-  certificate and re-granting permissions once per machine.
-- **Status (as of 2026-11-10): the CI signing step has NEVER run
-  successfully yet.** Run #81 was the first `[build-app]` trigger after
-  the step was added, but the test step failed first so Build/Sign/Zip/
-  Upload were all skipped. Run #82 (the flaky-test fix) had no
-  `[build-app]`, so it ran tests only. The signing step is still
-  untested — trigger a `[build-app]` build and check that the "Sign app
-  with self-signed certificate" step goes green and the artifact is a
-  signed app.
+  `extendedKeyUsage=codeSigning`. This REPLACES the "TransPeek Local
+  100Y" certificate (fingerprint `8C:02:CD:18…`, valid 9/11/2026 →
+  16/10/2126), which replaced the old 10-year "TransPeek Local"
+  certificate (fingerprint `B1AB87...`, valid to 2036). A new
+  certificate is a NEW identity, so an app signed with it needs
+  Accessibility + Screen Recording granted once.
+- Source files (do not commit to the repo), kept in the local workspace
+  `~/workspace/projects/moepeek-translator/signing/`:
+  `transpeek-signing-100years.crt` + `.key`, and the two `.p12`
+  variants — direction 1 `transpeek-signing-100years-nocrypt.p12`
+  (2476 bytes, base64 3304 chars) and direction 2
+  `transpeek-signing-100years-legacy-pass2.p12` (2582 bytes, base64
+  3444 chars). The direction-2 password lives only in
+  `signing/transpeek-signing-100years-password.txt` (mode 600) and in
+  the GitHub secret — never in chat, memory, docs, or the repo. Keep a
+  backup of the `.p12` somewhere safe. If it is lost, a new certificate
+  can be created and the secret updated — macOS does not limit
+  self-signed certificates and GitHub does not limit secrets; the cost
+  is only re-creating the certificate and re-granting permissions once
+  per machine.
+- **Status (as of 2026-11-10 22:28 +07): the CI signing step has NEVER
+  run successfully yet, and neither `.p12` direction has been tested.**
+  Runs #85 and #88 failed at the `security import` step ("MAC
+  verification failed"); runs #89, #90 and #91 never got a macOS runner
+  (0 steps run, capacity). See `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`
+  §7 for the two directions and the re-run schedule (run #91 re-run
+  ~23:40 +07 on 2026-11-10, follow-up 08:00 +07 on 2026-11-11 if
+  capacity fails again).
 
 ### Why signing matters (TCC / cdhash)
 
@@ -260,7 +281,8 @@ each recurring problem.
   flake — re-run before touching code.
 - **2026-11-09 — CI signing step added (commit `414e364`).** Added the
   "Sign app with self-signed certificate" step (secret
-  `MACOS_CODESIGN_CERT_P12`, identity "TransPeek Local 100Y"). See §3.
+  `MACOS_CODESIGN_CERT_P12`, identity "TransPeek Local 100Years" —
+  named "100Y" at the time, renamed 2026-11-10). See §3.
   Still untested as of 2026-11-10 (see above).
 - **2026-11-09 — Run #81 queued 26 min, then failed.** Cause of the
   queue: GitHub macOS arm64 runner capacity (not a usage limit, not a
@@ -311,6 +333,63 @@ each recurring problem.
   starts. Note: the feed URL
   (`.../releases/latest/download/appcast.xml`) has no release behind it
   yet, so a successful start is the check here, not a found update.
+- **2026-11-10 — Flaky test `PopupPanelLayoutTests.dismissAndReopenDiscardsPendingResize`
+  (fixed in commit `56fef05`, verified by run #88's green Run tests step).**
+  Run #86 failed with exactly one red test: after dismiss/reopen, the
+  coordinator had not finished when the test asserted `allFinished`.
+  Same flaky family as `longTextLayoutSettles`: a fixed 200 ms sleep
+  after reopen is too short on a slow CI runner. Fix (`56fef05`):
+  replace the fixed sleep with a poll (up to 2 s, 200 × 10 ms) waiting
+  for `allFinished`; a real hang never finishes, so it still fails.
+- **2026-11-10 — Certificate renamed 100Y → 100Years (commit `4d92dc2`,
+  `[build-app]`).** "100Y" was unclear as an abbreviation; the new
+  certificate is "TransPeek Local 100Years", fingerprint SHA256
+  `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
+  valid 10/11/2026 → 17/10/2126. `test.yml` also gained comments
+  explaining each step. Run #88 (this commit) failed at the Sign step —
+  see next entry.
+- **2026-11-10 — Run #88: legacy-without-password is NOT enough.**
+  Run #88 (commit `4d92dc2`): Run tests green, Build app green, Sign
+  step red after 0 s with the identical error as #85: `security
+  import ... -P ""` → "MAC verification failed during PKCS12 import
+  (wrong password?)". The `.p12` was verified good locally (openssl
+  reads it, base64 round-trips, key matches certificate), so the file
+  and the secret are not corrupt. Conclusion: on recent macOS a `.p12`
+  with an empty password cannot be imported at all — changing only the
+  format to legacy does not fix it. Two directions prepared from the
+  same 100Years certificate (see `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`
+  §7): direction 1, unencrypted `.p12` (`-legacy -keypbe NONE -certpbe
+  NONE`, import `-P ""`); direction 2, legacy `.p12` with a non-empty
+  password (`-legacy -macalg sha1`, secret
+  `MACOS_CODESIGN_CERT_PASSWORD`).
+- **2026-11-10 — Runs #89/#90/#91: capacity kills the run before it
+  starts (0 steps).** Direction 1 pushed (commit `05cf520`, run #89)
+  → job Queued 15 min, cancelled, 0 steps, twice (attempt 1 and re-run
+  attempt 2). Direction 2 pushed too quickly (commit `95d2ccd`, run
+  #90) → Manh corrected: a capacity failure is not a signing failure,
+  direction 1 must be tested first. A revert task briefly left the
+  secret and workflow mismatched (secret direction 1, workflow
+  direction 2, 21:55) — fixed within minutes (21:58, secret restored
+  to direction 2). Run #90 → 0 steps. Direction 1 restored (commit
+  `8132d99`, run #91) → 0 steps again (22:22). **Rule learned: only
+  switch direction when a direction has actually run and failed at the
+  Sign step; a 0-step capacity failure only ever means re-run and wait.**
+  Cause of the capacity crunch: 22:00 +07 VN is 10:00 US East Coast
+  business hours — GitHub's macOS arm64 pool is shared and busy. This
+  repo is public, so Actions is free and unlimited; there is no "free
+  plan gets deprioritised" queue — the limit is the shared macOS pool
+  (5 concurrent macOS jobs on Free/Pro/Team), and this repo runs one
+  job, so the cap is not the cause. Re-run of #91 scheduled ~23:40 +07
+  (cron `transpeek-rerun-91-late-night`); if capacity fails again,
+  follow-up 2026-11-11 08:00 +07 (US evening, quieter).
+- **2026-11-10 — A–Z signing guide written
+  (`docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`).** Synthesises the whole
+  signing story from this chat: why signing, certificate anatomy, the
+  openssl method (verified), the Keychain GUI method including the
+  100-year path (UNVERIFIED screen-by-screen), local signing, CI
+  signing, the two `.p12` directions and their status. CI signing is
+  still unverified — after one direction works, update the guide §7 and
+  §3–§4 here with the verified winner.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
@@ -331,10 +410,19 @@ each recurring problem.
 - Actions: https://github.com/TranManhTuanLabs/TransPeek/actions
 - Workflow file: `.github/workflows/test.yml`
 - Test file: `Tests/PopupPanelLayoutTests.swift`
-- Secret: `MACOS_CODESIGN_CERT_P12` (base64 `.p12`, identity "TransPeek
-  Local 100Y")
+- Secrets: `MACOS_CODESIGN_CERT_P12` (base64 `.p12`) and, only for
+  direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. Identity: "TransPeek
+  Local 100Years" (fingerprint SHA256 `A8:02:6E:B5…`, valid to
+  17/10/2126). Full signing guide:
+  `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
 - Local signing backup:
-  `~/workspace/projects/moepeek-translator/signing/transpeek-signing-100y.p12`
+  `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
+  for `transpeek-signing-100years`, `.p12` variants
+  `transpeek-signing-100years-nocrypt.p12` (direction 1) and
+  `transpeek-signing-100years-legacy-pass2.p12` (direction 2). The
+  direction-2 password is only in
+  `signing/transpeek-signing-100years-password.txt` (mode 600) and in
+  the GitHub secret — never in chat, memory, docs, or the repo.
 - Check CI: open the Actions page, newest run first; the failure is at
   the END of the "Run tests" step log. If the log is huge, download the
   log archive. For per-test detail, download the `macOS-test-results`
