@@ -173,3 +173,17 @@ App này không phải app hiển thị thông thường — nó cần chọc s�
 | Python (PyQt/Tkinter…) | Đóng gói ~100MB+, khởi động chậm, hay bị antivirus báo | Viết nhanh nhất | Loại — viết nhanh nhưng phát hành và bảo trì khổ. |
 
 Ghi chú: 2 repo riêng (mac Swift / Windows C#), chỉ chung spec — danh sách tính năng, format config link từ điển, tên setting — không chung code.
+
+## 8. Quyết định menubar + quét mã (2026-11-10)
+
+### Smart Translation vs Clipboard Translation — giữ cả hai
+- Smart Translation là 3 nấc: bôi chọn → clipboard → nhập tay. Clipboard Translation chỉ đọc clipboard.
+- Hai cái chỉ giống nhau khi không bôi chọn gì và clipboard có text (Smart rơi về nhánh clipboard).
+- Khác nhau khi: có text đang bôi chọn (Smart dịch phần bôi chọn, Clipboard dịch clipboard), hoặc clipboard trống (Smart mở panel nhập tay, Clipboard báo lỗi "Clipboard is empty").
+- Cả hai đều là tính năng gốc của upstream MoePeek (code y hệt). Giữ cả hai để đồng bộ với upstream; bỏ Smart là mất tính năng không có gì thay thế.
+
+### Quét mã vạch / QR Codes
+- Dùng Apple Vision (`VNDetectBarcodesRequest`) trên ảnh chụp vùng màn hình, xử lý on-device, không mạng.
+- Học theo OwlOCR (owlocr.com): nếu payload là URL (http/https) thì tự mở tab bằng browser mặc định. OwlOCR không ghi rõ cách xử lý payload không phải URL, nên TransPeek tự quyết: payload không phải URL (số điện thoại, số tài khoản ngân hàng, text thường, Wi-Fi, vCard...) thì copy vào clipboard + hiện toast, không tự mở gì cả.
+- Menubar có 2 mục headline xám mờ ("Text Capture from Screen", "Barcodes / QR Codes") theo mẫu OwlOCR; "Silent OCR" đổi tên thành "Clipboard OCR" (đúng bản chất: chụp → OCR → copy vào clipboard, không hiện panel); "Onboarding Guide..." đổi thành "Permissions Guide..." (cửa sổ đó thực chất là hướng dẫn cấp quyền).
+- Tính năng mới trong batch 2026-11-10 (commit 313847f): Screenshot Copy (chụp vùng → copy ảnh vào clipboard, dùng `screencapture -i -c`), Scan Barcodes/QR Codes, top bar + bottom bar ở panel, nút copy ở input, "Google Dictionary" đổi thành "Google".
