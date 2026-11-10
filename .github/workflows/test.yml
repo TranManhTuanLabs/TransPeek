@@ -130,15 +130,19 @@ jobs:
       # (valid 100 years). Signing gives the app a stable identity, so macOS
       # keeps the Accessibility + Screen Recording permissions across builds
       # instead of forgetting them after every new build.
-      # Direction 2 (legacy PKCS12 + password): the .p12 in the
-      # MACOS_CODESIGN_CERT_P12 secret is exported with
-      # `openssl pkcs12 -export -legacy -macalg sha1` and a non-empty password
+      # Direction 3 (modern PKCS12 + password): the .p12 in the
+      # MACOS_CODESIGN_CERT_P12 secret is exported with plain
+      # `openssl pkcs12 -export` (OpenSSL 3 defaults: PBES2/PBKDF2 with
+      # AES-256-CBC bags and a SHA-256 MAC) and a non-empty password
       # (in the MACOS_CODESIGN_CERT_PASSWORD secret). Direction 1 (unencrypted
       # .p12, empty password) was PROVEN to fail: run #92 attempt 4 reached
       # this step and `security import -P ""` failed with
-      # "MAC verification failed during PKCS12 import". OpenSSL 3.x defaults
-      # (SHA-256 MAC + AES-256) are also rejected by macOS `security import`.
-      # Only runs with "[build-app]" in the commit message reach this step.
+      # "MAC verification failed during PKCS12 import". Direction 2 (legacy
+      # `-legacy -macalg sha1`, RC2-40 cert bag + 3DES key bag) was PROVEN to
+      # fail too: run #93 attempt 3 reached this step and `security import`
+      # failed with "Unknown format in import" — the macOS 26 runner cannot
+      # even parse the RC2-40-encrypted bag. Only runs with "[build-app]" in
+      # the commit message reach this step.
       - name: Sign app with self-signed certificate
         if: contains(github.event.head_commit.message, '[build-app]')
         env:
