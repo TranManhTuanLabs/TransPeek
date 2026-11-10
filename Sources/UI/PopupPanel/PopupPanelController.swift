@@ -7,7 +7,7 @@ import SwiftUI
 final class PopupPanelController {
     var onDismiss: (() -> Void)?
     /// Called when a panel OCR run in copy-only mode actually copied text,
-    /// so the app can show the "Đã copy" toast (set by AppDelegate).
+    /// so the app can show the "Copied" toast (set by AppDelegate).
     var onOCRCopyOnlySuccess: (() -> Void)?
 
     private var panel: PopupPanel?
@@ -147,7 +147,7 @@ final class PopupPanelController {
     /// TransPeek Phase 1: OCR from the float panel. Hide the panel so the
     /// region selector is unobstructed, run OCR (respecting the user's
     /// post-OCR mode), then show the panel again with the result — or, in
-    /// copy-only mode, stay hidden (the caller shows the "Đã copy" toast).
+    /// copy-only mode, stay hidden (the caller shows the "Copied" toast).
     /// Unlike dismiss(), this does NOT clear the coordinator state.
     func performPanelOCR() {
         hidePanelTemporarily()

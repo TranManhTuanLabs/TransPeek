@@ -54,13 +54,13 @@ final class TranslationCoordinator {
     private(set) var copiedProviderID: String?
     private(set) var copyFeedbackGeneration: Int = 0
     /// OCR-panel flow: recognized source text and its first completed translation.
-    /// Shown in the float panel with separate [Copy gốc] / [Copy dịch] buttons.
+    /// Shown in the float panel with separate [Copy source] / [Copy translation] buttons.
     private(set) var ocrSourceText: String?
     private(set) var ocrTranslationText: String?
     /// Provider that produced `ocrTranslationText`, if any.
     private(set) var lastOCRTranslationProviderID: String?
     /// Outcome of the most recent copy-only OCR run, so the panel controller
-    /// can show the "Đã copy" toast only on a real copy (not on cancel).
+    /// can show the "Copied" toast only on a real copy (not on cancel).
     private(set) var lastCopyOnlyOutcome: SilentOCROutcome?
     /// Single source of truth for popup pin state. PopupView toggles, PopupPanelController reads.
     var isPinned: Bool = false
@@ -337,7 +337,7 @@ final class TranslationCoordinator {
     func ocrAndTranslateWithMode() async -> ActionOutcome {
         switch Defaults[.ocrPostMode] {
         case .copyOnly:
-            // Same behaviour as ocrToClipboard(); the caller shows the "Đã copy" toast.
+            // Same behaviour as ocrToClipboard(); the caller shows the "Copied" toast.
             let silentOutcome = await ocrToClipboard()
             lastCopyOnlyOutcome = silentOutcome
             switch silentOutcome {
@@ -367,7 +367,7 @@ final class TranslationCoordinator {
                 let sessionToken = actionToken
 
                 // Wait for translation to finish (up to ~30s), then snapshot the
-                // first completed result for the panel's [Copy dịch] button.
+                // first completed result for the panel's [Copy translation] button.
                 let deadline = Date.now.addingTimeInterval(30)
                 while !allFinished, Date.now < deadline {
                     try? await Task.sleep(for: .milliseconds(200))
@@ -420,7 +420,7 @@ final class TranslationCoordinator {
         return nil
     }
 
-    /// Copy the OCR source text (backs the panel's [Copy gốc] button).
+    /// Copy the OCR source text (backs the panel's [Copy source] button).
     @discardableResult
     func copyOCRSource() -> Bool {
         guard let text = ocrSourceText,
@@ -430,7 +430,7 @@ final class TranslationCoordinator {
         return NSPasteboard.general.setString(text, forType: .string)
     }
 
-    /// Copy the OCR translation (backs the panel's [Copy dịch] button).
+    /// Copy the OCR translation (backs the panel's [Copy translation] button).
     @discardableResult
     func copyOCRTranslation() -> Bool {
         guard let text = ocrTranslationText,

@@ -17,17 +17,17 @@ struct OCRSettingsView: View {
         Form {
             Section {
                 Picker(String(localized: "Sau OCR"), selection: $postMode) {
-                    Text("Mở panel dịch").tag(OCRPostMode.panel)
-                    Text("Chỉ copy").tag(OCRPostMode.copyOnly)
+                    Text("Open translation panel").tag(OCRPostMode.panel)
+                    Text("Copy only").tag(OCRPostMode.copyOnly)
                 }
 
-                Toggle(String(localized: "Tự động copy bản dịch sau OCR"), isOn: $autoCopyTranslation)
+                Toggle(String(localized: "Automatically copy translation after OCR"), isOn: $autoCopyTranslation)
                     .disabled(postMode == .copyOnly)
-                Text("Tự động copy sẽ ghi đè nội dung clipboard hiện tại. Chỉ áp dụng khi mở panel dịch.")
+                Text("Auto-copy will overwrite the current clipboard contents. Only applies when opening the translation panel.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("Sau khi chụp màn hình")
+                Text("After taking a screenshot")
             }
 
             Section {
@@ -37,9 +37,9 @@ struct OCRSettingsView: View {
                         .disabled(ocrLanguages == [code])
                 }
             } header: {
-                Text("Ngôn ngữ nhận dạng")
+                Text("Recognition languages")
             } footer: {
-                Text("Hỗ trợ tiếng Việt phụ thuộc vào phiên bản macOS và được kiểm tra lúc chạy: nếu máy không hỗ trợ tiếng Việt, Vision sẽ chỉ dùng các ngôn ngữ còn lại.")
+                Text("Vietnamese support depends on the macOS version and is checked at runtime: if the system does not support Vietnamese, Vision will only use the remaining languages.")
             }
         }
         // Same grouped look as the General tab: the plain form style

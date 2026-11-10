@@ -330,7 +330,7 @@ struct PopupView: View {
                                 .font(.system(size: CGFloat(fontSize)))
                                 .lineLimit(3)
                             Spacer()
-                            Button("Copy gốc") { _ = coordinator.copyOCRSource() }
+                            Button("Copy source") { _ = coordinator.copyOCRSource() }
                                 .buttonStyle(.bordered)
                                 .controlSize(.small)
                                 .help("Copy recognized text")
@@ -342,7 +342,7 @@ struct PopupView: View {
                                     .font(.system(size: CGFloat(fontSize)))
                                     .lineLimit(3)
                                 Spacer()
-                                Button("Copy dịch") { _ = coordinator.copyOCRTranslation() }
+                                Button("Copy translation") { _ = coordinator.copyOCRTranslation() }
                                     .buttonStyle(.bordered)
                                     .controlSize(.small)
                                     .help("Copy translation")

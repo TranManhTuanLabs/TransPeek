@@ -42,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settingsController: settingsController
         )
         panelController.onOCRCopyOnlySuccess = { [weak self] in
-            self?.copyToastController.show(message: String(localized: "Đã copy"))
+            self?.copyToastController.show(message: String(localized: "Copied"))
         }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()

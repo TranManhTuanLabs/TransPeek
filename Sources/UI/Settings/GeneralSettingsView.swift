@@ -137,8 +137,8 @@ struct GeneralSettingsView: View {
                     }
 
                     Picker("Click icon:", selection: $triggerClickAction) {
-                        Text("Phát âm").tag(TriggerClickAction.speak)
-                        Text("Dịch (kiểu cũ)").tag(TriggerClickAction.translate)
+                        Text("Speak").tag(TriggerClickAction.speak)
+                        Text("Translate (legacy)").tag(TriggerClickAction.translate)
                     }
 
                     Picker("Hover delay:", selection: $hoverDelayMs) {
