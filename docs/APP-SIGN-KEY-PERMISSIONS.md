@@ -14,6 +14,18 @@ how to fix the problems that actually came up while setting this up.
 > files between people. The certificate name (`TransPeek Local` below) is
 > just a label; any name works, what matters is that it stays the same on
 > your machine.
+>
+> **What "Local" means in the certificate name.** The certificate used by
+> CI is named **`TransPeek Local 100Years`**. "Local" means the certificate
+> was created locally (with openssl, on a Mac) — it is **self-signed**,
+> not issued by Apple. It is **not** a Developer ID: Developer ID is a
+> specific Apple-issued certificate type (it requires the $99/year Apple
+> Developer membership), and this certificate is not one. Do not call it
+> a Developer ID — that would imply Apple issued it, which it did not.
+> "100Years" is the validity period (100 years, so it effectively never
+> expires). The name is only a label for the identity; what matters is
+> that the same certificate signs every build, so macOS keeps the
+> permissions attached to it.
 
 ## Why sign locally at all
 
@@ -215,3 +227,14 @@ re-add, and relaunch — do not just toggle the old entry.
   certificate was also initially "not trusted" until Trust was set to
   Always Trust, and a duplicate same-name certificate had to be removed.
   The signed build #71 was verified working (Accessibility + OCR).
+- 2026-11-09/10: CI signing added (`.github/workflows/test.yml`, step
+  "Sign app with self-signed certificate"). The `.p12` lives in the GitHub
+  secret `MACOS_CODESIGN_CERT_P12`. The first `.p12` (OpenSSL 3.x default
+  format, SHA-256 MAC + AES-256) was rejected by macOS `security import`
+  with "MAC verification failed" (run #85); the fix is a **legacy-format**
+  `.p12` (`openssl pkcs12 -export -legacy`, no password). The certificate
+  was renamed from "TransPeek Local 100Y" to **"TransPeek Local 100Years"**
+  (2026-11-10) because "100Y" was unclear; fingerprint SHA256
+  `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
+  valid 10/11/2026 → 17/10/2126. A new identity means every machine must
+  grant the two permissions once for the newly signed app.
