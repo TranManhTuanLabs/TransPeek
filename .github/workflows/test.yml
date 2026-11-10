@@ -94,6 +94,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=
 
+      # The .p12 in MACOS_CODESIGN_CERT_P12 must be legacy format (openssl pkcs12 -export -legacy, no password):
+      # OpenSSL 3.x defaults (SHA-256 MAC + AES-256) are rejected by macOS `security import` with "MAC verification failed".
       - name: Sign app with self-signed certificate
         if: contains(github.event.head_commit.message, '[build-app]')
         env:
