@@ -118,7 +118,16 @@ struct PopupPanelLayoutTests {
         coordinator.translate("Short result")
         coordinator.isPinned = true
         controller.showAtCursor()
-        try await Task.sleep(for: .milliseconds(200))
+        // Wait for the reopened translation to finish: poll until the
+        // coordinator reports finished, up to 2s. A fixed 200ms sleep is
+        // flaky on a slow CI runner — the dismiss/reopen cycle can
+        // legitimately take longer to settle, and asserting allFinished
+        // before it finishes turns one slow layout into a failure
+        // (run #86). A real hang never finishes, so it still fails after
+        // the 2s bound. Same pattern as longTextLayoutSettles.
+        for _ in 0..<200 where !coordinator.allFinished {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         let visiblePanel = NSApp.windows.compactMap { $0 as? PopupPanel }.first(where: \.isVisible)
         let panel = try #require(visiblePanel)
         #expect(coordinator.allFinished)
