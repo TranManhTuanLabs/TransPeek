@@ -130,11 +130,13 @@ jobs:
       # (valid 100 years). Signing gives the app a stable identity, so macOS
       # keeps the Accessibility + Screen Recording permissions across builds
       # instead of forgetting them after every new build.
-      # Direction 3 (modern PKCS12 + password): the .p12 in the
-      # MACOS_CODESIGN_CERT_P12 secret is exported with plain
-      # `openssl pkcs12 -export` (OpenSSL 3 defaults: PBES2/PBKDF2 with
-      # AES-256-CBC bags and a SHA-256 MAC) and a non-empty password
-      # (in the MACOS_CODESIGN_CERT_PASSWORD secret). Direction 1 (unencrypted
+      # Direction 3b (modern PKCS12, NO password): same modern format as
+      # direction 3 (plain `openssl pkcs12 -export`, PBES2/PBKDF2 with
+      # AES-256-CBC bags and a SHA-256 MAC), but exported with an EMPTY
+      # password (`-passout pass:`) and imported with `-P ""`. Direction 3
+      # WITH password failed (run #95, "MAC verification failed" — the
+      # password in the secret does not match the .p12), so 3b removes the
+      # password from the equation entirely. Direction 1 (unencrypted
       # .p12, empty password) was PROVEN to fail: run #92 attempt 4 reached
       # this step and `security import -P ""` failed with
       # "MAC verification failed during PKCS12 import". Direction 2 (legacy
@@ -147,14 +149,13 @@ jobs:
         if: contains(github.event.head_commit.message, '[build-app]')
         env:
           MACOS_CODESIGN_CERT_P12: ${{ secrets.MACOS_CODESIGN_CERT_P12 }}
-          MACOS_CODESIGN_CERT_PASSWORD: ${{ secrets.MACOS_CODESIGN_CERT_PASSWORD }}
         run: |
           printf '%s' "$MACOS_CODESIGN_CERT_P12" | base64 --decode > /tmp/TransPeek-signing.p12
           KEYCHAIN_PASSWORD="ci-signing-temp"
           security create-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security set-keychain-settings -lut 3600 /tmp/ci-signing.keychain-db
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
-          security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "$MACOS_CODESIGN_CERT_PASSWORD" -T /usr/bin/codesign
+          security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security default-keychain -s /tmp/ci-signing.keychain-db
           codesign --force --deep --sign "TransPeek Self-Signed 100Years" build/Build/Products/Release/TransPeek.app
