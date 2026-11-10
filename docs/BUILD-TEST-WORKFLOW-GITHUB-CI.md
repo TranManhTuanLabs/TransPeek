@@ -44,7 +44,7 @@ Since 2026-11-09 (commit `414e364`) the workflow has a "Sign app with
 self-signed certificate" step (after Build app, before Zip app, gated on
 `[build-app]`): it decodes the secret `MACOS_CODESIGN_CERT_P12` (base64
 `.p12`) into a temp keychain on the runner and signs the app with the
-identity `TransPeek Local 100Years`. **Status (2026-11-10): the step has
+identity `TransPeek Self-Signed 100Years`. **Status (2026-11-10): the step has
 never run successfully yet** — runs #85/#88 failed at the `.p12` import
 ("MAC verification failed"), and runs #89/#90/#91 never got a macOS
 runner (0 steps, capacity). Two `.p12` directions are being tested; see

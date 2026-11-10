@@ -94,7 +94,7 @@ the app a **stable identity**.
 
 | Term | Meaning |
 |---|---|
-| **Certificate** | A small file that binds a name (e.g. `TransPeek Local 100Years`) to a public key, with an expiry date and usage rules. |
+| **Certificate** | A small file that binds a name (e.g. `TransPeek Self-Signed 100Years`) to a public key, with an expiry date and usage rules. |
 | **Private key** | The secret half of the key pair. Whoever has it can sign as that identity. Never share it, never commit it. |
 | **Identity** | A certificate **plus** its private key, together. `codesign` and `security find-identity` only count a certificate as an identity when the private key is present in the same keychain. A certificate with no private key underneath it is useless for signing. |
 | **`.p12` file** | One file holding a certificate + its private key, optionally protected by a password. It is how a certificate moves between machines (local Mac → GitHub secret). Also called PKCS#12. |
@@ -174,7 +174,7 @@ redo it any time without depending on a file someone else made.
 ### 3.1 Create the private key + self-signed certificate (100 years)
 
 ```sh
-# Replace "TransPeek Local 100Years" with any name you like — but keep
+# Replace "TransPeek Self-Signed 100Years" with any name you like — but keep
 # the name stable afterwards: changing the name means creating a NEW
 # certificate, which is a NEW identity, which means re-granting
 # permissions on every machine once.
@@ -183,7 +183,7 @@ redo it any time without depending on a file someone else made.
 #   itself must still be kept secret and backed up — see §3.4).
 openssl req -x509 -newkey rsa:2048 \
   -keyout transpeek-signing.key -out transpeek-signing.crt \
-  -days 36500 -nodes -subj "/CN=TransPeek Local 100Years" \
+  -days 36500 -nodes -subj "/CN=TransPeek Self-Signed 100Years" \
   -addext "basicConstraints=critical,CA:TRUE,pathlen:0" \
   -addext "keyUsage=critical,digitalSignature,keyCertSign" \
   -addext "extendedKeyUsage=codeSigning"
@@ -214,7 +214,7 @@ openssl pkcs12 -export -legacy -keypbe NONE -certpbe NONE -nomaciter \
 # signing/transpeek-signing-100years-password.txt (mode 600) and in the
 # GitHub secret MACOS_CODESIGN_CERT_PASSWORD.
 openssl pkcs12 -export -legacy -macalg sha1 \
-  -out transpeek-signing-100years-legacy-pass2.p12 \
+  -out transpeek-signing-selfsigned-100years-legacy-pass2.p12 \
   -inkey transpeek-signing.key -in transpeek-signing.crt \
   -passout pass:<PASSWORD>
 ```
@@ -238,7 +238,7 @@ Verify the `.p12` before using it:
 openssl pkcs12 -info -in transpeek-signing-nocrypt.p12 -passin pass: -nokeys -nocerts -provider legacy -provider default
 
 # Legacy .p12 with password — use its real password instead of pass::
-openssl pkcs12 -info -in transpeek-signing-100years-legacy-pass2.p12 -passin pass:<PASSWORD> -nokeys -nocerts -provider legacy -provider default
+openssl pkcs12 -info -in transpeek-signing-selfsigned-100years-legacy-pass2.p12 -passin pass:<PASSWORD> -nokeys -nocerts -provider legacy -provider default
 # (The -provider legacy flags are needed because this VM's OpenSSL 3.0
 # cannot read RC2-40 encryption without the legacy provider. That is a
 # limitation of the VM's openssl, not a problem with the file.)
@@ -371,11 +371,11 @@ After downloading a CI build (artifact `TransPeek-macOS`), unzip it and
 put the app in `/Applications`, then sign it with your certificate:
 
 ```sh
-codesign --force --deep --sign "TransPeek Local 100Years" /Applications/TransPeek.app
+codesign --force --deep --sign "TransPeek Self-Signed 100Years" /Applications/TransPeek.app
 ```
 
 - Use the **exact certificate name** as shown in Keychain Access
-  (whatever you named it in §3/§4 — `TransPeek Local 100Years` is the
+  (whatever you named it in §3/§4 — `TransPeek Self-Signed 100Years` is the
   CI certificate's name; your own certificate may be named differently).
 - The first time, macOS asks for permission to access the key — click
   **Always Allow**.
@@ -433,19 +433,26 @@ older unsigned copy in Downloads), remove the entries once more with
 |---|---|---|---|---|---|
 | `TransPeek Local` (1st) | 2026-11-08/09 | 10 years (to 2036) | `B1AB8710A7BB806ACCBD8C1D46217EBED1CEE05F` | `signing/transpeek-signing2.p12` | Replaced |
 | `TransPeek Local 100Y` | 2026-11-09 22:00 | 9/11/2026 → 16/10/2126 (100 y) | `8C:02:CD:18:D7:FF:B8:C9:17:2B:5F:0E:45:1A:01:A4:01:D5:F1:78:B2:F1:7E:A3:CC:41:50:20:7D:BD:DD:AE` | `signing/transpeek-signing-100y.p12` (2595 bytes, OpenSSL 3.x default format) | Replaced — its `.p12` format is rejected by macOS import (§7) |
-| **`TransPeek Local 100Years`** (current) | 2026-11-10 | 10/11/2026 → 17/10/2126 (100 y, `-days 36500`) | `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC` | `signing/transpeek-signing-100years.crt` + `.key`; `.p12` variants in §7 | **Current CI identity** — a NEW identity, so every machine must grant the two permissions once for apps signed with it |
+| `TransPeek Local 100Years` | 2026-11-10 | 10/11/2026 → 17/10/2126 (100 y, `-days 36500`) | `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC` | `signing/transpeek-signing-100years.crt` + `.key`; `.p12` variants in §7 | Replaced 2026-11-10 23:22 by the rename below — never signed a successful CI build |
+| **`TransPeek Self-Signed 100Years`** (current) | 2026-11-10 23:22 | 10/11/2026 → 17/10/2126 (100 y, `-days 36500`) | `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40` | `signing/transpeek-signing-selfsigned-100years.crt` + `.key`; `.p12` variants in §7 | **Current CI identity** — a NEW identity, so every machine must grant the two permissions once for apps signed with it |
 
-Name history: the certificate was renamed from "TransPeek Local 100Y"
-to **"TransPeek Local 100Years"** on 2026-11-10 because "100Y" was
-unclear as an abbreviation. The name is only a label; what matters is
-that the same certificate signs every build.
+Name history: "TransPeek Local 100Y" → "TransPeek Local 100Years"
+on 2026-11-10 (because "100Y" was unclear as an abbreviation), then →
+**"TransPeek Self-Signed 100Years"** on 2026-11-10 23:22 (because
+"Local" was ambiguous and "Self-Signed" says exactly what the
+certificate is — self-signed, not Apple-issued — following the
+"Tinycast Self-Signed" pattern). A self-signed certificate's name is
+free choice — there is no Apple standard for it; only Developer ID
+names are imposed by Apple (`Developer ID Application: <team>
+(<TEAMID>)`). The name is only a label; what matters is that the same
+certificate signs every build.
 
-What "Local" means in the name: the certificate was created locally
-(with openssl, on a Mac). It is **self-signed, not issued by Apple, and
-NOT a Developer ID** — Developer ID is a specific Apple-issued
-certificate type that requires the $99/year Apple Developer membership.
-Do not call this certificate a Developer ID; that would imply Apple
-issued it, which it did not.
+What "Self-Signed" means in the name: the certificate was created
+locally (with openssl, on a Mac). It is **self-signed, not issued by
+Apple, and NOT a Developer ID** — Developer ID is a specific
+Apple-issued certificate type that requires the $99/year Apple
+Developer membership. Do not call this certificate a Developer ID;
+that would imply Apple issued it, which it did not.
 
 The old "TransPeek Local" (2036) certificate and the "100Y"
 certificate are both superseded. Their `.p12` files are kept in the
@@ -485,10 +492,10 @@ rejects it no matter how the file was made. The first fix attempt
 
 ```sh
 openssl pkcs12 -export -legacy -keypbe NONE -certpbe NONE -nomaciter \
-  -out transpeek-signing-100years-nocrypt.p12 \
+  -out transpeek-signing-selfsigned-100years-nocrypt.p12 \
   -inkey transpeek-signing-100years.key -in transpeek-signing-100years.crt \
   -passout pass:
-# File: 2476 bytes, base64 3304 chars, MAC SHA-1 iteration 1, key bag
+# File: 2362 bytes, base64 3152 chars, MAC SHA-1 iteration 1, key bag
 # unencrypted. Import with -P "".
 ```
 
@@ -500,10 +507,10 @@ direction — no password to remember, no password secret.
 
 ```sh
 openssl pkcs12 -export -legacy -macalg sha1 \
-  -out transpeek-signing-100years-legacy-pass2.p12 \
+  -out transpeek-signing-selfsigned-100years-legacy-pass2.p12 \
   -inkey transpeek-signing-100years.key -in transpeek-signing-100years.crt \
   -passout pass:<PASSWORD>
-# File: 2582 bytes, base64 3444 chars, MAC SHA-1 + RC2-40 + 3DES key bag.
+# File: 2469 bytes, base64 3292 chars, MAC SHA-1 + RC2-40 + 3DES key bag.
 # Import with -P "$MACOS_CODESIGN_CERT_PASSWORD".
 ```
 
@@ -569,9 +576,9 @@ Repo → Settings → Secrets and variables → Actions → Secrets:
 - **`MACOS_CODESIGN_CERT_P12`** — base64 of the `.p12` file. Create it
   with:
   ```sh
-  base64 -w0 transpeek-signing-100years-nocrypt.p12 > transpeek-signing-100years-nocrypt-b64.txt
-  # Paste the ENTIRE single line (3304 chars for direction 1,
-  # 3444 chars for direction 2) as the secret value.
+  base64 -w0 transpeek-signing-selfsigned-100years-nocrypt.p12 > transpeek-signing-selfsigned-100years-nocrypt-b64.txt
+  # Paste the ENTIRE single line (3152 chars for direction 1,
+  # 3292 chars for direction 2) as the secret value.
   ```
 - **`MACOS_CODESIGN_CERT_PASSWORD`** — only for direction 2. Created
   2026-11-10 21:44. If direction 1 wins, consider deleting this secret
@@ -600,7 +607,7 @@ The step runs only when the commit message contains `[build-app]`
    `codesign` can use the key non-interactively.
 6. Signs the app:
    ```sh
-   codesign --force --deep --sign "TransPeek Local 100Years" build/Build/Products/Release/TransPeek.app
+   codesign --force --deep --sign "TransPeek Self-Signed 100Years" build/Build/Products/Release/TransPeek.app
    ```
 7. Verifies (`codesign --verify --verbose`) and deletes the temp
    `.p12`.
@@ -693,3 +700,13 @@ one re-grant of permissions per machine.
 - **2026-11-10 22:28 — This guide written.** CI signing still
   unverified; re-run of #91 scheduled ~23:40 +07, with a follow-up
   2026-11-11 08:00 +07 if capacity fails again.
+- **2026-11-10 23:22 — Certificate renamed to "TransPeek Self-Signed
+  100Years".** Self-signed names are free choice (no Apple standard;
+  only Developer ID names are imposed by Apple). New certificate,
+  fingerprint SHA256
+  `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
+  valid 10/11/2026 → 17/10/2126; both `.p12` directions regenerated
+  from it. The old "TransPeek Local 100Years" certificate never signed
+  a successful CI build, so the rename costs no re-grant. Secret +
+  `test.yml` updated together (direction 1) with a `[build-app]`
+  commit; the re-run plan moves from run #91 to the new run.

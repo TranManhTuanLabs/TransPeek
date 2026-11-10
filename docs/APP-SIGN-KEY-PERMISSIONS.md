@@ -22,8 +22,8 @@ how to fix the problems that actually came up while setting this up.
 > just a label; any name works, what matters is that it stays the same on
 > your machine.
 >
-> **What "Local" means in the certificate name.** The certificate used by
-> CI is named **`TransPeek Local 100Years`**. "Local" means the certificate
+> **What "Self-Signed" means in the certificate name.** The certificate used by
+> CI is named **`TransPeek Self-Signed 100Years`**. "Self-Signed" means the certificate
 > was created locally (with openssl, on a Mac) — it is **self-signed**,
 > not issued by Apple. It is **not** a Developer ID: Developer ID is a
 > specific Apple-issued certificate type (it requires the $99/year Apple
@@ -32,7 +32,9 @@ how to fix the problems that actually came up while setting this up.
 > "100Years" is the validity period (100 years, so it effectively never
 > expires). The name is only a label for the identity; what matters is
 > that the same certificate signs every build, so macOS keeps the
-> permissions attached to it.
+> permissions attached to it. (The name was "TransPeek Local 100Years"
+> until 2026-11-10 23:22; "Local" was ambiguous, "Self-Signed" says
+> exactly what it is — same pattern as "Tinycast Self-Signed".)
 
 ## Why sign locally at all
 
@@ -250,7 +252,7 @@ re-add, and relaunch — do not just toggle the old entry.
   **Neither has been tested yet** — runs #89 (direction 1), #90
   (direction 2) and #91 (direction 1) all died with 0 steps run because
   GitHub had no free macOS runner (capacity). The certificate
-  was renamed from "TransPeek Local 100Y" to **"TransPeek Local 100Years"**
+  was renamed from "TransPeek Local 100Y" to **"TransPeek Self-Signed 100Years"**
   (2026-11-10) because "100Y" was unclear; fingerprint SHA256
   `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
   valid 10/11/2026 → 17/10/2126. A new identity means every machine must

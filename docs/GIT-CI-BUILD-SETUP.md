@@ -182,7 +182,7 @@ Related docs:
 - **Sign app with self-signed certificate** (added 2026-11-09, commit
   `414e364`): decodes the secret `MACOS_CODESIGN_CERT_P12` (base64 of the
   `.p12`) to a temp file → creates a temporary keychain → imports the
-  certificate → signs the app with identity `TransPeek Local 100Years`
+  certificate → signs the app with identity `TransPeek Self-Signed 100Years`
   (`codesign --force --deep --sign`) → verifies (`codesign --verify
   --verbose`) → deletes the temp `.p12`. Runs after Build app,
   before Zip app. Full A–Z guide (why, the `.p12` format problem, the
@@ -202,24 +202,28 @@ Related docs:
   `MACOS_CODESIGN_CERT_P12` (base64 of the `.p12` file) and, only for
   direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. The secret and the
   `test.yml` on `main` are a pair — always update both together.
-- Certificate: self-signed **"TransPeek Local 100Years"**, SHA256
+- Certificate: self-signed **"TransPeek Self-Signed 100Years"**, SHA256
   fingerprint
-  `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
+  `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
   valid 10 Nov 2026 → 17 Oct 2126 (100 years, `-days 36500`).
   Extensions: `keyUsage=critical,digitalSignature,keyCertSign`,
   `extendedKeyUsage=codeSigning`. This REPLACES the "TransPeek Local
-  100Y" certificate (fingerprint `8C:02:CD:18…`, valid 9/11/2026 →
+  100Years" certificate (fingerprint `A8:02:6E:B5…`, valid 10/11/2026 →
+  17/10/2126 — renamed to "Self-Signed" on 2026-11-10 23:22 because
+  "Local" was ambiguous), which replaced the "TransPeek Local 100Y"
+  certificate (fingerprint `8C:02:CD:18…`, valid 9/11/2026 →
   16/10/2126), which replaced the old 10-year "TransPeek Local"
   certificate (fingerprint `B1AB87...`, valid to 2036). A new
   certificate is a NEW identity, so an app signed with it needs
   Accessibility + Screen Recording granted once.
 - Source files (do not commit to the repo), kept in the local workspace
   `~/workspace/projects/moepeek-translator/signing/`:
-  `transpeek-signing-100years.crt` + `.key`, and the two `.p12`
-  variants — direction 1 `transpeek-signing-100years-nocrypt.p12`
-  (2476 bytes, base64 3304 chars) and direction 2
-  `transpeek-signing-100years-legacy-pass2.p12` (2582 bytes, base64
-  3444 chars). The direction-2 password lives only in
+  `transpeek-signing-selfsigned-100years.crt` + `.key`, and the two
+  `.p12` variants — direction 1
+  `transpeek-signing-selfsigned-100years-nocrypt.p12`
+  (2362 bytes, base64 3152 chars) and direction 2
+  `transpeek-signing-selfsigned-100years-legacy-pass2.p12` (2469 bytes,
+  base64 3292 chars). The direction-2 password lives only in
   `signing/transpeek-signing-100years-password.txt` (mode 600) and in
   the GitHub secret — never in chat, memory, docs, or the repo. Keep a
   backup of the `.p12` somewhere safe. If it is lost, a new certificate
@@ -281,7 +285,7 @@ each recurring problem.
   flake — re-run before touching code.
 - **2026-11-09 — CI signing step added (commit `414e364`).** Added the
   "Sign app with self-signed certificate" step (secret
-  `MACOS_CODESIGN_CERT_P12`, identity "TransPeek Local 100Years" —
+  `MACOS_CODESIGN_CERT_P12`, identity "TransPeek Self-Signed 100Years" —
   named "100Y" at the time, renamed 2026-11-10). See §3.
   Still untested as of 2026-11-10 (see above).
 - **2026-11-09 — Run #81 queued 26 min, then failed.** Cause of the
@@ -390,6 +394,21 @@ each recurring problem.
   signing, the two `.p12` directions and their status. CI signing is
   still unverified — after one direction works, update the guide §7 and
   §3–§4 here with the verified winner.
+- **2026-11-10 23:22 — Certificate renamed to "TransPeek Self-Signed
+  100Years".** No Apple standard governs self-signed names (free
+  choice; only Developer ID names are Apple-imposed) — "Self-Signed"
+  was chosen because it says exactly what the certificate is, following
+  the "Tinycast Self-Signed" pattern. New certificate created with
+  openssl (fingerprint SHA256
+  `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
+  valid 10/11/2026 → 17/10/2126); both `.p12` directions regenerated
+  from it (direction 1 unencrypted 2362 bytes / base64 3152 chars,
+  direction 2 legacy + same password 2469 bytes / base64 3292 chars).
+  The old "TransPeek Local 100Years" certificate never signed a
+  successful CI build, so the rename costs no machine a re-grant of
+  permissions. Secret + `test.yml` updated together (direction 1) with
+  a `[build-app]` commit; the 23:40 re-run plan moves from run #91 to
+  the new run.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
@@ -412,14 +431,14 @@ each recurring problem.
 - Test file: `Tests/PopupPanelLayoutTests.swift`
 - Secrets: `MACOS_CODESIGN_CERT_P12` (base64 `.p12`) and, only for
   direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. Identity: "TransPeek
-  Local 100Years" (fingerprint SHA256 `A8:02:6E:B5…`, valid to
+  Self-Signed 100Years" (fingerprint SHA256 `28:7A:3E:21…`, valid to
   17/10/2126). Full signing guide:
   `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
 - Local signing backup:
   `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
-  for `transpeek-signing-100years`, `.p12` variants
-  `transpeek-signing-100years-nocrypt.p12` (direction 1) and
-  `transpeek-signing-100years-legacy-pass2.p12` (direction 2). The
+  for `transpeek-signing-selfsigned-100years`, `.p12` variants
+  `transpeek-signing-selfsigned-100years-nocrypt.p12` (direction 1) and
+  `transpeek-signing-selfsigned-100years-legacy-pass2.p12` (direction 2). The
   direction-2 password is only in
   `signing/transpeek-signing-100years-password.txt` (mode 600) and in
   the GitHub secret — never in chat, memory, docs, or the repo.
