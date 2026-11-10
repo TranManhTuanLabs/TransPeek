@@ -27,12 +27,15 @@ struct DictionaryBarView: View {
         if lookupText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             EmptyView()
         } else {
-            HStack(spacing: 12) {
-                ForEach(links) { link in
-                    dictionaryButton(for: link)
+            // Horizontal scroll so a long list scrolls instead of overflowing/clipping.
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(links) { link in
+                        dictionaryButton(for: link)
+                    }
                 }
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
             .onAppear { links = DictionaryLink.load() }
             .task(id: links) {
                 for link in links {

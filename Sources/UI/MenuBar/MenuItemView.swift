@@ -11,11 +11,21 @@ struct MenuItemView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }
 
+    /// Section headline: a plain Text (not a Button), dimmed so it reads as a
+    /// greyed-out section header and is not clickable. No Divider between a
+    /// headline and its first item.
+    private func sectionHeadline(_ title: String) -> some View {
+        Text(title)
+            .foregroundStyle(.secondary)
+    }
+
     var body: some View {
         Text("TransPeek \(appVersion)")
             .font(.headline)
 
         Divider()
+
+        sectionHeadline("Text Capture from Screen")
 
         Button {
             appDelegate.performSmartTranslation()
@@ -53,7 +63,7 @@ struct MenuItemView: View {
         Button {
             appDelegate.performSilentOCR()
         } label: {
-            Label("Silent OCR", systemImage: "doc.text.viewfinder")
+            Label("Clipboard OCR", systemImage: "doc.text.viewfinder")
         }
         .globalKeyboardShortcut(.silentOCR)
 
@@ -85,12 +95,30 @@ struct MenuItemView: View {
         }
         .globalKeyboardShortcut(.clipboardTranslation)
 
+        Button {
+            appDelegate.performScreenshotCopy()
+        } label: {
+            Label("Screenshot Copy", systemImage: "photo")
+        }
+        .globalKeyboardShortcut(.screenshotCopy)
+
+        Divider()
+
+        sectionHeadline("Barcodes / QR Codes")
+
+        Button {
+            appDelegate.performScanBarcodes()
+        } label: {
+            Label("Scan Barcodes/QR Codes", systemImage: "barcode.viewfinder")
+        }
+        .globalKeyboardShortcut(.scanBarcodes)
+
         Divider()
 
         Button {
             appDelegate.onboardingController.showWindow()
         } label: {
-            Label("Onboarding Guide...", systemImage: "questionmark.circle")
+            Label("Permissions Guide...", systemImage: "questionmark.circle")
         }
 
         Button {

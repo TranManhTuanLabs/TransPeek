@@ -226,6 +226,109 @@ final class TranslationCoordinator {
         }
     }
 
+    /// How a screenshot-copy attempt ended: toast on success, panel on failure, nothing on cancel.
+    enum ScreenshotCopyOutcome: Sendable, Equatable {
+        case copied
+        case cancelled
+        case failed
+    }
+
+    /// Triggered by the screenshot-copy action: screen capture → image straight
+    /// to the clipboard via `screencapture -i -c`. No OCR, no popup.
+    /// Success stays silent apart from the caller's toast; failures surface the
+    /// panel with the error so a dead-looking shortcut is never left unexplained.
+    @discardableResult
+    func screenshotCopy() async -> ScreenshotCopyOutcome {
+        let requestToken = beginAction()
+        guard permissionManager.isScreenRecordingGranted else {
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "Screen recording permission not granted. Open Settings to enable it.")
+            return .failed
+        }
+
+        do {
+            try await ScreenCaptureOCR.captureImageToClipboard()
+            guard !Task.isCancelled, requestToken == actionToken else {
+                return .cancelled
+            }
+            return .copied
+        } catch OCRError.captureCancelled {
+            return .cancelled
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            guard requestToken == actionToken else { return .cancelled }
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "Screenshot copy failed: \(error.localizedDescription)")
+            return .failed
+        }
+    }
+
+    /// How a barcode/QR scan ended: nothing extra on open (the browser opened),
+    /// toast on copy / not-found, panel on failure, nothing on cancel.
+    enum BarcodeScanOutcome: Sendable, Equatable {
+        case opened(URL)
+        case copied(String)
+        case notFound
+        case cancelled
+        case failed
+    }
+
+    /// Triggered by the scan-barcodes action: screen capture → Vision barcode
+    /// detection. A URL payload opens in the default browser automatically
+    /// (like OwlOCR); any other payload is copied to the clipboard for the
+    /// caller to toast — phone numbers, bank account numbers, plain text,
+    /// Wi-Fi strings and vCards are never auto-opened.
+    @discardableResult
+    func scanBarcodes() async -> BarcodeScanOutcome {
+        let requestToken = beginAction()
+        guard permissionManager.isScreenRecordingGranted else {
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "Screen recording permission not granted. Open Settings to enable it.")
+            return .failed
+        }
+
+        do {
+            let image = try await ScreenCaptureOCR.captureImage()
+            guard !Task.isCancelled, requestToken == actionToken else {
+                return .cancelled
+            }
+            let payloads = try await BarcodeScanner.detectPayloads(in: image)
+            guard !Task.isCancelled, requestToken == actionToken else {
+                return .cancelled
+            }
+            guard let payload = payloads.first else { return .notFound }
+            if let url = URL(string: payload),
+               let scheme = url.scheme?.lowercased(),
+               scheme == "http" || scheme == "https" {
+                NSWorkspace.shared.open(url)
+                return .opened(url)
+            }
+            let trimmed = payload.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return .notFound }
+            return await ClipboardGrabber.withStableAccess(to: ocrPasteboard) { pasteboard -> BarcodeScanOutcome? in
+                // A pending restoration may finish after this action is cancelled or superseded.
+                guard !Task.isCancelled, requestToken == self.actionToken else { return .cancelled }
+                pasteboard.clearContents()
+                guard pasteboard.setString(trimmed, forType: .string) else { return .cancelled }
+                return .copied(trimmed)
+            } ?? .cancelled
+        } catch OCRError.captureCancelled {
+            return .cancelled
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            guard requestToken == actionToken else { return .cancelled }
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "Barcode scan failed: \(error.localizedDescription)")
+            return .failed
+        }
+    }
+
     /// Triggered by the OCR entry point that respects the user's post-OCR mode
     /// (`Defaults[.ocrPostMode]`): panel translation with optional auto-copy, or
     /// copy-only. Existing `ocrAndTranslate()` / `ocrToClipboard()` stay untouched

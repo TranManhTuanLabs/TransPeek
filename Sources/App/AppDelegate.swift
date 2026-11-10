@@ -274,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         smartTranslationTask?.cancel()
     }
 
-    /// Silent OCR: copy recognized text to the clipboard; confirm with a small toast.
+    /// Clipboard OCR: copy recognized text to the clipboard; confirm with a small toast.
     func performSilentOCR() {
         Task { @MainActor [weak self] in
             guard let self else { return }
@@ -289,6 +289,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 break
             }
         }
+    }
+
+    /// Screenshot Copy: capture a screen region and copy the image to the clipboard; confirm with a small toast.
+    func performScreenshotCopy() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            guard !Task.isCancelled else { return }
+            switch await self.coordinator.screenshotCopy() {
+            case .copied:
+                self.copyToastController.show(message: String(localized: "Copied"))
+            case .failed:
+                self.panelController.showAtCursor()
+            case .cancelled:
+                break
+            }
+        }
+    }
+
+    /// Scan Barcodes/QR Codes: capture a screen region and detect codes. URLs open
+    /// in the default browser; anything else is copied to the clipboard and toasted.
+    func performScanBarcodes() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            guard !Task.isCancelled else { return }
+            switch await self.coordinator.scanBarcodes() {
+            case .opened:
+                break
+            case let .copied(payload):
+                self.copyToastController.show(message: Self.barcodeToastPreview(payload))
+            case .notFound:
+                self.copyToastController.show(message: String(localized: "No barcode found"))
+            case .failed:
+                self.panelController.showAtCursor()
+            case .cancelled:
+                break
+            }
+        }
+    }
+
+    /// Short preview for the barcode toast: long payloads (e.g. vCards) are
+    /// truncated so the toast stays short.
+    private static func barcodeToastPreview(_ payload: String) -> String {
+        let maxLength = 80
+        guard payload.count > maxLength else { return payload }
+        return String(payload.prefix(maxLength)) + "…"
     }
 
     @discardableResult
@@ -325,6 +372,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         KeyboardShortcuts.onKeyUp(for: .silentOCR) { [weak self] in
             self?.performSilentOCR()
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .screenshotCopy) { [weak self] in
+            self?.performScreenshotCopy()
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .scanBarcodes) { [weak self] in
+            self?.performScanBarcodes()
         }
 
         KeyboardShortcuts.onKeyUp(for: .inputTranslation) { [weak self] in

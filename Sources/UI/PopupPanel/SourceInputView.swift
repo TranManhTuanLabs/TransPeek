@@ -27,6 +27,10 @@ struct SourceInputView: View {
     // translation shows the panel without focus); dim the hints when they wouldn't work.
     @State private var isWindowKey = false
     @State private var swapShortcut = SwapLanguagesShortcut.current
+    /// Copy-button feedback ("Copied" for ~1.5s), local to this view — mirrors
+    /// ProviderResultCard's copy feedback for the output side.
+    @State private var isSourceCopyFeedbackActive = false
+    @State private var sourceCopyFeedbackTask: Task<Void, Never>?
 
     /// Plain selections keep the editor; the read-only rich view only appears for rich captures.
     private var offersRichView: Bool {
@@ -94,6 +98,23 @@ struct SourceInputView: View {
                     }
                 }
 
+                // Copy source text (stays in the panel, unlike ⌘↵ Copy & Close).
+                Button {
+                    copySource()
+                } label: {
+                    Label(
+                        isSourceCopyFeedbackActive ? "Copied" : "Copy",
+                        systemImage: isSourceCopyFeedbackActive ? "checkmark" : "doc.on.doc"
+                    )
+                    .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .tint(isSourceCopyFeedbackActive ? .green : nil)
+                .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .help("Copy source text")
+                .background { InteractiveMarker() }
+
                 if offersRichView {
                     Picker("View", selection: $sourceViewMode) {
                         Text("Edit").tag(SourceViewMode.editor)
@@ -107,19 +128,34 @@ struct SourceInputView: View {
                     .background { InteractiveMarker() }
                 }
 
-                Spacer()
-
                 Text(shortcutHint)
                     .font(.popup(name: fontName, size: CGFloat(fontSize - 4)))
                     .foregroundStyle(.quaternary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
                     .allowsTightening(true)
+                    .frame(maxWidth: .infinity, alignment: .center)
                     .opacity(isWindowKey ? 1 : 0.4)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: SwapLanguagesShortcut.didChangeNotification)) { _ in
             swapShortcut = SwapLanguagesShortcut.current
+        }
+    }
+
+    /// Copy the current source text to the pasteboard without closing the
+    /// panel (unlike ⌘↵ Copy & Close). Same content as the ⌘↵ path.
+    private func copySource() {
+        let source = MarkdownSupport.removingAttachmentPlaceholders(text)
+        guard !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        guard NSPasteboard.general.setString(source, forType: .string) else { return }
+        isSourceCopyFeedbackActive = true
+        sourceCopyFeedbackTask?.cancel()
+        sourceCopyFeedbackTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            isSourceCopyFeedbackActive = false
         }
     }
 

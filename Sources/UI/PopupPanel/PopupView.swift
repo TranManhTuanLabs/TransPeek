@@ -133,11 +133,41 @@ struct PopupView: View {
         .background { InteractiveMarker() }
     }
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    /// "Version 0.21.0 (71)"; local builds (build number "1") show just the version.
+    private var versionText: String {
+        buildNumber == "1" ? "Version \(appVersion)" : "Version \(appVersion) (\(buildNumber))"
+    }
+
+    private static let repoURL = URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!
+
     // MARK: - Active Content
 
     @ViewBuilder
     private var activeContent: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Top bar: app name + slogan, centered.
+            VStack(spacing: 2) {
+                Text("TransPeek")
+                    .font(.headline.bold())
+                Text("Translate anywhere, peek instantly.")
+                    .font(.subheadline)
+                    .italic()
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.top, 10)
+            .padding(.bottom, 2)
+
             // Global error (no providers, permissions, etc.)
             if let message = coordinator.globalError {
                 VStack(alignment: .leading, spacing: 8) {
@@ -331,6 +361,31 @@ struct PopupView: View {
                     .padding(.horizontal, contentHorizontalPadding)
                     .padding(.top, 6)
             }
+
+            // Bottom bar: GitHub link + version, compact.
+            HStack {
+                Link(destination: Self.repoURL) {
+                    GitHubMarkShape()
+                        .fill(.secondary)
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.plain)
+                .help("View TransPeek on GitHub")
+
+                Spacer()
+
+                Link("GitHub", destination: Self.repoURL)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text(versionText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.top, 6)
         }
         .padding(.bottom, contentHorizontalPadding)
     }

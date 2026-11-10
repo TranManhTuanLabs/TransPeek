@@ -5,7 +5,7 @@ import Foundation
 ///
 /// The `urlTemplate` contains either `{word}` (first word of the selected text,
 /// for word dictionaries such as Oxford / Cambridge / YouGlish) or `{text}`
-/// (the whole selected text, for search-style lookups such as Google Dictionary).
+/// (the whole selected text, for search-style lookups such as Google).
 /// Links are persisted as JSON in `Defaults[.dictionaryLinksJSON]`; an empty or
 /// unreadable stored value means "use the built-in defaults".
 struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
@@ -29,7 +29,7 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
             urlTemplate: "https://dictionary.cambridge.org/dictionary/english/{word}"
         ),
         DictionaryLink(
-            name: "Google Dictionary",
+            name: "Google",
             urlTemplate: "https://www.google.com/search?q=define+{text}"
         ),
         DictionaryLink(

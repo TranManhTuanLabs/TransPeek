@@ -62,8 +62,8 @@ Lý do cần cơ chế này: code MoePeek gốc hover và click đều gọi d�
 ### 3.2 Từ điển ở bottom panel (Phase 1)
 - Hàng icon link ở đáy float panel. Mỗi link là template:
   - `{word}` = từ đầu tiên của text tra cứu, **viết thường trước khi thay vào link** (Oxford/Cambridge phân biệt chữ hoa/thường ở đường dẫn: "Word" mở ra `.../Word` sẽ báo "Word not found in the dictionary", phải là `.../word`).
-  - `{text}` = toàn bộ text tra cứu, URL-encoded, giữ nguyên chữ hoa/thường (dùng cho Google Dictionary / search và YouGlish).
-- Mặc định: Oxford, Cambridge, Google Dictionary, YouGlish.
+  - `{text}` = toàn bộ text tra cứu, URL-encoded, giữ nguyên chữ hoa/thường (dùng cho Google / search và YouGlish).
+- Mặc định: Oxford, Cambridge, Google, YouGlish.
   - Oxford dùng `{word}` + `?q={word}` (giống link khi tự tra trên web Oxford).
   - YouGlish dùng `{text}` (không dùng `{word}` nữa): YouGlish tra được cả cụm từ/câu, nghe phát âm cả cụm trong video thật.
 - **Text tra cứu = "lựa chọn đang hiện hành" — ĐÃ CHỐT 2026-11-08 (từ test live của Manh):**
