@@ -160,8 +160,13 @@ Related docs:
 
 - **Build app:** `xcodebuild build ... -configuration Release
   -derivedDataPath build ... CURRENT_PROJECT_VERSION=${{ github.run_number }}
-  CODE_SIGNING_ALLOWED=NO`. The run number becomes the build number shown
-  in About as "Build CI #<run>" (hidden when it is "1").
+  CODE_SIGNING_ALLOWED=NO
+  SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`.
+  The run number becomes the build number shown in About as "Build CI #<run>"
+  (hidden when it is "1"). The EdDSA public key is passed here (it is a
+  public key, so it is safe to hardcode in the workflow, same as the "Run
+  tests" step) — without it the built app has an empty `SUPublicEDKey` and
+  Sparkle's updater fails to start (see §4, 2026-11-10).
 - **Sign app with self-signed certificate** (added 2026-11-09, commit
   `414e364`): decodes the secret `MACOS_CODESIGN_CERT_P12` (base64 of the
   `.p12`) to a temp file → creates a temporary keychain → imports the
@@ -291,6 +296,21 @@ each recurring problem.
   (The stderr diagnostic added in `afa4d5b` is still useful — it is
   recorded in the `.xcresult` — but it does not appear in the log as
   originally expected.)
+- **2026-11-10 — Updater "Unable to Check For Updates / updater failed to
+  start" on every launch (fixed in commit `0048aa9`, untested).** Root
+  cause: the built app had no Sparkle EdDSA public key. `Project.swift`
+  sets `SUPublicEDKey` to `$(SPARKLE_ED_PUBLIC_KEY)`; the "Run tests" step
+  passed the key, but the "Build app" step did not, and
+  `Signing.xcconfig.example` leaves the key commented out — so the app
+  artifact was built with an empty key (and unsigned), and Sparkle could
+  not start the updater. Fix (`0048aa9`): pass
+  `SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=` in
+  the "Build app" step (same value as the test step; a public key, so it
+  is fine to hardcode in the workflow). Still untested — needs one
+  `[build-app]` run (app with the key + CI-signed) to confirm the updater
+  starts. Note: the feed URL
+  (`.../releases/latest/download/appcast.xml`) has no release behind it
+  yet, so a successful start is the check here, not a found update.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
