@@ -126,7 +126,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=
 
-      # Sign the built app with the self-signed certificate "TransPeek Local 100Years"
+      # Sign the built app with the self-signed certificate "TransPeek Self-Signed 100Years"
       # (valid 100 years). Signing gives the app a stable identity, so macOS
       # keeps the Accessibility + Screen Recording permissions across builds
       # instead of forgetting them after every new build.
@@ -149,7 +149,7 @@ jobs:
           security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security default-keychain -s /tmp/ci-signing.keychain-db
-          codesign --force --deep --sign "TransPeek Local 100Years" build/Build/Products/Release/TransPeek.app
+          codesign --force --deep --sign "TransPeek Self-Signed 100Years" build/Build/Products/Release/TransPeek.app
           codesign --verify --verbose build/Build/Products/Release/TransPeek.app
           rm -f /tmp/TransPeek-signing.p12
 
