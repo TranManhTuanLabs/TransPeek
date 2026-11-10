@@ -1,34 +1,48 @@
 name: Tests
 
+# When this workflow runs:
+# - On every push to main and every pull request to main (but NOT for docs-only
+#   changes — see paths-ignore below, so editing a .md file never starts a run).
+# - Manually, from the GitHub Actions tab ("Run workflow").
 on:
   pull_request:
     branches: [main]
     paths-ignore:
       - 'docs/**'
-      - '**.md'      
+      - '**.md'
   push:
     branches: [main]
     paths-ignore:
       - 'docs/**'
-      - '**.md'      
+      - '**.md'
   workflow_dispatch:
 
+# What this workflow is allowed to do:
+# - Read the repo contents (checkout).
+# - Manage Actions artifacts (upload the app and test results, delete old app builds).
 permissions:
   contents: read
   actions: write
 
+# Only one run per branch at a time. A newer push cancels the older run that is
+# still in progress, so CI never wastes time on an outdated commit.
 concurrency:
   group: tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   test:
+    # macOS runner. Every run gets a fresh virtual machine, so nothing from a
+    # previous run survives — only uploaded artifacts are kept.
     runs-on: macos-26
     timeout-minutes: 20
     steps:
+      # Download the repo code onto the runner.
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Reuse the previously downloaded Tuist tool so the run does not download
+      # it again. The cache key changes when .mise.toml or .tuist-version changes.
       - name: Cache mise tools (Tuist)
         uses: actions/cache@v4
         with:
@@ -37,11 +51,13 @@ jobs:
           restore-keys: |
             mise-${{ runner.os }}-
 
+      # Install Tuist (the tool that generates the Xcode project from Project.swift).
       - name: Install Tuist via mise
         uses: jdx/mise-action@v2
         with:
           install: true
 
+      # Reuse previously downloaded Swift Package Manager artifacts (e.g. Sparkle).
       - name: Cache Swift Package Manager artifacts
         uses: actions/cache@v4
         with:
@@ -50,6 +66,9 @@ jobs:
           restore-keys: |
             spm-${{ runner.os }}-
 
+      # Fetch the Swift packages and generate the Xcode workspace/project.
+      # Retries up to 3 times because a flaky network or a busy GitHub can make
+      # the download fail once; a real code problem still fails after 3 tries.
       - name: Resolve dependencies and generate project
         run: |
           cp Configurations/Signing.xcconfig.example Configurations/Signing.xcconfig
@@ -64,9 +83,17 @@ jobs:
             sleep 30
           done
 
+      # Install xcbeautify, which turns xcodebuild's noisy output into readable lines.
       - name: Install xcbeautify
         run: brew install xcbeautify
 
+      # Run the full test suite (unit tests). pipefail makes the step fail when
+      # xcodebuild fails, even though its output goes through xcbeautify.
+      # SPARKLE_ED_PUBLIC_KEY is Sparkle's public EdDSA key (public, safe to
+      # hardcode): without it the built app has no updater key and Sparkle
+      # cannot start. CODE_SIGNING_ALLOWED=NO because tests do not need a
+      # signed app. The test report is saved to build/Tests.xcresult and
+      # uploaded at the end (see "Upload test results").
       - name: Run tests
         run: |
           set -o pipefail
@@ -81,6 +108,11 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
           | xcbeautify
 
+      # Build the Release app — ONLY when the commit message contains
+      # "[build-app]". Plain test runs skip this step, so most pushes are fast.
+      # CURRENT_PROJECT_VERSION is set to the GitHub run number, so the app's
+      # build number (shown in About as "Build CI #<run>" and in the menubar
+      # header) always matches the run that built it.
       - name: Build app
         if: contains(github.event.head_commit.message, '[build-app]')
         run: |
@@ -94,8 +126,15 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=
 
-      # The .p12 in MACOS_CODESIGN_CERT_P12 must be legacy format (openssl pkcs12 -export -legacy, no password):
-      # OpenSSL 3.x defaults (SHA-256 MAC + AES-256) are rejected by macOS `security import` with "MAC verification failed".
+      # Sign the built app with the self-signed certificate "TransPeek Local 100Years"
+      # (valid 100 years). Signing gives the app a stable identity, so macOS
+      # keeps the Accessibility + Screen Recording permissions across builds
+      # instead of forgetting them after every new build.
+      # The .p12 in the MACOS_CODESIGN_CERT_P12 secret must be legacy format
+      # (openssl pkcs12 -export -legacy, no password): OpenSSL 3.x defaults
+      # (SHA-256 MAC + AES-256) are rejected by macOS `security import` with
+      # "MAC verification failed". Only runs with "[build-app]" in the commit
+      # message reach this step.
       - name: Sign app with self-signed certificate
         if: contains(github.event.head_commit.message, '[build-app]')
         env:
@@ -109,15 +148,18 @@ jobs:
           security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security default-keychain -s /tmp/ci-signing.keychain-db
-          codesign --force --deep --sign "TransPeek Local 100Y" build/Build/Products/Release/TransPeek.app
+          codesign --force --deep --sign "TransPeek Local 100Years" build/Build/Products/Release/TransPeek.app
           codesign --verify --verbose build/Build/Products/Release/TransPeek.app
           rm -f /tmp/TransPeek-signing.p12
 
+      # Zip the signed .app into TransPeek-macOS.zip for download.
       - name: Zip app
         if: contains(github.event.head_commit.message, '[build-app]')
         run: |
           ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app TransPeek-macOS.zip
 
+      # Upload the zip as the "TransPeek-macOS" artifact (kept 7 days).
+      # This is the file the user downloads to test the app.
       - name: Upload app
         if: contains(github.event.head_commit.message, '[build-app]')
         uses: actions/upload-artifact@v4
@@ -126,6 +168,9 @@ jobs:
           path: TransPeek-macOS.zip
           retention-days: 7
 
+      # Delete all older "TransPeek-macOS" artifacts, keeping only the newest
+      # one. That way there is always exactly one app download link, and an old
+      # link stops working once a newer build replaces it.
       - name: Delete older app artifacts (keep only the newest)
         if: contains(github.event.head_commit.message, '[build-app]')
         continue-on-error: true
@@ -138,6 +183,9 @@ jobs:
             gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
           done
 
+      # Always upload the test report (build/Tests.xcresult), even when tests
+      # fail — that is how a failing test is diagnosed, because the console log
+      # hides Swift Testing failure details. Kept 14 days.
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
