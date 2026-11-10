@@ -11,6 +11,20 @@ struct MenuItemView: View {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
     }
 
+    /// CI build number (`CFBundleVersion`; CI sets it to the GitHub run
+    /// number). Shown in the header so the current build can be checked at
+    /// a glance without opening Settings. Hidden for local builds, where the
+    /// build number is the default "1" (same rule as About's "Build CI #").
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    private var headerTitle: String {
+        buildNumber == "1"
+            ? "TransPeek \(appVersion)"
+            : "TransPeek \(appVersion) (\(buildNumber))"
+    }
+
     /// Section headline: a plain Text (not a Button), dimmed so it reads as a
     /// greyed-out section header and is not clickable. No Divider between a
     /// headline and its first item.
@@ -20,7 +34,7 @@ struct MenuItemView: View {
     }
 
     var body: some View {
-        Text("TransPeek \(appVersion)")
+        Text(headerTitle)
             .font(.headline)
 
         Divider()
