@@ -16,7 +16,7 @@ struct OCRSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Picker(String(localized: "Sau OCR"), selection: $postMode) {
+                Picker(String(localized: "After OCR"), selection: $postMode) {
                     Text("Open translation panel").tag(OCRPostMode.panel)
                     Text("Copy only").tag(OCRPostMode.copyOnly)
                 }

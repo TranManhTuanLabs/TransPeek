@@ -3294,6 +3294,42 @@
           }
         }
       }
+    },
+    "Speak" : {
+
+    },
+    "Copy source" : {
+
+    },
+    "Copy translation" : {
+
+    },
+    "Recognition languages" : {
+
+    },
+    "Translate (legacy)" : {
+
+    },
+    "Open translation panel" : {
+
+    },
+    "Copy only" : {
+
+    },
+    "Automatically copy translation after OCR" : {
+
+    },
+    "After taking a screenshot" : {
+
+    },
+    "Auto-copy will overwrite the current clipboard contents. Only applies when opening the translation panel." : {
+
+    },
+    "Vietnamese support depends on the macOS version and is checked at runtime: if the system does not support Vietnamese, Vision will only use the remaining languages." : {
+
+    },
+    "After OCR" : {
+
     }
   },
   "version" : "1.0"
