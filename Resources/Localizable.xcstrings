@@ -3330,6 +3330,261 @@
     },
     "After OCR" : {
 
+    },
+    "%@ (%@)" : {
+
+    },
+    "API Key:" : {
+
+    },
+    "API error (%@): %@" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add Link" : {
+
+    },
+    "Add custom model…" : {
+
+    },
+    "American English" : {
+
+    },
+    "Applies to Apple TTS. If a chosen voice is no longer installed, the system default voice for that language is used." : {
+
+    },
+    "Barcode scan failed: %@" : {
+
+    },
+    "British English" : {
+
+    },
+    "Build CI #%@" : {
+
+    },
+    "Click icon:" : {
+
+    },
+    "Clipboard OCR" : {
+
+    },
+    "Connection successful (%@ms)" : {
+
+    },
+    "Copy recognized text" : {
+
+    },
+    "Copy source text" : {
+
+    },
+    "Copyright © 2025-2026 TransPeek. Fork of MoePeek by cosZone, licensed under AGPL-3.0." : {
+
+    },
+    "Default Model:" : {
+
+    },
+    "Dictionary Links" : {
+
+    },
+    "Display" : {
+
+    },
+    "English Accent" : {
+
+    },
+    "English voice" : {
+
+    },
+    "Enter Baidu App ID" : {
+
+    },
+    "Enter Baidu Secret Key" : {
+
+    },
+    "Enter Caiyun Token" : {
+
+    },
+    "Enter NiuTrans API Key" : {
+
+    },
+    "Enter a name for the link." : {
+
+    },
+    "Failed to parse Bing Translator page: %@" : {
+
+    },
+    "Failed to read the captured image" : {
+
+    },
+    "Fallback" : {
+
+    },
+    "Fallback provider:" : {
+
+    },
+    "Font:" : {
+
+    },
+    "Get API Key from Anthropic" : {
+
+    },
+    "GitHub" : {
+
+    },
+    "Hover delay:" : {
+
+    },
+    "Icon + Text" : {
+
+    },
+    "Icon only" : {
+
+    },
+    "Icon only shows the site favicon (or the first letter of the name) with the name as a tooltip." : {
+
+    },
+    "Invalid URL" : {
+
+    },
+    "LM Studio server not running at %@" : {
+
+    },
+    "Language" : {
+
+    },
+    "Language not supported for TTS: %@" : {
+
+    },
+    "Name" : {
+
+    },
+    "Name:" : {
+
+    },
+    "No barcode found" : {
+
+    },
+    "None" : {
+
+    },
+    "Permissions Guide..." : {
+
+    },
+    "Permissions granted — relaunch so macOS applies them." : {
+
+    },
+    "Plan: %@" : {
+
+    },
+    "Play Test" : {
+
+    },
+    "Primary is shown first, fallback second; the rest follow the enabled provider order. All enabled providers still translate in parallel, and each shows its own error if it fails — the fallback is the display order, not a retry. Leave empty to use the enabled provider order." : {
+
+    },
+    "Primary provider:" : {
+
+    },
+    "Ready" : {
+
+    },
+    "Refresh model list" : {
+
+    },
+    "Relaunch TransPeek" : {
+
+    },
+    "Request failed (%@)" : {
+
+    },
+    "Reset to Defaults" : {
+
+    },
+    "Save" : {
+
+    },
+    "Scan Barcodes/QR Codes" : {
+
+    },
+    "Screenshot Copy" : {
+
+    },
+    "Screenshot copy failed: %@" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Show links as:" : {
+
+    },
+    "Speak source text" : {
+
+    },
+    "Status updates automatically after granting. If a status stays unchanged after granting and relaunching, remove TransPeek from that list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches the current build." : {
+
+    },
+    "Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies Screen Recording on relaunch. If it still stays unchanged after relaunching, remove TransPeek from the Screen Recording list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches it." : {
+
+    },
+    "Status updates automatically after granting. If it stays unchanged, quit and reopen TransPeek — macOS applies the permission on relaunch. If it still stays unchanged after relaunching, remove TransPeek from that list in System Settings and add it again — this build is unsigned, so macOS can keep an old entry that no longer matches it." : {
+
+    },
+    "Stop" : {
+
+    },
+    "System built-in, no configuration needed." : {
+
+    },
+    "System default" : {
+
+    },
+    "TTS Service" : {
+
+    },
+    "TTS network error: %@" : {
+
+    },
+    "TTS playback failed: %@" : {
+
+    },
+    "Test text" : {
+
+    },
+    "The URL template is not a valid web address." : {
+
+    },
+    "The URL template must contain {word} or {text}." : {
+
+    },
+    "Translate anywhere, peek instantly." : {
+
+    },
+    "URL template" : {
+
+    },
+    "Unknown error" : {
+
+    },
+    "Use {word} for the first word of the selected text, or {text} for the whole selection." : {
+
+    },
+    "Use {word} for the first word of the selected text, or {text} for the whole selection. Example: https://dictionary.cambridge.org/dictionary/english/{word}" : {
+
+    },
+    "Vietnamese voice" : {
+
+    },
+    "View TransPeek on GitHub" : {
+
+    },
+    "Vision (on-device)" : {
+
+    },
+    "Voices (EN / VI)" : {
+
     }
   },
   "version" : "1.0"
