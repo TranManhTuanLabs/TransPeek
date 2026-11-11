@@ -173,7 +173,7 @@ Related docs:
 - **Build app:** `xcodebuild build ... -configuration Release
   -derivedDataPath build ... CURRENT_PROJECT_VERSION=${{ github.run_number }}
   CODE_SIGNING_ALLOWED=NO
-  SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`.
+  SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=`.
   The run number becomes the build number shown in About as "Build CI #<run>"
   (hidden when it is "1"). The EdDSA public key is passed here (it is a
   public key, so it is safe to hardcode in the workflow, same as the "Run
@@ -543,6 +543,22 @@ each recurring problem.
   features (0.2.0), major for the stable milestone (1.0.0). The
   build number is unchanged (CI run number as `CFBundleVersion`).
   Two comments citing 0.21.0 as an example were updated with it.
+- **2026-11-11 — Sparkle EdDSA key rotated for the first release
+  (commit `d84f0ff`, `[build-app]`).** The private key of the
+  original EdDSA keypair (public key
+  `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, added in
+  `0048aa9`) could not be found anywhere in the workspace — only
+  the public key was ever recorded. A fresh keypair was generated
+  with OpenSSL Ed25519 and sign/verify-tested; the new public key
+  `+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=` replaced the old
+  one in both `test.yml` steps. Safe because no release has ever
+  shipped with the old key: the first release (v0.1.0) carries the
+  new public key and its appcast is signed with the new private
+  key. Private key: `signing/transpeek-sparkle-eddsa.key` (mode
+  600, on the VM) — back it up like the code-signing key; if it is
+  lost, rotate again the same way before the next release. The
+  historical `0048aa9` entry above still quotes the old key — that
+  was the value at the time.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 

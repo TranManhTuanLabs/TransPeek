@@ -767,7 +767,7 @@ About shows "Build CI #\<run\>") → Sign app → Zip app (`ditto -c -k
 --keepParent`) → Upload artifact `TransPeek-macOS` (7-day retention) →
 Delete older app artifacts (keep only the newest) → Upload test results
 (always). The Build app step also passes the Sparkle EdDSA public key
-(`SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`),
+(`SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=`),
 without which the built app has an empty `SUPublicEDKey` and Sparkle's
 updater fails to start ("Unable to Check For Updates") — fixed in
 commit `0048aa9`, and build-verified by run #99 (the signed app now
