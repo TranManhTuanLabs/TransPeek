@@ -133,6 +133,19 @@ struct PopupView: View {
         .background { InteractiveMarker() }
     }
 
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    /// "Version 0.21.0 (71)"; local builds (build number "1") show just the version.
+    private var versionText: String {
+        buildNumber == "1" ? "Version \(appVersion)" : "Version \(appVersion) (\(buildNumber))"
+    }
+
     private static let repoURL = URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!
 
     // MARK: - Active Content
@@ -349,9 +362,12 @@ struct PopupView: View {
                     .padding(.top, 6)
             }
 
-            // Bottom bar: GitHub link centered. The version text used
-            // to sit on the right here; removed 2026-11-11 — the
-            // version lives in About instead.
+            // Bottom bar: GitHub link centered, version dimmed on the
+            // right — quaternary like the shortcut hint in the input
+            // row, so it reads as metadata, not content. The version
+            // was briefly removed (round 3) and restored dimmed: it is
+            // the quickest way to tell which build is running when
+            // reporting a bug from the panel.
             // The InteractiveMarker is what makes the links clickable:
             // without it PopupPanel treats a click here as a window drag
             // (see PopupPanel.shouldStartWindowDrag), like every other
@@ -359,6 +375,11 @@ struct PopupView: View {
             HStack {
                 Spacer()
 
+                Text(versionText)
+                    .font(.caption)
+                    .foregroundStyle(.quaternary)
+            }
+            .overlay(alignment: .center) {
                 HStack(spacing: 4) {
                     Link(destination: Self.repoURL) {
                         GitHubMarkShape()
@@ -373,8 +394,6 @@ struct PopupView: View {
                         .foregroundStyle(.secondary)
                 }
                 .background { InteractiveMarker() }
-
-                Spacer()
             }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.top, 6)

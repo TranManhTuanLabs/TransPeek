@@ -524,6 +524,14 @@ each recurring problem.
   `appVersion`/`buildNumber`/`versionText` helpers in PopupView were
   removed with it. Decisions also recorded in
   `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 3b (push 2026-11-11,
+  `[build-app]`).** The version text was restored to the panel
+  bottom bar, dimmed instead of removed: `.foregroundStyle
+  (.quaternary)` like the shortcut hint in the input row, so it
+  reads as metadata while still identifying the running build when
+  reporting a bug from the panel. The round-3 removal is reverted
+  in `PopupView.swift` only; the About org link and the 4pt output
+  spacing from round 3 are unchanged.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
