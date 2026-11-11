@@ -24,6 +24,7 @@ struct ProviderResultCard: View {
     @State private var resultTextHeight: CGFloat = 48
     @Default(.popupFontSize) private var fontSize
     @Default(.popupFontName) private var fontName
+    @Default(.ttsAccent) private var ttsAccent
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.resultViewMode) private var resultViewMode
     @Environment(\.ttsCoordinator) private var ttsCoordinator
@@ -244,11 +245,18 @@ struct ProviderResultCard: View {
                                 ttsCoordinator.speak(spokenText, language: targetLanguage)
                             }
                         } label: {
-                            Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
-                                .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
+                            HStack(spacing: 2) {
+                                Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                if targetLanguage.hasPrefix("en") {
+                                    Text(ttsAccent.shortLabel)
+                                }
+                            }
+                            .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
+                        // Same minimum width as the Copy button, so the two sit evenly.
+                        .frame(minWidth: 56)
                         .help("Speak")
                     }
 
@@ -262,6 +270,7 @@ struct ProviderResultCard: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
+                        .frame(minWidth: 56)
                         .tint(isCopyFeedbackActive ? .green : nil)
                         .scaleEffect(isCopyPulsing ? 1.08 : 1)
                         .animation(.easeInOut(duration: 0.12), value: isCopyFeedbackActive)
