@@ -8,13 +8,13 @@
         {
           "glass" : false,
           "hidden" : false,
-          "image-name" : "MoePeek.png",
+          "image-name" : "TransPeek-S3-1024.png",
           "name" : "TransPeek",
           "position" : {
-            "scale" : 0.7,
+            "scale" : 1.0,
             "translation-in-points" : [
-              -4.8828125,
-              0.140625
+              0,
+              0
             ]
           }
         }
@@ -24,7 +24,7 @@
         "opacity" : 0.5
       },
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
         "value" : 0.5
       }
     }
