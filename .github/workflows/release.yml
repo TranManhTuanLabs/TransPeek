@@ -83,14 +83,14 @@ jobs:
       # the archive step signs with the self-signed certificate. The identity
       # is read from the temporary keychain created above (NOT the
       # "signing_temp" keychain the old .p12 action used).
-      # NOTE: find-identity is run WITHOUT "-p codesigning" on purpose. That
-      # flag lists only identities valid under the codesigning policy, which
-      # requires a certificate chained to a trusted root — a self-signed
-      # certificate never passes it, so the command returns 0 identities
-      # (this failed Release run #2 exactly that way). Listing without the
-      # policy filter still returns the certificate + private key identity,
-      # and signing by its hash works fine — test.yml has signed that way
-      # since run #99.
+      # NOTE: the identity is used BY NAME here, not by hash from
+      # `security find-identity`. That command returns 0 identities for this
+      # self-signed certificate — observed in Release runs #2 and #3, with
+      # AND without the "-p codesigning" policy flag — even though the
+      # certificate and key import fine ("1 certificate imported", "1 key
+      # imported") and `codesign --sign` by this same name works (test.yml
+      # has signed that way since run #99). So looking the identity up is
+      # unreliable here; naming it directly is what already works.
       # SPARKLE_ED_PUBLIC_KEY is Sparkle's public EdDSA key (public, safe to
       # hardcode — same literal as test.yml): without it the built app has no
       # updater key and Sparkle cannot start. DEVELOPMENT_TEAM comes from a
@@ -101,24 +101,14 @@ jobs:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
         run: |
           SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=
-          SIGNING_IDENTITIES=$(
-            security find-identity -v /tmp/ci-signing.keychain-db |
-              awk '$1 ~ /^[0-9]+\)$/ { print $2 }' |
-              sort -u
-          )
-          SIGNING_IDENTITY_COUNT=$(
-            printf '%s\n' "$SIGNING_IDENTITIES" |
-              awk 'NF { count++ } END { print count + 0 }'
-          )
-          if [ "$SIGNING_IDENTITY_COUNT" -ne 1 ]; then
-            echo "::error::Expected exactly one valid code-signing identity in the imported certificate, found $SIGNING_IDENTITY_COUNT. Check the MACOS_CODESIGN_CERT_PEM / MACOS_CODESIGN_KEY_PEM secrets."
-            exit 1
-          fi
-          SIGNING_IDENTITY_HASH=$SIGNING_IDENTITIES
+          SIGNING_IDENTITY="TransPeek Self-Signed 100Years"
+          # Diagnostic only (never fails the step): show the certificate's
+          # SHA-1 hash from the temporary keychain, for the log.
+          security find-certificate -c "$SIGNING_IDENTITY" -Z /tmp/ci-signing.keychain-db || true
 
           cat > Configurations/Signing.xcconfig << EOF
           TransPeek_CODE_SIGN_STYLE = Manual
-          TransPeek_CODE_SIGN_IDENTITY = $SIGNING_IDENTITY_HASH
+          TransPeek_CODE_SIGN_IDENTITY = $SIGNING_IDENTITY
           TransPeek_DEVELOPMENT_TEAM = $DEVELOPMENT_TEAM
           SPARKLE_ED_PUBLIC_KEY = $SPARKLE_ED_PUBLIC_KEY
           EOF
