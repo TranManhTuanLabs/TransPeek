@@ -113,6 +113,12 @@ jobs:
           SPARKLE_ED_PUBLIC_KEY = $SPARKLE_ED_PUBLIC_KEY
           EOF
 
+          # Show exactly what was written, so the log proves the values
+          # reached the file (useful if a later step ever reports an
+          # empty signing identity again).
+          echo "--- Configurations/Signing.xcconfig ---"
+          cat Configurations/Signing.xcconfig
+
       - name: Resolve dependencies and generate project
         run: tuist install && tuist generate
 
@@ -154,6 +160,13 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Archive WITHOUT signing, then sign the archived app by hand in the
+      # next step. Release run #4 proved xcodebuild does NOT sign through
+      # this xcconfig: the archive passed but the app came out unsigned
+      # ("code object is not signed at all" at the Verify step), even
+      # though the identity was in the keychain and in the xcconfig. So the
+      # archive step only builds; the signing is done exactly like test.yml
+      # does it (codesign --sign by name), which has worked since run #99.
       - name: Archive
         run: |
           xcodebuild archive \
@@ -162,8 +175,20 @@ jobs:
             -configuration Release \
             -archivePath build/TransPeek.xcarchive \
             VALIDATE_STRINGS_FILES_WHILE_COPYING=NO \
+            CODE_SIGNING_ALLOWED=NO \
             MARKETING_VERSION=${{ steps.version.outputs.version }} \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
+
+      # Sign the archived app by hand with the self-signed certificate, the
+      # same command test.yml uses (it has signed that way since run #99).
+      # The certificate + private key are in the temporary keychain from the
+      # Import step, and `codesign --sign` finds them by name — unlike
+      # `security find-identity`, which returns 0 for this certificate.
+      - name: Sign archived app
+        run: |
+          APP="build/TransPeek.xcarchive/Products/Applications/TransPeek.app"
+          codesign --force --deep --sign "TransPeek Self-Signed 100Years" "$APP"
+          codesign --verify --verbose "$APP"
 
       # Verify the archive's signature is valid. A self-signed certificate
       # has NO TeamIdentifier by design (no Developer ID team while the
