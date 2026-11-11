@@ -8,7 +8,7 @@
         {
           "glass" : false,
           "hidden" : false,
-          "image-name" : "TransPeek-S3-1024.png",
+          "image-name" : "TransPeek.png",
           "name" : "TransPeek",
           "position" : {
             "scale" : 1.0,
