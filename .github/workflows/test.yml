@@ -2,7 +2,8 @@ name: Tests
 
 # When this workflow runs:
 # - On every push to main and every pull request to main (but NOT for docs-only
-#   changes — see paths-ignore below, so editing a .md file never starts a run).
+#   changes or workflow-only changes — see paths-ignore below, so editing a
+#   .md file or a workflow file never starts a run).
 # - Manually, from the GitHub Actions tab ("Run workflow").
 on:
   pull_request:
@@ -10,11 +11,13 @@ on:
     paths-ignore:
       - 'docs/**'
       - '**.md'
+      - '.github/workflows/**'
   push:
     branches: [main]
     paths-ignore:
       - 'docs/**'
       - '**.md'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 # What this workflow is allowed to do:
