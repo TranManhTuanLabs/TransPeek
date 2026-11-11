@@ -512,6 +512,18 @@ each recurring problem.
   (`mailto:tuanmanhtran.vn@gmail.com`). Local clone was reset to
   `cda67be` (newest main) before the push so no stale code went in.
   Decisions also recorded in `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 3 (push 2026-11-11,
+  `[build-app]`).** About GitHub link relabelled
+  "Github.com/TranManhTuanLabs" and now points at the org page
+  (https://github.com/TranManhTuanLabs) instead of the repo. The
+  output row (ProviderResultCard) used the default 8pt HStack
+  spacing, so its speaker + Copy buttons sat further apart than the
+  input row's 4pt — changed to `HStack(spacing: 4)` to match. The
+  version text was removed from the panel bottom bar entirely
+  (version still shown in About); the unused
+  `appVersion`/`buildNumber`/`versionText` helpers in PopupView were
+  removed with it. Decisions also recorded in
+  `docs/SPEC-v0.1.md` §8.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 

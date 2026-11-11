@@ -36,22 +36,22 @@ struct AboutSettingsView: View {
                 .foregroundStyle(.secondary)
 
             // GitHub mark (the Octocat, drawn as GitHubMarkShape so it
-            // scales crisply) + the repo path, right under the app name
+            // scales crisply) + the org path, right under the app name
             // — not a text-style link like the ones at the bottom, and
             // not the generic </> symbol, which reads as "code" rather
             // than GitHub.
-            Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
+            Link(destination: URL(string: "https://github.com/TranManhTuanLabs")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
                         .fill(.secondary)
                         .frame(width: 20, height: 20)
-                    Text("Github/TranManhTuanLabs")
+                    Text("Github.com/TranManhTuanLabs")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
             .buttonStyle(.plain)
-            .help("View TransPeek on GitHub")
+            .help("View TranManhTuanLabs on GitHub")
 
             Text("Version \(appVersion) (\(buildNumber))")
                 .foregroundStyle(.secondary)

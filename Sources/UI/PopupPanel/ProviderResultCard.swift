@@ -219,7 +219,9 @@ struct ProviderResultCard: View {
             }
 
             if offersMarkdown || (canSpeak && ttsCoordinator != nil) || onCopy != nil {
-                HStack {
+                // Same 4pt spacing as the source input row above, so the
+                // speaker and Copy buttons sit equally close on both sides.
+                HStack(spacing: 4) {
                     Spacer()
 
                     if offersMarkdown {
