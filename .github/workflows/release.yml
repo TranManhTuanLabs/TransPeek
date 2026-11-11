@@ -1,5 +1,17 @@
 name: Release
 
+# Builds a real release from a v* tag (or manually, as a draft, via
+# workflow_dispatch): runs tests, archives the app, signs it, then creates
+# the DMG, the Sparkle appcast and the GitHub Release with the ZIP + DMG +
+# appcast + PopClip/OpenClip extensions.
+# Signing uses Direction 4b (PEM certificate + key, NO PKCS12), the same as
+# test.yml — see the "Import signing certificate" step. Do NOT go back to a
+# .p12: macOS 26 only understands legacy PKCS12 (3DES/SHA-1) and rejects
+# OpenSSL 3's modern format (PBES2/AES-256 + SHA-256 MAC). The original
+# .p12 step failed on the v0.1.0 tag with "MAC verification failed" because
+# the secrets it read (SIGNING_CERTIFICATE_P12 / SIGNING_CERTIFICATE_PASSWORD)
+# do not exist on this repo.
+
 on:
   push:
     tags:
@@ -36,19 +48,53 @@ jobs:
         with:
           install: true
 
+      # Sign with the self-signed certificate "TransPeek Self-Signed 100Years"
+      # (valid 100 years), the same Direction 4b (PEM certificate + key, NO
+      # PKCS12) as test.yml: the certificate and the private key are imported
+      # separately as PEM files, so macOS never has to parse a .p12 at all.
+      # Directions 1/3/3b all failed at `security import` of a .p12 with "MAC
+      # verification failed". The two SHA-256 checks below prove the secrets
+      # arrived intact (same hashes as test.yml): if a hash mismatches, the
+      # secret — not the format — is the problem, and the step stops there.
+      # The certificate + key are imported into a temporary keychain
+      # (/tmp/ci-signing.keychain-db), which the next step reads to find the
+      # signing identity for Signing.xcconfig.
       - name: Import signing certificate
-        uses: apple-actions/import-codesign-certs@v3
-        with:
-          p12-file-base64: ${{ secrets.SIGNING_CERTIFICATE_P12 }}
-          p12-password: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
+        env:
+          MACOS_CODESIGN_CERT_PEM: ${{ secrets.MACOS_CODESIGN_CERT_PEM }}
+          MACOS_CODESIGN_KEY_PEM: ${{ secrets.MACOS_CODESIGN_KEY_PEM }}
+        run: |
+          printf '%s' "$MACOS_CODESIGN_CERT_PEM" | base64 --decode > /tmp/TransPeek-signing.crt
+          printf '%s' "$MACOS_CODESIGN_KEY_PEM" | base64 --decode > /tmp/TransPeek-signing.key
+          [ "$(shasum -a 256 /tmp/TransPeek-signing.crt | cut -d' ' -f1)" = "9354805dff7a8f50af55ed83006eede90a6145442d8cf3992fd153a0cdf9761a" ] || { echo "ERROR: certificate secret does not match the local file"; exit 1; }
+          [ "$(shasum -a 256 /tmp/TransPeek-signing.key | cut -d' ' -f1)" = "e81b462f615f202b3e143591726199c60e86ae49d3d633fb97ea8e569fda54bc" ] || { echo "ERROR: private key secret does not match the local file"; exit 1; }
+          KEYCHAIN_PASSWORD="ci-signing-temp"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security set-keychain-settings -lut 3600 /tmp/ci-signing.keychain-db
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security import /tmp/TransPeek-signing.crt -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
+          security import /tmp/TransPeek-signing.key -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
+          security default-keychain -s /tmp/ci-signing.keychain-db
+          security find-identity -v -p codesigning /tmp/ci-signing.keychain-db
+          rm -f /tmp/TransPeek-signing.crt /tmp/TransPeek-signing.key
 
+      # Write Configurations/Signing.xcconfig from the imported identity, so
+      # the archive step signs with the self-signed certificate. The identity
+      # is read from the temporary keychain created above (NOT the
+      # "signing_temp" keychain the old .p12 action used).
+      # SPARKLE_ED_PUBLIC_KEY is Sparkle's public EdDSA key (public, safe to
+      # hardcode — same literal as test.yml): without it the built app has no
+      # updater key and Sparkle cannot start. DEVELOPMENT_TEAM comes from a
+      # secret and stays empty for the self-signed certificate (there is no
+      # Developer ID team while the $99/year membership is deferred).
       - name: Write Signing.xcconfig
         env:
           DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-          SPARKLE_ED_PUBLIC_KEY: ${{ secrets.SPARKLE_ED_PUBLIC_KEY }}
         run: |
+          SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=
           SIGNING_IDENTITIES=$(
-            security find-identity -v -p codesigning signing_temp.keychain |
+            security find-identity -v -p codesigning /tmp/ci-signing.keychain-db |
               awk '$1 ~ /^[0-9]+\)$/ { print $2 }' |
               sort -u
           )
@@ -57,7 +103,7 @@ jobs:
               awk 'NF { count++ } END { print count + 0 }'
           )
           if [ "$SIGNING_IDENTITY_COUNT" -ne 1 ]; then
-            echo "::error::Expected exactly one valid code-signing identity in the imported P12, found $SIGNING_IDENTITY_COUNT. Renew an expired certificate or export a P12 containing one certificate and its private key."
+            echo "::error::Expected exactly one valid code-signing identity in the imported certificate, found $SIGNING_IDENTITY_COUNT. Check the MACOS_CODESIGN_CERT_PEM / MACOS_CODESIGN_KEY_PEM secrets."
             exit 1
           fi
           SIGNING_IDENTITY_HASH=$SIGNING_IDENTITIES
@@ -121,6 +167,12 @@ jobs:
             MARKETING_VERSION=${{ steps.version.outputs.version }} \
             CURRENT_PROJECT_VERSION=${{ github.run_number }}
 
+      # Verify the archive's signature is valid. A self-signed certificate
+      # has NO TeamIdentifier by design (no Developer ID team while the
+      # $99/year Apple Developer membership is deferred) — that is expected,
+      # not a failure: the app is distributed outside the App Store and
+      # Gatekeeper asks once on first launch. Only fail here if the
+      # signature itself is invalid (checked above by --verify --strict).
       - name: Verify code signature
         run: |
           APP="build/TransPeek.xcarchive/Products/Applications/TransPeek.app"
@@ -130,8 +182,7 @@ jobs:
           echo "$SIGN_INFO" | grep -E "Authority|Identifier|TeamIdentifier"
 
           if echo "$SIGN_INFO" | grep -q "TeamIdentifier=not set"; then
-            echo "::error::Code signature has no TeamIdentifier (ad-hoc signing). Check SIGNING_IDENTITY and SIGNING_CERTIFICATE secrets."
-            exit 1
+            echo "::warning::Code signature has no TeamIdentifier (self-signed certificate, expected)."
           fi
 
       - name: Prepare app bundle
