@@ -476,6 +476,21 @@ each recurring problem.
   (13:00); 4b ran first and won, so 4a (legacy `-descert`, both bags
   3DES, no RC2) was never run and is not needed. Full history and
   lessons: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.
+- **2026-11-11 — Panel UI tweaks (commits `ce4befb`, `9e03b25`,
+  `165bc0e9`; build requested by Manh 15:33).** From a screenshot of
+  the signed 0.21.0 (CI #99) panel: source speak + Copy moved to the
+  right, mirroring the result card (bordered mini buttons, speaker icon
+  the same colour as the target side), shortcut hints on the left;
+  GitHub cat icon + "GitHub" link centred as one group in the bottom
+  bar (version stays right), link opens the mac repo. The US accent
+  label was first removed (`9e03b25`) because it only shows for
+  English and differs between input/output — then kept after all
+  (`165bc0e9`), merged inside the speaker button, as decoration; per-
+  language labels (US, VI, KO…) were judged not worth it because the
+  language is already shown in the language bar and non-English has
+  no accent choice. Speaker and Copy buttons share a 56pt minimum
+  width so they sit evenly at the default font size. Decisions also
+  recorded in `docs/SPEC-v0.1.md` §8.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 

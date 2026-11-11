@@ -117,7 +117,9 @@ struct SourceInputView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
-                    // Same minimum width as the Copy button, so the two sit evenly.
+                    // Same minimum width as the Copy button, so the two sit evenly
+                    // at the default font size. (At a much larger font size the Copy
+                    // button grows past 56pt and the two drift apart again.)
                     .frame(minWidth: 56)
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .help("Speak source text")
