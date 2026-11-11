@@ -794,6 +794,31 @@ If you lose the certificate + private key, the same procedure applies —
 there is no recovery of the old identity, only replacement. The cost is
 one re-grant of permissions per machine.
 
+### 8.5 The Release workflow (`.github/workflows/release.yml`) — same secrets, different signing step
+
+`release.yml` uses the same two PEM secrets and the same temp-keychain
+import as `test.yml` (§8.2), but it signs differently — and the
+difference is the whole story of November 2026-11-11/12:
+
+- **Do NOT look the identity up with `security find-identity`.** Runs
+  #2 and #3 (commits `d4f61c9`, `e8a63d9`) failed at "Write
+  Signing.xcconfig" with "Expected exactly one valid code-signing
+  identity in the imported certificate, found 0" — `find-identity`
+  cannot list this self-signed certificate's identity at all, with or
+  without the `-p codesigning` flag, even though the certificate + key
+  import fine and `codesign --sign` by name works. Use the identity
+  **by name** (`TransPeek Self-Signed 100Years`) instead.
+- **`xcodebuild archive` does NOT sign through the xcconfig.** Run #4
+  (commit `c90e0d6`): the xcconfig step was green and the archive was
+  green, but the archived app was unsigned ("code object is not signed
+  at all"). `test.yml` never proved xcodebuild can sign — it builds
+  with `CODE_SIGNING_ALLOWED=NO` and signs by hand afterwards.
+- **The working pattern (commit `47d86ab`, verified by Release run #7
+  attempt 4, 2026-11-12):** archive with `CODE_SIGNING_ALLOWED=NO`,
+  then sign the archived app by hand with `codesign --force --deep
+  --sign "TransPeek Self-Signed 100Years"` + `codesign --verify
+  --verbose`. Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
+
 ---
 
 ## 9. Troubleshooting (signing)
@@ -895,3 +920,21 @@ one re-grant of permissions per machine.
   Direction 4a was never run and is not needed. This guide and
   `docs/GIT-CI-BUILD-SETUP.md` §3–§4 updated the same day with the
   full history and the lessons (§7.8).
+- **2026-11-11/12 — The Release workflow learns the same lesson the
+  hard way.** The v0.1.0 tag triggered `release.yml`, which failed at
+  "Import signing certificate" (it read P12 secrets that do not exist).
+  Switched to PEM like `test.yml` (commit `d4f61c9`) + secret
+  `SPARKLE_ED_PRIVATE_KEY` created (base64 of the 32-byte EdDSA seed,
+  for `generate_appcast`). Runs #2/#3 failed at "Write Signing.xcconfig"
+  — `security find-identity` returns 0 identities for this self-signed
+  certificate, with or without `-p codesigning` (the flag hypothesis
+  was disproved by run #3). Run #4 (identity by name, commit `c90e0d6`):
+  xcconfig green, archive green, but the app was UNSIGNED —
+  `xcodebuild archive` does not sign through the xcconfig. Fix #3
+  (commit `47d86ab`): archive with `CODE_SIGNING_ALLOWED=NO` + sign the
+  archived app by hand with `codesign`. Runs #5/#6/#7 died with 0
+  steps (GitHub macOS runner capacity) before fix #3 could be tested;
+  Manh re-ran run #7 and **attempt 4 went SUCCESS (2026-11-12 00:23,
+  all 24 steps green)** — first green Release workflow, draft
+  `v0.0.0-dev` with all 5 assets. §8.5 records the three rules.
+  Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.

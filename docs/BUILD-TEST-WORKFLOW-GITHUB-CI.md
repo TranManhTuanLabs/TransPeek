@@ -34,7 +34,7 @@ To avoid wasting CI runs (and other people's runners):
   A plain code commit runs tests only; add `[build-app]` to the message
   when a testable app build is actually needed. (Same pattern as SeekZip.)
 
-## The artifact is signed by CI now — but the signing step is still untested
+## The artifact is signed by CI — verified working since run #99
 
 The CI build used to be unsigned (`CODE_SIGNING_ALLOWED=NO`). An unsigned
 build gets a new TCC identity (code hash) on every rebuild, so Accessibility
@@ -44,18 +44,22 @@ the toggles in System Settings look ON.
 
 Since 2026-11-09 (commit `414e364`) the workflow has a "Sign app with
 self-signed certificate" step (after Build app, before Zip app, gated on
-`[build-app]`): it decodes the secret `MACOS_CODESIGN_CERT_P12` (base64
-`.p12`) into a temp keychain on the runner and signs the app with the
-identity `TransPeek Self-Signed 100Years`. **Status (2026-11-10): the step has
-never run successfully yet** — runs #85/#88 failed at the `.p12` import
-("MAC verification failed"), and runs #89/#90/#91 never got a macOS
-runner (0 steps, capacity). Two `.p12` directions are being tested; see
+`[build-app]`). It decodes the PEM secrets `MACOS_CODESIGN_CERT_PEM` +
+`MACOS_CODESIGN_KEY_PEM` into a temp keychain on the runner and signs
+the app with the identity `TransPeek Self-Signed 100Years`
+(`codesign --force --deep --sign`, then `codesign --verify --verbose`).
+**Verified working: run #99 (2026-11-11), and every `[build-app]`
+artifact since, including run #126 (v0.1.0) and run #129.** The earlier
+`.p12` directions all failed at import — see
 [SELF-SIGNED-CERTIFICATE-GUIDE.md](SELF-SIGNED-CERTIFICATE-GUIDE.md) §7
-for the full story, and [APP-SIGN-KEY-PERMISSIONS.md](APP-SIGN-KEY-PERMISSIONS.md)
+for the full story (five attempts, one winner), and
+[APP-SIGN-KEY-PERMISSIONS.md](APP-SIGN-KEY-PERMISSIONS.md)
 for how to sign a downloaded build locally yourself (one `codesign`
 command per build, grant the two permissions once for the signed app),
 including how to create the certificate yourself with the correct Key
-Usage (`digitalSignature` + `codeSigning`).
+Usage (`digitalSignature` + `codeSigning`). The Release workflow
+(`release.yml`) signs the same way, by hand, after an unsigned archive —
+see `GIT-CI-BUILD-SETUP.md` §4 (2026-11-11/12 entries).
 
 ## Log policy: xcbeautify, never errors-only
 

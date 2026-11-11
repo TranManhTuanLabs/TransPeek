@@ -114,11 +114,20 @@ verified against the new public key.)
 5. Publish.
 
 Note: pushing a tag also triggers the `Release` workflow
-(`.github/workflows/release.yml`). As of 2026-11-11 that workflow fails
-at "Import signing certificate" (it expects P12 secrets that do not
-exist on the repo) — the manually published release is **not** affected
-by that failure. The workflow is being fixed to use the same PEM
-signing as `test.yml`.
+(`.github/workflows/release.yml`). **That workflow is GREEN since
+2026-11-12 (Release run #7 attempt 4)** — it runs the tests, archives
+the app unsigned, signs it by hand with the same PEM certificate as
+`test.yml`, builds the DMG, generates the appcast with the Sparkle
+EdDSA key, and creates a draft GitHub Release with all 5 files (ZIP +
+DMG + appcast + PopClip/OpenClip). The manual steps in this doc are now
+the **fallback** (and how v0.1.0 was published). Full history of what
+was broken and fixed: `GIT-CI-BUILD-SETUP.md` §4.
+
+**Push the tag first.** A release run started by manual dispatch
+without an existing tag files the draft under an auto-generated
+`untagged-...` tag instead of the version tag (observed with the
+`v0.0.0-dev` draft). For a real release, push the tag `v<version>`
+first so the tag exists, then let the workflow run from that tag.
 
 Verify after publishing, independently of the publish step:
 
@@ -139,6 +148,13 @@ because the feed now exists.
 
 ## 6. Next release checklist (short)
 
+0. Decide: **automatic** (push tag `v<version>`, watch the Release
+   workflow go green, review the draft it creates) or **manual**
+   (§1–§4 below). Automatic is the default now. If the Release
+   workflow is red, read its log first (`GIT-CI-BUILD-SETUP.md` §4
+   has the history of every failure and fix) — a 0-step run is a
+   GitHub capacity problem, not a code problem: re-run and wait, do
+   not switch direction.
 1. Bump `MARKETING_VERSION`, commit + push with `[build-app]` only when
    Manh says so.
 2. Wait for the run to go green; note the run number (= build number).
@@ -155,3 +171,12 @@ because the feed now exists.
   tag `v0.1.0` from `3a5acf1`, 2 assets (`TransPeek-0.1.0.zip`,
   14,408,228 bytes + `appcast.xml`, 1,840 bytes). Feed URL and ZIP link
   verified 200 with matching bytes.
+- **2026-11-12 00:23 — Release workflow goes green (run #7 attempt 4,
+  commit `47d86ab`).** First green `release.yml`: all 24 steps pass,
+  draft `v0.0.0-dev` created with 5 assets (`TransPeek-v0.0.0-dev-macOS.zip`
+  7.85 MB, `.dmg` 7.79 MB, `appcast.xml` 2.5 KB, PopClip 519 B,
+  OpenClip 649 B). The draft is filed under auto-generated tag
+  `untagged-12395624d4c68df7eac6` (the `v0.0.0-dev` tag never existed as
+  a git tag) — push the tag first for real releases. v0.1.0 remains the
+  only published/latest release; the draft does not affect the Sparkle
+  feed. History of the fixes: `GIT-CI-BUILD-SETUP.md` §4.

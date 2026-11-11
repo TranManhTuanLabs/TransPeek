@@ -278,6 +278,20 @@ Related docs:
 - How to publish a release, step by step (download artifact, write +
   sign the appcast, publish on GitHub, verify): `docs/RELEASE-PROCESS.md`.
   v0.1.0 was published this way on 2026-11-11 (see §4).
+- **Release workflow (`release.yml`) — green since 2026-11-12.**
+  Triggered by pushing a tag `v*` or by manual dispatch. Steps: tests
+  → archive the app UNSIGNED (`CODE_SIGNING_ALLOWED=NO`) → sign the
+  archived app by hand (`codesign --force --deep --sign "TransPeek
+  Self-Signed 100Years"`, the same PEM secrets and temp keychain as
+  `test.yml`) → verify → ZIP + DMG + PopClip/OpenClip extensions →
+  generate the appcast (Sparkle EdDSA private key from the secret
+  `SPARKLE_ED_PRIVATE_KEY`, base64 of the 32-byte seed) → create a draft
+  GitHub Release with all 5 files. First green run: Release #7 attempt 4
+  (commit `47d86ab`, 2026-11-12), draft `v0.0.0-dev`. Full history — the
+  P12 failure, the `find-identity` dead end, the unsigned archive, the
+  capacity failures — is in §4. For a real release, push the tag first
+  so the tag exists; a dispatch-only draft gets filed under an
+  auto-generated `untagged-...` tag.
 
 ## 4. Intervention log (what was changed, when, why)
 
@@ -595,6 +609,110 @@ each recurring problem.
   carried `[skip ci]`, verified: no new Tests run appeared after it
   (latest still #128 cancelled). Docs updated in the same round (§2 here
   + `BUILD-TEST-WORKFLOW-GITHUB-CI.md`).
+- **2026-11-11 — `release.yml` switched to PEM signing (commit
+  `d4f61c9`) + secret `SPARKLE_ED_PRIVATE_KEY` created.** Cause: the
+  v0.1.0 tag triggered the `Release` workflow, which FAILED at "Import
+  signing certificate" — it read the P12 secrets
+  (`SIGNING_CERTIFICATE_P12` / `SIGNING_CERTIFICATE_PASSWORD`) that do
+  not exist on this repo. Fix (Manh chose "fix the workflow, do not
+  disable it"): the same direction 4b as `test.yml` — decode
+  `MACOS_CODESIGN_CERT_PEM` / `MACOS_CODESIGN_KEY_PEM`, check both
+  SHA-256 hashes, import into the temp keychain
+  `/tmp/ci-signing.keychain-db`; the "Write Signing.xcconfig" step reads
+  the identity from that keychain; `SPARKLE_ED_PUBLIC_KEY` is hardcoded
+  (same public literal as `test.yml`, no longer read from a secret);
+  the "Verify code signature" step only warns (no longer fails) when
+  `TeamIdentifier` is not set, which is expected for a self-signed
+  certificate. Secret check (browser, names only): the repo held only
+  the four `MACOS_*` secrets — `SPARKLE_ED_PRIVATE_KEY`,
+  `SPARKLE_ED_PUBLIC_KEY` and `DEVELOPMENT_TEAM` did not exist, so
+  `SPARKLE_ED_PRIVATE_KEY` was created (base64 of the 32-byte EdDSA
+  seed, the format `generate_appcast --ed-key-file` needs — it parses
+  base64 seed data, not a PEM file; the public key derived from the PEM
+  matches the new key). The manual v0.1.0 release was NOT affected by
+  the workflow failure. Full manual process:
+  `docs/RELEASE-PROCESS.md`.
+- **2026-11-11 — Release runs #2/#3 fail at "Write Signing.xcconfig"
+  ("found 0 identities") — the `-p codesigning` hypothesis is WRONG.**
+  Run #2 (commit `d4f61c9`) failed because `security find-identity -v
+  -p codesigning` returned 0 identities. Hypothesis: the policy flag
+  filters out self-signed certificates. Fix tried: drop the flag
+  (commit `e8a63d9`). Run #3 failed IDENTICALLY — and the Import step's
+  own `find-identity -v -p codesigning` line also printed "0 valid
+  identities found" even though the step reported "1 certificate
+  imported" + "1 key imported". Conclusion: `find-identity` cannot list
+  this self-signed certificate's identity at all, with or without the
+  flag, even though the certificate + key import fine and `codesign
+  --sign` by the same name works (`test.yml` has signed that way since
+  run #99). Lesson: never trust `find-identity` for a self-signed
+  certificate; use the identity BY NAME. (Same lesson class as §7.8 of
+  the signing guide: a failed hypothesis must be disproved by a run
+  before the next switch.)
+- **2026-11-11 — Release run #4: xcconfig step green, archive green,
+  app UNSIGNED ("code object is not signed at all").** Fix applied:
+  use the certificate name directly as `CODE_SIGN_IDENTITY` (commit
+  `c90e0d6`). Result: Import green, Write Signing.xcconfig GREEN (its
+  diagnostic found the certificate in the temp keychain, SHA-1
+  `6B4A55BEF4836CCA25AFCDF827FD514C0B261D39`), Run tests green (2m19s),
+  Archive green (3m28s) — but Verify red: the archived app was not
+  signed at all. Inference: `xcodebuild archive` does NOT sign through
+  this xcconfig — most likely `CODE_SIGN_IDENTITY` resolved empty at
+  archive time (an unsigned app with a passing archive is the signature
+  of an empty identity; a wrong name would have failed the build
+  loudly). Note: `test.yml` never proved xcodebuild can sign — it always
+  builds with `CODE_SIGNING_ALLOWED=NO` and signs by hand with
+  `codesign` afterwards. Evidence collected: the heredoc that writes the
+  xcconfig was simulated locally and produces the file byte-exact
+  (correct values, no hidden characters); the certificate is proven in
+  the keychain; upstream proves the xcconfig mechanism works with a
+  real certificate + hash. Still unknown: whether the file survived
+  unchanged until Archive, or whether Xcode treats a self-signed
+  certificate + empty team differently at archive time.
+- **2026-11-11/12 — Release fix #3 (commit `47d86ab`): archive unsigned
+  + sign by hand — GREEN on run #7 attempt 4.** Fix: Archive runs with
+  `CODE_SIGNING_ALLOWED=NO`, then a new step "Sign archived app" signs
+  the archived app by hand (`codesign --force --deep --sign "TransPeek
+  Self-Signed 100Years"`, exactly like `test.yml`), and the Write
+  Signing.xcconfig step now also prints the written file with `cat`
+  (log evidence). Runs #5 (22:05), #6 (22:26) and #7 (22:44) all failed
+  with 0 steps — GitHub macOS runner capacity (job queued ~15 min then
+  cancelled: "The job was not acquired by Runner of type hosted even
+  after multiple attempts" + "Internal server error" + macOS arm64
+  capacity notices), so fix #3 was untested. Manh re-ran run #7; a
+  runner picked it up at 00:16 on 2026-11-12 and **attempt 4 went
+  SUCCESS — all 24 steps green, the first green Release workflow**
+  (7m21s). The run created draft release `v0.0.0-dev` with all 5
+  assets (ZIP 7.85 MB, DMG 7.79 MB, `appcast.xml` 2.5 KB, PopClip 519 B,
+  OpenClip 649 B). Fix #3 is proven: archive unsigned + manual
+  `codesign` is the working pattern for this repo. Capacity notes: the
+  same GitHub-wide macOS arm64 capacity problem of early Nov 2026
+  (macos-15/26/latest all affected; switching labels does not reliably
+  help — one project failed 8 times on macos-15). Rule: a capacity
+  failure (0 steps) means re-run and wait, never change direction.
+  Caution: a browser report that run #7 was "cancelled" at 23:05 was
+  WRONG — it read a stale page; the run had been re-run and went green.
+  Always verify run status via the API or a fresh page load. The draft
+  is filed under auto-generated tag
+  `untagged-12395624d4c68df7eac6`, NOT `v0.0.0-dev`, because that tag
+  never existed as a git tag — for a real release, push the tag first
+  so the tag exists (tag trigger), then the workflow files the release
+  under the real tag. v0.1.0 remains the only published/latest release;
+  the draft does not affect the Sparkle feed. The morning retry cron
+  created for this fix was removed once #7 went green — it was no
+  longer needed.
+- **2026-11-12 — Working rule set by Manh for release failures.**
+  When a new log arrives, investigate the cause from the log FIRST; if
+  investigation finds nothing, try the next fix, one per run, no
+  jumping ahead. The three approaches in the order presented: (1) keep
+  fix #3 + add an `xcodebuild -showBuildSettings` diagnostic before
+  Archive; (2) replace `xcodebuild archive` with `xcodebuild build`
+  (the `test.yml` pattern); (3) pass `CODE_SIGN_IDENTITY` on the archive
+  command line. Fallback order: the automatic workflow first; manual
+  release (`docs/RELEASE-PROCESS.md`) only as a last resort after
+  investigation finds no other way. Terminology fixed this night:
+  "release via web" means manually uploading the app to a GitHub
+  Release through the browser — NOT a separate website; there is only
+  one release location (GitHub Releases).
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
@@ -622,6 +740,12 @@ each recurring problem.
   `.p12` format failed). Identity: "TransPeek Self-Signed 100Years"
   (fingerprint SHA256 `28:7A:3E:21…`, valid to 17/10/2126). Full
   signing guide: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
+  `SPARKLE_ED_PRIVATE_KEY` (base64 of the 32-byte EdDSA seed, created
+  2026-11-11) is used by `release.yml` to sign the appcast — the value
+  is never quoted in docs; the seed lives in
+  `signing/transpeek-sparkle-eddsa.key` (mode 600). Release workflow
+  file: `.github/workflows/release.yml` (green since run #7 attempt 4,
+  2026-11-12; history in §4).
 - Local signing backup:
   `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
   for `transpeek-signing-selfsigned-100years` and their base64 forms
