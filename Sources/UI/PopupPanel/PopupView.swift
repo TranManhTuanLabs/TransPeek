@@ -362,27 +362,30 @@ struct PopupView: View {
                     .padding(.top, 6)
             }
 
-            // Bottom bar: GitHub link + version, compact.
+            // Bottom bar: GitHub link centered, version on the right.
+            // The icon + "GitHub" group is overlaid dead-center; the
+            // version text stays right-aligned.
             HStack {
-                Link(destination: Self.repoURL) {
-                    GitHubMarkShape()
-                        .fill(.secondary)
-                        .frame(width: 16, height: 16)
-                }
-                .buttonStyle(.plain)
-                .help("View TransPeek on GitHub")
-
-                Spacer()
-
-                Link("GitHub", destination: Self.repoURL)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 Spacer()
 
                 Text(versionText)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+            .overlay(alignment: .center) {
+                HStack(spacing: 4) {
+                    Link(destination: Self.repoURL) {
+                        GitHubMarkShape()
+                            .fill(.secondary)
+                            .frame(width: 16, height: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .help("View TransPeek on GitHub")
+
+                    Link("GitHub", destination: Self.repoURL)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.top, 6)

@@ -72,6 +72,31 @@ struct SourceInputView: View {
             }
 
             HStack(spacing: 4) {
+                Text(shortcutHint)
+                    .font(.popup(name: fontName, size: CGFloat(fontSize - 4)))
+                    .foregroundStyle(.quaternary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .allowsTightening(true)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .opacity(isWindowKey ? 1 : 0.4)
+
+                if offersRichView {
+                    Picker("View", selection: $sourceViewMode) {
+                        Text("Edit").tag(SourceViewMode.editor)
+                        Text("Rich Text").tag(SourceViewMode.rich)
+                    }
+                    .pickerStyle(.segmented)
+                    .controlSize(.mini)
+                    .labelsHidden()
+                    .fixedSize()
+                    .help("Switch source view")
+                    .background { InteractiveMarker() }
+                }
+
+                // Speak + Copy sit on the right, mirroring the provider
+                // result card below: same bordered mini buttons, so the
+                // speaker icon matches the target side in shape and colour.
                 if let ttsCoordinator {
                     let spokenText = MarkdownSupport.speakableText(text)
                     let speaking = ttsCoordinator.isPlaying(spokenText)
@@ -82,20 +107,19 @@ struct SourceInputView: View {
                             ttsCoordinator.speak(spokenText, language: sourceLanguage)
                         }
                     } label: {
-                        Image(systemName: speaking ? "speaker.wave.3.fill" : "speaker.wave.2")
-                            .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
+                        HStack(spacing: 2) {
+                            Image(systemName: speaking ? "speaker.wave.3.fill" : "speaker.wave.2")
+                            if sourceLanguage.hasPrefix("en") {
+                                Text(ttsAccent.shortLabel)
+                            }
+                        }
+                        .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .help("Speak source text")
                     .background { InteractiveMarker() }
-
-                    if sourceLanguage.hasPrefix("en") {
-                        Text(ttsAccent.shortLabel)
-                            .font(.popup(name: fontName, size: CGFloat(fontSize - 4)))
-                            .foregroundStyle(.secondary)
-                    }
                 }
 
                 // Copy source text (stays in the panel, unlike ⌘↵ Copy & Close).
@@ -114,28 +138,6 @@ struct SourceInputView: View {
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .help("Copy source text")
                 .background { InteractiveMarker() }
-
-                if offersRichView {
-                    Picker("View", selection: $sourceViewMode) {
-                        Text("Edit").tag(SourceViewMode.editor)
-                        Text("Rich Text").tag(SourceViewMode.rich)
-                    }
-                    .pickerStyle(.segmented)
-                    .controlSize(.mini)
-                    .labelsHidden()
-                    .fixedSize()
-                    .help("Switch source view")
-                    .background { InteractiveMarker() }
-                }
-
-                Text(shortcutHint)
-                    .font(.popup(name: fontName, size: CGFloat(fontSize - 4)))
-                    .foregroundStyle(.quaternary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .allowsTightening(true)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .opacity(isWindowKey ? 1 : 0.4)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: SwapLanguagesShortcut.didChangeNotification)) { _ in
