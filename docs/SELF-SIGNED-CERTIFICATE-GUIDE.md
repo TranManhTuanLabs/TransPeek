@@ -197,8 +197,14 @@ This creates two files in the current directory:
 
 ### 3.2 Bundle key + certificate into a `.p12`
 
+> **NOTE (2026-11-11): `.p12` is NO LONGER the active CI path.**
+> Every `.p12` format was tried and failed (§7); CI now imports the
+> certificate + key directly as PEM (§7.6, §8.1–§8.2). Keep this section
+> for reference and for local signing only — do not build a new `.p12`
+> for CI.
+
 The `.p12` is the portable form: one file holding certificate + private
-key. Which exact `.p12` format to make is the open question in §7 —
+key. Which exact `.p12` format to make was the open question in §7 —
 macOS's `security import` is picky about it. The two candidate formats:
 
 ```sh
@@ -461,56 +467,64 @@ signing.
 
 ---
 
-## 7. The `.p12` problem — two directions, one open question
+## 7. The signing-format problem — five attempts, one winner (RESOLVED 2026-11-11)
 
-### 7.1 What happened
+### 7.1 Results table (every run that tested signing)
 
-The CI signing step (added 2026-11-09, commit `414e364`) imports a
-`.p12` on the runner with:
+| Run | Commit | Direction | Result |
+|---|---|---|---|
+| #85 | `946b046` | Old 100Y `.p12`, OpenSSL 3 default, no password | Failed at import (MAC verification failed) |
+| #86 | `f54825e` | Legacy `.p12`, no password | Failed at **tests** (flaky test), signing step never reached |
+| #88 | `4d92dc2` | Legacy `.p12`, no password (100Years cert) | Failed at import, same MAC error as #85 |
+| #89 | `05cf520` | Direction 1 (unencrypted `.p12`) | **0 steps run** — no macOS runner (capacity), 2 attempts |
+| #90 | `95d2ccd` | Direction 2 (legacy `.p12` + password) | **0 steps run** — no macOS runner (capacity) |
+| #91 | `8132d99` | Direction 1 (unencrypted `.p12`) | **0 steps run** — no macOS runner (capacity) |
+| #92 | `2f3e64f` | Direction 1 (Self-Signed cert) | Attempts 1–3: 0 steps (capacity). Attempt 4 (01:48 11/11): **FAILED at import, MAC verification** — direction 1 DEAD |
+| #93 | `5530bb9` | Direction 2 (Self-Signed cert) | Attempts 1–2: 0 steps (capacity). Attempt 3 (04:44 11/11): **FAILED at import, "Unknown format in import"** — direction 2 DEAD |
+| #94 | `9076c25` | English UI (test-only, no signing) | SUCCESS |
+| #95 | `596b5a4` | Direction 3 (modern `.p12` + password) | Attempts 1 + 2: **FAILED at import, MAC verification** — direction 3 DEAD |
+| #96 | `41e5124` | i18n, 12 keys (test-only) | SUCCESS |
+| #97 | `fedbf93` | i18n, 85 keys + LOCALIZATION.md (test-only) | SUCCESS |
+| #98 | `3726ade` | Direction 3b (modern `.p12`, no password) | **FAILED at import, MAC verification (1 s)** — direction 3b DEAD; proved the password is NOT the cause |
+| #99 | `48069b7` | **Direction 4b (PEM certificate + key)** | **SUCCESS — all steps green, artifact `TransPeek-macOS` produced** |
 
-```sh
-security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "<password>" -T /usr/bin/codesign
-```
+Runs #89/#90/#91 and the early attempts of #92/#93 say **nothing**
+about any direction — the workflow never executed. A capacity failure
+(job cancelled, 0 steps, annotation "The job was not acquired by Runner
+of type hosted even after multiple attempts") must never be read as a
+signing failure, and must never trigger a direction switch. Only switch
+direction when a direction has **actually run and failed at the Sign
+step**.
 
-Runs #85 (commit `946b046`) and #88 (commit `4d92dc2`) both failed at
-that exact command after ~1 second:
-
-```text
-security: SecKeychainItemImport: MAC verification failed during PKCS12 import (wrong password?)
-```
-
-The `.p12` file itself was verified good: openssl on the VM reads it
-fine, the base64 round-trips exactly, and the key matches the
-certificate. The file and the secret are not corrupt. The conclusion,
-checked against macOS documentation and web reports: **on recent macOS,
-a `.p12` with an empty password cannot be imported** — the import
-rejects it no matter how the file was made. The first fix attempt
-(changing only the format to legacy, still no password) was therefore
-**not enough** — run #88 proved that, failing identically to #85.
-
-### 7.2 Direction 1 — unencrypted `.p12`, no password
+### 7.2 Direction 1 — unencrypted `.p12`, no password (FAILED)
 
 ```sh
 openssl pkcs12 -export -legacy -keypbe NONE -certpbe NONE -nomaciter \
   -out transpeek-signing-selfsigned-100years-nocrypt.p12 \
-  -inkey transpeek-signing-100years.key -in transpeek-signing-100years.crt \
+  -inkey transpeek-signing-selfsigned-100years.key -in transpeek-signing-selfsigned-100years.crt \
   -passout pass:
 # File: 2362 bytes, base64 3152 chars, MAC SHA-1 iteration 1, key bag
 # unencrypted. Import with -P "".
 ```
 
 Idea: if nothing is encrypted, there is no password to verify, so the
-empty-password rejection should not apply. This is the simplest
-direction — no password to remember, no password secret.
+empty-password rejection should not apply. **Result:** run #92 attempt
+4 reached the Sign step and failed in ~1 s with "MAC verification
+failed during PKCS12 import". The early theory ("a `.p12` with an empty
+password cannot be imported") was wrong — the real cause was the
+format (§7.7), and direction 3b later proved the password was never
+the problem.
 
-### 7.3 Direction 2 — legacy `.p12` WITH a password
+### 7.3 Direction 2 — legacy `.p12` WITH a password (FAILED)
 
 ```sh
 openssl pkcs12 -export -legacy -macalg sha1 \
   -out transpeek-signing-selfsigned-100years-legacy-pass2.p12 \
-  -inkey transpeek-signing-100years.key -in transpeek-signing-100years.crt \
+  -inkey transpeek-signing-selfsigned-100years.key -in transpeek-signing-selfsigned-100years.crt \
   -passout pass:<PASSWORD>
-# File: 2469 bytes, base64 3292 chars, MAC SHA-1 + RC2-40 + 3DES key bag.
+# File: 2469 bytes, base64 3292 chars, MAC SHA-1 iteration 2048,
+# cert bag pbeWithSHA1And40BitRC2-CBC (RC2-40), key bag
+# pbeWithSHA1And3-KeyTripleDES-CBC (3DES).
 # Import with -P "$MACOS_CODESIGN_CERT_PASSWORD".
 ```
 
@@ -519,35 +533,146 @@ Idea: the documented working recipe for recent macOS is
 stored in two places only: the local file
 `signing/transpeek-signing-100years-password.txt` (mode 600) and the
 GitHub secret `MACOS_CODESIGN_CERT_PASSWORD`. It is **never** written in
-chat, in memory, in docs, or in the repo.
+chat, in memory, in docs, or in the repo. **Result:** run #93 attempt 3
+reached the Sign step and failed with "Unknown format in import"
+(`errSecUnknownFormat`, -25257) — the only direction that got PAST the
+MAC check. The MAC (SHA-1) verified fine; macOS 26 could not parse the
+RC2-40-encrypted certificate bag.
 
-### 7.4 Status: NEITHER direction has been tested yet (UNVERIFIED)
+### 7.4 Direction 3 — modern `.p12` WITH a password (FAILED)
 
-| Run | Commit | Direction | Result |
-|---|---|---|---|
-| #85 | `946b046` | Old 100Y `.p12`, OpenSSL 3.x default, no password | Failed at import (MAC verification failed) |
-| #86 | `f54825e` | Legacy, no password | Failed at **tests** (flaky test), signing step never reached |
-| #88 | `4d92dc2` | Legacy, no password (100Years cert) | Failed at import, same error as #85 |
-| #89 | `05cf520` | Direction 1 (unencrypted) | **0 steps run** — no macOS runner (capacity), job cancelled after 15 min |
-| #90 | `95d2ccd` | Direction 2 (legacy + password) | **0 steps run** — no macOS runner (capacity), job cancelled after 15 min |
-| #91 | `8132d99` | Direction 1 (unencrypted) | **0 steps run** — no macOS runner (capacity), job cancelled after 15 min |
+```sh
+openssl pkcs12 -export \
+  -out transpeek-signing-selfsigned-100years-modern-pass2.p12 \
+  -inkey transpeek-signing-selfsigned-100years.key -in transpeek-signing-selfsigned-100years.crt \
+  -passout pass:<PASSWORD>
+# File: 2611 bytes, base64 3484 chars, MAC SHA-256 iteration 2048,
+# cert bag + key bag both PBES2/PBKDF2/AES-256-CBC (PRF hmacWithSHA256),
+# no RC2 anywhere. Import with -P "$MACOS_CODESIGN_CERT_PASSWORD".
+```
 
-Runs #89/#90/#91 say **nothing** about either direction — the workflow
-never executed. A capacity failure (job cancelled, 0 steps, annotation
-"The job was not acquired by Runner of type hosted even after multiple
-attempts") must never be read as a signing failure, and must never
-trigger a direction switch. Only switch direction when a direction has
-**actually run and failed at the Sign step**.
+Idea: direction 2 died on the RC2-40 bag, so remove RC2 entirely by
+using OpenSSL 3's modern default format. **Result:** run #95 attempts
+1 and 2 both failed at import with "MAC verification failed". The
+password hypothesis at the time: the value in the secret
+`MACOS_CODESIGN_CERT_PASSWORD` did not match the `.p12`. Evidence for
+it: the local password file (17 characters, no stray whitespace) opens
+all three `.p12` files, and the secret was re-created from the verified
+modern file (06:06 11/11) and attempt 2 still failed identically — so
+the file was exonerated and only the secret value remained suspect.
+That hypothesis turned out to be wrong (§7.5).
 
-Next step (scheduled 2026-11-10 ~23:40 +07, cron
-`transpeek-rerun-91-late-night`): re-run #91 (direction 1). If that
-also dies of capacity, retry again 2026-11-11 08:00 +07 (US evening,
-quieter). **After one direction works, update this section and
-`docs/GIT-CI-BUILD-SETUP.md` §3–§4 with the verified winner, and delete
-the losing `.p12` variant from the active path (keep the file, remove it
-from the secret/workflow).**
+### 7.5 Direction 3b — modern `.p12`, NO password (FAILED)
 
-### 7.5 How to tell which direction won (for the person checking the run)
+Same file as direction 3, but exported with an empty password
+(`-passout pass:`) and imported with `-P ""`. File: 2611 bytes, base64
+3484 chars. **Result:** run #98 failed at import in 1 s with the exact
+same "MAC verification failed". **This run proved the password was NOT
+the cause** — a file with no password at all fails identically. The
+problem was the format, not the password (§7.7).
+
+### 7.6 Direction 4b — PEM certificate + key, NO `.p12` (PASSED — THE STANDARD)
+
+The certificate and the private key are imported separately as PEM
+files, so macOS never has to parse a `.p12` at all:
+
+```sh
+printf '%s' "$MACOS_CODESIGN_CERT_PEM" | base64 --decode > /tmp/TransPeek-signing.crt
+printf '%s' "$MACOS_CODESIGN_KEY_PEM" | base64 --decode > /tmp/TransPeek-signing.key
+# SHA-256 checks of both decoded files (expected hashes are in test.yml):
+#   cert 9354805dff7a8f50af55ed83006eede90a6145442d8cf3992fd153a0cdf9761a
+#   key  e81b462f615f202b3e143591726199c60e86ae49d3d633fb97ea8e569fda54bc
+security import /tmp/TransPeek-signing.crt -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
+security import /tmp/TransPeek-signing.key -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
+```
+
+Secrets (see §8.1): `MACOS_CODESIGN_CERT_PEM` (base64 of the `.crt`,
+1640 chars) and `MACOS_CODESIGN_KEY_PEM` (base64 of the `.key`, 2272
+chars). The two SHA-256 checks at the start of the Sign step prove the
+secrets arrived intact — if a hash mismatches, the step stops there
+with "ERROR: ... secret does not match the local file", which means the
+secret (not the format) is the problem.
+
+**Result:** run #99 (commit `48069b7`, 2026-11-11 13:04 +07) — **all
+steps green, including the Sign step, and the `TransPeek-macOS`
+artifact was produced.** First successful CI signing. **This is the
+standard going forward: do it this way every time. Do not go back to a
+`.p12`.** The old secrets `MACOS_CODESIGN_CERT_P12` and
+`MACOS_CODESIGN_CERT_PASSWORD` are no longer read by `test.yml`;
+deleting them is a cleanup decision for later. The `.p12` files are
+kept in the local `signing/` directory for reference only.
+
+Direction 4a (prepared, never tested, NOT needed): legacy `.p12` with
+`-descert` (both certificate and key bags in 3DES, no RC2) plus a
+password — the last remaining `.p12` combination. It was queued to run
+only if 4b failed. 4b passed, so 4a was never run and is not needed.
+
+### 7.7 What was actually wrong (the real cause)
+
+macOS 26's `security import` only understands **legacy PKCS12**
+(3DES/SHA-1). It rejects OpenSSL 3's modern default format
+(PBES2/PBKDF2 with AES-256-CBC bags and a SHA-256 MAC) with "MAC
+verification failed" **even when the password is correct — or empty**.
+That is why directions 1, 3 and 3b all died at the MAC check with the
+same error, although their files, passwords and secrets were all
+verified good. Separately, macOS 26 can no longer parse the RC2-40
+certificate bag, which is why direction 2 (legacy, SHA-1 MAC — the
+only one that got past the MAC check) died with "Unknown format".
+Confirmed by a web source on OpenSSL 3 `.p12` vs macOS `security`
+(OpenSSL 3 uses PBKDF2/SHA-256 + AES-256 by default; macOS `security`
+expects legacy 3DES/SHA-1) and by the pattern across all five runs.
+
+### 7.8 Lessons — which switches were made without checking the cause first
+
+1. **Direction 1 → 2 (2026-11-10 evening): switched on NO evidence —
+   the clearest mistake.** Direction 1 had never run: run #89 died of
+   capacity (0 steps) twice. The switch to direction 2 was made
+   anyway, and Manh corrected it. **Rule (enforced since): only switch
+   direction when a direction has actually run and failed at the Sign
+   step; a 0-step capacity failure only ever means re-run and wait.**
+   A revert task also briefly left the secret and workflow mismatched
+   (21:55, fixed 21:58) — secret and workflow are a pair, always update
+   both together.
+2. **Direction 2 → 3: switched on a real failure, but the new direction
+   was an unverified guess.** Direction 2's failure ("Unknown format")
+   was real, so switching was legitimate. But direction 3 (modern
+   format) was chosen on the untested assumption that macOS 26 would
+   accept modern PKCS12 — nobody checked that first. The web
+   confirmation that macOS `security` rejects OpenSSL 3's default
+   format only came AFTER 3b failed (2026-11-11). Cost: runs #95 (×2)
+   and #98 testing a format macOS was never going to accept. **Rule:
+   before trying a new format, check in one web search whether the
+   target tool accepts it — do not spend a CI run as the test.**
+3. **Direction 3 → 3b: the RIGHT way to test a hypothesis.** The
+   password-secret explanation was the best available at the time
+   (local file + `.p12` verified good, secret re-created from the
+   verified file, still failed). Instead of assuming, 3b removed the
+   password entirely — and failed identically, FALSIFYING the
+   hypothesis. One failed run bought the key insight (password is not
+   the cause) that pointed at the format. When a cause is suspected,
+   design the next run to prove or disprove it, not just to try
+   something else.
+4. **Direction 3b → 4b: evidence-based.** After 3b, the format
+   hypothesis was confirmed (web source + the pattern across all runs:
+   modern → MAC fail; legacy → past MAC, fail on RC2 bag). 4b was
+   designed to dodge both dead ends at once (no PKCS12 parsing at all)
+   and to include SHA-256 checks so secret corruption could never
+   again be confused with a format failure.
+5. **Re-verify a surprising claim against the actual files.** A
+   background check on 2026-11-11 06:0x claimed the legacy `.p12`
+   "does not open with the saved password" and that a second 21-char
+   password file existed — both false (the check had omitted the
+   `-provider legacy` flag OpenSSL 3 needs for RC2; no second file
+   exists). Re-verified the same morning. A claim that contradicts
+   earlier verification is itself the thing to verify first.
+6. **GitHub sudo-mode codes (2026-11-11).** Default to the
+   authenticator app (6-digit code); the email code is 8 digits. A
+   browser task that clicks "send code by email" makes the input accept
+   only 8-digit codes — two 6-digit authenticator codes were rejected
+   as wrong format before the email code worked. Gmail is not connected
+   to Muse, so email codes must come from Manh.
+
+### 7.9 How to tell which direction won (for the person checking the run)
 
 Open the run → job `test` → step "Sign app with self-signed
 certificate":
@@ -557,11 +682,13 @@ certificate":
   permissions once for the new identity, quit + reopen, check
   Accessibility + OCR, and check the updater starts without the
   "Unable to Check For Updates" error).
-- **Red at `security import` with "MAC verification failed"** → that
-  direction is dead; switch to the other one (update the secret +
-  `test.yml` together — they must always match; a mismatched pair is
-  exactly what happened for a few minutes on 2026-11-10 21:55, and it
-  would have failed the run).
+- **Red at `security import` with "MAC verification failed"** → the
+  `.p12` format is one macOS rejects; do not retry the same format
+  with a different password — change the format (see §7.7), or skip
+  `.p12` entirely (§7.6).
+- **Red at a SHA-256 check ("ERROR: ... secret does not match the local
+  file")** → the secret was pasted wrong; re-create that secret from
+  the local base64 file, do not change the format.
 - **Cancelled with 0 steps** → capacity, not signing. Re-run and wait.
   Do not change anything.
 
@@ -569,51 +696,69 @@ certificate":
 
 ## 8. CI signing on GitHub (how the runner signs the app)
 
-### 8.1 The secret
+### 8.1 The secrets (direction 4b — PEM, no `.p12`)
 
 Repo → Settings → Secrets and variables → Actions → Secrets:
 
-- **`MACOS_CODESIGN_CERT_P12`** — base64 of the `.p12` file. Create it
-  with:
+- **`MACOS_CODESIGN_CERT_PEM`** — base64 of the PEM certificate
+  (`signing/transpeek-signing-selfsigned-100years.crt`), 1640 chars.
+  Created 2026-11-11 13:02. Create it with:
   ```sh
-  base64 -w0 transpeek-signing-selfsigned-100years-nocrypt.p12 > transpeek-signing-selfsigned-100years-nocrypt-b64.txt
-  # Paste the ENTIRE single line (3152 chars for direction 1,
-  # 3292 chars for direction 2) as the secret value.
+  base64 -w0 transpeek-signing-selfsigned-100years.crt > transpeek-signing-selfsigned-100years-cert-b64.txt
+  # Paste the ENTIRE single line as the secret value.
   ```
-- **`MACOS_CODESIGN_CERT_PASSWORD`** — only for direction 2. Created
-  2026-11-10 21:44. If direction 1 wins, consider deleting this secret
-  (not yet decided).
+- **`MACOS_CODESIGN_KEY_PEM`** — base64 of the PEM private key
+  (`signing/transpeek-signing-selfsigned-100years.key`), 2272 chars.
+  Created 2026-11-11 13:03. Create it with:
+  ```sh
+  base64 -w0 transpeek-signing-selfsigned-100years.key > transpeek-signing-selfsigned-100years-key-b64.txt
+  # Paste the ENTIRE single line as the secret value.
+  ```
 
-Only ONE `.p12` secret is active at a time, and it must match the
-`test.yml` on `main` — secret and workflow are a pair. Always update
-both together, in one change, and verify after: the secret's "Last
-updated" time should be just after the workflow commit.
+The two secrets and the `test.yml` on `main` are a set — always update
+them together, in one change, and verify after: each secret's "Last
+updated" time should be just after the workflow commit. The workflow
+checks both decoded files against their known SHA-256 hashes (§8.2),
+so a wrongly pasted secret fails loudly at the start of the Sign step
+instead of producing a misleading error later.
+
+No longer used by `test.yml` (kept on the repo for now, cleanup
+decision pending): `MACOS_CODESIGN_CERT_P12` (base64 of a `.p12`) and
+`MACOS_CODESIGN_CERT_PASSWORD` (direction 2/3 password). Do not
+re-introduce them — every `.p12` format failed (§7).
 
 ### 8.2 The workflow step (`.github/workflows/test.yml`)
 
 The step runs only when the commit message contains `[build-app]`
 (see `docs/GIT-CI-BUILD-SETUP.md` §3). In order, it:
 
-1. Decodes the secret from base64 into `/tmp/TransPeek-signing.p12`.
-2. Creates a **temporary keychain** `/tmp/ci-signing.keychain-db` with
+1. Decodes both secrets from base64 into `/tmp/TransPeek-signing.crt`
+   and `/tmp/TransPeek-signing.key`.
+2. Checks both decoded files against their known SHA-256 hashes
+   (cert `9354805d…9761a`, key `e81b462f…da54bc`) — if either
+   mismatches, the step stops with "ERROR: ... secret does not match
+   the local file". This rules out a wrongly pasted secret before any
+   import is attempted.
+3. Creates a **temporary keychain** `/tmp/ci-signing.keychain-db` with
    a throwaway password (`ci-signing-temp`) — a fresh runner has no
    login keychain with the certificate, so CI makes its own.
-3. Unlocks the keychain and sets it as default.
-4. Imports the `.p12` (`-P ""` for direction 1,
-   `-P "$MACOS_CODESIGN_CERT_PASSWORD"` for direction 2) with
+4. Unlocks the keychain and sets it as default.
+5. Imports the certificate, then the private key, each with
    `-T /usr/bin/codesign` (allows `codesign` to use the key without
-   prompting).
-5. Sets the key partition list (`security set-key-partition-list`) so
+   prompting). No `.p12` is involved at any point.
+6. Sets the key partition list (`security set-key-partition-list`) so
    `codesign` can use the key non-interactively.
-6. Signs the app:
+7. Signs the app:
    ```sh
    codesign --force --deep --sign "TransPeek Self-Signed 100Years" build/Build/Products/Release/TransPeek.app
    ```
-7. Verifies (`codesign --verify --verbose`) and deletes the temp
-   `.p12`.
+8. Verifies (`codesign --verify --verbose`) and deletes the temp
+   `.crt` / `.key`.
 
-The step was added 2026-11-09 (commit `414e364`). It has **never run
-successfully yet** — see §7.4.
+The step was added 2026-11-09 (commit `414e364`) and switched to PEM
+in direction 4b on 2026-11-11 (commit `48069b7`). **Verified working:
+run #99 (2026-11-11 13:04 +07) — all steps green, artifact
+`TransPeek-macOS` produced.** See §7.
 
 ### 8.3 The rest of the build (context)
 
@@ -625,22 +770,25 @@ Delete older app artifacts (keep only the newest) → Upload test results
 (`SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`),
 without which the built app has an empty `SUPublicEDKey` and Sparkle's
 updater fails to start ("Unable to Check For Updates") — fixed in
-commit `0048aa9`, also still untested pending a successful signed build.
+commit `0048aa9`, and build-verified by run #99 (the signed app now
+contains the key). The live check — launching the artifact on a Mac and
+confirming no updater error — still needs a Mac test of the artifact.
 
 ### 8.4 Rotating the certificate (when you must create a new one)
 
 1. Create the new certificate (§3 or §4) with a **new name** (or the
    same name after deleting the old one — but a new name avoids
    confusion).
-2. Export the `.p12` in the winning format (§7).
-3. Update the secret `MACOS_CODESIGN_CERT_P12` (and the password secret
-   if direction 2).
-4. Update `test.yml` if the identity name changed
+2. Create the two new PEM secrets from the new `.crt` + `.key`
+   (§8.1), and update the two SHA-256 hashes in `test.yml` to the new
+   files' hashes. Do NOT go back to a `.p12` (§7).
+3. Update `test.yml` if the identity name changed
    (`codesign --sign "<new name>"`).
-5. Push a `[build-app]` commit and check the Sign step goes green.
-6. Every machine must grant Accessibility + Screen Recording **once**
+4. Push a `[build-app]` commit and check the Sign step goes green.
+5. Every machine must grant Accessibility + Screen Recording **once**
    for the new identity (a new certificate = a new identity).
-7. Keep the old `.p12` backed up until the new one is verified working.
+6. Keep the old `.crt` + `.key` backed up until the new one is verified
+   working.
 
 If you lose the certificate + private key, the same procedure applies —
 there is no recovery of the old identity, only replacement. The cost is
@@ -655,11 +803,12 @@ one re-grant of permissions per machine.
 | `security find-identity -v` → `0 valid identities found` | Certificate not trusted, or no private key, or duplicate name | Set Trust → Always Trust; confirm a private key sits under the certificate in Keychain Access; delete duplicate same-name certificates |
 | `find-identity -v -p codesigning` shows `(Invalid Key Usage for policy)` | Certificate lacks Key Usage `digitalSignature` | Recreate with `keyUsage=critical,digitalSignature,keyCertSign` (§3) or via GUI with type Code Signing (§4) |
 | `codesign` → `this identity cannot be used for signing code` | Same as above | Same as above — the certificate itself is wrong, not the command |
-| CI `security import` → `MAC verification failed during PKCS12 import (wrong password?)` | `.p12` format macOS rejects: OpenSSL 3.x default, or legacy with empty password | Use direction 1 (§7.2) or direction 2 (§7.3); verify the `.p12` with `openssl pkcs12 -info` first |
+| CI `security import` → `MAC verification failed during PKCS12 import (wrong password?)` | `.p12` format macOS rejects: OpenSSL 3.x default (PBES2/AES-256 + SHA-256 MAC) or legacy with empty password | **Do not use a `.p12` for CI at all** — use direction 4b (PEM, §7.6). The password is almost certainly NOT the cause (§7.5, §7.7) |
+| CI Sign step → `ERROR: certificate secret does not match the local file` (or same for the key) | The PEM secret was pasted wrong (truncated / extra whitespace) | Re-create that secret from the local base64 file (`signing/*-cert-b64.txt` / `*-key-b64.txt`); do not change the format |
 | CI job cancelled, 0 steps, "job was not acquired by Runner" | GitHub has no free macOS arm64 runner (capacity), NOT a signing failure | Re-run and wait (prefer off-peak US hours); do NOT change direction or code |
 | App still says permissions are missing after granting | Grant is attached to a different (unsigned/older) binary | Run the signed `/Applications/TransPeek.app`; remove all TransPeek entries with **−**, re-add, quit + reopen |
 | `tccutil reset … <bundle-id>` reports success but nothing changes | Reset looks up by bundle ID; unsigned-app entries are keyed by path | Use the **−** button in System Settings |
-| Updater: "Unable to Check For Updates / updater failed to start" | Built app has no Sparkle EdDSA public key (and/or is unsigned) | Needs a `[build-app]` build with the key + CI signing (§8.3) — UNVERIFIED, pending a successful signed build |
+| Updater: "Unable to Check For Updates / updater failed to start" | Built app has no Sparkle EdDSA public key (and/or is unsigned) | Build-verified fixed in run #99 (key present + app signed); the live check still needs a Mac launch of the artifact (§8.3) |
 
 ---
 
@@ -710,3 +859,39 @@ one re-grant of permissions per machine.
   a successful CI build, so the rename costs no re-grant. Secret +
   `test.yml` updated together (direction 1) with a `[build-app]`
   commit; the re-run plan moves from run #91 to the new run.
+
+- **2026-11-11 01:48 — Direction 1 LOSES (run #92 attempt 4).** After
+  three capacity-killed attempts, attempt 4 actually ran: tests green,
+  build green, Sign red in ~1 s with "MAC verification failed".
+  Unencrypted legacy `.p12` is dead.
+- **2026-11-11 04:44 — Direction 2 LOSES (run #93 attempt 3).** After
+  two capacity-killed attempts, attempt 3 ran: tests + build green,
+  Sign red with "Unknown format in import" — the RC2-40 cert bag.
+  Legacy `.p12` with password is dead.
+- **2026-11-11 05:24 — Direction 3 prepared (modern `.p12` + same
+  password).** OpenSSL 3 default format, no RC2. Commit `596b5a4`
+  (`[build-app]`), run #95: attempts 1 + 2 both failed at import with
+  "MAC verification failed". The password secret was suspected and
+  re-created from the verified file (06:06) — attempt 2 still failed
+  identically, exonerating the file.
+- **2026-11-11 06:45 — Direction 3b tried (modern `.p12`, NO
+  password).** Commit `3726ade`, run #98: failed at import in 1 s with
+  the same "MAC verification failed" — proving the password was never
+  the cause. Web check afterwards confirmed macOS `security` only
+  understands legacy PKCS12 (3DES/SHA-1) and rejects OpenSSL 3's
+  modern format.
+- **2026-11-11 13:00 — Manh approves trying BOTH remaining directions:**
+  4b (PEM, no `.p12`) first, 4a (legacy 3DES-only `.p12`) only if 4b
+  fails; if both fail, investigate the CI error thoroughly before
+  switching again. Manh also asks whether CI signing still works or
+  users must sign manually per machine — answered: both directions
+  still sign in CI (key lives only in GitHub Secrets, runner imports
+  it into a throwaway keychain); users download an already-signed app
+  and never touch a key.
+- **2026-11-11 13:04 — Direction 4b WINS (run #99, commit `48069b7`).**
+  PEM certificate + key as separate secrets, SHA-256 checks in the
+  workflow, `security import` of each file — **all steps green, first
+  successful CI signing, artifact `TransPeek-macOS` produced.**
+  Direction 4a was never run and is not needed. This guide and
+  `docs/GIT-CI-BUILD-SETUP.md` §3–§4 updated the same day with the
+  full history and the lessons (§7.8).

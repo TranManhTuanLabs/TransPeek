@@ -180,13 +180,16 @@ Related docs:
   tests" step) — without it the built app has an empty `SUPublicEDKey` and
   Sparkle's updater fails to start (see §4, 2026-11-10).
 - **Sign app with self-signed certificate** (added 2026-11-09, commit
-  `414e364`): decodes the secret `MACOS_CODESIGN_CERT_P12` (base64 of the
-  `.p12`) to a temp file → creates a temporary keychain → imports the
-  certificate → signs the app with identity `TransPeek Self-Signed 100Years`
-  (`codesign --force --deep --sign`) → verifies (`codesign --verify
-  --verbose`) → deletes the temp `.p12`. Runs after Build app,
-  before Zip app. Full A–Z guide (why, the `.p12` format problem, the
-  two directions being tested): `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
+  `414e364`; PEM format since 2026-11-11, commit `48069b7`): decodes the
+  secrets `MACOS_CODESIGN_CERT_PEM` + `MACOS_CODESIGN_KEY_PEM` (base64 of
+  the PEM certificate and private key) to temp files → checks both
+  against their known SHA-256 hashes → creates a temporary keychain →
+  imports the certificate, then the key → signs the app with identity
+  `TransPeek Self-Signed 100Years` (`codesign --force --deep --sign`) →
+  verifies (`codesign --verify --verbose`) → deletes the temp files.
+  Runs after Build app, before Zip app. **Verified working: run #99
+  (2026-11-11).** Full A–Z guide (why, the five signing attempts, the
+  winner): `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.
 - **Zip app:** `ditto -c -k --keepParent` (keeps the `.app` bundle;
   `upload-artifact` with a directory path would lose the directory
   itself).
@@ -199,9 +202,12 @@ Related docs:
 ### CI signing — the secret and the certificate
 
 - Secrets (repo Settings → Secrets and variables → Actions → Secrets):
-  `MACOS_CODESIGN_CERT_P12` (base64 of the `.p12` file) and, only for
-  direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. The secret and the
-  `test.yml` on `main` are a pair — always update both together.
+  `MACOS_CODESIGN_CERT_PEM` (base64 of the PEM certificate, 1640 chars)
+  and `MACOS_CODESIGN_KEY_PEM` (base64 of the PEM private key, 2272
+  chars). The secrets and the `test.yml` on `main` are a set — always
+  update them together. No longer used: `MACOS_CODESIGN_CERT_P12` and
+  `MACOS_CODESIGN_CERT_PASSWORD` (every `.p12` format failed — see
+  `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7).
 - Certificate: self-signed **"TransPeek Self-Signed 100Years"**, SHA256
   fingerprint
   `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
@@ -218,27 +224,28 @@ Related docs:
   Accessibility + Screen Recording granted once.
 - Source files (do not commit to the repo), kept in the local workspace
   `~/workspace/projects/moepeek-translator/signing/`:
-  `transpeek-signing-selfsigned-100years.crt` + `.key`, and the two
-  `.p12` variants — direction 1
-  `transpeek-signing-selfsigned-100years-nocrypt.p12`
-  (2362 bytes, base64 3152 chars) and direction 2
-  `transpeek-signing-selfsigned-100years-legacy-pass2.p12` (2469 bytes,
-  base64 3292 chars). The direction-2 password lives only in
+  `transpeek-signing-selfsigned-100years.crt` + `.key`, and their base64
+  forms `transpeek-signing-selfsigned-100years-cert-b64.txt` (1640
+  chars) + `-key-b64.txt` (2272 chars). The `.p12` variants from the
+  failed directions (direction 1 nocrypt, direction 2 legacy-pass2,
+  direction 3 modern-pass2, direction 3b modern-nopass) are kept in the
+  same directory for reference only — do not use them for CI. The old
+  direction-2/3 password lives only in
   `signing/transpeek-signing-100years-password.txt` (mode 600) and in
   the GitHub secret — never in chat, memory, docs, or the repo. Keep a
-  backup of the `.p12` somewhere safe. If it is lost, a new certificate
-  can be created and the secret updated — macOS does not limit
-  self-signed certificates and GitHub does not limit secrets; the cost
-  is only re-creating the certificate and re-granting permissions once
-  per machine.
-- **Status (as of 2026-11-10 22:28 +07): the CI signing step has NEVER
-  run successfully yet, and neither `.p12` direction has been tested.**
-  Runs #85 and #88 failed at the `security import` step ("MAC
-  verification failed"); runs #89, #90 and #91 never got a macOS runner
-  (0 steps run, capacity). See `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`
-  §7 for the two directions and the re-run schedule (run #91 re-run
-  ~23:40 +07 on 2026-11-10, follow-up 08:00 +07 on 2026-11-11 if
-  capacity fails again).
+  backup of the `.crt` + `.key` somewhere safe. If they are lost, a new
+  certificate can be created and the secrets updated — macOS does not
+  limit self-signed certificates and GitHub does not limit secrets; the
+  cost is only re-creating the certificate and re-granting permissions
+  once per machine.
+- **Status (as of 2026-11-11 13:04 +07): CI signing WORKS — direction
+  4b (PEM certificate + key, no `.p12`) verified by run #99 (commit
+  `48069b7`): all steps green, artifact `TransPeek-macOS` produced.**
+  Directions 1, 2, 3 and 3b all failed at the `security import` step
+  (see the table in `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.1).
+  Runs #89, #90, #91 and the early attempts of #92/#93 never got a
+  macOS runner (0 steps run, capacity) — those say nothing about any
+  direction.
 
 ### Why signing matters (TCC / cdhash)
 
@@ -410,6 +417,66 @@ each recurring problem.
   a `[build-app]` commit; the 23:40 re-run plan moves from run #91 to
   the new run.
 
+- **2026-11-11 — Direction 1 LOSES (run #92 attempt 4, commit
+  `2f3e64f`).** Attempts 1–3 died of capacity (0 steps). Attempt 4
+  (finished 01:48): Run tests green, Build app green, Sign red in ~1 s
+  — `security import ... -P ""` → "MAC verification failed during
+  PKCS12 import". Unencrypted legacy `.p12` is dead. (Capacity note:
+  Manh re-ran attempt 2 himself at 23:46 on 2026-11-10.)
+- **2026-11-11 — Direction 2 LOSES (run #93 attempt 3, commit
+  `5530bb9`).** Attempts 1–2 died of capacity (0 steps). Attempt 3
+  (finished 04:44): tests + build green, Sign red — `security import`
+  → "Unknown format in import" (the RC2-40 certificate bag). Legacy
+  `.p12` with password is dead. This was the only direction that got
+  past the MAC check.
+- **2026-11-11 — English UI + i18n (commits `9076c25`, `41e5124`,
+  `fedbf93`; runs #94, #96, #97 — all SUCCESS).** Interface switched
+  to English (Manh's decision: English first for mac + Windows,
+  Vietnamese/Chinese/Korean only when the app is finished). The
+  `Localizable.xcstrings` catalog went 319 → 331 → 416 keys, all
+  extracted by script (verify with Xcode Export Localizations when a
+  Mac with Xcode is available). See `docs/LOCALIZATION.md`.
+- **2026-11-11 — Direction 3 LOSES (run #95, commit `596b5a4`,
+  attempts 1 + 2).** Modern `.p12` (OpenSSL 3 default, PBES2/AES-256 +
+  SHA-256 MAC) + password: both attempts failed at import with "MAC
+  verification failed". Suspected cause: the password value in secret
+  `MACOS_CODESIGN_CERT_PASSWORD` did not match the `.p12`. The local
+  password file (17 chars) and the file itself were verified good, and
+  the secret was re-created from the verified file at 06:06 (cron
+  `transpeek-check-93-6am`) — attempt 2 still failed identically, so
+  the file was exonerated. A background check the same morning wrongly
+  claimed the legacy file "does not open with the saved password" and
+  that a second 21-char password file existed — both false (the check
+  had omitted the `-provider legacy` flag; no second file exists).
+  Re-verified the same morning. Lesson: re-verify a surprising claim
+  against the actual files before acting on it.
+- **2026-11-11 — GitHub sudo-mode codes: authenticator app first.**
+  Updating a secret triggered sudo-mode; the browser task clicked
+  "send code by email", which made the input accept only 8-digit
+  codes — two 6-digit authenticator codes were rejected as wrong
+  format before the 8-digit email code worked. Rule (Manh, 02:22):
+  default to the authenticator app (6 digits); use the email code (8
+  digits) only when needed. Gmail is not connected to Muse, so email
+  codes must come from Manh.
+- **2026-11-11 — Direction 3b LOSES (run #98, commit `3726ade`).**
+  Modern `.p12` with an EMPTY password, import `-P ""`: failed at
+  import in 1 s with the same "MAC verification failed". This proved
+  the password was NOT the cause. Web check afterwards confirmed
+  macOS `security` only understands legacy PKCS12 (3DES/SHA-1) and
+  rejects OpenSSL 3's modern format — and direction 2 had already
+  shown RC2-40 is dead on macOS 26. So the remaining space was:
+  legacy-3DES-only (direction 4a) or skip `.p12` entirely (4b).
+- **2026-11-11 — Direction 4b WINS (run #99, commit `48069b7`).**
+  Certificate + private key as separate PEM secrets
+  (`MACOS_CODESIGN_CERT_PEM`, 1640 chars; `MACOS_CODESIGN_KEY_PEM`,
+  2272 chars), SHA-256 checks of both decoded files at the start of
+  the Sign step, `security import` of each file, then `codesign` —
+  **all steps green, first successful CI signing, artifact
+  `TransPeek-macOS` produced.** Manh approved trying both 4a and 4b
+  (13:00); 4b ran first and won, so 4a (legacy `-descert`, both bags
+  3DES, no RC2) was never run and is not needed. Full history and
+  lessons: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.
+
 ## 5. Branch note — `m2-m3-tts-ocr`
 
 - Branch `m2-m3-tts-ocr` (head `841ef9a1`) holds the finished M2 (EdgeTTS,
@@ -429,17 +496,19 @@ each recurring problem.
 - Actions: https://github.com/TranManhTuanLabs/TransPeek/actions
 - Workflow file: `.github/workflows/test.yml`
 - Test file: `Tests/PopupPanelLayoutTests.swift`
-- Secrets: `MACOS_CODESIGN_CERT_P12` (base64 `.p12`) and, only for
-  direction 2, `MACOS_CODESIGN_CERT_PASSWORD`. Identity: "TransPeek
-  Self-Signed 100Years" (fingerprint SHA256 `28:7A:3E:21…`, valid to
-  17/10/2126). Full signing guide:
-  `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
+- Secrets: `MACOS_CODESIGN_CERT_PEM` (base64 PEM certificate, 1640
+  chars) and `MACOS_CODESIGN_KEY_PEM` (base64 PEM private key, 2272
+  chars) — direction 4b, verified by run #99. No longer used:
+  `MACOS_CODESIGN_CERT_P12` + `MACOS_CODESIGN_CERT_PASSWORD` (every
+  `.p12` format failed). Identity: "TransPeek Self-Signed 100Years"
+  (fingerprint SHA256 `28:7A:3E:21…`, valid to 17/10/2126). Full
+  signing guide: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
 - Local signing backup:
   `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
-  for `transpeek-signing-selfsigned-100years`, `.p12` variants
-  `transpeek-signing-selfsigned-100years-nocrypt.p12` (direction 1) and
-  `transpeek-signing-selfsigned-100years-legacy-pass2.p12` (direction 2). The
-  direction-2 password is only in
+  for `transpeek-signing-selfsigned-100years` and their base64 forms
+  (`*-cert-b64.txt`, `*-key-b64.txt`). The `.p12` variants from the
+  failed directions are kept in the same directory for reference only.
+  The old direction-2/3 password is only in
   `signing/transpeek-signing-100years-password.txt` (mode 600) and in
   the GitHub secret — never in chat, memory, docs, or the repo.
 - Check CI: open the Actions page, newest run first; the failure is at
