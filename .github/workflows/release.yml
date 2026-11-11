@@ -83,6 +83,14 @@ jobs:
       # the archive step signs with the self-signed certificate. The identity
       # is read from the temporary keychain created above (NOT the
       # "signing_temp" keychain the old .p12 action used).
+      # NOTE: find-identity is run WITHOUT "-p codesigning" on purpose. That
+      # flag lists only identities valid under the codesigning policy, which
+      # requires a certificate chained to a trusted root — a self-signed
+      # certificate never passes it, so the command returns 0 identities
+      # (this failed Release run #2 exactly that way). Listing without the
+      # policy filter still returns the certificate + private key identity,
+      # and signing by its hash works fine — test.yml has signed that way
+      # since run #99.
       # SPARKLE_ED_PUBLIC_KEY is Sparkle's public EdDSA key (public, safe to
       # hardcode — same literal as test.yml): without it the built app has no
       # updater key and Sparkle cannot start. DEVELOPMENT_TEAM comes from a
@@ -94,7 +102,7 @@ jobs:
         run: |
           SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=
           SIGNING_IDENTITIES=$(
-            security find-identity -v -p codesigning /tmp/ci-signing.keychain-db |
+            security find-identity -v /tmp/ci-signing.keychain-db |
               awk '$1 ~ /^[0-9]+\)$/ { print $2 }' |
               sort -u
           )
