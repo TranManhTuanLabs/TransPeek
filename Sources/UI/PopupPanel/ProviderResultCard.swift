@@ -24,7 +24,6 @@ struct ProviderResultCard: View {
     @State private var resultTextHeight: CGFloat = 48
     @Default(.popupFontSize) private var fontSize
     @Default(.popupFontName) private var fontName
-    @Default(.ttsAccent) private var ttsAccent
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.resultViewMode) private var resultViewMode
     @Environment(\.ttsCoordinator) private var ttsCoordinator
@@ -245,13 +244,8 @@ struct ProviderResultCard: View {
                                 ttsCoordinator.speak(spokenText, language: targetLanguage)
                             }
                         } label: {
-                            HStack(spacing: 2) {
-                                Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
-                                if targetLanguage.hasPrefix("en") {
-                                    Text(ttsAccent.shortLabel)
-                                }
-                            }
-                            .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
+                            Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                .font(.popup(name: fontName, size: CGFloat(fontSize - 2)))
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
