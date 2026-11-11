@@ -130,37 +130,38 @@ jobs:
       # (valid 100 years). Signing gives the app a stable identity, so macOS
       # keeps the Accessibility + Screen Recording permissions across builds
       # instead of forgetting them after every new build.
-      # Direction 3b (modern PKCS12, NO password): same modern format as
-      # direction 3 (plain `openssl pkcs12 -export`, PBES2/PBKDF2 with
-      # AES-256-CBC bags and a SHA-256 MAC), but exported with an EMPTY
-      # password (`-passout pass:`) and imported with `-P ""`. Direction 3
-      # WITH password failed (run #95, "MAC verification failed" — the
-      # password in the secret does not match the .p12), so 3b removes the
-      # password from the equation entirely. Direction 1 (unencrypted
-      # .p12, empty password) was PROVEN to fail: run #92 attempt 4 reached
-      # this step and `security import -P ""` failed with
-      # "MAC verification failed during PKCS12 import". Direction 2 (legacy
-      # `-legacy -macalg sha1`, RC2-40 cert bag + 3DES key bag) was PROVEN to
-      # fail too: run #93 attempt 3 reached this step and `security import`
-      # failed with "Unknown format in import" — the macOS 26 runner cannot
-      # even parse the RC2-40-encrypted bag. Only runs with "[build-app]" in
-      # the commit message reach this step.
+      # Direction 4b (PEM certificate + key, NO PKCS12): the certificate and
+      # the private key are imported separately as PEM files, so macOS never
+      # has to parse a .p12 at all. Directions 1/3/3b all failed at `security
+      # import` of a .p12 with "MAC verification failed": macOS 26 only
+      # understands legacy PKCS12 (3DES/SHA-1) and rejects OpenSSL 3's
+      # modern format (PBES2/AES-256 + SHA-256 MAC). Direction 2 (legacy
+      # .p12) got past the MAC check but died on the RC2-40 cert bag
+      # ("Unknown format in import"). The two SHA-256 checks below prove the
+      # secrets arrived intact: if a hash mismatches, the secret — not the
+      # format — is the problem, and the step stops there. Only runs with
+      # "[build-app]" in the commit message reach this step.
       - name: Sign app with self-signed certificate
         if: contains(github.event.head_commit.message, '[build-app]')
         env:
-          MACOS_CODESIGN_CERT_P12: ${{ secrets.MACOS_CODESIGN_CERT_P12 }}
+          MACOS_CODESIGN_CERT_PEM: ${{ secrets.MACOS_CODESIGN_CERT_PEM }}
+          MACOS_CODESIGN_KEY_PEM: ${{ secrets.MACOS_CODESIGN_KEY_PEM }}
         run: |
-          printf '%s' "$MACOS_CODESIGN_CERT_P12" | base64 --decode > /tmp/TransPeek-signing.p12
+          printf '%s' "$MACOS_CODESIGN_CERT_PEM" | base64 --decode > /tmp/TransPeek-signing.crt
+          printf '%s' "$MACOS_CODESIGN_KEY_PEM" | base64 --decode > /tmp/TransPeek-signing.key
+          [ "$(shasum -a 256 /tmp/TransPeek-signing.crt | cut -d' ' -f1)" = "9354805dff7a8f50af55ed83006eede90a6145442d8cf3992fd153a0cdf9761a" ] || { echo "ERROR: certificate secret does not match the local file"; exit 1; }
+          [ "$(shasum -a 256 /tmp/TransPeek-signing.key | cut -d' ' -f1)" = "e81b462f615f202b3e143591726199c60e86ae49d3d633fb97ea8e569fda54bc" ] || { echo "ERROR: private key secret does not match the local file"; exit 1; }
           KEYCHAIN_PASSWORD="ci-signing-temp"
           security create-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security set-keychain-settings -lut 3600 /tmp/ci-signing.keychain-db
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
-          security import /tmp/TransPeek-signing.p12 -k /tmp/ci-signing.keychain-db -P "" -T /usr/bin/codesign
+          security import /tmp/TransPeek-signing.crt -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
+          security import /tmp/TransPeek-signing.key -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
           security default-keychain -s /tmp/ci-signing.keychain-db
           codesign --force --deep --sign "TransPeek Self-Signed 100Years" build/Build/Products/Release/TransPeek.app
           codesign --verify --verbose build/Build/Products/Release/TransPeek.app
-          rm -f /tmp/TransPeek-signing.p12
+          rm -f /tmp/TransPeek-signing.crt /tmp/TransPeek-signing.key
 
       # Zip the signed .app into TransPeek-macOS.zip for download.
       - name: Zip app
