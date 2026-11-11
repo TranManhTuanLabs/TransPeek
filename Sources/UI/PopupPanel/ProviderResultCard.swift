@@ -246,7 +246,10 @@ struct ProviderResultCard: View {
                             }
                         } label: {
                             HStack(spacing: 2) {
+                                // Bigger icon than the label text and the Copy
+                                // icon, so the speaker stands out in the row.
                                 Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                    .font(.popup(name: fontName, size: CGFloat(fontSize + 2)))
                                 if targetLanguage.hasPrefix("en") {
                                     Text(ttsAccent.shortLabel)
                                 }
@@ -255,10 +258,6 @@ struct ProviderResultCard: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
-                        // Same minimum width as the Copy button, so the two sit evenly
-                        // at the default font size. (At a much larger font size the Copy
-                        // button grows past 56pt and the two drift apart again.)
-                        .frame(minWidth: 56)
                         .help("Speak")
                     }
 
@@ -272,7 +271,6 @@ struct ProviderResultCard: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
-                        .frame(minWidth: 56)
                         .tint(isCopyFeedbackActive ? .green : nil)
                         .scaleEffect(isCopyPulsing ? 1.08 : 1)
                         .animation(.easeInOut(duration: 0.12), value: isCopyFeedbackActive)

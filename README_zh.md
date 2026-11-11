@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="Resources/AppIcon.icon/Assets/MoePeek.png" width="128" height="128" alt="TransPeek Icon" />
+  <img src="Resources/AppIcon.icon/Assets/TransPeek.png" width="128" height="128" alt="TransPeek Icon" />
 </p>
 
 <h1 align="center">TransPeek</h1>
 
-<p align="center"><em>随处翻译，一瞥即得。</em></p>
+<p align="center"><em>随处翻译，一瞥即得！</em></p>
 
 <p align="center">
   轻量原生的 macOS 菜单栏翻译工具，选中即译。

@@ -28,24 +28,24 @@ struct AboutSettingsView: View {
             Text("TransPeek")
                 .font(.title.bold())
 
-            // Tagline: "Translate anywhere, peek instantly."
+            // Tagline: "Translate anywhere, Peek instantly!"
             // (SPEC v0.1; also the README tagline.)
-            Text("Translate anywhere, peek instantly.")
+            Text("Translate anywhere, Peek instantly!")
                 .font(.subheadline)
                 .italic()
                 .foregroundStyle(.secondary)
 
             // GitHub mark (the Octocat, drawn as GitHubMarkShape so it
-            // scales crisply) + the word "GitHub", right under the app
-            // name — not a text-style link like the ones at the bottom,
-            // and not the generic </> symbol, which reads as "code"
-            // rather than GitHub.
+            // scales crisply) + the repo path, right under the app name
+            // — not a text-style link like the ones at the bottom, and
+            // not the generic </> symbol, which reads as "code" rather
+            // than GitHub.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
                         .fill(.secondary)
                         .frame(width: 20, height: 20)
-                    Text("GitHub")
+                    Text("Github/TranManhTuanLabs")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -68,11 +68,7 @@ struct AboutSettingsView: View {
                     .foregroundStyle(.tertiary)
             }
 
-            Text("Copyright © 2025-2026 TransPeek. Fork of MoePeek by cosZone, licensed under AGPL-3.0.")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-
-            Text("Licensed under AGPL-3.0")
+            Text("Copyright © 2025-2026 TransPeek Licensed under AGPL-3.0")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
@@ -102,6 +98,11 @@ struct AboutSettingsView: View {
 
                 Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/discussions")!) {
                     Label("Community Discussions", systemImage: "bubble.left.and.bubble.right")
+                }
+                .buttonStyle(.link)
+
+                Link(destination: URL(string: "mailto:tuanmanhtran.vn@gmail.com")!) {
+                    Label("Email", systemImage: "envelope")
                 }
                 .buttonStyle(.link)
             }

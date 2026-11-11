@@ -157,7 +157,7 @@ struct PopupView: View {
             VStack(spacing: 2) {
                 Text("TransPeek")
                     .font(.headline.bold())
-                Text("Translate anywhere, peek instantly.")
+                Text("Translate anywhere, Peek instantly!")
                     .font(.subheadline)
                     .italic()
                     .foregroundStyle(.secondary)
@@ -365,6 +365,10 @@ struct PopupView: View {
             // Bottom bar: GitHub link centered, version on the right.
             // The icon + "GitHub" group is overlaid dead-center; the
             // version text stays right-aligned.
+            // The InteractiveMarker is what makes the links clickable:
+            // without it PopupPanel treats a click here as a window drag
+            // (see PopupPanel.shouldStartWindowDrag), like every other
+            // button in this panel carries one.
             HStack {
                 Spacer()
 
@@ -386,6 +390,7 @@ struct PopupView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                .background { InteractiveMarker() }
             }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.top, 6)

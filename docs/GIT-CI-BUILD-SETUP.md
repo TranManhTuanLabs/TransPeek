@@ -491,6 +491,27 @@ each recurring problem.
   no accent choice. Speaker and Copy buttons share a 56pt minimum
   width so they sit evenly at the default font size. Decisions also
   recorded in `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 2 (feedback from build
+  0.21.0 (103); push 18:32, `[build-app]`).** New slogan "Translate
+  anywhere, Peek instantly!" (capital P + !) in the panel top bar,
+  About, and the catalog key (still 416 keys); README EN/ZH updated
+  in the same push (icon image link fixed to
+  `Resources/AppIcon.icon/Assets/TransPeek.png` — the old
+  `MoePeek.png` link was dead after commit `0b28b5f` deleted that
+  file). Shortcut hint aligned left. The 56pt minWidth on the four
+  speaker/Copy buttons was dropped — it only added padding and pushed
+  the two buttons apart — and the speaker icon itself was enlarged
+  (+2pt, 14pt at the default size). The GitHub link in the bottom bar
+  was not clickable: the panel treats any click without an
+  `InteractiveMarker` as a window drag, and the GitHub group had none
+  (the Copy button worked because it has one) — marker added; not
+  verified live. About: link relabelled "Github/TranManhTuanLabs",
+  copyright merged to one line "Copyright © 2025-2026 TransPeek
+  Licensed under AGPL-3.0" (the "Fork of MoePeek by cosZone" line is
+  gone from About; README still states the fork), Email link added
+  (`mailto:tuanmanhtran.vn@gmail.com`). Local clone was reset to
+  `cda67be` (newest main) before the push so no stale code went in.
+  Decisions also recorded in `docs/SPEC-v0.1.md` §8.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
