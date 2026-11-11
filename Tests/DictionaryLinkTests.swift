@@ -58,14 +58,16 @@ struct DictionaryLinkTests {
         let encoded = try JSONEncoder().encode(DictionaryLink.defaults)
         let decoded = try JSONDecoder().decode([DictionaryLink].self, from: encoded)
         #expect(decoded == DictionaryLink.defaults)
-        #expect(decoded.count == 4)
-        #expect(decoded.map(\.name) == ["Oxford", "Cambridge", "Google", "YouGlish"])
+        #expect(decoded.count == 5)
+        #expect(decoded.map(\.name) == ["Oxford", "Cambridge", "Google", "YouGlish", "Cambridge Vi"])
         #expect(decoded[0].url(for: "hello world")?.absoluteString
             == "https://www.oxfordlearnersdictionaries.com/definition/english/hello?q=hello")
         #expect(decoded[2].url(for: "hello world")?.absoluteString
             == "https://www.google.com/search?q=define+hello%20world")
         #expect(decoded[3].url(for: "hello world")?.absoluteString
             == "https://youglish.com/pronounce/hello%20world/english")
+        #expect(decoded[4].url(for: "hello world")?.absoluteString
+            == "https://dictionary.cambridge.org/dictionary/english-vietnamese/hello")
     }
 
     @Test func validationRejectsBadLinks() {

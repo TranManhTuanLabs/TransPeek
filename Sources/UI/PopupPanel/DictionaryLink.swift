@@ -36,6 +36,10 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
             name: "YouGlish",
             urlTemplate: "https://youglish.com/pronounce/{text}/english"
         ),
+        DictionaryLink(
+            name: "Cambridge Vi",
+            urlTemplate: "https://dictionary.cambridge.org/dictionary/english-vietnamese/{word}"
+        ),
     ]
 
     // MARK: - Persistence
