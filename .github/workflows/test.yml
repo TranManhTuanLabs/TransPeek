@@ -104,7 +104,7 @@ jobs:
             -destination 'platform=macOS' \
             -resultBundlePath build/Tests.xcresult \
             MACOSX_DEPLOYMENT_TARGET=15.0 \
-            SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo= \
+            SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M= \
             CODE_SIGNING_ALLOWED=NO \
           | xcbeautify
 
@@ -124,7 +124,7 @@ jobs:
             MACOSX_DEPLOYMENT_TARGET=15.0 \
             CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO \
-            SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=
+            SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=
 
       # Sign the built app with the self-signed certificate "TransPeek Self-Signed 100Years"
       # (valid 100 years). Signing gives the app a stable identity, so macOS
