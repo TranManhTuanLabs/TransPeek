@@ -272,6 +272,9 @@ Related docs:
   days, only the newest is kept, no user notification). A real Release
   (tag + Sparkle appcast) is what makes "Check for Updates" notify
   users. Do not confuse the two.
+- How to publish a release, step by step (download artifact, write +
+  sign the appcast, publish on GitHub, verify): `docs/RELEASE-PROCESS.md`.
+  v0.1.0 was published this way on 2026-11-11 (see §4).
 
 ## 4. Intervention log (what was changed, when, why)
 
@@ -559,6 +562,22 @@ each recurring problem.
   lost, rotate again the same way before the next release. The
   historical `0048aa9` entry above still quotes the old key — that
   was the value at the time.
+- **2026-11-11 — Release v0.1.0 published manually; process documented
+  (new `docs/RELEASE-PROCESS.md`).** Run #126 (commit `d84f0ff`)
+  SUCCESS → artifact downloaded and verified (app 0.1.0 build 126,
+  new EdDSA public key, feed URL) → `appcast.xml` written and signed
+  with the new EdDSA private key (`openssl pkeyutl -sign -rawin`,
+  verified round-trip) → release published via the browser (tag
+  `v0.1.0` from `3a5acf1`, 2 assets: `TransPeek-0.1.0.zip` +
+  `appcast.xml`, not draft/prerelease) → feed URL and ZIP link verified
+  200 with matching bytes. The new doc records the exact commands so
+  the next release repeats them, and explains the two kinds of
+  "signing" (code signing is already done by CI; appcast signing is
+  the only signing in the release step). Pushing the tag also triggered
+  the `Release` workflow (`release.yml`), which FAILED at "Import
+  signing certificate" — it expects P12 secrets that do not exist;
+  the manual release was not affected. Fix in progress: switch
+  `release.yml` to the same PEM signing as `test.yml`.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
