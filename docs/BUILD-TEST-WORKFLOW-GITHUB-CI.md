@@ -22,9 +22,11 @@ rediscover any of this.
 
 To avoid wasting CI runs (and other people's runners):
 
-- **Docs-only changes do not trigger CI at all.** The `push` and
-  `pull_request` triggers have `paths-ignore` for `docs/**` and `*.md`.
-  Renaming a doc or editing docs costs zero CI runs.
+- **Docs-only and workflow-only changes do not trigger CI at all.** The
+  `push` and `pull_request` triggers have `paths-ignore` for `docs/**`,
+  `*.md` and `.github/workflows/**`. Renaming a doc, editing docs, or
+  editing a workflow file costs zero CI runs. (Workflows added 2026-11-11:
+  editing `release.yml` used to start a pointless Tests run, e.g. #127/#128.)
 - **Tests run on every code commit**, but the app artifact is only built
   when the commit message contains `[build-app]`. The Build app / Zip app
   / Upload app / Delete older artifacts steps have

@@ -84,8 +84,11 @@ Related docs:
 - File: `.github/workflows/test.yml`. Runner: `macos-26`. One job
   (`test`), timeout 20 min.
 - Triggers: push to `main`, PRs to `main`, `workflow_dispatch`.
-- `paths-ignore`: `docs/**` and `**.md` (both push and PR) — a docs-only
-  push runs NO CI at all.
+- `paths-ignore`: `docs/**`, `**.md` and `.github/workflows/**` (both push
+  and PR) — a docs-only or workflow-only push runs NO CI at all. (Workflows
+  added 2026-11-11: editing `release.yml` used to start a pointless Tests
+  run, e.g. #127/#128; Manh chose the professional direction — keep tests
+  automatic on every code push as the safety net, never manual-only.)
 - Concurrency group
   `tests-${{ github.event.pull_request.number || github.ref }}` with
   `cancel-in-progress: true` — a new push cancels the run still going.
@@ -578,6 +581,20 @@ each recurring problem.
   signing certificate" — it expects P12 secrets that do not exist;
   the manual release was not affected. Fix in progress: switch
   `release.yml` to the same PEM signing as `test.yml`.
+- **2026-11-11 — `test.yml`: `paths-ignore` extended to workflow files
+  (commit `425a77d`, `[skip ci]`).** Manh asked why every commit starts a
+  test run and how professionals do it: GitHub runs nothing by default —
+  the auto-run comes from `test.yml`'s own `on: push` trigger, and the
+  professional standard is automatic tests on every push/PR (main
+  protected, merge only when green) with path filters + tiered builds so
+  nothing pointless runs. Manh chose that direction, NOT manual-only
+  (manual risks forgetting to run). Fix: `.github/workflows/**` added to
+  `paths-ignore` (push + PR), so editing a workflow file no longer starts
+  a Tests run — the `release.yml` edits had spawned pointless runs #127
+  (SUCCESS) and #128 (queued, cancelled by Manh). The commit itself
+  carried `[skip ci]`, verified: no new Tests run appeared after it
+  (latest still #128 cancelled). Docs updated in the same round (§2 here
+  + `BUILD-TEST-WORKFLOW-GITHUB-CI.md`).
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
