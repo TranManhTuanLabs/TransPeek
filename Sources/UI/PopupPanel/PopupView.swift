@@ -141,7 +141,7 @@ struct PopupView: View {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
     }
 
-    /// "Version 0.21.0 (71)"; local builds (build number "1") show just the version.
+    /// "Version 0.1.0 (123)"; local builds (build number "1") show just the version.
     private var versionText: String {
         buildNumber == "1" ? "Version \(appVersion)" : "Version \(appVersion) (\(buildNumber))"
     }

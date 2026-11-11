@@ -59,7 +59,7 @@ struct AboutSettingsView: View {
             // Build stamp: CI sets CFBundleVersion to the GitHub Actions
             // run number (see test.yml), so the About tab always shows
             // exactly which CI build this is — the marketing version
-            // alone (0.21.0) is the same for every build, so it cannot
+            // alone (0.1.0) is the same for every build, so it cannot
             // tell builds apart. Local builds keep the project default
             // ("1") and hide the line.
             if buildNumber != "1" {

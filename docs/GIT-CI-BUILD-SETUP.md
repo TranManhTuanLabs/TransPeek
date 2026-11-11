@@ -532,6 +532,17 @@ each recurring problem.
   reporting a bug from the panel. The round-3 removal is reverted
   in `PopupView.swift` only; the About org link and the 4pt output
   spacing from round 3 are unchanged.
+- **2026-11-11 — Version scheme unified: TransPeek's own line
+  starts at 0.1.0 (push 2026-11-11, `[build-app]`).** The app had
+  carried upstream MoePeek's `MARKETING_VERSION` 0.21.0; the first
+  public release now starts TransPeek's own SemVer line at 0.1.0
+  (`Project.swift`; tag `v0.1.0`). 1.0.0 was considered and rejected
+  for the first release — it means stable and feature-complete, and
+  M4/M5 (Keychain, retry, real Sparkle feed, notarize) are still
+  open. Going forward: patch for bug fixes (0.1.1), minor for new
+  features (0.2.0), major for the stable milestone (1.0.0). The
+  build number is unchanged (CI run number as `CFBundleVersion`).
+  Two comments citing 0.21.0 as an example were updated with it.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
