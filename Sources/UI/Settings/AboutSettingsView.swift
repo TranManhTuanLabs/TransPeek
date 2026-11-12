@@ -9,12 +9,23 @@ import SwiftUI
 struct AboutSettingsView: View {
     let updaterController: UpdaterController?
 
+    @State private var showDonateQR = false
+
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
 
     private var buildNumber: String {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    // Donate QR: Resources/DonateQR.png — the official BIDV VietQR card
+    // (cropped to the QR), bundled via Project.swift `resources:
+    // ["Resources/**"]`. The account is the author's own; the QR was
+    // verified to decode to BIDV 2600786466 before shipping.
+    private var donateQRImage: NSImage? {
+        guard let url = Bundle.main.url(forResource: "DonateQR", withExtension: "png") else { return nil }
+        return NSImage(contentsOf: url)
     }
 
     var body: some View {
@@ -71,6 +82,53 @@ struct AboutSettingsView: View {
             Text("Copyright © 2025-2026 TransPeek Licensed under AGPL-3.0")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
+
+            // Support: the app is free — a coffee via VietQR (BIDV) keeps
+            // it improving. The QR stays behind a button so the About tab
+            // stays compact; the account number can be copied directly.
+            Divider()
+                .padding(.horizontal, 40)
+
+            Text("Support TransPeek")
+                .font(.headline)
+
+            Text("If this app is useful to you, buy me a coffee to keep improving it.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            HStack(spacing: 12) {
+                Button {
+                    showDonateQR.toggle()
+                } label: {
+                    Label("Show QR Code", systemImage: "qrcode")
+                }
+                .popover(isPresented: $showDonateQR) {
+                    VStack(spacing: 10) {
+                        if let qrImage = donateQRImage {
+                            Image(nsImage: qrImage)
+                                .resizable()
+                                .interpolation(.none)
+                                .frame(width: 220, height: 220)
+                        }
+                        Text("BIDV — 2600786466")
+                            .font(.subheadline.bold())
+                        Text("TRAN MANH TUAN")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(16)
+                }
+
+                Button {
+                    let pasteboard = NSPasteboard.general
+                    pasteboard.clearContents()
+                    pasteboard.setString("2600786466", forType: .string)
+                } label: {
+                    Label("Copy Account Number", systemImage: "doc.on.doc")
+                }
+            }
 
             if let updaterController {
                 @Bindable var updater = updaterController

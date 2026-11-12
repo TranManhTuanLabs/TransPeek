@@ -157,6 +157,14 @@ defaults delete com.tranmanhtuanlabs.transpeek
 - 平时上班较忙，可能无法及时回复，通常会集中在周末统一处理 Issue 和 PR。
 - 欢迎 Fork 进行二次开发。根据 AGPL-3.0 协议，衍生项目**必须同样开源**。
 
+## 支持
+
+如果你觉得这个应用对你有帮助，请我喝杯咖啡，让我有动力继续完善它！
+
+<img src="Resources/DonateQR.png" width="240" alt="通过 VietQR 赞助" />
+
+**BIDV — 2600786466 — TRAN MANH TUAN**
+
 ## 致谢
 
 TransPeek 的诞生受到了 [Easydict](https://github.com/tisfeng/Easydict) 和 [Bob](https://github.com/ripperhe/Bob) 的启发，感谢这些项目的开拓与贡献。

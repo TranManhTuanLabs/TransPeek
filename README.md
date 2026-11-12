@@ -159,6 +159,14 @@ Issues and PRs are welcome! A few things to know:
 - I work a day job, so I may not respond immediately — I typically batch-process issues and PRs on weekends.
 - Feel free to fork and build your own version. Per the AGPL-3.0 license, derivative works **must also be open source**.
 
+## Support
+
+If this app is useful to you, buy me a coffee to keep improving it!
+
+<img src="Resources/DonateQR.png" width="240" alt="Donate via VietQR" />
+
+**BIDV — 2600786466 — TRAN MANH TUAN**
+
 ## Acknowledgements
 
 TransPeek was inspired by [Easydict](https://github.com/tisfeng/Easydict) and [Bob](https://github.com/ripperhe/Bob). Thank you for paving the way.
