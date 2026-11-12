@@ -26,6 +26,7 @@ struct PopupView: View {
     @State private var resultLayout = PopupResultLayout()
     var onResultLayoutChange: ((PopupResultLayout) -> Void)?
     @Default(.popupFontSize) private var fontSize
+    @Default(.popupTopBarFontSize) private var topBarFontSize
     @Default(.popupFontName) private var fontName
 
     private let inputMinHeight: CGFloat = 36
@@ -154,11 +155,12 @@ struct PopupView: View {
     private var activeContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Top bar: app name + slogan, centered.
+            // App name uses the top bar font size; slogan is 2pt smaller.
             VStack(spacing: 2) {
                 Text("TransPeek")
-                    .font(.headline.bold())
+                    .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
                 Text("Translate anywhere, Peek instantly!")
-                    .font(.subheadline)
+                    .font(.system(size: CGFloat(max(topBarFontSize - 2, 8))))
                     .italic()
                     .foregroundStyle(.secondary)
             }

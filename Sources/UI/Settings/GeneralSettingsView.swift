@@ -15,6 +15,7 @@ struct GeneralSettingsView: View {
     @Default(.popupDefaultWidth) private var popupDefaultWidth
     @Default(.popupDefaultHeight) private var popupDefaultHeight
     @Default(.popupFontSize) private var popupFontSize
+    @Default(.popupTopBarFontSize) private var popupTopBarFontSize
     @Default(.popupFontName) private var popupFontName
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.captureRichText) private var captureRichText
@@ -216,6 +217,17 @@ struct GeneralSettingsView: View {
                         value: Binding(
                             get: { Double(popupFontSize) },
                             set: { popupFontSize = Int($0) }
+                        ),
+                        in: 12...24,
+                        step: 1
+                    )
+                }
+
+                LabeledContent("AppName & Slogan Font Size: \(popupTopBarFontSize)") {
+                    Slider(
+                        value: Binding(
+                            get: { Double(popupTopBarFontSize) },
+                            set: { popupTopBarFontSize = Int($0) }
                         ),
                         in: 12...24,
                         step: 1
