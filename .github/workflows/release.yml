@@ -62,8 +62,14 @@ jobs:
         with:
           install: true
 
+      # Signing.xcconfig is git-ignored (only .example is in the repo), so
+      # copy it before generate — Project.swift references it and `tuist
+      # generate` fails its lint ("Configuration file not found", "Fatal
+      # linting issues found") without it. test.yml does the same copy.
       - name: Resolve dependencies and generate project
-        run: tuist install && tuist generate
+        run: |
+          cp Configurations/Signing.xcconfig.example Configurations/Signing.xcconfig
+          tuist install && tuist generate
 
       - name: Determine version
         id: version
