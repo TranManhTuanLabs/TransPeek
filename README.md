@@ -163,7 +163,7 @@ Issues and PRs are welcome! A few things to know:
 
 If this app is useful to you, buy me a coffee to keep improving it!
 
-<img src="Resources/DonateQR.png" width="240" alt="Donate via VietQR" />
+<img src="Resources/DonateCard.png" width="300" alt="Donate via VietQR" />
 
 **BIDV — 2600786466 — TRAN MANH TUAN**
 

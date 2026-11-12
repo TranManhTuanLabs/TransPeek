@@ -19,12 +19,13 @@ struct AboutSettingsView: View {
         Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
     }
 
-    // Donate QR: Resources/DonateQR.png — the official BIDV VietQR card
-    // (cropped to the QR), bundled via Project.swift `resources:
-    // ["Resources/**"]`. The account is the author's own; the QR was
-    // verified to decode to BIDV 2600786466 before shipping.
-    private var donateQRImage: NSImage? {
-        guard let url = Bundle.main.url(forResource: "DonateQR", withExtension: "png") else { return nil }
+    // Donate card: Resources/DonateCard.png — the full official BIDV
+    // VietQR card (logos, QR, name, account, bank name; black rounded
+    // corners fixed to white), bundled via Project.swift `resources:
+    // ["Resources/**"]`. The account is the author's own; the QR inside
+    // the card was verified to decode to BIDV 2600786466 before shipping.
+    private var donateCardImage: NSImage? {
+        guard let url = Bundle.main.url(forResource: "DonateCard", withExtension: "png") else { return nil }
         return NSImage(contentsOf: url)
     }
 
@@ -105,18 +106,13 @@ struct AboutSettingsView: View {
                     Label("Show QR Code", systemImage: "qrcode")
                 }
                 .popover(isPresented: $showDonateQR) {
-                    VStack(spacing: 10) {
-                        if let qrImage = donateQRImage {
-                            Image(nsImage: qrImage)
+                    VStack(spacing: 12) {
+                        if let cardImage = donateCardImage {
+                            Image(nsImage: cardImage)
                                 .resizable()
                                 .interpolation(.none)
-                                .frame(width: 220, height: 220)
+                                .frame(width: 280, height: 342)
                         }
-                        Text("BIDV — 2600786466")
-                            .font(.subheadline.bold())
-                        Text("TRAN MANH TUAN")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
                     }
                     .padding(16)
                 }

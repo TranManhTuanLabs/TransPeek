@@ -161,7 +161,7 @@ defaults delete com.tranmanhtuanlabs.transpeek
 
 如果你觉得这个应用对你有帮助，请我喝杯咖啡，让我有动力继续完善它！
 
-<img src="Resources/DonateQR.png" width="240" alt="通过 VietQR 赞助" />
+<img src="Resources/DonateCard.png" width="300" alt="通过 VietQR 赞助" />
 
 **BIDV — 2600786466 — TRAN MANH TUAN**
 
