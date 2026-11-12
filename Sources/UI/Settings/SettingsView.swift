@@ -13,10 +13,14 @@ struct SettingsView: View {
     /// Maps the Text Size slider (12–24, default 14) to a Dynamic Type
     /// size. 14 is the system default (.large), so there is no visible
     /// change at the default; smaller values shrink, larger values grow.
-    /// Applied to the whole Settings window so every text-style font
-    /// (.body, .caption, .headline, ...) scales. Fonts set with an
-    /// explicit point size (e.g. the About slogan) do not scale — those
-    /// sizes were chosen individually.
+    /// Applied to the whole Settings window via the dynamicTypeSize
+    /// environment so every text-style font (.body, .caption, .headline,
+    /// ...) scales. Fonts that need a specific size (e.g. the About
+    /// slogan, 17pt) use `.system(size: 17, relativeTo: .subheadline)`
+    /// so they keep their size at the default but still scale with this
+    /// setting. Note: the environment key is `.dynamicTypeSize`, not
+    /// `.sizeCategory` — the latter takes a ContentSizeCategory, and
+    /// passing a DynamicTypeSize to it does not compile (Tests #146).
     private var sizeCategory: DynamicTypeSize {
         switch appTextSize {
         case ...12: return .small
@@ -119,7 +123,7 @@ struct SettingsView: View {
         // the scrolling Form/List content takes over instead of clipping
         // the bottom of the window off-screen.
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
-        .environment(\.sizeCategory, sizeCategory)
+        .environment(\.dynamicTypeSize, sizeCategory)
     }
 
     /// One section tab: icon on top, title underneath, centered in
