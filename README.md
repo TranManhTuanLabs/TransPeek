@@ -163,7 +163,7 @@ Issues and PRs are welcome! A few things to know:
 
 If this app is useful to you, you can support the project by buying me a coffee.
 
-Nếu ứng dụng này hữu ích với bạn hãy ủng hộ mình 1 ly cafe để có động lực hoàn thiện sản phẩm
+Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê.
 
 <img src="Resources/DonateCard.png" width="300" alt="Donate via VietQR" />
 

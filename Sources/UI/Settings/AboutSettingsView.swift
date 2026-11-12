@@ -99,7 +99,7 @@ struct AboutSettingsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Text("Nếu ứng dụng này hữu ích với bạn hãy ủng hộ mình 1 ly cafe để có động lực hoàn thiện sản phẩm")
+            Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
