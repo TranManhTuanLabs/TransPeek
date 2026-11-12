@@ -159,11 +159,13 @@ defaults delete com.tranmanhtuanlabs.transpeek
 
 ## 支持
 
-如果你觉得这个应用对你有帮助，请我喝杯咖啡，让我有动力继续完善它！
+如果你觉得这个应用对你有帮助，可以请我喝杯咖啡来支持这个项目。
 
 <img src="Resources/DonateCard.png" width="300" alt="通过 VietQR 赞助" />
 
-**BIDV — 2600786466 — TRAN MANH TUAN**
+- 账号：2600786466
+- 持有人：TRAN MANH TUAN
+- BIDV（越南投资发展银行）
 
 ## 致谢
 

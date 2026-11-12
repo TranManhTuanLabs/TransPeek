@@ -93,11 +93,22 @@ struct AboutSettingsView: View {
             Text("Support TransPeek")
                 .font(.headline)
 
-            Text("If this app is useful to you, buy me a coffee to keep improving it.")
+            Text("If this app is useful to you, you can support the project by buying me a coffee.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+
+            Text("Nếu ứng dụng này hữu ích với bạn hãy ủng hộ mình 1 ly cafe để có động lực hoàn thiện sản phẩm")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
 
             HStack(spacing: 12) {
                 Button {

@@ -161,11 +161,15 @@ Issues and PRs are welcome! A few things to know:
 
 ## Support
 
-If this app is useful to you, buy me a coffee to keep improving it!
+If this app is useful to you, you can support the project by buying me a coffee.
+
+Nếu ứng dụng này hữu ích với bạn hãy ủng hộ mình 1 ly cafe để có động lực hoàn thiện sản phẩm
 
 <img src="Resources/DonateCard.png" width="300" alt="Donate via VietQR" />
 
-**BIDV — 2600786466 — TRAN MANH TUAN**
+- Account: 2600786466
+- Holder: TRAN MANH TUAN
+- BIDV (Bank for Investment and Development of VietNam)
 
 ## Acknowledgements
 
