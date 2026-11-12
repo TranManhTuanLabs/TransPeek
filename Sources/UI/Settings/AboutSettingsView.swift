@@ -52,14 +52,19 @@ struct AboutSettingsView: View {
             // scales crisply) + the org path, right under the app name
             // — not a text-style link like the ones at the bottom, and
             // not the generic </> symbol, which reads as "code" rather
-            // than GitHub. Blue (link style) so it reads as clickable.
+            // than GitHub. The cat stays black (primary: black in light
+            // mode, white in dark mode) and the text stays blue, but
+            // both are inside the same Link so the whole row is
+            // clickable — the colors are independent, they do not have
+            // to be all blue or all black.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
-                        .fill(Color.accentColor)
+                        .fill(.primary)
                         .frame(width: 20, height: 20)
                     Text("Github.com/TranManhTuanLabs")
                         .font(.subheadline)
+                        .foregroundStyle(Color.accentColor)
                 }
             }
             .buttonStyle(.link)
@@ -120,7 +125,7 @@ struct AboutSettingsView: View {
             ScrollView(.vertical) {
                 VStack(spacing: 8) {
                     Text("If this app is useful to you, you can support the project by buying me a coffee!")
-                        .font(.system(size: 17))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
@@ -130,12 +135,12 @@ struct AboutSettingsView: View {
                         .frame(height: 17)
 
                     Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
-                        .font(.system(size: 17))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
                     Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
-                        .font(.system(size: 17))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }

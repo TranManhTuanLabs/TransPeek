@@ -121,7 +121,7 @@ struct SettingsView: View {
         // the scrolling Form/List content takes over instead of clipping
         // the bottom of the window off-screen.
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
-        .environment(\.dynamicTypeSize, sizeCategory)
+        .dynamicTypeSize(sizeCategory)
     }
 
     /// One section tab: icon on top, title underneath, centered in
