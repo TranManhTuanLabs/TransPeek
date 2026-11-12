@@ -93,13 +93,13 @@ struct AboutSettingsView: View {
             Text("Support TransPeek")
                 .font(.headline)
 
-            Text("If this app is useful to you, you can support the project by buying me a coffee.")
+            Text("If this app is useful to you, you can support the project by buying me a coffee!")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê.")
+            Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

@@ -159,7 +159,7 @@ defaults delete com.tranmanhtuanlabs.transpeek
 
 ## 支持
 
-如果你觉得这个应用对你有帮助，可以请我喝杯咖啡来支持这个项目。
+如果你觉得这个应用对你有帮助，可以请我喝杯咖啡来支持这个项目！
 
 <img src="Resources/DonateCard.png" width="300" alt="通过 VietQR 赞助" />
 
