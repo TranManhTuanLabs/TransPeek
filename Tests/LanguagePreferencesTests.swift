@@ -2,10 +2,10 @@ import Testing
 @testable import TransPeek
 
 @Suite struct LanguagePreferencesTests {
-    @Test func preservesLegacyTargetDefaultsAndAddsPolishToCatalog() {
+    @Test func defaultTargetOrderStartsWithEnglishVietnameseChinese() {
         #expect(SupportedLanguages.defaultTargetCodes == [
-            "en", "zh-Hans", "zh-Hant", "ja", "ko",
-            "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th", "vi",
+            "en", "vi", "zh-Hans", "zh-Hant", "ja", "ko",
+            "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th",
         ])
         #expect(SupportedLanguages.codes.contains("pl"))
         #expect(!SupportedLanguages.defaultTargetCodes.contains("pl"))
@@ -25,7 +25,7 @@ import Testing
     @Test func preservesCatalogTargetsOutsideFavoritesAndResolvesUnknownValues() {
         #expect(SupportedLanguages.resolvedTarget("pl", favoriteCodes: ["es", "en"]) == "pl")
         #expect(SupportedLanguages.resolvedTarget("pl", favoriteCodes: ["es", "zh-Hans", "en"]) == "pl")
-        #expect(SupportedLanguages.resolvedTarget("unknown", favoriteCodes: []) == "zh-Hans")
+        #expect(SupportedLanguages.resolvedTarget("unknown", favoriteCodes: []) == "vi")
         #expect(SupportedLanguages.resolvedTarget("unknown", favoriteCodes: ["es", "en"]) == "es")
         #expect(SupportedLanguages.resolvedTarget("pl", favoriteCodes: ["en", "pl"]) == "pl")
     }

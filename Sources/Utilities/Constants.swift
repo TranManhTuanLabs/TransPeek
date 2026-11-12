@@ -7,11 +7,12 @@ import KeyboardShortcuts
 
 /// Languages available throughout the app. Individual providers can support a subset.
 enum SupportedLanguages {
-    /// The target list shown before customizable favorites were introduced.
-    /// Keep this order stable so existing users see the same choices by default.
+    /// The default target list (favorites for new users). Order: English
+    /// first, then Vietnamese, then Chinese, then the rest — set 2026-11-13
+    /// because the app is for Vietnamese users learning English.
     static let defaultTargetCodes: [String] = [
-        "en", "zh-Hans", "zh-Hant", "ja", "ko",
-        "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th", "vi",
+        "en", "vi", "zh-Hans", "zh-Hant", "ja", "ko",
+        "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th",
     ]
 
     /// Complete catalog used by source selection and language detection.
@@ -319,7 +320,7 @@ extension Defaults.Keys {
     static let googleProxyHost = Key<String>("provider_google_proxyHost", default: "127.0.0.1")
     static let googleProxyPort = Key<String>("provider_google_proxyPort", default: "7890")
 
-    static let targetLanguage = Key<String>("targetLanguage", default: "zh-Hans")
+    static let targetLanguage = Key<String>("targetLanguage", default: "vi")
     static let favoriteTargetLanguages = Key<[String]>(
         "favoriteTargetLanguages",
         default: SupportedLanguages.defaultTargetCodes

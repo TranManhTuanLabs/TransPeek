@@ -20,7 +20,7 @@ extension SupportedLanguages {
 
         let normalized = normalizedTargetCodes(favoriteCodes)
         if normalized.isEmpty {
-            return "zh-Hans"
+            return "vi"
         }
         return normalized[0]
     }

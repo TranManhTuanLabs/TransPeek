@@ -35,6 +35,15 @@ struct TargetLanguageSettingsView: View {
                         Spacer()
 
                         Button {
+                            moveToTop(code)
+                        } label: {
+                            Image(systemName: "arrow.up.to.line")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == selectedCodes.startIndex)
+                        .help("Move to Top")
+
+                        Button {
                             move(code, by: -1)
                         } label: {
                             Image(systemName: "chevron.up")
@@ -51,6 +60,15 @@ struct TargetLanguageSettingsView: View {
                         .buttonStyle(.borderless)
                         .disabled(index == selectedCodes.index(before: selectedCodes.endIndex))
                         .help("Move Down")
+
+                        Button {
+                            moveToBottom(code)
+                        } label: {
+                            Image(systemName: "arrow.down.to.line")
+                        }
+                        .buttonStyle(.borderless)
+                        .disabled(index == selectedCodes.index(before: selectedCodes.endIndex))
+                        .help("Move to Bottom")
 
                         Button {
                             remove(code)
@@ -107,6 +125,24 @@ struct TargetLanguageSettingsView: View {
         let destinationIndex = sourceIndex + offset
         guard codes.indices.contains(destinationIndex) else { return }
         codes.swapAt(sourceIndex, destinationIndex)
+        favoriteTargetLanguages = codes
+    }
+
+    private func moveToTop(_ code: String) {
+        var codes = selectedCodes
+        guard let sourceIndex = codes.firstIndex(of: code),
+              sourceIndex != codes.startIndex else { return }
+        codes.remove(at: sourceIndex)
+        codes.insert(code, at: codes.startIndex)
+        favoriteTargetLanguages = codes
+    }
+
+    private func moveToBottom(_ code: String) {
+        var codes = selectedCodes
+        guard let sourceIndex = codes.firstIndex(of: code),
+              sourceIndex != codes.index(before: codes.endIndex) else { return }
+        codes.remove(at: sourceIndex)
+        codes.append(code)
         favoriteTargetLanguages = codes
     }
 
