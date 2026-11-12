@@ -271,27 +271,40 @@ Related docs:
 
 ### Artifact ≠ Release
 
-- The `TransPeek-macOS` artifact is a CI build artefact (expires in 7
-  days, only the newest is kept, no user notification). A real Release
+- The `TransPeek-macOS-<run>` artifact is a CI build artefact (expires
+  in 7 days, only the newest is kept, no user notification). The name
+  carries the Tests run number since 2026-11-13 (commit `f617b7a`) so
+  each download is distinct — before that every artifact was named the
+  plain `TransPeek-macOS` and downloads collided. A real Release
   (tag + Sparkle appcast) is what makes "Check for Updates" notify
   users. Do not confuse the two.
 - How to publish a release, step by step (download artifact, write +
   sign the appcast, publish on GitHub, verify): `docs/RELEASE-PROCESS.md`.
-  v0.1.0 was published this way on 2026-11-11 (see §4).
-- **Release workflow (`release.yml`) — green since 2026-11-12.**
-  Triggered by pushing a tag `v*` or by manual dispatch. Steps: tests
-  → archive the app UNSIGNED (`CODE_SIGNING_ALLOWED=NO`) → sign the
-  archived app by hand (`codesign --force --deep --sign "TransPeek
-  Self-Signed 100Years"`, the same PEM secrets and temp keychain as
-  `test.yml`) → verify → ZIP + DMG + PopClip/OpenClip extensions →
-  generate the appcast (Sparkle EdDSA private key from the secret
-  `SPARKLE_ED_PRIVATE_KEY`, base64 of the 32-byte seed) → create a draft
-  GitHub Release with all 5 files. First green run: Release #7 attempt 4
-  (commit `47d86ab`, 2026-11-12), draft `v0.0.0-dev`. Full history — the
+  v0.1.0 was published this way on 2026-11-11 (see §4). The current
+  manual method is `docs/MANUAL-RELEASE.md` (Sparkle `generate_appcast`,
+  same tool as the workflow); the openssl hand-signing in
+  `RELEASE-PROCESS.md` §3 is the older method, kept for reference.
+- **Release workflow (`release.yml`) — green since 2026-11-12, direction
+  B since 2026-11-13.** Triggered by pushing a tag `v*` or by manual
+  dispatch. Direction B (build once, promote the tested artifact):
+  run tests → find the green `test.yml` run for the commit → download
+  THAT already-built, already-signed app artifact (it does NOT archive
+  or sign the app again) → verify it → ZIP + DMG + PopClip/OpenClip
+  extensions → generate the appcast (Sparkle EdDSA private key from
+  the secret `SPARKLE_ED_PRIVATE_KEY`, base64 of the 32-byte seed) →
+  create a draft GitHub Release with all 5 files (a dispatch always
+  creates a draft; a tag push publishes directly). The old archive
+  flow (archive unsigned + sign by hand, green at Release #7 attempt 4,
+  commit `47d86ab`, 2026-11-12) is superseded — it stamped the Release
+  workflow's own run number as the build number, so Sparkle would have
+  seen a new release as OLDER than the installed build, and it shipped
+  a second, untested binary. Direction B was proven green by Release
+  #17 (commit `bf168c9`, 2026-11-13, all 22 steps). Full history — the
   P12 failure, the `find-identity` dead end, the unsigned archive, the
-  capacity failures — is in §4. For a real release, push the tag first
-  so the tag exists; a dispatch-only draft gets filed under an
-  auto-generated `untagged-...` tag.
+  capacity failures, the direction B rewrite and its two fixes — is in
+  §4. For a real release, push the tag first so the tag exists; a
+  dispatch-only draft gets filed under an auto-generated
+  `untagged-...` tag.
 
 ## 4. Intervention log (what was changed, when, why)
 
@@ -713,6 +726,114 @@ each recurring problem.
   "release via web" means manually uploading the app to a GitHub
   Release through the browser — NOT a separate website; there is only
   one release location (GitHub Releases).
+- **2026-11-12/13 — Direction B: build once, promote the tested
+  artifact (`release.yml` rewritten, Manh chose it).** Root cause of
+  the rewrite: the archive flow (fix #3, green at Release #7) had two
+  defects that only show at release time. (1) Build number: the
+  Archive step stamped `CURRENT_PROJECT_VERSION` with the Release
+  workflow's own run number (the `v0.0.0-dev` draft was build 7, while
+  the installed v0.1.0 is build 126), so Sparkle would read a new
+  release as OLDER and never offer it as an update. (2) The shipped
+  binary was a second, different binary from the one `test.yml` had
+  tested. Direction B fixes both: `test.yml` builds the app once (on a
+  `[build-app]` commit), signs it by hand with the self-signed
+  certificate and uploads it as artifact `TransPeek-macOS-<Tests run
+  number>`; `release.yml` runs tests, finds the green `test.yml` run
+  for the commit, downloads THAT artifact and ships it — it does NOT
+  archive or sign the app again. For a tag run it looks for the Tests
+  run matching the tag commit; for a manual dispatch, if there is no
+  matching Tests run for the dispatch commit, it falls back to the
+  latest green Tests run on `main`. A release therefore needs a green
+  `[build-app]` Tests run for the tagged commit; if there is none, the
+  workflow fails loudly instead of shipping an untested build. A
+  dispatch always creates a draft; a tag push publishes directly.
+- **2026-11-13 — Artifact renamed to `TransPeek-macOS-<run number>`
+  (commit `f617b7a`).** Cause: every downloaded CI app artifact was
+  named the plain `TransPeek-macOS`, so Manh's downloads collided and
+  he had to rename files by hand. Fix: `test.yml` names the ZIP and
+  the upload `TransPeek-macOS-<Tests run number>` (e.g.
+  `TransPeek-macOS-139`, 14,453,616 bytes, from Tests #139), and
+  `release.yml` finds/downloads by that exact name; both accept the old
+  plain name as a fallback. Manh considered a versioned name
+  (`TransPeek-macOS-0.1.1-CI139`) and chose the short form: compact,
+  clearly a CI test build, and a versioned CI name could be confused
+  with the release file (`TransPeek-0.1.1.zip`) in Downloads. Avoid
+  parentheses and `#` in artifact names (bad for URLs/downloads).
+  Changing the name does not affect build/test/signing internals
+  (those operate on `TransPeek.app`); it only requires the workflow
+  references to stay consistent.
+- **2026-11-13 — Release #15 (run `43290148937`, commit `99660c2`):
+  "Run tests" failed — signing placeholder.** Cause: `release.yml`
+  ran plain `xcodebuild test` without `CODE_SIGNING_ALLOWED=NO` and
+  without `SPARKLE_ED_PUBLIC_KEY`, while `test.yml` already passed
+  both flags. Without `CODE_SIGNING_ALLOWED=NO`, Xcode tried to sign
+  using the placeholder identity from `Signing.xcconfig` (`Apple
+  Development: YOUR_NAME (YOUR_TEAM_ID)` / `YOUR_TEAM_ID`), so the
+  build-for-testing phase failed before any test ran (no test actually
+  ran — the log showed the signing failure, not a test failure). Fix
+  (commit `cfe923f`): pass `CODE_SIGNING_ALLOWED=NO` and the Sparkle
+  key to the "Run tests" step, matching `test.yml`. Verified by
+  Release #16, whose "Run tests" passed.
+- **2026-11-13 — Release #16 (run `43294070520`, commit `cfe923f`):
+  "Find tested build" failed in ~1 second — `gh api --jq -r` syntax
+  error.** Cause: the Find step used `gh api ... --jq -r '...'`, but
+  `gh api` has NO `-r` flag (`-r` belongs to standalone `jq`); `--jq`
+  consumed `-r` as its value, leaving the jq expression as a second
+  positional argument, so `gh` reported "accepts 1 arg(s), received
+  2" on both calls (listing Tests runs and listing a run's artifacts).
+  The artifact-name filter was never reached and was not the cause —
+  Tests #139 and artifact `TransPeek-macOS-139` existed and should
+  have been found by the `branch=main` fallback. The bug was introduced
+  during the artifact-rename rewrite (`f617b7a`) but stayed hidden
+  because earlier Release runs died from capacity or earlier at "Run
+  tests". Fix (commit `bf168c9`): drop the erroneous `-r` flag after
+  `gh api --jq` in both calls. Verified by Release #17.
+- **2026-11-13 — Release #17 (run `43295817927`, commit `bf168c9`):
+  direction B PROVEN GREEN — all 22 steps success.** Dispatched
+  02:59, completed 03:37 (38 min, mostly waiting for a runner). Steps
+  include Run tests, Find tested build, Download tested app, Verify
+  downloaded app, Create ZIP, Package PopClip/OpenClip extensions,
+  Create DMG, Generate appcast, Create GitHub Release. It updated the
+  existing draft `v0.0.0-dev` (version input left at default
+  `0.0.0-dev`); all 5 assets verified present: `appcast.xml` 2.49 KB,
+  `TransPeek-v0.0.0-dev-macOS.zip` 13.9 MB,
+  `TransPeek-v0.0.0-dev-macOS.dmg` 13.8 MB,
+  `TransPeek.openclipext.zip` 649 B, `TransPeek.popclipext.zip` 519 B.
+  The draft remains unpublished; published v0.1.0 is untouched. Note:
+  the packaged app was the Tests #139 artifact (commit `8536628`),
+  because `bf168c9` is a workflow-only commit with no matching Tests
+  artifact, so the dispatch fallback used the latest green Tests run
+  on main — the font-size feature (commit `81493f5`, whose Tests #140
+  died from capacity) was NOT in that packaged app. That is expected
+  direction-B behaviour, not a bug: the Release workflow ships the
+  tested artifact, never the tree it runs on.
+- **2026-11-13 — Tests #140–#143 died from GitHub macOS runner
+  capacity (0 steps); Tests #144 `[build-app]` went GREEN.** Pattern,
+  verified repeatedly: the run queues ~15 minutes, the job is
+  cancelled, 0 steps ran. That is a capacity failure, NOT a code
+  failure — do not "fix" code for it; retry or re-run and wait. #140
+  (`81493f5`, top-bar font size) and #141 (`c567e63`, About fixes) and
+  #142 (`47ab922`, language favourites) and #143 (`82b794a`, Release
+  line) all died this way, so none of those changes was verified by CI
+  until #144. **Tests #144 (run `43312443666`, commit `f91c118`,
+  `[build-app]`) went SUCCESS — 18/18 steps green** (Run tests, Build
+  app, Sign app, Zip app, Upload app, Delete older artifacts, Upload
+  test results), artifact `TransPeek-macOS-144` 14,465,695 bytes. It
+  carries ALL of: the About fixes (Copy "Copied" + checkmark, Support
+  text scrolls with fixed buttons, updater above Support), the top-bar
+  AppName & Slogan font size, the language favourites (Move to Top /
+  Bottom, default order en → vi → zh, default target Vietnamese), and
+  the single "Release 0.1.1 (Build CI #144)" link line. This is the
+  build to test before publishing v0.1.1. The overnight retry cron
+  created for the Release workflow was deleted after it reported the
+  #16 real failure — from now on, retries are manual, not automatic.
+- **2026-11-13 — Duplicate trigger commits (lesson).** Two
+  identical-content commits exist on main: `8536628` (first
+  `[build-app]` trigger push; the connector result displayed
+  "aborted" but the commit had actually landed) and `99660c2`
+  (duplicate retry with the same change and message). Lesson: if a
+  push reports "aborted", check `origin/main` HEAD before pushing
+  again.
 
 ## 5. Branch note — `m2-m3-tts-ocr`
 
@@ -745,7 +866,8 @@ each recurring problem.
   is never quoted in docs; the seed lives in
   `signing/transpeek-sparkle-eddsa.key` (mode 600). Release workflow
   file: `.github/workflows/release.yml` (green since run #7 attempt 4,
-  2026-11-12; history in §4).
+  2026-11-12; direction B proven by Release #17, 2026-11-13; history
+  in §4).
 - Local signing backup:
   `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
   for `transpeek-signing-selfsigned-100years` and their base64 forms

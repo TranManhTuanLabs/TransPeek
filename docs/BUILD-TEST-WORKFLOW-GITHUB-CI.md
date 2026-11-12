@@ -14,9 +14,13 @@ rediscover any of this.
 - Steps: Checkout → Cache mise tools (Tuist) → Install Tuist via mise →
   Cache Swift Package Manager artifacts → Resolve dependencies and generate
   project (retries 3 times) → Run tests → Build app (Release) → Zip app
-  (`ditto`, keeps the `.app` bundle) → Upload artifact `TransPeek-macOS`
-  (7-day retention) + delete older app artifacts, keeping only the newest →
-  Upload test results (`macOS-test-results`).
+  (`ditto`, keeps the `.app` bundle) → Upload artifact
+  `TransPeek-macOS-<run number>` (7-day retention) + delete older app
+  artifacts, keeping only the newest → Upload test results
+  (`macOS-test-results`). The artifact name carries the run number since
+  2026-11-13 (commit `f617b7a`) so each download is distinct — before
+  that every artifact was named the plain `TransPeek-macOS` and
+  downloads collided.
 
 ## When CI runs, and when the app is built
 
@@ -49,17 +53,22 @@ self-signed certificate" step (after Build app, before Zip app, gated on
 the app with the identity `TransPeek Self-Signed 100Years`
 (`codesign --force --deep --sign`, then `codesign --verify --verbose`).
 **Verified working: run #99 (2026-11-11), and every `[build-app]`
-artifact since, including run #126 (v0.1.0) and run #129.** The earlier
-`.p12` directions all failed at import — see
-[SELF-SIGNED-CERTIFICATE-GUIDE.md](SELF-SIGNED-CERTIFICATE-GUIDE.md) §7
-for the full story (five attempts, one winner), and
+artifact since, including run #126 (v0.1.0), run #129 and run #144
+(2026-11-13).** The earlier `.p12` directions all failed at import —
+see [SELF-SIGNED-CERTIFICATE-GUIDE.md](SELF-SIGNED-CERTIFICATE-GUIDE.md)
+§7 for the full story (five attempts, one winner), and
 [APP-SIGN-KEY-PERMISSIONS.md](APP-SIGN-KEY-PERMISSIONS.md)
 for how to sign a downloaded build locally yourself (one `codesign`
 command per build, grant the two permissions once for the signed app),
 including how to create the certificate yourself with the correct Key
 Usage (`digitalSignature` + `codeSigning`). The Release workflow
-(`release.yml`) signs the same way, by hand, after an unsigned archive —
-see `GIT-CI-BUILD-SETUP.md` §4 (2026-11-11/12 entries).
+(`release.yml`) does NOT sign the app: since direction B (2026-11-13)
+it downloads the already-built, already-signed artifact from this
+workflow and ships it — see `GIT-CI-BUILD-SETUP.md` §3–§4. (The old
+archive flow, where `release.yml` archived unsigned and signed by
+hand, was superseded by direction B; it stamped the Release run
+number as the build number, so Sparkle would have seen a new release
+as older than the installed build.)
 
 ## Log policy: xcbeautify, never errors-only
 

@@ -115,13 +115,19 @@ verified against the new public key.)
 
 Note: pushing a tag also triggers the `Release` workflow
 (`.github/workflows/release.yml`). **That workflow is GREEN since
-2026-11-12 (Release run #7 attempt 4)** — it runs the tests, archives
-the app unsigned, signs it by hand with the same PEM certificate as
-`test.yml`, builds the DMG, generates the appcast with the Sparkle
-EdDSA key, and creates a draft GitHub Release with all 5 files (ZIP +
-DMG + appcast + PopClip/OpenClip). The manual steps in this doc are now
-the **fallback** (and how v0.1.0 was published). Full history of what
-was broken and fixed: `GIT-CI-BUILD-SETUP.md` §4.
+2026-11-12 (Release run #7 attempt 4) and runs direction B since
+2026-11-13 (proven by Release #17, all 22 steps green)** — it runs the
+tests, downloads the exact app artifact `test.yml` already built and
+signed for this commit, verifies it, builds the DMG, generates the
+appcast with the Sparkle EdDSA key, and creates a draft GitHub Release
+with all 5 files (ZIP + DMG + appcast + PopClip/OpenClip). It does NOT
+archive or sign the app again. The manual steps in §1–§3 below are now
+the **fallback** (and how v0.1.0 was published); the current manual
+method is `docs/MANUAL-RELEASE.md` (Sparkle `generate_appcast`, the
+same tool the workflow uses) — §3's openssl hand-signing is the older
+method, kept for reference. Full history of what was broken and fixed:
+`GIT-CI-BUILD-SETUP.md` §4 (direction B, Release #15/#16 fixes,
+Release #17 proof, Tests #144).
 
 **Push the tag first.** A release run started by manual dispatch
 without an existing tag files the draft under an auto-generated
@@ -148,17 +154,23 @@ because the feed now exists.
 
 ## 6. Next release checklist (short)
 
-0. Decide: **automatic** (push tag `v<version>`, watch the Release
-   workflow go green, review the draft it creates) or **manual**
-   (§1–§4 below). Automatic is the default now. If the Release
+0. Decide: **automatic** (push a `[build-app]` commit, wait for the
+   Tests run to go green, then run the Release workflow — dispatch
+   with the version to make a draft, or push tag `v<version>` to
+   publish directly — review the draft, publish it) or **manual**
+   (`docs/MANUAL-RELEASE.md`). Automatic is the default now. If a
    workflow is red, read its log first (`GIT-CI-BUILD-SETUP.md` §4
    has the history of every failure and fix) — a 0-step run is a
    GitHub capacity problem, not a code problem: re-run and wait, do
-   not switch direction.
+   not switch direction. Direction B: the Release workflow ships the
+   exact app artifact the green Tests run built — it never rebuilds
+   or re-signs the app.
 1. Bump `MARKETING_VERSION`, commit + push with `[build-app]` only when
    Manh says so.
 2. Wait for the run to go green; note the run number (= build number).
-3. Repeat §1–§4 with the new version/build numbers.
+3. Run the Release workflow for that version (dispatch → draft →
+   publish, or push the tag), or follow `MANUAL-RELEASE.md` with the
+   new version/build numbers.
 4. If the EdDSA key or the code-signing certificate ever changes,
    rotate first (see `GIT-CI-BUILD-SETUP.md` §4) and rebuild before
    releasing.

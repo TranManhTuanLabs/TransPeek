@@ -794,11 +794,23 @@ If you lose the certificate + private key, the same procedure applies —
 there is no recovery of the old identity, only replacement. The cost is
 one re-grant of permissions per machine.
 
-### 8.5 The Release workflow (`.github/workflows/release.yml`) — same secrets, different signing step
+### 8.5 The Release workflow (`.github/workflows/release.yml`) — direction B: it does NOT sign the app
 
-`release.yml` uses the same two PEM secrets and the same temp-keychain
-import as `test.yml` (§8.2), but it signs differently — and the
-difference is the whole story of November 2026-11-11/12:
+Since direction B (2026-11-13, proven by Release #17), `release.yml`
+does **not** import the certificate and does **not** sign the app at
+all. It downloads the already-built, already-signed app artifact from
+`test.yml` and only *verifies* the signature (`codesign --verify
+--verbose` + `codesign -dvvv`). The two PEM code-signing secrets
+(`MACOS_CODESIGN_CERT_PEM` / `MACOS_CODESIGN_KEY_PEM`) are used by
+`test.yml` only. The only signing secret `release.yml` uses is the
+Sparkle EdDSA private key (`SPARKLE_ED_PRIVATE_KEY`), to sign the
+appcast — a different kind of signing (see `RELEASE-PROCESS.md` §3
+and `MANUAL-RELEASE.md`).
+
+The three rules below are the history of the OLD archive flow
+(superseded by direction B). They are kept here because they explain
+why the old flow was abandoned — do not apply them to the current
+`release.yml`, which has no signing step to apply them to:
 
 - **Do NOT look the identity up with `security find-identity`.** Runs
   #2 and #3 (commits `d4f61c9`, `e8a63d9`) failed at "Write
@@ -813,11 +825,16 @@ difference is the whole story of November 2026-11-11/12:
   green, but the archived app was unsigned ("code object is not signed
   at all"). `test.yml` never proved xcodebuild can sign — it builds
   with `CODE_SIGNING_ALLOWED=NO` and signs by hand afterwards.
-- **The working pattern (commit `47d86ab`, verified by Release run #7
-  attempt 4, 2026-11-12):** archive with `CODE_SIGNING_ALLOWED=NO`,
+- **The old working pattern (commit `47d86ab`, verified by Release run
+  #7 attempt 4, 2026-11-12):** archive with `CODE_SIGNING_ALLOWED=NO`,
   then sign the archived app by hand with `codesign --force --deep
   --sign "TransPeek Self-Signed 100Years"` + `codesign --verify
-  --verbose`. Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
+  --verbose`. It was superseded by direction B because the Archive
+  step stamped the Release workflow's own run number as the build
+  number (the `v0.0.0-dev` draft was build 7, while the installed
+  v0.1.0 is build 126), so Sparkle would have seen a new release as
+  OLDER and never offered it — and it shipped a second, untested
+  binary. Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
 
 ---
 
@@ -938,3 +955,21 @@ difference is the whole story of November 2026-11-11/12:
   all 24 steps green)** — first green Release workflow, draft
   `v0.0.0-dev` with all 5 assets. §8.5 records the three rules.
   Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
+- **2026-11-12/13 — Direction B replaces the archive flow
+  (`release.yml` rewritten).** The archive flow (fix #3) had two
+  defects: it stamped the Release workflow's own run number as the
+  build number (the `v0.0.0-dev` draft was build 7, installed v0.1.0
+  is build 126), so Sparkle would have seen a new release as OLDER;
+  and it shipped a second, untested binary. Direction B: `test.yml`
+  builds and signs the app once (PEM, direction 4b) and uploads it as
+  `TransPeek-macOS-<run>`; `release.yml` downloads THAT artifact and
+  ships it — it no longer imports the certificate and no longer signs
+  the app (it only verifies the signature). Two fixes on the way:
+  Release #15 failed at "Run tests" because `release.yml` ran plain
+  `xcodebuild test` without `CODE_SIGNING_ALLOWED=NO` (fixed by
+  commit `cfe923f`); Release #16 failed at "Find tested build"
+  because the step used `gh api --jq -r` and `gh api` has no `-r`
+  flag (fixed by commit `bf168c9`). **Release #17 went SUCCESS
+  (2026-11-13 03:37, all 22 steps)** — direction B proven. §8.5
+  records the current (no-signing) behaviour. Full history:
+  `docs/GIT-CI-BUILD-SETUP.md` §4.
