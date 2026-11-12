@@ -129,11 +129,6 @@ struct AboutSettingsView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
-                    // One blank line between the English and Vietnamese
-                    // sentences so they do not run together.
-                    Spacer()
-                        .frame(height: 17)
-
                     Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
