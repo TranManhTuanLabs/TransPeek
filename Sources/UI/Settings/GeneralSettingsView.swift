@@ -16,6 +16,7 @@ struct GeneralSettingsView: View {
     @Default(.popupDefaultHeight) private var popupDefaultHeight
     @Default(.popupFontSize) private var popupFontSize
     @Default(.popupTopBarFontSize) private var popupTopBarFontSize
+    @Default(.appTextSize) private var appTextSize
     @Default(.popupFontName) private var popupFontName
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.captureRichText) private var captureRichText
@@ -185,6 +186,22 @@ struct GeneralSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+            }
+
+            Section("Appearance") {
+                LabeledContent("Text Size: \(appTextSize)") {
+                    Slider(
+                        value: Binding(
+                            get: { Double(appTextSize) },
+                            set: { appTextSize = Int($0) }
+                        ),
+                        in: 12...24,
+                        step: 1
+                    )
+                }
+                Text("Scales the app's interface text (Settings window). 14 is the system default size; larger values make the text bigger.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Popup Panel") {

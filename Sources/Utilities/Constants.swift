@@ -368,6 +368,10 @@ extension Defaults.Keys {
     static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 350)
     static let popupInputHeight = Key<Int>("popupInputHeight", default: 48)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
+    // App interface text size (Settings window): 14 maps to the system
+    // default Dynamic Type size (.large), so there is no visible change
+    // at the default. Smaller values shrink, larger values grow.
+    static let appTextSize = Key<Int>("appTextSize", default: 14)
     // Top bar of the popup panel: app name uses this size, slogan uses size - 2.
     static let popupTopBarFontSize = Key<Int>("popupTopBarFontSize", default: 17)
     static let popupFontName = Key<String>("popupFontName", default: "")

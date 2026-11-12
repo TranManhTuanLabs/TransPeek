@@ -8,6 +8,30 @@ struct SettingsView: View {
     let updaterController: UpdaterController?
 
     @Default(.selectedSettingsTab) private var selectedTab
+    @Default(.appTextSize) private var appTextSize
+
+    /// Maps the Text Size slider (12–24, default 14) to a Dynamic Type
+    /// size. 14 is the system default (.large), so there is no visible
+    /// change at the default; smaller values shrink, larger values grow.
+    /// Applied to the whole Settings window so every text-style font
+    /// (.body, .caption, .headline, ...) scales. Fonts set with an
+    /// explicit point size (e.g. the About slogan) do not scale — those
+    /// sizes were chosen individually.
+    private var sizeCategory: DynamicTypeSize {
+        switch appTextSize {
+        case ...12: return .small
+        case 13: return .medium
+        case 14: return .large
+        case 15: return .xLarge
+        case 16: return .xxLarge
+        case 17: return .xxxLarge
+        case 18: return .accessibility1
+        case 19: return .accessibility2
+        case 20: return .accessibility3
+        case 21: return .accessibility4
+        default: return .accessibility5
+        }
+    }
 
     /// The tab the mouse is currently hovering, for a subtle hover tint.
     @State private var hoveredTab: SettingsTab?
@@ -95,6 +119,7 @@ struct SettingsView: View {
         // the scrolling Form/List content takes over instead of clipping
         // the bottom of the window off-screen.
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
+        .environment(\.sizeCategory, sizeCategory)
     }
 
     /// One section tab: icon on top, title underneath, centered in
