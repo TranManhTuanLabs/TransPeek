@@ -15,12 +15,10 @@ struct SettingsView: View {
     /// change at the default; smaller values shrink, larger values grow.
     /// Applied to the whole Settings window via the dynamicTypeSize
     /// environment so every text-style font (.body, .caption, .headline,
-    /// ...) scales. Fonts that need a specific size (e.g. the About
-    /// slogan, 17pt) use `.system(size: 17, relativeTo: .subheadline)`
-    /// so they keep their size at the default but still scale with this
-    /// setting. Note: the environment key is `.dynamicTypeSize`, not
-    /// `.sizeCategory` — the latter takes a ContentSizeCategory, and
-    /// passing a DynamicTypeSize to it does not compile (Tests #146).
+    /// ...) scales. Fonts set with a fixed point size (e.g. the About
+    /// slogan and Support text, 17pt) do NOT scale with this setting —
+    /// Font.system(size:) has no relativeTo parameter, so a fixed size
+    /// cannot follow Dynamic Type. The slogan keeps its 17pt size.
     private var sizeCategory: DynamicTypeSize {
         switch appTextSize {
         case ...12: return .small

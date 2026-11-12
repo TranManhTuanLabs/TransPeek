@@ -44,7 +44,7 @@ struct AboutSettingsView: View {
             // Tagline: "Translate anywhere, Peek instantly!"
             // (SPEC v0.1; also the README tagline.)
             Text("Translate anywhere, Peek instantly!")
-                .font(.system(size: 17, relativeTo: .subheadline))
+                .font(.system(size: 17))
                 .italic()
                 .foregroundStyle(.secondary)
 
@@ -120,7 +120,7 @@ struct AboutSettingsView: View {
             ScrollView(.vertical) {
                 VStack(spacing: 8) {
                     Text("If this app is useful to you, you can support the project by buying me a coffee!")
-                        .font(.system(size: 17, relativeTo: .subheadline))
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
@@ -130,12 +130,12 @@ struct AboutSettingsView: View {
                         .frame(height: 17)
 
                     Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
-                        .font(.system(size: 17, relativeTo: .subheadline))
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
                     Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
-                        .font(.system(size: 17, relativeTo: .subheadline))
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
