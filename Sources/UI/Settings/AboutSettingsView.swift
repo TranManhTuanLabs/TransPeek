@@ -10,6 +10,7 @@ struct AboutSettingsView: View {
     let updaterController: UpdaterController?
 
     @State private var showDonateQR = false
+    @State private var accountNumberCopied = false
 
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -84,6 +85,24 @@ struct AboutSettingsView: View {
                 .font(.caption)
                 .foregroundStyle(.tertiary)
 
+            // Updater — above Support (moved up 2026-11-13: checking for
+            // updates is used more often than the donate section).
+            if let updaterController {
+                @Bindable var updater = updaterController
+
+                Divider()
+                    .padding(.horizontal, 40)
+
+                HStack(spacing: 16) {
+                    Button("Check for Updates...") {
+                        updater.checkForUpdates()
+                    }
+                    .disabled(!updater.canCheckForUpdates)
+
+                    Toggle("Automatically check for updates", isOn: $updater.automaticallyChecksForUpdates)
+                }
+            }
+
             // Support: the app is free — a coffee via VietQR (BIDV) keeps
             // it improving. The QR stays behind a button so the About tab
             // stays compact; the account number can be copied directly.
@@ -93,22 +112,29 @@ struct AboutSettingsView: View {
             Text("Support TransPeek")
                 .font(.headline)
 
-            Text("If this app is useful to you, you can support the project by buying me a coffee!")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+            // Only the Support text scrolls — the two buttons below stay
+            // fixed so they are always reachable, even when the text is
+            // taller than the visible area.
+            ScrollView(.vertical) {
+                VStack(spacing: 8) {
+                    Text("If this app is useful to you, you can support the project by buying me a coffee!")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
 
-            Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                    Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
 
-            Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                    Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 40)
+            }
 
             HStack(spacing: 12) {
                 Button {
@@ -132,24 +158,18 @@ struct AboutSettingsView: View {
                     let pasteboard = NSPasteboard.general
                     pasteboard.clearContents()
                     pasteboard.setString("2600786466", forType: .string)
-                } label: {
-                    Label("Copy Account Number", systemImage: "doc.on.doc")
-                }
-            }
-
-            if let updaterController {
-                @Bindable var updater = updaterController
-
-                Divider()
-                    .padding(.horizontal, 40)
-
-                HStack(spacing: 16) {
-                    Button("Check for Updates...") {
-                        updater.checkForUpdates()
+                    accountNumberCopied = true
+                    // Back to the normal label after 2 seconds.
+                    Task {
+                        try? await Task.sleep(for: .seconds(2))
+                        accountNumberCopied = false
                     }
-                    .disabled(!updater.canCheckForUpdates)
-
-                    Toggle("Automatically check for updates", isOn: $updater.automaticallyChecksForUpdates)
+                } label: {
+                    if accountNumberCopied {
+                        Label("Copied", systemImage: "checkmark")
+                    } else {
+                        Label("Copy Account Number", systemImage: "doc.on.doc")
+                    }
                 }
             }
 
