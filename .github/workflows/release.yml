@@ -84,6 +84,12 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      # SPARKLE_ED_PUBLIC_KEY is the Sparkle updater key (do not hardcode a
+      # different one): without it the built app has no updater key and Sparkle
+      # cannot start. CODE_SIGNING_ALLOWED=NO because tests do not need a
+      # signed app — without it xcodebuild tries to sign with the placeholder
+      # identity in Signing.xcconfig (YOUR_TEAM_ID) and fails before any test
+      # runs (Release #15, 2026-11-13).
       - name: Run tests
         timeout-minutes: 15
         run: |
@@ -92,7 +98,9 @@ jobs:
             -scheme TransPeek \
             -destination 'platform=macOS' \
             -resultBundlePath build/Tests.xcresult \
-            MACOSX_DEPLOYMENT_TARGET=15.0
+            MACOSX_DEPLOYMENT_TARGET=15.0 \
+            SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M= \
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Upload test results
         if: always()
