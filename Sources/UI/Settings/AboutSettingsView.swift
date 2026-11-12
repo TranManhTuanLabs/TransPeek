@@ -66,20 +66,20 @@ struct AboutSettingsView: View {
             .buttonStyle(.plain)
             .help("View TranManhTuanLabs on GitHub")
 
-            Text("Version \(appVersion) (\(buildNumber))")
-                .foregroundStyle(.secondary)
-
-            // Build stamp: CI sets CFBundleVersion to the GitHub Actions
-            // run number (see test.yml), so the About tab always shows
-            // exactly which CI build this is — the marketing version
-            // alone (0.1.0) is the same for every build, so it cannot
-            // tell builds apart. Local builds keep the project default
-            // ("1") and hide the line.
-            if buildNumber != "1" {
-                Text("Build CI #\(buildNumber)")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+            // Release line: version + CI build in one line, linked to the
+            // Releases page so users can see every release. CI sets
+            // CFBundleVersion to the GitHub Actions run number (see
+            // test.yml), so this always shows exactly which CI build it
+            // is — the marketing version alone (0.1.1) is the same for
+            // every build. Local builds keep the project default ("1")
+            // and show no build number, since there is no CI build.
+            Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/releases")!) {
+                Text(buildNumber == "1"
+                    ? "Release \(appVersion)"
+                    : "Release \(appVersion) (Build CI #\(buildNumber))")
             }
+            .buttonStyle(.link)
+            .help("View all TransPeek releases on GitHub")
 
             Text("Copyright © 2025-2026 TransPeek Licensed under AGPL-3.0")
                 .font(.caption)
