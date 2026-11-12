@@ -44,7 +44,7 @@ struct AboutSettingsView: View {
             // Tagline: "Translate anywhere, Peek instantly!"
             // (SPEC v0.1; also the README tagline.)
             Text("Translate anywhere, Peek instantly!")
-                .font(.subheadline)
+                .font(.system(size: 17))
                 .italic()
                 .foregroundStyle(.secondary)
 
@@ -52,18 +52,17 @@ struct AboutSettingsView: View {
             // scales crisply) + the org path, right under the app name
             // — not a text-style link like the ones at the bottom, and
             // not the generic </> symbol, which reads as "code" rather
-            // than GitHub.
+            // than GitHub. Blue (link style) so it reads as clickable.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
-                        .fill(.secondary)
+                        .fill(Color.accentColor)
                         .frame(width: 20, height: 20)
                     Text("Github.com/TranManhTuanLabs")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
                 }
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.link)
             .help("View TranManhTuanLabs on GitHub")
 
             // Release line: version + CI build in one line, linked to the
@@ -73,12 +72,15 @@ struct AboutSettingsView: View {
             // is — the marketing version alone (0.1.1) is the same for
             // every build. Local builds keep the project default ("1")
             // and show no build number, since there is no CI build.
+            // Plain style (not blue) — the repo link above is the blue
+            // one that signals "clickable".
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/releases")!) {
                 Text(buildNumber == "1"
                     ? "Release \(appVersion)"
                     : "Release \(appVersion) (Build CI #\(buildNumber))")
+                    .foregroundStyle(.secondary)
             }
-            .buttonStyle(.link)
+            .buttonStyle(.plain)
             .help("View all TransPeek releases on GitHub")
 
             Text("Copyright © 2025-2026 TransPeek Licensed under AGPL-3.0")
@@ -118,17 +120,22 @@ struct AboutSettingsView: View {
             ScrollView(.vertical) {
                 VStack(spacing: 8) {
                     Text("If this app is useful to you, you can support the project by buying me a coffee!")
-                        .font(.subheadline)
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
+                    // One blank line between the English and Vietnamese
+                    // sentences so they do not run together.
+                    Spacer()
+                        .frame(height: 17)
+
                     Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
-                        .font(.subheadline)
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
                     Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
-                        .font(.subheadline)
+                        .font(.system(size: 17))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
