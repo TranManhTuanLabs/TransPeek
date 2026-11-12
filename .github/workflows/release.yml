@@ -131,9 +131,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           find_run_with_artifact() {
-            CANDIDATES=$(gh api "repos/${{ github.repository }}/actions/workflows/test.yml/runs?$1&status=success&per_page=5" --jq -r '.workflow_runs[].id')
+            # NOTE: `gh api --jq` takes the jq expression directly — there is
+            # no `-r` flag for `gh api` (`-r` belongs to standalone jq). Writing
+            # `--jq -r '...'` makes `--jq` swallow `-r` as its value and leaves
+            # the expression as a second positional argument, so gh errors with
+            # "accepts 1 arg(s), received 2" (Release #16, 2026-11-13).
+            CANDIDATES=$(gh api "repos/${{ github.repository }}/actions/workflows/test.yml/runs?$1&status=success&per_page=5" --jq '.workflow_runs[].id')
             for CANDIDATE in $CANDIDATES; do
-              ARTIFACT_NAME=$(gh api "repos/${{ github.repository }}/actions/runs/$CANDIDATE/artifacts" --jq -r '.artifacts[].name | select(. == "TransPeek-macOS" or startswith("TransPeek-macOS-"))' | head -n 1)
+              ARTIFACT_NAME=$(gh api "repos/${{ github.repository }}/actions/runs/$CANDIDATE/artifacts" --jq '.artifacts[].name | select(. == "TransPeek-macOS" or startswith("TransPeek-macOS-"))' | head -n 1)
               if [ -n "$ARTIFACT_NAME" ]; then
                 echo "$CANDIDATE $ARTIFACT_NAME"
                 return 0
