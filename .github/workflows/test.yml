@@ -166,32 +166,39 @@ jobs:
           codesign --verify --verbose build/Build/Products/Release/TransPeek.app
           rm -f /tmp/TransPeek-signing.crt /tmp/TransPeek-signing.key
 
-      # Zip the signed .app into TransPeek-macOS.zip for download.
+      # Zip the signed .app. The file name carries the Tests run number
+      # (e.g. TransPeek-macOS-138.zip) so each downloaded build is distinct
+      # and the user never has to rename it to tell builds apart.
       - name: Zip app
         if: contains(github.event.head_commit.message, '[build-app]')
         run: |
-          ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app TransPeek-macOS.zip
+          ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app "TransPeek-macOS-${{ github.run_number }}.zip"
 
-      # Upload the zip as the "TransPeek-macOS" artifact (kept 7 days).
-      # This is the file the user downloads to test the app.
+      # Upload the zip as the "TransPeek-macOS-<run number>" artifact (kept
+      # 7 days). The run number in the name is what makes the downloaded
+      # file distinct per build. release.yml finds this artifact by the
+      # "TransPeek-macOS-" prefix (it also still accepts the old plain
+      # "TransPeek-macOS" name from runs before this change).
       - name: Upload app
         if: contains(github.event.head_commit.message, '[build-app]')
         uses: actions/upload-artifact@v4
         with:
-          name: TransPeek-macOS
-          path: TransPeek-macOS.zip
+          name: TransPeek-macOS-${{ github.run_number }}
+          path: TransPeek-macOS-${{ github.run_number }}.zip
           retention-days: 7
 
-      # Delete all older "TransPeek-macOS" artifacts, keeping only the newest
-      # one. That way there is always exactly one app download link, and an old
-      # link stops working once a newer build replaces it.
+      # Delete all older app artifacts, keeping only the newest one. That
+      # way there is always exactly one app download link, and an old link
+      # stops working once a newer build replaces it. Matches both the old
+      # plain "TransPeek-macOS" name and the new "TransPeek-macOS-<run>"
+      # name, so artifacts from before this change are still cleaned up.
       - name: Delete older app artifacts (keep only the newest)
         if: contains(github.event.head_commit.message, '[build-app]')
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ids=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="TransPeek-macOS")) | sort_by(.created_at) | reverse | .[1:] | .[].id')
+          ids=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="TransPeek-macOS" or (.name | startswith("TransPeek-macOS-")))) | sort_by(.created_at) | reverse | .[1:] | .[].id')
           for id in $ids; do
             echo "Deleting old artifact $id"
             gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"

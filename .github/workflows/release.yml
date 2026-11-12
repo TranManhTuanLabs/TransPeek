@@ -10,14 +10,16 @@ name: Release
 # builds the app (on a [build-app] commit), signs it by hand with the
 # self-signed certificate "TransPeek Self-Signed 100Years" (Direction 4b,
 # PEM — see docs/SELF-SIGNED-CERTIFICATE-GUIDE.md §7) and uploads it as
-# artifact TransPeek-macOS (7-day retention). This workflow downloads THAT
-# artifact and ships it — it does NOT archive or sign again. That fixes
-# two problems of the old archive flow (removed 2026-11-12, see
-# docs/GIT-CI-BUILD-SETUP.md §4): (1) the build number: the old Archive
-# step stamped CURRENT_PROJECT_VERSION with this workflow's own run
-# number (the 0.0.0-dev draft was build 7, while the installed v0.1.0 is
-# build 126), so Sparkle would see a new release as OLDER and never offer
-# it as an update; the artifact already carries the Tests run number,
+# artifact TransPeek-macOS-<Tests run number> (7-day retention; renamed
+# 2026-11-13 from the plain "TransPeek-macOS" so each download is distinct
+# — the "Find tested build" step below still accepts the old plain name).
+# This workflow downloads THAT artifact and ships it — it does NOT archive
+# or sign again. That fixes two problems of the old archive flow (removed
+# 2026-11-12, see docs/GIT-CI-BUILD-SETUP.md §4): (1) the build number: the
+# old Archive step stamped CURRENT_PROJECT_VERSION with this workflow's own
+# run number (the 0.0.0-dev draft was build 7, while the installed v0.1.0
+# is build 126), so Sparkle would see a new release as OLDER and never
+# offer it as an update; the artifact already carries the Tests run number,
 # which always increases. (2) The shipped binary is now the exact binary
 # that was tested — the old flow archived a second, different binary.
 # The release therefore needs a green [build-app] Tests run for the tagged
@@ -105,13 +107,16 @@ jobs:
       # The release ships exactly that artifact (direction B) — the build
       # number in it is the Tests run number, which is what Sparkle
       # compares, so a new release is always newer than the installed app.
-      # A run only counts if it actually has the TransPeek-macOS artifact
-      # (a tests-only run has none). For a tag run the artifact MUST be for
-      # this exact commit (the gate: bump version + [build-app] + tag); if
-      # there is no green Tests run for the commit, fail loudly instead of
-      # shipping an untested build. For a manual dispatch (a pipeline test,
-      # not a real release) fall back to the latest green Tests run on main,
-      # and say so in the log.
+      # A run only counts if it actually has the app artifact (a tests-only
+      # run has none). The artifact name is the new "TransPeek-macOS-<run
+      # number>" (or the old plain "TransPeek-macOS" for runs before the
+      # 2026-11-13 rename) — this step outputs the exact name it found, so
+      # the Download step below uses the right one. For a tag run the
+      # artifact MUST be for this exact commit (the gate: bump version +
+      # [build-app] + tag); if there is no green Tests run for the commit,
+      # fail loudly instead of shipping an untested build. For a manual
+      # dispatch (a pipeline test, not a real release) fall back to the
+      # latest green Tests run on main, and say so in the log.
       - name: Find tested build
         id: tested
         env:
@@ -120,39 +125,46 @@ jobs:
           find_run_with_artifact() {
             CANDIDATES=$(gh api "repos/${{ github.repository }}/actions/workflows/test.yml/runs?$1&status=success&per_page=5" --jq -r '.workflow_runs[].id')
             for CANDIDATE in $CANDIDATES; do
-              HAS=$(gh api "repos/${{ github.repository }}/actions/runs/$CANDIDATE/artifacts" --jq '[.artifacts[].name] | index("TransPeek-macOS") != null')
-              if [ "$HAS" = "true" ]; then
-                echo "$CANDIDATE"
+              ARTIFACT_NAME=$(gh api "repos/${{ github.repository }}/actions/runs/$CANDIDATE/artifacts" --jq -r '.artifacts[].name | select(. == "TransPeek-macOS" or startswith("TransPeek-macOS-"))' | head -n 1)
+              if [ -n "$ARTIFACT_NAME" ]; then
+                echo "$CANDIDATE $ARTIFACT_NAME"
                 return 0
               fi
             done
             return 1
           }
-          RUN_ID=$(find_run_with_artifact "head_sha=${{ github.sha }}" || true)
-          if [ -z "$RUN_ID" ]; then
+          FOUND=$(find_run_with_artifact "head_sha=${{ github.sha }}" || true)
+          if [ -z "$FOUND" ]; then
             if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
               echo "::warning::No green Tests run with an artifact for this commit; falling back to the latest green Tests run on main (dispatch test only)."
-              RUN_ID=$(find_run_with_artifact "branch=main" || true)
+              FOUND=$(find_run_with_artifact "branch=main" || true)
             fi
           fi
-          [ -n "$RUN_ID" ] || { echo "ERROR: no green Tests run with a TransPeek-macOS artifact found for this commit — run test.yml with [build-app] first, then tag."; exit 1; }
+          [ -n "$FOUND" ] || { echo "ERROR: no green Tests run with a TransPeek-macOS artifact found for this commit — run test.yml with [build-app] first, then tag."; exit 1; }
+          RUN_ID="${FOUND%% *}"
+          ARTIFACT_NAME="${FOUND#* }"
           RUN_NUMBER=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID" --jq '.run_number')
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "run_number=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "Using tested build from Tests run #$RUN_NUMBER (run id $RUN_ID)."
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "Using tested build from Tests run #$RUN_NUMBER (run id $RUN_ID, artifact $ARTIFACT_NAME)."
 
-      # Download the tested artifact (TransPeek-macOS.zip, the signed app
-      # test.yml built) and unpack it. `gh run download` is the same CLI
-      # test.yml already uses for artifacts (see its "Delete older app
-      # artifacts" step). The artifact is kept 7 days and test.yml deletes
-      # older ones, so the tag must be pushed while this artifact is the
-      # newest — which is the normal flow (tag right after Tests goes green).
+      # Download the tested artifact (the signed app test.yml built) and
+      # unpack it. The artifact name comes from the "Find tested build"
+      # step — it is "TransPeek-macOS-<run number>" for new runs (or the
+      # old plain "TransPeek-macOS" for runs before the 2026-11-13 rename),
+      # and the zip file inside has the same name plus ".zip". `gh run
+      # download` is the same CLI test.yml already uses for artifacts (see
+      # its "Delete older app artifacts" step). The artifact is kept 7 days
+      # and test.yml deletes older ones, so the tag must be pushed while
+      # this artifact is the newest — which is the normal flow (tag right
+      # after Tests goes green).
       - name: Download tested app
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download "${{ steps.tested.outputs.run_id }}" --name TransPeek-macOS --dir build/tested
-          unzip -q build/tested/TransPeek-macOS.zip -d build/tested
+          gh run download "${{ steps.tested.outputs.run_id }}" --name "${{ steps.tested.outputs.artifact_name }}" --dir build/tested
+          unzip -q "build/tested/${{ steps.tested.outputs.artifact_name }}.zip" -d build/tested
           ls -la build/tested/
 
       # Prove the downloaded app is the one we mean to ship: it exists,
