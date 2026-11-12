@@ -1,16 +1,29 @@
 name: Release
 
 # Builds a real release from a v* tag (or manually, as a draft, via
-# workflow_dispatch): runs tests, archives the app, signs it, then creates
-# the DMG, the Sparkle appcast and the GitHub Release with the ZIP + DMG +
-# appcast + PopClip/OpenClip extensions.
-# Signing uses Direction 4b (PEM certificate + key, NO PKCS12), the same as
-# test.yml — see the "Import signing certificate" step. Do NOT go back to a
-# .p12: macOS 26 only understands legacy PKCS12 (3DES/SHA-1) and rejects
-# OpenSSL 3's modern format (PBES2/AES-256 + SHA-256 MAC). The original
-# .p12 step failed on the v0.1.0 tag with "MAC verification failed" because
-# the secrets it read (SIGNING_CERTIFICATE_P12 / SIGNING_CERTIFICATE_PASSWORD)
-# do not exist on this repo.
+# workflow_dispatch): runs tests, takes the exact app artifact test.yml
+# already built and signed for this commit, then creates the DMG, the
+# Sparkle appcast and the GitHub Release with the ZIP + DMG + appcast +
+# PopClip/OpenClip extensions.
+#
+# Direction B (2026-11-12): build ONCE, promote the artifact. test.yml
+# builds the app (on a [build-app] commit), signs it by hand with the
+# self-signed certificate "TransPeek Self-Signed 100Years" (Direction 4b,
+# PEM — see docs/SELF-SIGNED-CERTIFICATE-GUIDE.md §7) and uploads it as
+# artifact TransPeek-macOS (7-day retention). This workflow downloads THAT
+# artifact and ships it — it does NOT archive or sign again. That fixes
+# two problems of the old archive flow (removed 2026-11-12, see
+# docs/GIT-CI-BUILD-SETUP.md §4): (1) the build number: the old Archive
+# step stamped CURRENT_PROJECT_VERSION with this workflow's own run
+# number (the 0.0.0-dev draft was build 7, while the installed v0.1.0 is
+# build 126), so Sparkle would see a new release as OLDER and never offer
+# it as an update; the artifact already carries the Tests run number,
+# which always increases. (2) The shipped binary is now the exact binary
+# that was tested — the old flow archived a second, different binary.
+# The release therefore needs a green [build-app] Tests run for the tagged
+# commit; if there is none, it fails loudly instead of shipping an
+# untested build. Permissions include actions: read so the workflow can
+# list runs and download the artifact of test.yml.
 
 on:
   push:
@@ -29,6 +42,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   build:
@@ -48,87 +62,8 @@ jobs:
         with:
           install: true
 
-      # Sign with the self-signed certificate "TransPeek Self-Signed 100Years"
-      # (valid 100 years), the same Direction 4b (PEM certificate + key, NO
-      # PKCS12) as test.yml: the certificate and the private key are imported
-      # separately as PEM files, so macOS never has to parse a .p12 at all.
-      # Directions 1/3/3b all failed at `security import` of a .p12 with "MAC
-      # verification failed". The two SHA-256 checks below prove the secrets
-      # arrived intact (same hashes as test.yml): if a hash mismatches, the
-      # secret — not the format — is the problem, and the step stops there.
-      # The certificate + key are imported into a temporary keychain
-      # (/tmp/ci-signing.keychain-db), which the next step reads to find the
-      # signing identity for Signing.xcconfig.
-      - name: Import signing certificate
-        env:
-          MACOS_CODESIGN_CERT_PEM: ${{ secrets.MACOS_CODESIGN_CERT_PEM }}
-          MACOS_CODESIGN_KEY_PEM: ${{ secrets.MACOS_CODESIGN_KEY_PEM }}
-        run: |
-          printf '%s' "$MACOS_CODESIGN_CERT_PEM" | base64 --decode > /tmp/TransPeek-signing.crt
-          printf '%s' "$MACOS_CODESIGN_KEY_PEM" | base64 --decode > /tmp/TransPeek-signing.key
-          [ "$(shasum -a 256 /tmp/TransPeek-signing.crt | cut -d' ' -f1)" = "9354805dff7a8f50af55ed83006eede90a6145442d8cf3992fd153a0cdf9761a" ] || { echo "ERROR: certificate secret does not match the local file"; exit 1; }
-          [ "$(shasum -a 256 /tmp/TransPeek-signing.key | cut -d' ' -f1)" = "e81b462f615f202b3e143591726199c60e86ae49d3d633fb97ea8e569fda54bc" ] || { echo "ERROR: private key secret does not match the local file"; exit 1; }
-          KEYCHAIN_PASSWORD="ci-signing-temp"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
-          security set-keychain-settings -lut 3600 /tmp/ci-signing.keychain-db
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
-          security import /tmp/TransPeek-signing.crt -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
-          security import /tmp/TransPeek-signing.key -k /tmp/ci-signing.keychain-db -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" /tmp/ci-signing.keychain-db
-          security default-keychain -s /tmp/ci-signing.keychain-db
-          security find-identity -v -p codesigning /tmp/ci-signing.keychain-db
-          rm -f /tmp/TransPeek-signing.crt /tmp/TransPeek-signing.key
-
-      # Write Configurations/Signing.xcconfig from the imported identity, so
-      # the archive step signs with the self-signed certificate. The identity
-      # is read from the temporary keychain created above (NOT the
-      # "signing_temp" keychain the old .p12 action used).
-      # NOTE: the identity is used BY NAME here, not by hash from
-      # `security find-identity`. That command returns 0 identities for this
-      # self-signed certificate — observed in Release runs #2 and #3, with
-      # AND without the "-p codesigning" policy flag — even though the
-      # certificate and key import fine ("1 certificate imported", "1 key
-      # imported") and `codesign --sign` by this same name works (test.yml
-      # has signed that way since run #99). So looking the identity up is
-      # unreliable here; naming it directly is what already works.
-      # SPARKLE_ED_PUBLIC_KEY is Sparkle's public EdDSA key (public, safe to
-      # hardcode — same literal as test.yml): without it the built app has no
-      # updater key and Sparkle cannot start. DEVELOPMENT_TEAM comes from a
-      # secret and stays empty for the self-signed certificate (there is no
-      # Developer ID team while the $99/year membership is deferred).
-      - name: Write Signing.xcconfig
-        env:
-          DEVELOPMENT_TEAM: ${{ secrets.DEVELOPMENT_TEAM }}
-        run: |
-          SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=
-          SIGNING_IDENTITY="TransPeek Self-Signed 100Years"
-          # Diagnostic only (never fails the step): show the certificate's
-          # SHA-1 hash from the temporary keychain, for the log.
-          security find-certificate -c "$SIGNING_IDENTITY" -Z /tmp/ci-signing.keychain-db || true
-
-          cat > Configurations/Signing.xcconfig << EOF
-          TransPeek_CODE_SIGN_STYLE = Manual
-          TransPeek_CODE_SIGN_IDENTITY = $SIGNING_IDENTITY
-          TransPeek_DEVELOPMENT_TEAM = $DEVELOPMENT_TEAM
-          SPARKLE_ED_PUBLIC_KEY = $SPARKLE_ED_PUBLIC_KEY
-          EOF
-
-          # Show exactly what was written, so the log proves the values
-          # reached the file (useful if a later step ever reports an
-          # empty signing identity again).
-          echo "--- Configurations/Signing.xcconfig ---"
-          cat Configurations/Signing.xcconfig
-
       - name: Resolve dependencies and generate project
         run: tuist install && tuist generate
-
-      # Textual pulls in swiftui-math, whose bundled math fonts add ~7 MB. TransPeek never enables
-      # the math syntax extension and SwiftUIMath loads fonts lazily, so the files are dead weight.
-      # Deleting them before the build keeps the code signature intact.
-      - name: Strip unused math fonts
-        run: |
-          find .build/checkouts/swiftui-math/Sources/SwiftUIMath/mathFonts.bundle \
-            \( -name '*.otf' -o -name '*.plist' \) -delete
 
       - name: Determine version
         id: version
@@ -160,58 +95,83 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      # Archive WITHOUT signing, then sign the archived app by hand in the
-      # next step. Release run #4 proved xcodebuild does NOT sign through
-      # this xcconfig: the archive passed but the app came out unsigned
-      # ("code object is not signed at all" at the Verify step), even
-      # though the identity was in the keychain and in the xcconfig. So the
-      # archive step only builds; the signing is done exactly like test.yml
-      # does it (codesign --sign by name), which has worked since run #99.
-      - name: Archive
+      # Find the green Tests run that built the artifact for this commit.
+      # The release ships exactly that artifact (direction B) — the build
+      # number in it is the Tests run number, which is what Sparkle
+      # compares, so a new release is always newer than the installed app.
+      # A run only counts if it actually has the TransPeek-macOS artifact
+      # (a tests-only run has none). For a tag run the artifact MUST be for
+      # this exact commit (the gate: bump version + [build-app] + tag); if
+      # there is no green Tests run for the commit, fail loudly instead of
+      # shipping an untested build. For a manual dispatch (a pipeline test,
+      # not a real release) fall back to the latest green Tests run on main,
+      # and say so in the log.
+      - name: Find tested build
+        id: tested
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          xcodebuild archive \
-            -workspace TransPeek.xcworkspace \
-            -scheme TransPeek \
-            -configuration Release \
-            -archivePath build/TransPeek.xcarchive \
-            VALIDATE_STRINGS_FILES_WHILE_COPYING=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            MARKETING_VERSION=${{ steps.version.outputs.version }} \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }}
-
-      # Sign the archived app by hand with the self-signed certificate, the
-      # same command test.yml uses (it has signed that way since run #99).
-      # The certificate + private key are in the temporary keychain from the
-      # Import step, and `codesign --sign` finds them by name — unlike
-      # `security find-identity`, which returns 0 for this certificate.
-      - name: Sign archived app
-        run: |
-          APP="build/TransPeek.xcarchive/Products/Applications/TransPeek.app"
-          codesign --force --deep --sign "TransPeek Self-Signed 100Years" "$APP"
-          codesign --verify --verbose "$APP"
-
-      # Verify the archive's signature is valid. A self-signed certificate
-      # has NO TeamIdentifier by design (no Developer ID team while the
-      # $99/year Apple Developer membership is deferred) — that is expected,
-      # not a failure: the app is distributed outside the App Store and
-      # Gatekeeper asks once on first launch. Only fail here if the
-      # signature itself is invalid (checked above by --verify --strict).
-      - name: Verify code signature
-        run: |
-          APP="build/TransPeek.xcarchive/Products/Applications/TransPeek.app"
-          codesign --verify --strict "$APP"
-
-          SIGN_INFO=$(codesign -dvvv "$APP" 2>&1)
-          echo "$SIGN_INFO" | grep -E "Authority|Identifier|TeamIdentifier"
-
-          if echo "$SIGN_INFO" | grep -q "TeamIdentifier=not set"; then
-            echo "::warning::Code signature has no TeamIdentifier (self-signed certificate, expected)."
+          find_run_with_artifact() {
+            CANDIDATES=$(gh api "repos/${{ github.repository }}/actions/workflows/test.yml/runs?$1&status=success&per_page=5" --jq -r '.workflow_runs[].id')
+            for CANDIDATE in $CANDIDATES; do
+              HAS=$(gh api "repos/${{ github.repository }}/actions/runs/$CANDIDATE/artifacts" --jq '[.artifacts[].name] | index("TransPeek-macOS") != null')
+              if [ "$HAS" = "true" ]; then
+                echo "$CANDIDATE"
+                return 0
+              fi
+            done
+            return 1
+          }
+          RUN_ID=$(find_run_with_artifact "head_sha=${{ github.sha }}" || true)
+          if [ -z "$RUN_ID" ]; then
+            if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+              echo "::warning::No green Tests run with an artifact for this commit; falling back to the latest green Tests run on main (dispatch test only)."
+              RUN_ID=$(find_run_with_artifact "branch=main" || true)
+            fi
           fi
+          [ -n "$RUN_ID" ] || { echo "ERROR: no green Tests run with a TransPeek-macOS artifact found for this commit — run test.yml with [build-app] first, then tag."; exit 1; }
+          RUN_NUMBER=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID" --jq '.run_number')
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "run_number=$RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "Using tested build from Tests run #$RUN_NUMBER (run id $RUN_ID)."
+
+      # Download the tested artifact (TransPeek-macOS.zip, the signed app
+      # test.yml built) and unpack it. `gh run download` is the same CLI
+      # test.yml already uses for artifacts (see its "Delete older app
+      # artifacts" step). The artifact is kept 7 days and test.yml deletes
+      # older ones, so the tag must be pushed while this artifact is the
+      # newest — which is the normal flow (tag right after Tests goes green).
+      - name: Download tested app
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "${{ steps.tested.outputs.run_id }}" --name TransPeek-macOS --dir build/tested
+          unzip -q build/tested/TransPeek-macOS.zip -d build/tested
+          ls -la build/tested/
+
+      # Prove the downloaded app is the one we mean to ship: it exists,
+      # its build number is the Tests run number (so Sparkle will see the
+      # release as newer), and its signature verifies. For a tag run the
+      # version must also match the tag. A self-signed certificate has no
+      # TeamIdentifier by design — that is expected, not a failure.
+      - name: Verify downloaded app
+        run: |
+          APP="build/tested/TransPeek.app"
+          [ -d "$APP" ] || { echo "ERROR: TransPeek.app not found in the downloaded artifact"; exit 1; }
+          BUILD=$(python3 -c "import plistlib; print(plistlib.load(open('$APP/Contents/Info.plist','rb')).get('CFBundleVersion'))")
+          SHORT=$(python3 -c "import plistlib; print(plistlib.load(open('$APP/Contents/Info.plist','rb')).get('CFBundleShortVersionString'))")
+          echo "Downloaded app: version $SHORT (build $BUILD); release version ${{ steps.version.outputs.version }}; Tests run #${{ steps.tested.outputs.run_number }}"
+          [ "$BUILD" = "${{ steps.tested.outputs.run_number }}" ] || { echo "ERROR: app build $BUILD does not match Tests run #${{ steps.tested.outputs.run_number }}"; exit 1; }
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            [ "$SHORT" = "${{ steps.version.outputs.version }}" ] || { echo "ERROR: app version $SHORT does not match tag version ${{ steps.version.outputs.version }}"; exit 1; }
+          fi
+          codesign --verify --verbose "$APP"
+          codesign -dvvv "$APP" 2>&1 | grep -E "Authority|Identifier|TeamIdentifier" || true
 
       - name: Prepare app bundle
         run: |
           mkdir -p build/app
-          cp -R build/TransPeek.xcarchive/Products/Applications/TransPeek.app build/app/
+          cp -R build/tested/TransPeek.app build/app/
 
       - name: Create ZIP
         run: |
