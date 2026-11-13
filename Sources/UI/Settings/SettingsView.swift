@@ -9,7 +9,6 @@ struct SettingsView: View {
 
     @Default(.selectedSettingsTab) private var selectedTab
     @Default(.appTextSize) private var appTextSize
-    @Default(.appDescriptionTextSize) private var descriptionTextSize
 
     /// Maps the Text Size slider (12–24, default 14) to a Dynamic Type
     /// size. 14 is the system default (.large), so there is no visible
@@ -148,7 +147,7 @@ struct SettingsView: View {
                     .font(.title3)
                     .imageScale(.large)
                 Text(tab.title)
-                    .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

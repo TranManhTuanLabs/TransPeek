@@ -10,7 +10,6 @@ struct TTSSettingsView: View {
 
     @Default(.ttsProvider) private var selectedProviderID
     @Default(.appTextSize) private var appTextSize
-    @Default(.appDescriptionTextSize) private var descriptionTextSize
     @Default(.ttsAccent) private var accent
     @Default(.ttsSpeechRate) private var speechRate
     @Default(.ttsAutoPlaySource) private var autoPlaySource
@@ -146,7 +145,7 @@ struct TTSSettingsView: View {
                 }
 
                 Text("Applies to Apple TTS. If a chosen voice is no longer installed, the system default voice for that language is used.")
-                    .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
             } header: {
                 Text("Voices (EN / VI)")
