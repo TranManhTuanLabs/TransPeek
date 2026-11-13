@@ -121,6 +121,13 @@ struct SettingsView: View {
         // the scrolling Form/List content takes over instead of clipping
         // the bottom of the window off-screen.
         .frame(minWidth: 720, idealWidth: 720, minHeight: 420, idealHeight: tabHeight)
+        // Text Size: two mechanisms, because Dynamic Type alone does not
+        // reliably resize the Settings Form on macOS. The explicit base
+        // font below is what actually scales the main labels/toggles/
+        // pickers (Text views without their own font); .dynamicTypeSize
+        // scales the text-style fonts (.caption, .headline, ...) where
+        // the platform honors it.
+        .font(.system(size: CGFloat(appTextSize)))
         .dynamicTypeSize(sizeCategory)
     }
 
