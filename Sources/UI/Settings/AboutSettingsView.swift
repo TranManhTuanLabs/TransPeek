@@ -12,6 +12,14 @@ struct AboutSettingsView: View {
     @State private var showDonateQR = false
     @State private var accountNumberCopied = false
 
+    // Slogan size: 17pt at the default Dynamic Type size, scaling with
+    // the Text Size setting (SettingsView sets .dynamicTypeSize from
+    // appTextSize). @ScaledMetric is the way to make a specific point
+    // size follow Dynamic Type — Font.system(size:) has no relativeTo
+    // parameter. At the default Text Size (14 = .large) this is 17pt,
+    // the +2 the user asked for; dragging Text Size up/down scales it.
+    @ScaledMetric(relativeTo: .subheadline) private var sloganSize: CGFloat = 17
+
     private var appVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
     }
@@ -42,9 +50,11 @@ struct AboutSettingsView: View {
                 .font(.title.bold())
 
             // Tagline: "Translate anywhere, Peek instantly!"
-            // (SPEC v0.1; also the README tagline.)
+            // (SPEC v0.1; also the README tagline.) 17pt at the default
+            // Text Size, scaling with the Text Size setting via
+            // sloganSize (@ScaledMetric above).
             Text("Translate anywhere, Peek instantly!")
-                .font(.system(size: 17))
+                .font(.system(size: sloganSize))
                 .italic()
                 .foregroundStyle(.secondary)
 
