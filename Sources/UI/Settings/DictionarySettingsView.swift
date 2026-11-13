@@ -134,6 +134,7 @@ private struct DictionaryLinkEditorView: View {
     let link: DictionaryLink
     let onSave: (_ name: String, _ urlTemplate: String) -> Void
 
+    @Default(.appTextSize) private var appTextSize
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var urlTemplate: String
