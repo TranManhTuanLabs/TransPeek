@@ -33,12 +33,18 @@ final class UpdaterController {
             }
     }
 
-    /// Check for updates, but stay silent when there is no new version.
-    /// Sparkle's user-initiated check shows an "up to date" alert, while
-    /// the background check only shows UI when an update is actually found.
-    /// (One trade-off: a background check does not re-offer an update the
-    /// user previously chose to skip.)
+    /// User-initiated check ("Check for Updates..." button / menu item).
+    /// Uses Sparkle's user-initiated check, which shows the update prompt
+    /// when a newer version is available, and an "up to date" alert when
+    /// there is none. The background check (`checkForUpdatesInBackground`)
+    /// must NOT be used here: it stays silent when there is no update,
+    /// but it also does not re-offer an update the user previously
+    /// skipped, and in practice it failed to surface the 0.1.2 update
+    /// to a 0.1.1 install (2026-11-13). The "no update" alert on first
+    /// launch that the user asked to suppress comes from the AUTOMATIC
+    /// check, which Sparkle already runs silently in the background —
+    /// not from this manual button.
     func checkForUpdates() {
-        sparkleController.updater.checkForUpdatesInBackground()
+        sparkleController.updater.checkForUpdates()
     }
 }
