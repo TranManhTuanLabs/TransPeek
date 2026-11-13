@@ -37,7 +37,10 @@ let project = Project(
                 // shows a "no update available" alert on first launch
                 // without the user asking. The user can still turn
                 // automatic checks off in Settings → About.
-                "SUEnableAutomaticChecks": "YES",
+                // NOTE: must be a Bool, not the string "YES" — a string
+                // value made Sparkle's manual check show nothing at all
+                // (no update prompt, no "up to date" alert) on 0.1.2/161.
+                "SUEnableAutomaticChecks": true,
                 "CFBundleURLTypes": [
                     [
                         "CFBundleURLName": "com.tranmanhtuanlabs.transpeek",
