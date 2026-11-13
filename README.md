@@ -169,7 +169,7 @@ Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự 
 
 - Account: 2600786466
 - Holder: TRAN MANH TUAN
-- BIDV (Bank for Investment and Development of VietNam)
+- BIDV (Bank for Investment and Development of Vietnam)
 
 ## Acknowledgements
 

@@ -372,6 +372,11 @@ extension Defaults.Keys {
     // default Dynamic Type size (.large), so there is no visible change
     // at the default. Smaller values shrink, larger values grow.
     static let appTextSize = Key<Int>("appTextSize", default: 14)
+    // Description text in Settings (the small grey explanations): its
+    // own size, adjustable separately from the main Text Size via a
+    // slider in the Appearance section. Default 13, which is 1pt below
+    // the main Text Size default (14).
+    static let appDescriptionTextSize = Key<Int>("appDescriptionTextSize", default: 13)
     // Top bar of the popup panel: app name uses this size, slogan uses size - 2.
     static let popupTopBarFontSize = Key<Int>("popupTopBarFontSize", default: 17)
     static let popupFontName = Key<String>("popupFontName", default: "")

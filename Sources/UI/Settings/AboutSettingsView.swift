@@ -150,7 +150,7 @@ struct AboutSettingsView: View {
                             .multilineTextAlignment(.center)
                     }
 
-                    Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
+                    Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of Vietnam)")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }

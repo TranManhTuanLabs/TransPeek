@@ -15,6 +15,7 @@ import SwiftUI
 struct DictionarySettingsView: View {
     @Default(.dictionaryDisplayMode) private var displayMode
     @Default(.appTextSize) private var appTextSize
+    @Default(.appDescriptionTextSize) private var descriptionTextSize
     @State private var links: [DictionaryLink] = DictionaryLink.load()
     @State private var newName = ""
     @State private var newTemplate = ""
@@ -30,7 +31,7 @@ struct DictionarySettingsView: View {
                 }
                 .pickerStyle(.segmented)
                 Text("Icon only shows the site favicon (or the first letter of the name) with the name as a tooltip.")
-                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                     .foregroundStyle(.secondary)
             }
 
@@ -40,7 +41,7 @@ struct DictionarySettingsView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(link.name)
                             Text(link.urlTemplate)
-                                .font(.settingsCaption(appTextSize: appTextSize))
+                                .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
@@ -63,25 +64,25 @@ struct DictionarySettingsView: View {
                 // side by side across the whole window.
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Name")
-                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                         .foregroundStyle(.secondary)
                     TextField("", text: $newName, prompt: Text("e.g. Oxford"))
                         .textFieldStyle(.roundedBorder)
                 }
                 VStack(alignment: .leading, spacing: 4) {
                     Text("URL template")
-                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                         .foregroundStyle(.secondary)
                     TextField("", text: $newTemplate, prompt: Text("e.g. https://…/{word}"))
                         .textFieldStyle(.roundedBorder)
                         .autocorrectionDisabled()
                 }
                 Text("Use {word} for the first word of the selected text, or {text} for the whole selection. Example: https://dictionary.cambridge.org/dictionary/english/{word}")
-                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                     .foregroundStyle(.secondary)
                 if let addError {
                     Text(addError)
-                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                         .foregroundStyle(.red)
                 }
                 Button(String(localized: "Add Link")) { addLink() }
@@ -134,7 +135,7 @@ private struct DictionaryLinkEditorView: View {
     let link: DictionaryLink
     let onSave: (_ name: String, _ urlTemplate: String) -> Void
 
-    @Default(.appTextSize) private var appTextSize
+    @Default(.appDescriptionTextSize) private var descriptionTextSize
     @Environment(\.dismiss) private var dismiss
     @State private var name: String
     @State private var urlTemplate: String
@@ -154,11 +155,11 @@ private struct DictionaryLinkEditorView: View {
                 TextField(String(localized: "URL template"), text: $urlTemplate)
                     .autocorrectionDisabled()
                 Text("Use {word} for the first word of the selected text, or {text} for the whole selection.")
-                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                     .foregroundStyle(.secondary)
                 if let error {
                     Text(error)
-                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .font(.settingsCaption(descriptionTextSize: descriptionTextSize))
                         .foregroundStyle(.red)
                 }
             }
