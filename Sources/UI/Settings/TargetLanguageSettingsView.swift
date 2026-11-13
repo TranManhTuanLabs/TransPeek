@@ -4,6 +4,7 @@ import SwiftUI
 /// Manages the ordered shortlist used by target-language pickers.
 struct TargetLanguageSettingsView: View {
     @Default(.targetLanguage) private var targetLanguage
+    @Default(.appTextSize) private var appTextSize
     @Default(.favoriteTargetLanguages) private var favoriteTargetLanguages
 
     private var selectedCodes: [String] {
@@ -97,7 +98,7 @@ struct TargetLanguageSettingsView: View {
             .padding(.top, 6)
 
             Text("Choose and order the languages shown in target-language menus. Source detection still uses the full language catalog.")
-                .font(.caption)
+                .font(.settingsCaption(appTextSize: appTextSize))
                 .foregroundStyle(.secondary)
         }
         .onAppear(perform: reconcilePersistedValues)

@@ -131,21 +131,26 @@ struct AboutSettingsView: View {
 
             // Only the Support text scrolls — the two buttons below stay
             // fixed so they are always reachable, even when the text is
-            // taller than the visible area.
+            // taller than the visible area. The Support text uses the
+            // default body font (like the Release line and the main
+            // Settings text), not a fixed subheadline — so it scales
+            // with the Text Size setting, and the system font supports
+            // Vietnamese diacritics.
             ScrollView(.vertical) {
                 VStack(spacing: 8) {
-                    Text("If this app is useful to you, you can support the project by buying me a coffee!")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                    // The two bilingual sentences sit close together
+                    // (2pt apart), with the account block 8pt below.
+                    VStack(spacing: 2) {
+                        Text("If this app is useful to you, you can support the project by buying me a coffee!")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
 
-                    Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
+                        Text("Nếu ứng dụng này hữu ích với bạn, bạn có thể ủng hộ dự án bằng một ly cà phê!")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
 
                     Text("Account: 2600786466\nHolder: TRAN MANH TUAN\nBIDV (Bank for Investment and Development of VietNam)")
-                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }

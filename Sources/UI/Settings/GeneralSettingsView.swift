@@ -53,7 +53,7 @@ struct GeneralSettingsView: View {
             Section("Keyboard Shortcuts") {
                 GlobalShortcutRecorder("Smart Translation:", name: .smartTranslation)
                 Text("Smart Translation has no default shortcut. It uses selected content first, then the clipboard snapshot captured before selection lookup, and opens manual input when both are empty.")
-                    .font(.caption)
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
                 GlobalShortcutRecorder("Selection Translation:", name: .translateSelection)
                 GlobalShortcutRecorder("Screenshot OCR:", name: .ocrScreenshot)
@@ -155,17 +155,17 @@ struct GeneralSettingsView: View {
                     }
 
                     Text(textDetectionModeDescription)
-                        .font(.caption)
+                        .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
                 }
 
                 Toggle("Capture rich text and images", isOn: $captureRichText)
                 Text("Copies the selection with ⌘C to keep formatting and images from apps like Word. LLM providers translate it as Markdown; other providers receive plain text.")
-                    .font(.caption)
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
                 if captureRichText, textDetectionMode != .full {
                     Text("Selection capture needs the Full text detection mode. Clipboard translation is not affected.")
-                        .font(.caption)
+                        .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.orange)
                 }
             }
@@ -183,7 +183,7 @@ struct GeneralSettingsView: View {
                         Slider(value: $confidenceThreshold, in: 0.1...0.8, step: 0.1)
                     }
                     Text("Lower = more aggressive detection (may be inaccurate); Higher = more conservative (may return unknown)")
-                        .font(.caption)
+                        .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -200,7 +200,7 @@ struct GeneralSettingsView: View {
                     )
                 }
                 Text("Scales the app's interface text (Settings window). 14 is the system default size; larger values make the text bigger.")
-                    .font(.caption)
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
             }
 
@@ -330,7 +330,7 @@ struct GeneralSettingsView: View {
 
         VStack(alignment: .leading, spacing: 8) {
             Text("Presets")
-                .font(.caption)
+                .font(.settingsCaption(appTextSize: appTextSize))
                 .foregroundStyle(.secondary)
             LazyVGrid(
                 columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 6),
@@ -368,7 +368,7 @@ struct GeneralSettingsView: View {
         }
 
         Text("Tip: open the SF Symbols app from Apple to browse all available names, then paste one above. Names are case-sensitive.")
-            .font(.caption)
+            .font(.settingsCaption(appTextSize: appTextSize))
             .foregroundStyle(.secondary)
     }
 
@@ -412,15 +412,15 @@ struct GeneralSettingsView: View {
         Toggle("Render as template (monochrome)", isOn: $menuBarCustomIconIsTemplate)
 
         Text("Template mode masks the image to the menu bar tint — recommended for monochrome icons so they adapt to light and dark menu bars. Turn it off only for full-color logos.")
-            .font(.caption)
+            .font(.settingsCaption(appTextSize: appTextSize))
             .foregroundStyle(.secondary)
 
         Text("Requirements: PNG, JPG, SVG, PDF, TIFF, or ICNS, up to 2 MB. Recommended 36×36 px (18 pt @2x) with transparent background. For template mode, ship a monochrome image — black on transparent, alpha controls visibility.")
-            .font(.caption)
+            .font(.settingsCaption(appTextSize: appTextSize))
             .foregroundStyle(.secondary)
 
         Text("Need inspiration? Browse free icons on [Iconify](https://icon-sets.iconify.design/?query=translate) — download an SVG or PNG and upload it here.")
-            .font(.caption)
+            .font(.settingsCaption(appTextSize: appTextSize))
             .foregroundStyle(.secondary)
             .tint(.accentColor)
     }

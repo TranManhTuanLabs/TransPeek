@@ -5,6 +5,7 @@ import SwiftUI
 /// Wired into Settings by the parent agent.
 struct OCRSettingsView: View {
     @Default(.ocrPostMode) private var postMode
+    @Default(.appTextSize) private var appTextSize
     @Default(.ocrAutoCopyTranslation) private var autoCopyTranslation
     @Default(.ocrLanguages) private var ocrLanguages
 
@@ -24,7 +25,7 @@ struct OCRSettingsView: View {
                 Toggle(String(localized: "Automatically copy translation after OCR"), isOn: $autoCopyTranslation)
                     .disabled(postMode == .copyOnly)
                 Text("Auto-copy will overwrite the current clipboard contents. Only applies when opening the translation panel.")
-                    .font(.caption)
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
             } header: {
                 Text("After taking a screenshot")

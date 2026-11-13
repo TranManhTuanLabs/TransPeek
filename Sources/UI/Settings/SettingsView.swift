@@ -147,7 +147,7 @@ struct SettingsView: View {
                     .font(.title3)
                     .imageScale(.large)
                 Text(tab.title)
-                    .font(.caption)
+                    .font(.settingsCaption(appTextSize: appTextSize))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

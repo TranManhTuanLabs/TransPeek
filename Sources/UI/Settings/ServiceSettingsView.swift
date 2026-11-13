@@ -6,6 +6,7 @@ struct ServiceSettingsView: View {
     let registry: TranslationProviderRegistry
 
     @Default(.enabledProviders) private var enabledProviders
+    @Default(.appTextSize) private var appTextSize
     @Default(.onDemandProviderIDs) private var onDemandProviderIDs
     @Default(.primaryProviderID) private var primaryProviderID
     @Default(.fallbackProviderID) private var fallbackProviderID
@@ -81,7 +82,7 @@ struct ServiceSettingsView: View {
             }
 
             Text("Primary is shown first, fallback second; the rest follow the enabled provider order. All enabled providers still translate in parallel, and each shows its own error if it fails — the fallback is the display order, not a retry. Leave empty to use the enabled provider order.")
-                .font(.caption)
+                .font(.settingsCaption(appTextSize: appTextSize))
                 .foregroundStyle(.secondary)
         }
     }
@@ -180,7 +181,7 @@ struct ServiceSettingsView: View {
                         Text("Translate automatically")
                             .font(.headline)
                         Text("Starts this provider automatically for every new request. Turn it off to translate only from the result card.")
-                            .font(.caption)
+                            .font(.settingsCaption(appTextSize: appTextSize))
                             .foregroundStyle(.secondary)
                     }
 
