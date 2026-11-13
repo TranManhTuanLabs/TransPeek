@@ -31,6 +31,13 @@ let project = Project(
                 "CFBundleVersion": "$(CURRENT_PROJECT_VERSION)",
                 "SUFeedURL": "https://github.com/TranManhTuanLabs/TransPeek/releases/latest/download/appcast.xml",
                 "SUPublicEDKey": "$(SPARKLE_ED_PUBLIC_KEY)",
+                // Opt out of Sparkle's "check for updates automatically?"
+                // permission prompt on 2nd launch: automatic checks run
+                // silently in the background instead, so the app never
+                // shows a "no update available" alert on first launch
+                // without the user asking. The user can still turn
+                // automatic checks off in Settings → About.
+                "SUEnableAutomaticChecks": "YES",
                 "CFBundleURLTypes": [
                     [
                         "CFBundleURLName": "com.tranmanhtuanlabs.transpeek",
