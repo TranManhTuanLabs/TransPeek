@@ -52,7 +52,7 @@ let project = Project(
                     "CODE_SIGN_STYLE": "$(TRANSPEEK_CODE_SIGN_STYLE)",
                     "CODE_SIGN_IDENTITY": "$(TRANSPEEK_CODE_SIGN_IDENTITY)",
                     "DEVELOPMENT_TEAM": "$(TRANSPEEK_DEVELOPMENT_TEAM)",
-                    "MARKETING_VERSION": "0.1.1",
+                    "MARKETING_VERSION": "0.1.2",
                     "CURRENT_PROJECT_VERSION": "1",
                 ],
                 configurations: [
