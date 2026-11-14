@@ -242,9 +242,15 @@ struct PopupView: View {
                     Button {
                         onOCRRequested?()
                     } label: {
-                        Label("Capture OCR", systemImage: "text.viewfinder")
-                            .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
+                        // Icon + text close together (HStack spacing 2):
+                        // a plain Label leaves ~1 space between icon and
+                        // text, which reads as too far apart (Manh 2026-11-15).
+                        HStack(spacing: 2) {
+                            Image(systemName: "text.viewfinder")
+                            Text("Capture OCR")
+                        }
+                        .font(.system(size: CGFloat(fontSize - 2)))
+                        .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("OCR from Screen")

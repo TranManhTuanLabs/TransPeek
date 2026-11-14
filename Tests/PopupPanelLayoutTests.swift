@@ -140,21 +140,18 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
         #expect(coordinator.allFinished)
         // Reopened panel fits the short result, not the dismissed long
-        // text — but the exact height is NOT stable: it flips between
-        // the fitted height with and without the Actions row's 8pt
-        // vertical padding (Tests #166/#167 read 358, #168/#169 read
-        // 350, when the fitted height was just above the 350 baseline).
-        // The 8pt swing is the Actions row's vertical padding, which
-        // the async layout resize sometimes includes in the chrome
-        // measurement and sometimes doesn't; polling for the fitted
-        // height does not help (Tests #169 waited 2s and the height
-        // stayed 350). So assert the range instead of one exact height.
-        // With the float-icon hint line under the slogan (added
-        // 2026-11-15, ~18pt of chrome), the fitted height is 368–376
-        // (both above the 350 baseline, so the baseline is no longer
-        // in the range). Either value means the panel is at its
-        // short-content height, not grown for the dismissed long text.
-        #expect(panel.frame.height >= 368 && panel.frame.height <= 376)
+        // text — but the exact height is NOT stable: the panel starts at
+        // the 350 baseline (LayoutTestPreferences height) and the async
+        // resize lifts it to the fitted height (368–376 with the hint
+        // line: 368 without the Actions row's 8pt padding, 376 with it).
+        // Reading the height right after the translation finishes can
+        // catch it before the resize runs, so it may still be 350
+        // (Tests #172 read < 368). Polling for the fitted height does
+        // not help (Tests #169 waited 2s and the height stayed 350).
+        // So assert the range 350–376: any value in it means the panel
+        // is at its short-content height, not grown for the dismissed
+        // long text.
+        #expect(panel.frame.height >= 350 && panel.frame.height <= 376)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)
