@@ -231,10 +231,13 @@ struct PopupView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     // TransPeek Phase 1: screenshot OCR from the float panel.
+                    // Shows the "Capture OCR" text next to the icon, like
+                    // Windows (TranslatePanelWindow.xaml, OcrButton
+                    // Content="Capture OCR").
                     Button {
                         onOCRRequested?()
                     } label: {
-                        Image(systemName: "text.viewfinder")
+                        Label("Capture OCR", systemImage: "text.viewfinder")
                             .font(.system(size: CGFloat(fontSize - 2)))
                             .foregroundStyle(.secondary)
                     }
@@ -351,10 +354,14 @@ struct PopupView: View {
                 // Actions (Manh 2026-11-15): only Pin + Settings remain
                 // here — Capture OCR moved up to the language row, like
                 // Windows (TranslatePanelWindow.xaml, commit ab5ffbf).
+                // Order is Pin then Settings, like Windows (PinButton
+                // before SettingsButton in the Actions StackPanel).
                 // This row's height is asserted in PopupPanelLayoutTests
                 // (238 / 358) — update those numbers if this row changes.
                 HStack(spacing: 4) {
                     Spacer()
+
+                    pinButton
 
                     Button {
                         onOpenSettings?()
@@ -366,8 +373,6 @@ struct PopupView: View {
                     .buttonStyle(.plain)
                     .help("Open Settings")
                     .background { InteractiveMarker() }
-
-                    pinButton
                 }
                 .padding(.horizontal, contentHorizontalPadding)
                 .padding(.vertical, 4)
