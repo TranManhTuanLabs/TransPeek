@@ -6,6 +6,8 @@
 
 <p align="center"><em>Translate anywhere, Peek instantly!</em></p>
 
+<p align="center">Hover icon to translate, Click to listen</p>
+
 <p align="center">
   A lightweight, native macOS menu bar translator. Select text, get translation.
   Peek at any text, translate instantly — with dictionary links, screenshot OCR and click-to-speak.

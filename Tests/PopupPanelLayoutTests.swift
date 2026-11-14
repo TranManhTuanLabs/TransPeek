@@ -89,13 +89,15 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
 
         panel.isUserResizing = true
-        // Manual height 238: the panel's fitted height for this content.
+        // Manual height 256: the panel's fitted height for this content.
         // The Actions row (Pin + Settings, added 2026-11-15 to match
         // Windows' TranslatePanelWindow.xaml) adds 18pt of chrome, so the
-        // fitted height grew from 220 to 238. A manual frame below the
+        // fitted height grew from 220 to 238; the float-icon hint line
+        // under the slogan (added 2026-11-15, 13pt + 2pt spacing) adds
+        // ~18pt more, so it is 256 now. A manual frame below the
         // fitted height gets re-fit to the fitted height when content
         // streams in, so the manual height must match it (Tests #165).
-        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 238, width: 450, height: 238)
+        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 256, width: 450, height: 256)
         panel.setFrame(manualFrame, display: true)
         continuation.yield(longText)
         try await Task.sleep(for: .milliseconds(100))
@@ -139,16 +141,20 @@ struct PopupPanelLayoutTests {
         #expect(coordinator.allFinished)
         // Reopened panel fits the short result, not the dismissed long
         // text — but the exact height is NOT stable: it flips between
-        // the 350 baseline and the 358 fitted height across runs
-        // (Tests #166/#167 read 358, #168/#169 read 350). The 8pt swing
-        // is the Actions row's vertical padding, which the async layout
-        // resize sometimes includes in the chrome measurement and
-        // sometimes doesn't; polling for 358 does not help (Tests #169
-        // waited 2s and the height stayed 350). So assert the range
-        // instead of one exact height: either value means the panel is
-        // at its short-content height, not grown for the dismissed
-        // long text.
-        #expect(panel.frame.height >= 350 && panel.frame.height <= 358)
+        // the fitted height with and without the Actions row's 8pt
+        // vertical padding (Tests #166/#167 read 358, #168/#169 read
+        // 350, when the fitted height was just above the 350 baseline).
+        // The 8pt swing is the Actions row's vertical padding, which
+        // the async layout resize sometimes includes in the chrome
+        // measurement and sometimes doesn't; polling for the fitted
+        // height does not help (Tests #169 waited 2s and the height
+        // stayed 350). So assert the range instead of one exact height.
+        // With the float-icon hint line under the slogan (added
+        // 2026-11-15, ~18pt of chrome), the fitted height is 368–376
+        // (both above the 350 baseline, so the baseline is no longer
+        // in the range). Either value means the panel is at its
+        // short-content height, not grown for the dismissed long text.
+        #expect(panel.frame.height >= 368 && panel.frame.height <= 376)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)

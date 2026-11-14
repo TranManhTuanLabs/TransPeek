@@ -58,6 +58,12 @@ struct AboutSettingsView: View {
                 .italic()
                 .foregroundStyle(.secondary)
 
+            // Float-icon hint, under the slogan — same line as the panel
+            // top bar (Manh 2026-11-15). Smaller and dimmer than the slogan.
+            Text("Hover icon to translate, Click to listen")
+                .font(.system(size: max(sloganSize - 4, 8)))
+                .foregroundStyle(.tertiary)
+
             // GitHub mark (the Octocat, drawn as GitHubMarkShape so it
             // scales crisply) + the org path, right under the app name
             // — not a text-style link like the ones at the bottom, and

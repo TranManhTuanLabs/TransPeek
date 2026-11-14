@@ -154,8 +154,10 @@ struct PopupView: View {
     @ViewBuilder
     private var activeContent: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Top bar: app name + slogan, centered.
+            // Top bar: app name + slogan + float-icon hint, centered.
             // App name uses the top bar font size; slogan is 2pt smaller.
+            // The hint is 4pt smaller than the app name and dimmer — it
+            // tells new users the float icon's two gestures (Manh 2026-11-15).
             VStack(spacing: 2) {
                 Text("TransPeek")
                     .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
@@ -163,6 +165,9 @@ struct PopupView: View {
                     .font(.system(size: CGFloat(max(topBarFontSize - 2, 8))))
                     .italic()
                     .foregroundStyle(.secondary)
+                Text("Hover icon to translate, Click to listen")
+                    .font(.system(size: CGFloat(max(topBarFontSize - 4, 8))))
+                    .foregroundStyle(.tertiary)
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .multilineTextAlignment(.center)
@@ -357,7 +362,7 @@ struct PopupView: View {
                 // Order is Pin then Settings, like Windows (PinButton
                 // before SettingsButton in the Actions StackPanel).
                 // This row's height is asserted in PopupPanelLayoutTests
-                // (238 / 358) — update those numbers if this row changes.
+                // (256 / 376) — update those numbers if this row changes.
                 HStack(spacing: 4) {
                     Spacer()
 
