@@ -165,6 +165,7 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   (#169 waited 2s and the height stayed 350). So that test now asserts a
   range (350...358) instead of one exact height. Lesson: when a panel
   height is only 8pt above the baseline, do NOT assert one exact number —
-  assert the range between the baseline and the fitted height. When you
-  add, remove or resize a row in the popup panel, update the hardcoded
-  heights in that test file in the same commit.
+  assert the range between the baseline and the fitted height. Verified:
+  Tests #170 went green with the range assertion — the flaky test stopped
+  flipping. When you add, remove or resize a row in the popup panel,
+  update the hardcoded heights in that test file in the same commit.
