@@ -351,6 +351,8 @@ struct PopupView: View {
                 // Actions (Manh 2026-11-15): only Pin + Settings remain
                 // here — Capture OCR moved up to the language row, like
                 // Windows (TranslatePanelWindow.xaml, commit ab5ffbf).
+                // This row's height is asserted in PopupPanelLayoutTests
+                // (238 / 358) — update those numbers if this row changes.
                 HStack(spacing: 4) {
                     Spacer()
 

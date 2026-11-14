@@ -150,3 +150,14 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   green). If this test flakes again, raise the timeout before assuming the
   importer is broken; the Swift 6 warnings in the same log are warnings
   only and do not fail the test.
+- `PopupPanelLayoutTests` hardcodes panel heights that are coupled to the
+  panel's chrome: adding one row to `PopupView` breaks two tests at once.
+  The Actions row (Pin + Settings, added 2026-11-15 to match Windows)
+  added 18pt of chrome — `streamingResultsRespectManualResize` failed
+  238 vs 220 (Tests #165, fixed by updating the manual height to 238) and
+  `dismissAndReopenDiscardsPendingResize` failed 358 vs 350 (Tests #166,
+  fixed by updating the expected height to 358), both in the same commit
+  range (Tests #167 green). When you add, remove or resize a row in the
+  popup panel, update the hardcoded heights in that test file in the same
+  commit — the numbers are the panel's fitted height for that test's
+  content, not arbitrary values.
