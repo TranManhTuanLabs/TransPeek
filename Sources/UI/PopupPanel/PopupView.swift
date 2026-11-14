@@ -213,7 +213,11 @@ struct PopupView: View {
                     onDragEnd: { Defaults[.popupInputHeight] = Int(inputHeight) }
                 )
 
-                // Language bar + settings + pin
+                // Language bar + Capture OCR (Manh 2026-11-15): pickers on
+                // the left, Capture OCR on the right — like Windows'
+                // TranslatePanelWindow.xaml language row (Grid 2 columns:
+                // pickers *, Capture OCR Auto; commit ab5ffbf). Pin +
+                // Settings moved to the Actions row below the results.
                 HStack(spacing: 4) {
                     LanguageBarView(
                         sourceLanguage: $sourceLang,
@@ -224,19 +228,7 @@ struct PopupView: View {
                             swapLanguages()
                         }
                     )
-
-                    Button {
-                        onOpenSettings?()
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Open Settings")
-                    .background { InteractiveMarker() }
-
-                    pinButton
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
                     // TransPeek Phase 1: screenshot OCR from the float panel.
                     Button {
@@ -355,6 +347,28 @@ struct PopupView: View {
                     .padding(.horizontal, contentHorizontalPadding)
                     .padding(.vertical, 6)
                 }
+
+                // Actions (Manh 2026-11-15): only Pin + Settings remain
+                // here — Capture OCR moved up to the language row, like
+                // Windows (TranslatePanelWindow.xaml, commit ab5ffbf).
+                HStack(spacing: 4) {
+                    Spacer()
+
+                    Button {
+                        onOpenSettings?()
+                    } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: CGFloat(fontSize - 2)))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open Settings")
+                    .background { InteractiveMarker() }
+
+                    pinButton
+                }
+                .padding(.horizontal, contentHorizontalPadding)
+                .padding(.vertical, 4)
 
                 // TransPeek Phase 1: dictionary links at the bottom of the panel.
                 Divider()

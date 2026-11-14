@@ -78,6 +78,11 @@ If you need a more robust solution, these apps are excellent:
 - **[Clicknow](https://clicknow.ai/)** — feature-rich, actively maintained selection translator
 - **[PopClip](https://www.popclip.app/)** — the gold standard for macOS text selection actions, with a rich extension ecosystem
 
+## System Requirements
+
+- macOS 15.0 (Sequoia) or later
+- Apple Silicon or Intel Mac — on-device OCR (Apple Vision) works on both; faster on Apple Silicon via the Neural Engine.
+
 ## Installation
 
 Download the latest `.dmg` or `.zip` from [GitHub Releases](https://github.com/TranManhTuanLabs/TransPeek/releases) and drag `TransPeek.app` into `/Applications`.

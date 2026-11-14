@@ -141,3 +141,12 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   requires that 'ToolbarItem<...>' conform to 'View'", run #58). Put the
   `ForEach` inside a `ToolbarItemGroup(placement: .navigation)`, whose
   content is a plain `@ViewBuilder`.
+- `NSAttributedString` HTML import needs a generous timeout on a cold
+  system: it spins up WebKit, and on a cold CI runner WebKit may not start
+  within 5 s — `RichTextImporterTests.importsHTMLFormatting()` timed out at
+  exactly 5.027 s on Tests #163 (2026-11-13) and fell back to plain text,
+  losing bold/list formatting. Raising the import timeout from 5 s to 10 s
+  in `RichTextImporter.swift` fixed it (commit `2eee420`, Tests #164
+  green). If this test flakes again, raise the timeout before assuming the
+  importer is broken; the Swift 6 warnings in the same log are warnings
+  only and do not fail the test.
