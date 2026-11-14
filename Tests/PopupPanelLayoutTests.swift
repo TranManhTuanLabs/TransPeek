@@ -137,6 +137,16 @@ struct PopupPanelLayoutTests {
         let visiblePanel = NSApp.windows.compactMap { $0 as? PopupPanel }.first(where: \.isVisible)
         let panel = try #require(visiblePanel)
         #expect(coordinator.allFinished)
+        // Wait for the layout resize to land before reading the height:
+        // the panel starts at the 350 baseline and the async resize fits
+        // it to 358 (chrome + short content). Reading the height right
+        // when the translation finishes races that resize — Tests #168
+        // read 350 while #166/#167 read 358, the same test flipping
+        // between the two values. Poll for the fitted height (up to 2s,
+        // same bound as the allFinished poll above).
+        for _ in 0..<200 where panel.frame.height != 358 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         // Reopened panel fits the short result, not the dismissed long
         // text: 358 is the fitted height for this content. The Actions
         // row (Pin + Settings, added 2026-11-15 to match Windows) adds
