@@ -137,7 +137,12 @@ struct PopupPanelLayoutTests {
         let visiblePanel = NSApp.windows.compactMap { $0 as? PopupPanel }.first(where: \.isVisible)
         let panel = try #require(visiblePanel)
         #expect(coordinator.allFinished)
-        #expect(panel.frame.height == 350)
+        // Reopened panel fits the short result, not the dismissed long
+        // text: 358 is the fitted height for this content. The Actions
+        // row (Pin + Settings, added 2026-11-15 to match Windows) adds
+        // 18pt of chrome, pushing chrome + short content from 340 to 358,
+        // just above the 350 baseline (Tests #166).
+        #expect(panel.frame.height == 358)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)

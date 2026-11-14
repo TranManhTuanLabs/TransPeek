@@ -274,7 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         smartTranslationTask?.cancel()
     }
 
-    /// Clipboard OCR: copy recognized text to the clipboard; confirm with a small toast.
+    /// OCR to Clipboards: copy recognized text to the clipboard; confirm with a small toast.
     func performSilentOCR() {
         Task { @MainActor [weak self] in
             guard let self else { return }

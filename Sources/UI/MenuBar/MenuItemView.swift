@@ -70,14 +70,14 @@ struct MenuItemView: View {
                 }
             }
         } label: {
-            Label("Screenshot OCR", systemImage: "text.viewfinder")
+            Label("OCR from Screen", systemImage: "text.viewfinder")
         }
         .globalKeyboardShortcut(.ocrScreenshot)
 
         Button {
             appDelegate.performSilentOCR()
         } label: {
-            Label("Clipboard OCR", systemImage: "doc.text.viewfinder")
+            Label("OCR to Clipboards", systemImage: "doc.text.viewfinder")
         }
         .globalKeyboardShortcut(.silentOCR)
 

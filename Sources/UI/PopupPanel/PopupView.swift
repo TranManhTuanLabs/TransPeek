@@ -239,7 +239,7 @@ struct PopupView: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
-                    .help("Screenshot OCR")
+                    .help("OCR from Screen")
                     .background { InteractiveMarker() }
                 }
                 .padding(.horizontal, contentHorizontalPadding)
