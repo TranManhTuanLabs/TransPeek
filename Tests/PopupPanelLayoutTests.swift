@@ -89,7 +89,13 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
 
         panel.isUserResizing = true
-        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 220, width: 450, height: 220)
+        // Manual height 238: the panel's fitted height for this content.
+        // The Actions row (Pin + Settings, added 2026-11-15 to match
+        // Windows' TranslatePanelWindow.xaml) adds 18pt of chrome, so the
+        // fitted height grew from 220 to 238. A manual frame below the
+        // fitted height gets re-fit to the fitted height when content
+        // streams in, so the manual height must match it (Tests #165).
+        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 238, width: 450, height: 238)
         panel.setFrame(manualFrame, display: true)
         continuation.yield(longText)
         try await Task.sleep(for: .milliseconds(100))
