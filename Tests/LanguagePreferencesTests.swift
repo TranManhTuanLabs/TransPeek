@@ -2,10 +2,11 @@ import Testing
 @testable import TransPeek
 
 @Suite struct LanguagePreferencesTests {
-    // Default order set 2026-11-13: English, Vietnamese, Chinese, then the rest.
-    @Test func defaultTargetOrderStartsWithEnglishVietnameseChinese() {
+    // Default order set 2026-11-16 (Manh: prioritize Vietnamese): Vietnamese,
+    // English, Chinese, then the rest.
+    @Test func defaultTargetOrderStartsWithVietnameseEnglishChinese() {
         #expect(SupportedLanguages.defaultTargetCodes == [
-            "en", "vi", "zh-Hans", "zh-Hant", "ja", "ko",
+            "vi", "en", "zh-Hans", "zh-Hant", "ja", "ko",
             "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th",
         ])
         #expect(SupportedLanguages.codes.contains("pl"))
