@@ -60,8 +60,12 @@ final class TriggerTrackingView: NSView {
         ctx.strokeEllipse(in: rect)
 
         // SF Symbol icon — speaker while TTS is playing, bubble otherwise.
+        // The bubble glyph is ocean blue (.systemBlue) so the icon stays easy
+        // to spot in both light and dark mode; the circle background keeps
+        // adapting to the system appearance — never a solid blue fill, which
+        // would hide the glyph.
         let symbolName = isSpeaking ? "speaker.wave.2.fill" : "character.bubble"
-        let symbolColor: NSColor = isSpeaking ? .controlAccentColor : .labelColor
+        let symbolColor: NSColor = isSpeaking ? .controlAccentColor : .systemBlue
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isSpeaking ? "Stop speaking" : "Translate")?
