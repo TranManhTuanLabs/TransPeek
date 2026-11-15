@@ -185,6 +185,7 @@ extension KeyboardShortcuts.Name {
     static let translateSelection = Self("translateSelection", default: .init(.d, modifiers: .option))
     static let ocrScreenshot = Self("ocrScreenshot", default: .init(.s, modifiers: .option))
     static let silentOCR = Self("silentOCR")
+    static let silentOCRTranslated = Self("silentOCRTranslated")
     static let screenshotCopy = Self("screenshotCopy")
     static let scanBarcodes = Self("scanBarcodes")
     static let inputTranslation = Self("inputTranslation", default: .init(.a, modifiers: .option))

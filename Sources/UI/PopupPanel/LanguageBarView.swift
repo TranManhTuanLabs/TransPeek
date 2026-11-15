@@ -18,6 +18,10 @@ struct LanguageBarView: View {
     }
 
     var body: some View {
+        // Pickers are intrinsic width and cluster left (Manh 2026-11-15):
+        // no maxWidth .infinity on either picker, so widening the panel does
+        // not push the target picker + swap button to the right edge — they
+        // stay next to the source (Auto Detect) picker on the left.
         HStack(spacing: 8) {
             // Source language picker
             Picker("", selection: $sourceLanguage) {
@@ -28,7 +32,6 @@ struct LanguageBarView: View {
             }
             .labelsHidden()
             .controlSize(pickerControlSize)
-            .frame(maxWidth: .infinity, alignment: .leading)
 
             Button(action: onSwap) {
                 Image(systemName: "arrow.left.arrow.right")
@@ -51,7 +54,6 @@ struct LanguageBarView: View {
             }
             .labelsHidden()
             .controlSize(pickerControlSize)
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)

@@ -60,6 +60,7 @@ struct GeneralSettingsView: View {
                 GlobalShortcutRecorder("Manual Translation:", name: .inputTranslation)
                 GlobalShortcutRecorder("OCR Screen Translate:", name: .ocrScreenshot)
                 GlobalShortcutRecorder("OCR to Clipboard:", name: .silentOCR)
+                GlobalShortcutRecorder("OCR to Clipboard - Translated:", name: .silentOCRTranslated)
                 GlobalShortcutRecorder("Translate Selection:", name: .translateSelection)
                 GlobalShortcutRecorder("Translate Clipboard:", name: .clipboardTranslation)
                 GlobalShortcutRecorder("Screenshot Copy:", name: .screenshotCopy)

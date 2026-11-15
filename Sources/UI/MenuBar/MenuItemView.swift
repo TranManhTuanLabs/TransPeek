@@ -86,6 +86,7 @@ struct MenuItemView: View {
         } label: {
             Label("OCR to Clipboard - Translated", systemImage: "text.bubble")
         }
+        .globalKeyboardShortcut(.silentOCRTranslated)
 
         Button {
             guard let coordinator = appDelegate.coordinator,
