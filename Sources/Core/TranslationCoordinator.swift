@@ -226,6 +226,76 @@ final class TranslationCoordinator {
         }
     }
 
+    /// Triggered by the "OCR to Clipboard - Translated" menu item: screen
+    /// capture → OCR → translate → clipboard. No popup.
+    /// Success stays silent apart from the caller's toast; failures surface
+    /// the panel with the error so a dead-looking action is never left
+    /// unexplained. Mirrors `ocrToClipboard()` but copies the translation
+    /// instead of the recognized text.
+    @discardableResult
+    func ocrToClipboardTranslated() async -> SilentOCROutcome {
+        let requestToken = beginAction()
+        guard permissionManager.isScreenRecordingGranted else {
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "Screen recording permission not granted. Open Settings to enable it.")
+            return .failed
+        }
+
+        do {
+            let text = try await captureOCR()
+            guard !Task.isCancelled, requestToken == actionToken else {
+                return .cancelled
+            }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return .cancelled }
+            translate(text)
+            ocrSourceText = trimmed
+            // startTranslation() bumps actionToken; capture the post-translation
+            // token so the wait loop below is not invalidated by our own call.
+            let sessionToken = actionToken
+
+            // Wait for translation to finish (up to ~30s), then copy the first
+            // completed result to the clipboard.
+            let deadline = Date.now.addingTimeInterval(30)
+            while !allFinished, Date.now < deadline {
+                try? await Task.sleep(for: .milliseconds(200))
+                try Task.checkCancellation()
+                guard sessionToken == actionToken else { return .cancelled }
+            }
+
+            guard let translation = firstCompletedTranslation(),
+                  !translation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else {
+                // No provider completed (all errored or timed out): surface the
+                // panel with the error so the action is not left unexplained.
+                phase = .active
+                sourceText = trimmed
+                globalError = String(localized: "Translation failed.")
+                return .failed
+            }
+            ocrTranslationText = translation
+
+            return await ClipboardGrabber.withStableAccess(to: ocrPasteboard) { pasteboard -> SilentOCROutcome? in
+                // A pending restoration may finish after this action is cancelled or superseded.
+                guard !Task.isCancelled, sessionToken == self.actionToken else { return .cancelled }
+                pasteboard.clearContents()
+                guard pasteboard.setString(translation, forType: .string) else { return .cancelled }
+                return .copied
+            } ?? .cancelled
+        } catch OCRError.captureCancelled {
+            return .cancelled
+        } catch is CancellationError {
+            return .cancelled
+        } catch {
+            guard requestToken == actionToken else { return .cancelled }
+            phase = .active
+            sourceText = ""
+            globalError = String(localized: "OCR failed: \(error.localizedDescription)")
+            return .failed
+        }
+    }
+
     /// How a screenshot-copy attempt ended: toast on success, panel on failure, nothing on cancel.
     enum ScreenshotCopyOutcome: Sendable, Equatable {
         case copied

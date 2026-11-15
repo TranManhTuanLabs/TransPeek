@@ -274,13 +274,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         smartTranslationTask?.cancel()
     }
 
-    /// OCR to Clipboards: copy recognized text to the clipboard; confirm with a small toast.
+    /// OCR to Clipboard: copy recognized text to the clipboard; confirm with a small toast.
     func performSilentOCR() {
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.cancelSmartTranslationAndWait()
             guard !Task.isCancelled else { return }
             switch await self.coordinator.ocrToClipboard() {
+            case .copied:
+                self.copyToastController.show(message: String(localized: "Copied"))
+            case .failed:
+                self.panelController.showAtCursor()
+            case .cancelled:
+                break
+            }
+        }
+    }
+
+    /// OCR to Clipboard - Translated: OCR a screen region, translate it, and
+    /// copy the translation to the clipboard; confirm with a small toast.
+    /// No panel unless it fails.
+    func performSilentOCRTranslated() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            guard !Task.isCancelled else { return }
+            switch await self.coordinator.ocrToClipboardTranslated() {
             case .copied:
                 self.copyToastController.show(message: String(localized: "Copied"))
             case .failed:

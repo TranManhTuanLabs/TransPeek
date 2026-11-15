@@ -70,16 +70,22 @@ struct MenuItemView: View {
                 }
             }
         } label: {
-            Label("OCR from Screen", systemImage: "text.viewfinder")
+            Label("OCR Screen Translate", systemImage: "text.viewfinder")
         }
         .globalKeyboardShortcut(.ocrScreenshot)
 
         Button {
             appDelegate.performSilentOCR()
         } label: {
-            Label("OCR to Clipboards", systemImage: "doc.text.viewfinder")
+            Label("OCR to Clipboard", systemImage: "doc.text.viewfinder")
         }
         .globalKeyboardShortcut(.silentOCR)
+
+        Button {
+            appDelegate.performSilentOCRTranslated()
+        } label: {
+            Label("OCR to Clipboard - Translated", systemImage: "text.bubble")
+        }
 
         Button {
             guard let coordinator = appDelegate.coordinator,
@@ -92,7 +98,7 @@ struct MenuItemView: View {
                 }
             }
         } label: {
-            Label("Selection Translation", systemImage: "text.cursor")
+            Label("Translate Selection", systemImage: "text.cursor")
         }
         .globalKeyboardShortcut(.translateSelection)
 
@@ -105,7 +111,7 @@ struct MenuItemView: View {
                 panelController.showAtCursor()
             }
         } label: {
-            Label("Clipboard Translation", systemImage: "doc.on.clipboard")
+            Label("Translate Clipboard", systemImage: "doc.on.clipboard")
         }
         .globalKeyboardShortcut(.clipboardTranslation)
 

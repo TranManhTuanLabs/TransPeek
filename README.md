@@ -36,8 +36,8 @@
 
 - **Smart Translation**: Use selected content first, fall back to the clipboard snapshot captured when invoked, or open manual input when both are empty
 - **Select & Translate**: Select text in any app, get instant translation in a floating panel
-- **OCR Screenshot**: Capture a screen region and translate the recognized text — from the menu bar, ⌥S, or the OCR button in the float panel (Vision OCR, Vietnamese + English)
-- **Clipboard Translation**: Translate whatever's on your clipboard
+- **OCR Screen Translate**: Capture a screen region and translate the recognized text — from the menu bar, ⌥S, or the OCR button in the float panel (Vision OCR, Vietnamese + English)
+- **Translate Clipboard**: Translate whatever's on your clipboard
 - **Manual Input**: Type or paste text to translate on demand
 
 **Built-in Translation Services**
@@ -102,9 +102,9 @@ On first launch, TransPeek walks you through an onboarding flow to grant the req
 |--------|----------|
 | Smart Translation | Not set |
 | Translate Selection | `⌥ D` |
-| OCR Screenshot | `⌥ S` |
+| OCR Screen Translate | `⌥ S` |
 | Manual Input | `⌥ A` |
-| Clipboard Translation | `⌥ V` |
+| Translate Clipboard | `⌥ V` |
 
 All shortcuts can be customized in **Settings → General**. Smart Translation is opt-in and never changes existing shortcut bindings; assign it there if you want the unified fallback behavior.
 
