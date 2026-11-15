@@ -192,7 +192,7 @@ struct GeneralSettingsView: View {
             }
 
             Section("Appearance") {
-                LabeledContent("Text Size: \(appTextSize)") {
+                LabeledContent("Text Size: \(appTextSize) (default: \(Defaults.Keys.appTextSize.defaultValue))") {
                     Slider(
                         value: Binding(
                             get: { Double(appTextSize) },
@@ -210,7 +210,7 @@ struct GeneralSettingsView: View {
             Section("Popup Panel") {
                 Toggle("Remember Last Popup Position", isOn: $popupRememberPosition)
 
-                LabeledContent("Default Width: \(popupDefaultWidth)") {
+                LabeledContent("Default Width: \(popupDefaultWidth) (default: \(Defaults.Keys.popupDefaultWidth.defaultValue))") {
                     Slider(
                         value: Binding(
                             get: { Double(popupDefaultWidth) },
@@ -221,7 +221,7 @@ struct GeneralSettingsView: View {
                     )
                 }
 
-                LabeledContent("Default Height: \(popupDefaultHeight)") {
+                LabeledContent("Default Height: \(popupDefaultHeight) (default: \(Defaults.Keys.popupDefaultHeight.defaultValue))") {
                     Slider(
                         value: Binding(
                             get: { Double(popupDefaultHeight) },
@@ -232,7 +232,7 @@ struct GeneralSettingsView: View {
                     )
                 }
 
-                LabeledContent("Font Size: \(popupFontSize)") {
+                LabeledContent("Font Size: \(popupFontSize) (default: \(Defaults.Keys.popupFontSize.defaultValue))") {
                     Slider(
                         value: Binding(
                             get: { Double(popupFontSize) },
@@ -243,7 +243,7 @@ struct GeneralSettingsView: View {
                     )
                 }
 
-                LabeledContent("AppName & Slogan Font Size: \(popupTopBarFontSize)") {
+                LabeledContent("AppName & Slogan Font Size: \(popupTopBarFontSize) (default: \(Defaults.Keys.popupTopBarFontSize.defaultValue))") {
                     Slider(
                         value: Binding(
                             get: { Double(popupTopBarFontSize) },

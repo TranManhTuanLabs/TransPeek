@@ -7,11 +7,12 @@ import KeyboardShortcuts
 
 /// Languages available throughout the app. Individual providers can support a subset.
 enum SupportedLanguages {
-    /// The default target list (favorites for new users). Order: English
-    /// first, then Vietnamese, then Chinese, then the rest — set 2026-11-13
-    /// because the app is for Vietnamese users learning English.
+    /// The default target list (favorites for new users). Order: Vietnamese
+    /// first, then English, then Chinese, then the rest — set 2026-11-16
+    /// (Manh: prioritize Vietnamese) because the app is for Vietnamese users
+    /// learning English, translating English text into Vietnamese.
     static let defaultTargetCodes: [String] = [
-        "en", "vi", "zh-Hans", "zh-Hant", "ja", "ko",
+        "vi", "en", "zh-Hans", "zh-Hant", "ja", "ko",
         "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th",
     ]
 

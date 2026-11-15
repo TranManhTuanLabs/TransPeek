@@ -106,6 +106,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         migrateV2KeychainToDefaults()
         migrateV3RemovedProviders()
         migrateV4PopupPositionKeys()
+        migrateV5TargetToVietnamese()
+    }
+
+    /// V5: The old default target was Chinese (zh-Hans); the app is for Vietnamese
+    /// users learning English, so Vietnamese (vi) is now the default and first
+    /// favorite (Manh 2026-11-16). Users whose saved target is still the old
+    /// Chinese default get it reset to Vietnamese once, and Vietnamese is moved
+    /// to the front of the saved favorites so the picker lists it first.
+    /// A user who explicitly picked Chinese keeps it in the list, just not first.
+    private func migrateV5TargetToVietnamese() {
+        let migrationKey = "hasMigratedTargetToVietnamese"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        if Defaults[.targetLanguage] == "zh-Hans" {
+            Defaults[.targetLanguage] = "vi"
+        }
+        var favorites = Defaults[.favoriteTargetLanguages]
+        if let viIndex = favorites.firstIndex(of: "vi"), viIndex != 0 {
+            favorites.remove(at: viIndex)
+            favorites.insert("vi", at: 0)
+            Defaults[.favoriteTargetLanguages] = favorites
+        }
+
+        UserDefaults.standard.set(true, forKey: migrationKey)
     }
 
     /// V4: Earlier builds of the remember-position feature stored the panel's bottom-left

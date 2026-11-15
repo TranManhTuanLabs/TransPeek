@@ -70,24 +70,8 @@ struct PopupView: View {
             clampInputHeightToAllowedRange()
             onResultLayoutChange?(layout)
         }
-        .overlay(alignment: .trailing) {
-            EdgeResizeHandle(
-                axis: .width,
-                translationGeneration: coordinator.translationGeneration,
-                resultLayout: resultLayout,
-                onResizeEnd: reportResultLayout
-            )
-            .frame(width: 6, maxHeight: .infinity)
-        }
-        .overlay(alignment: .bottom) {
-            EdgeResizeHandle(
-                axis: .height,
-                translationGeneration: coordinator.translationGeneration,
-                resultLayout: resultLayout,
-                onResizeEnd: reportResultLayout
-            )
-            .frame(maxWidth: .infinity, height: 6)
-        }
+        .overlay(alignment: .trailing) { rightEdgeResizeHandle }
+        .overlay(alignment: .bottom) { bottomEdgeResizeHandle }
         .overlay(alignment: .bottomTrailing) {
             ResizeGripView(
                 translationGeneration: coordinator.translationGeneration,
@@ -455,6 +439,31 @@ struct PopupView: View {
     }
 
     // MARK: - Helpers
+
+    /// Right-edge resize handle (width only). Extracted into its own property
+    /// so the compiler type-checks it separately — inlining both edge handles
+    /// in the body made the compiler give up ("unable to type-check this
+    /// expression in reasonable time", Tests #180).
+    private var rightEdgeResizeHandle: some View {
+        EdgeResizeHandle(
+            axis: EdgeResizeHandle.Axis.width,
+            translationGeneration: coordinator.translationGeneration,
+            resultLayout: resultLayout,
+            onResizeEnd: reportResultLayout
+        )
+        .frame(width: 6, maxHeight: .infinity)
+    }
+
+    /// Bottom-edge resize handle (height only, snaps back like the corner grip).
+    private var bottomEdgeResizeHandle: some View {
+        EdgeResizeHandle(
+            axis: EdgeResizeHandle.Axis.height,
+            translationGeneration: coordinator.translationGeneration,
+            resultLayout: resultLayout,
+            onResizeEnd: reportResultLayout
+        )
+        .frame(maxWidth: .infinity, height: 6)
+    }
 
     private func reportResultLayout() {
         onResultLayoutChange?(resultLayout)
