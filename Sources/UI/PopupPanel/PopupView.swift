@@ -70,6 +70,14 @@ struct PopupView: View {
             clampInputHeightToAllowedRange()
             onResultLayoutChange?(layout)
         }
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        // Resize handles sit AFTER the clip on purpose: the rounded corner
+        // (radius 12) would otherwise clip away the grip's outer corner, so
+        // hovering the corner from OUTSIDE the panel (below) never hit the
+        // grip — the cursor only changed when coming from inside. The grip's
+        // 3 lines are drawn inset from the corner, so they stay inside the
+        // rounded rect; only the (invisible) hit area extends to the tip.
         .overlay(alignment: .trailing) { rightEdgeResizeHandle }
         .overlay(alignment: .bottom) { bottomEdgeResizeHandle }
         .overlay(alignment: .bottomTrailing) {
@@ -79,8 +87,6 @@ struct PopupView: View {
                 onResizeEnd: reportResultLayout
             )
         }
-        .background(.regularMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
         .onChange(of: coordinator.sourceText) { _, newValue in
             editableText = newValue
             // A new source text means a new lookup: forget any in-panel
