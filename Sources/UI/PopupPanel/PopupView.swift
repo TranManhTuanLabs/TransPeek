@@ -73,6 +73,7 @@ struct PopupView: View {
         .overlay(alignment: .bottomTrailing) {
             ResizeGripView(
                 translationGeneration: coordinator.translationGeneration,
+                resultLayout: resultLayout,
                 onResizeEnd: reportResultLayout
             )
         }
@@ -542,10 +543,39 @@ private struct PopupResultLayoutPreferenceKey: PreferenceKey {
 /// EXC_BAD_ACCESS caused by overriding mouse events on NSPanel with NSHostingView.
 private struct ResizeGripView: View {
     let translationGeneration: Int
+    /// Latest measured result layout (content / viewport / container heights,
+    /// via GeometryReader preferences). Used on drag end to snap the panel
+    /// back to its fitted height when the content is short.
+    let resultLayout: PopupResultLayout
     let onResizeEnd: () -> Void
     @Environment(\.popupPanel) private var panel
     @State private var dragStartMouse: NSPoint?
     @State private var dragStartFrame: NSRect?
+
+    /// The frame auto-fit would produce right now, from the latest measured
+    /// result layout. Nil when the layout has not been measured yet — the
+    /// snap-back is then skipped and the drag behaves as before.
+    /// `chromeHeight` (container − viewport) and `contentHeight` do not
+    /// change while dragging (the extra height all goes to the ScrollView
+    /// viewport), so the fitted height is stable even if the measurement
+    /// lags the drag by a frame.
+    private func fittedFrame(for panel: PopupPanel) -> NSRect? {
+        guard let contentHeight = resultLayout.contentHeight,
+              let viewportHeight = resultLayout.viewportHeight,
+              let containerHeight = resultLayout.containerHeight,
+              viewportHeight > 0,
+              let screen = panel.screen ?? NSScreen.screens.first(where: { $0.frame.intersects(panel.frame) })
+        else { return nil }
+        return PopupPanelSizing.frameToFit(
+            currentFrame: panel.frame,
+            contentHeight: contentHeight,
+            viewportHeight: viewportHeight,
+            measuredContainerHeight: containerHeight,
+            baselineHeight: CGFloat(Defaults[.popupDefaultHeight]),
+            maximumHeight: panel.maxSize.height,
+            visibleFrame: screen.visibleFrame
+        )
+    }
 
     var body: some View {
         Canvas { context, size in
@@ -596,9 +626,22 @@ private struct ResizeGripView: View {
                 .onEnded { _ in
                     if let panel {
                         Defaults[.popupDefaultWidth] = Int(panel.frame.width)
-                        if let initial = dragStartFrame,
-                           abs(panel.frame.height - initial.height) > 8 {
-                            Defaults[.popupDefaultHeight] = Int(panel.frame.height)
+                        let draggedHeight = panel.frame.height
+                        // Snap back on release (Manh 2026-11-15, "Windows full"
+                        // vertical resize, native mac way): if the user dragged
+                        // the panel taller than the content needs, shrink it
+                        // back to the fitted height so no useless whitespace
+                        // is left under the results. Long content keeps the
+                        // dragged height — the results ScrollView already
+                        // expanded to show more text, so nothing is wasted.
+                        if let fitted = fittedFrame(for: panel),
+                           draggedHeight > fitted.height + 0.5 {
+                            panel.setFrame(fitted, display: true, animate: true)
+                            // Do not save the tall height and do not suppress
+                            // auto-fit: the panel is back at its fitted size.
+                        } else if let initial = dragStartFrame,
+                                  abs(draggedHeight - initial.height) > 8 {
+                            Defaults[.popupDefaultHeight] = Int(draggedHeight)
                             panel.manualResizeGeneration = translationGeneration
                         }
                         panel.isUserResizing = false
