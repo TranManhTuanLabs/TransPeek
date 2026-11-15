@@ -30,7 +30,31 @@ struct GoogleTranslateProvider: TranslationProvider {
 
     // MARK: - Translation
 
+    /// Google rate-limits the free GTX endpoint (HTTP 429) when it sees
+    /// automated queries. Retry up to 3 times with backoff (1s, 2s, 4s)
+    /// instead of failing at once — the user never has to retry by hand.
+    /// The panel keeps showing the provider as translating while the
+    /// retries run. After the retries, throw a clear rate-limit message
+    /// instead of Google's raw error page. No fallback provider: Manh
+    /// chose retry-only (2026-11-15).
     func translate(_ text: String, from sourceLang: String?, to targetLang: String) async throws -> String {
+        let backoffs: [Duration] = [.seconds(1), .seconds(2), .seconds(4)]  // one per retry
+        for attempt in 0...backoffs.count {
+            do {
+                return try await translateOnce(text, from: sourceLang, to: targetLang)
+            } catch let TranslationError.apiError(statusCode, _) where statusCode == 429 {
+                if attempt < backoffs.count {
+                    try await Task.sleep(for: backoffs[attempt])
+                    continue
+                }
+                throw TranslationError.rateLimited(provider: displayName)
+            }
+        }
+        // Unreachable: the loop either returns or throws on every path.
+        throw TranslationError.rateLimited(provider: displayName)
+    }
+
+    private func translateOnce(_ text: String, from sourceLang: String?, to targetLang: String) async throws -> String {
         let sl = LanguageCodeMapping.resolve(sourceLang, using: LanguageCodeMapping.google) ?? "auto"
         let tl = LanguageCodeMapping.resolveTarget(targetLang, using: LanguageCodeMapping.google)
 

@@ -30,7 +30,7 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
         ),
         DictionaryLink(
             name: "Google",
-            urlTemplate: "https://www.google.com/search?q=define+{text}"
+            urlTemplate: "https://www.google.com/search?q={text}+meaning"
         ),
         DictionaryLink(
             name: "YouGlish",
@@ -133,7 +133,7 @@ struct DictionaryLink: Codable, Equatable, Identifiable, Sendable {
     ///
     /// Deliberately stricter than `.urlQueryAllowed`: that set leaves `&`,
     /// `+` and `=` unescaped, which would corrupt query templates such as
-    /// Google's `define+{text}` when the text contains those characters.
+    /// Google's `{text}+meaning` when the text contains those characters.
     /// Only RFC 3986 unreserved characters pass through; everything else
     /// (including spaces) is `%XX`-encoded, which is valid in both path
     /// segments and query values.

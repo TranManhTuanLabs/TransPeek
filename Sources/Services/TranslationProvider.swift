@@ -238,6 +238,9 @@ enum TranslationError: LocalizedError {
     case languageNotInstalled(source: String?, target: String)
     case languageUnsupported(source: String?, target: String)
     case translationSessionFailed
+    /// The provider answered HTTP 429 after its retries: the service is
+    /// rate-limiting requests, not a bad request or a broken key.
+    case rateLimited(provider: String)
 
     var errorDescription: String? {
         switch self {
@@ -254,6 +257,8 @@ enum TranslationError: LocalizedError {
             return String(localized: "Language pair not supported (\(source) → \(tgt)). Try another provider.")
         case .translationSessionFailed:
             return String(localized: "Translation session ended unexpectedly. Please try again.")
+        case let .rateLimited(provider):
+            return String(localized: "\(provider) is rate-limiting requests. Try again in a few minutes.")
         }
     }
 }

@@ -63,7 +63,7 @@ struct DictionaryLinkTests {
         #expect(decoded[0].url(for: "hello world")?.absoluteString
             == "https://www.oxfordlearnersdictionaries.com/definition/english/hello?q=hello")
         #expect(decoded[2].url(for: "hello world")?.absoluteString
-            == "https://www.google.com/search?q=define+hello%20world")
+            == "https://www.google.com/search?q=hello%20world+meaning")
         #expect(decoded[3].url(for: "hello world")?.absoluteString
             == "https://youglish.com/pronounce/hello%20world/english")
         #expect(decoded[4].url(for: "hello world")?.absoluteString
