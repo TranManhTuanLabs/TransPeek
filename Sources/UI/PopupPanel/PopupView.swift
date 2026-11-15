@@ -70,6 +70,24 @@ struct PopupView: View {
             clampInputHeightToAllowedRange()
             onResultLayoutChange?(layout)
         }
+        .overlay(alignment: .trailing) {
+            EdgeResizeHandle(
+                axis: .width,
+                translationGeneration: coordinator.translationGeneration,
+                resultLayout: resultLayout,
+                onResizeEnd: reportResultLayout
+            )
+            .frame(width: 6, maxHeight: .infinity)
+        }
+        .overlay(alignment: .bottom) {
+            EdgeResizeHandle(
+                axis: .height,
+                translationGeneration: coordinator.translationGeneration,
+                resultLayout: resultLayout,
+                onResizeEnd: reportResultLayout
+            )
+            .frame(maxWidth: .infinity, height: 6)
+        }
         .overlay(alignment: .bottomTrailing) {
             ResizeGripView(
                 translationGeneration: coordinator.translationGeneration,
@@ -538,6 +556,63 @@ private struct PopupResultLayoutPreferenceKey: PreferenceKey {
 
 // MARK: - Resize Grip
 
+/// The frame auto-fit would produce right now, from the latest measured
+/// result layout. Nil when the layout has not been measured yet — the
+/// snap-back is then skipped and the drag behaves as before.
+/// `chromeHeight` (container − viewport) and `contentHeight` do not change
+/// while dragging (the extra height all goes to the ScrollView viewport),
+/// so the fitted height is stable even if the measurement lags the drag
+/// by a frame.
+private func popupFittedFrame(for panel: PopupPanel, layout: PopupResultLayout) -> NSRect? {
+    guard let contentHeight = layout.contentHeight,
+          let viewportHeight = layout.viewportHeight,
+          let containerHeight = layout.containerHeight,
+          viewportHeight > 0,
+          let screen = panel.screen ?? NSScreen.screens.first(where: { $0.frame.intersects(panel.frame) })
+    else { return nil }
+    return PopupPanelSizing.frameToFit(
+        currentFrame: panel.frame,
+        contentHeight: contentHeight,
+        viewportHeight: viewportHeight,
+        measuredContainerHeight: containerHeight,
+        baselineHeight: CGFloat(Defaults[.popupDefaultHeight]),
+        maximumHeight: panel.maxSize.height,
+        visibleFrame: screen.visibleFrame
+    )
+}
+
+/// Shared drag-end for panel resize handles (corner grip + edge handles).
+/// Saves the width; when `resizeHeight` is true, snaps the height back to
+/// the fitted height when the content is short (no useless whitespace),
+/// otherwise saves the height and suppresses auto-fit for this generation.
+/// A width-only drag must not touch the height.
+private func finishPanelResize(
+    panel: PopupPanel,
+    dragStartFrame: NSRect?,
+    translationGeneration: Int,
+    layout: PopupResultLayout,
+    resizeHeight: Bool
+) {
+    Defaults[.popupDefaultWidth] = Int(panel.frame.width)
+    guard resizeHeight else { return }
+    let draggedHeight = panel.frame.height
+    // Snap back on release (Manh 2026-11-15, "Windows full" vertical resize,
+    // native mac way): if the user dragged the panel taller than the content
+    // needs, shrink it back to the fitted height so no useless whitespace
+    // is left under the results. Long content keeps the dragged height —
+    // the results ScrollView already expanded to show more text.
+    if let fitted = popupFittedFrame(for: panel, layout: layout),
+       draggedHeight > fitted.height + 0.5 {
+        panel.setFrame(fitted, display: true, animate: true)
+        // Do not save the tall height and do not suppress auto-fit:
+        // the panel is back at its fitted size.
+    } else if let initial = dragStartFrame,
+              abs(draggedHeight - initial.height) > 8 {
+        Defaults[.popupDefaultHeight] = Int(draggedHeight)
+        panel.manualResizeGeneration = translationGeneration
+    }
+}
+
 /// A draggable grip in the bottom-right corner for resizing the popup panel.
 /// Uses SwiftUI DragGesture with NSEvent.mouseLocation (screen coordinates) to avoid
 /// EXC_BAD_ACCESS caused by overriding mouse events on NSPanel with NSHostingView.
@@ -552,46 +627,23 @@ private struct ResizeGripView: View {
     @State private var dragStartMouse: NSPoint?
     @State private var dragStartFrame: NSRect?
 
-    /// The frame auto-fit would produce right now, from the latest measured
-    /// result layout. Nil when the layout has not been measured yet — the
-    /// snap-back is then skipped and the drag behaves as before.
-    /// `chromeHeight` (container − viewport) and `contentHeight` do not
-    /// change while dragging (the extra height all goes to the ScrollView
-    /// viewport), so the fitted height is stable even if the measurement
-    /// lags the drag by a frame.
-    private func fittedFrame(for panel: PopupPanel) -> NSRect? {
-        guard let contentHeight = resultLayout.contentHeight,
-              let viewportHeight = resultLayout.viewportHeight,
-              let containerHeight = resultLayout.containerHeight,
-              viewportHeight > 0,
-              let screen = panel.screen ?? NSScreen.screens.first(where: { $0.frame.intersects(panel.frame) })
-        else { return nil }
-        return PopupPanelSizing.frameToFit(
-            currentFrame: panel.frame,
-            contentHeight: contentHeight,
-            viewportHeight: viewportHeight,
-            measuredContainerHeight: containerHeight,
-            baselineHeight: CGFloat(Defaults[.popupDefaultHeight]),
-            maximumHeight: panel.maxSize.height,
-            visibleFrame: screen.visibleFrame
-        )
-    }
-
     var body: some View {
         Canvas { context, size in
             let lineCount = 3
             let spacing: CGFloat = 3
             let lineWidth: CGFloat = 1
-            let totalSize = CGFloat(lineCount - 1) * spacing
-
+            // Each line i runs from the bottom edge to the right edge, inset
+            // by (i+1)*spacing from the corner, so all 3 lines have nonzero
+            // length. (The old formula put the last line exactly on the
+            // corner, a zero-length point, so only 2 lines were visible.)
             for i in 0..<lineCount {
-                let offset = CGFloat(i) * spacing
-                let start = CGPoint(x: size.width - totalSize + offset, y: size.height)
-                let end = CGPoint(x: size.width, y: size.height - totalSize + offset)
+                let a = CGFloat(i + 1) * spacing
+                let start = CGPoint(x: a, y: size.height)
+                let end = CGPoint(x: size.width, y: a)
                 var path = Path()
                 path.move(to: start)
                 path.addLine(to: end)
-                context.stroke(path, with: .color(.secondary.opacity(0.4)), lineWidth: lineWidth)
+                context.stroke(path, with: .color(.secondary.opacity(0.6)), lineWidth: lineWidth)
             }
         }
         .frame(width: 12, height: 12)
@@ -625,25 +677,13 @@ private struct ResizeGripView: View {
                 }
                 .onEnded { _ in
                     if let panel {
-                        Defaults[.popupDefaultWidth] = Int(panel.frame.width)
-                        let draggedHeight = panel.frame.height
-                        // Snap back on release (Manh 2026-11-15, "Windows full"
-                        // vertical resize, native mac way): if the user dragged
-                        // the panel taller than the content needs, shrink it
-                        // back to the fitted height so no useless whitespace
-                        // is left under the results. Long content keeps the
-                        // dragged height — the results ScrollView already
-                        // expanded to show more text, so nothing is wasted.
-                        if let fitted = fittedFrame(for: panel),
-                           draggedHeight > fitted.height + 0.5 {
-                            panel.setFrame(fitted, display: true, animate: true)
-                            // Do not save the tall height and do not suppress
-                            // auto-fit: the panel is back at its fitted size.
-                        } else if let initial = dragStartFrame,
-                                  abs(draggedHeight - initial.height) > 8 {
-                            Defaults[.popupDefaultHeight] = Int(draggedHeight)
-                            panel.manualResizeGeneration = translationGeneration
-                        }
+                        finishPanelResize(
+                            panel: panel,
+                            dragStartFrame: dragStartFrame,
+                            translationGeneration: translationGeneration,
+                            layout: resultLayout,
+                            resizeHeight: true
+                        )
                         panel.isUserResizing = false
                         onResizeEnd()
                     }
@@ -664,6 +704,93 @@ private struct ResizeGripView: View {
             }
         }
         .background { InteractiveMarker() }
+    }
+}
+
+/// An invisible resize handle along the panel's right or bottom edge.
+/// Same drag mechanism as ResizeGripView (DragGesture + panel.setFrame),
+/// but constrained to one axis: the right edge changes width only, the
+/// bottom edge changes height only (and snaps back like the corner grip
+/// when the content is short). The corner grip is overlaid on top of
+/// these in the corner region, so it wins the diagonal drag there.
+/// A borderless panel gets no system edge resize from macOS, so these
+/// handles are how the edges become resizable (Manh 2026-11-15).
+private struct EdgeResizeHandle: View {
+    enum Axis {
+        case width   // right edge: drag horizontally
+        case height  // bottom edge: drag vertically
+    }
+
+    let axis: Axis
+    let translationGeneration: Int
+    let resultLayout: PopupResultLayout
+    let onResizeEnd: () -> Void
+    @Environment(\.popupPanel) private var panel
+    @State private var dragStartMouse: NSPoint?
+    @State private var dragStartFrame: NSRect?
+
+    var body: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 1)
+                    .onChanged { _ in
+                        let mouse = NSEvent.mouseLocation
+                        if dragStartMouse == nil {
+                            dragStartMouse = mouse
+                            dragStartFrame = panel?.frame
+                        }
+                        guard let start = dragStartMouse,
+                              let initial = dragStartFrame,
+                              let panel else { return }
+                        panel.isUserResizing = true
+                        switch axis {
+                        case .width:
+                            let deltaX = mouse.x - start.x
+                            let newW = min(max(initial.width + deltaX, panel.minSize.width), panel.maxSize.width)
+                            panel.setFrame(
+                                NSRect(x: initial.origin.x, y: initial.origin.y, width: newW, height: initial.height),
+                                display: true
+                            )
+                        case .height:
+                            let deltaY = mouse.y - start.y
+                            let newH = min(max(initial.height - deltaY, panel.minSize.height), panel.maxSize.height)
+                            // Keep top-left corner fixed
+                            let newY = initial.maxY - newH
+                            panel.setFrame(
+                                NSRect(x: initial.origin.x, y: newY, width: initial.width, height: newH),
+                                display: true
+                            )
+                        }
+                    }
+                    .onEnded { _ in
+                        if let panel {
+                            finishPanelResize(
+                                panel: panel,
+                                dragStartFrame: dragStartFrame,
+                                translationGeneration: translationGeneration,
+                                layout: resultLayout,
+                                resizeHeight: axis == .height
+                            )
+                            panel.isUserResizing = false
+                            onResizeEnd()
+                        }
+                        dragStartMouse = nil
+                        dragStartFrame = nil
+                    }
+            )
+            .onDisappear { panel?.isUserResizing = false }
+            .onHover { hovering in
+                if hovering {
+                    switch axis {
+                    case .width: NSCursor.resizeLeftRight.set()
+                    case .height: NSCursor.resizeUpDown.set()
+                    }
+                } else {
+                    NSCursor.arrow.set()
+                }
+            }
+            .background { InteractiveMarker() }
     }
 }
 
