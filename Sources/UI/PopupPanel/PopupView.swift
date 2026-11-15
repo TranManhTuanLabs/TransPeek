@@ -451,7 +451,10 @@ struct PopupView: View {
             resultLayout: resultLayout,
             onResizeEnd: reportResultLayout
         )
-        .frame(width: 6, maxHeight: .infinity)
+        // Width pinned to 6 (min == max); height expands to fill the panel.
+        // NOTE: .frame has no (width + maxHeight) overload — the mixed form
+        // is a compile error ("extra argument 'width' in call", Tests #181).
+        .frame(minWidth: 6, maxWidth: 6, maxHeight: .infinity)
     }
 
     /// Bottom-edge resize handle (height only, snaps back like the corner grip).
@@ -462,7 +465,8 @@ struct PopupView: View {
             resultLayout: resultLayout,
             onResizeEnd: reportResultLayout
         )
-        .frame(maxWidth: .infinity, height: 6)
+        // Height pinned to 6 (min == max); width expands to fill the panel.
+        .frame(maxWidth: .infinity, minHeight: 6, maxHeight: 6)
     }
 
     private func reportResultLayout() {
