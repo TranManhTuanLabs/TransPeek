@@ -51,14 +51,16 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section("Keyboard Shortcuts") {
+                // Order matches the menu bar (tray) order: Smart Translation,
+                // Manual Translation, then the rest in tray order (Manh 2026-11-15).
                 GlobalShortcutRecorder("Smart Translation:", name: .smartTranslation)
                 Text("Smart Translation has no default shortcut. It uses selected content first, then the clipboard snapshot captured before selection lookup, and opens manual input when both are empty.")
                     .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
-                GlobalShortcutRecorder("Translate Selection:", name: .translateSelection)
+                GlobalShortcutRecorder("Manual Translation:", name: .inputTranslation)
                 GlobalShortcutRecorder("OCR Screen Translate:", name: .ocrScreenshot)
                 GlobalShortcutRecorder("OCR to Clipboard:", name: .silentOCR)
-                GlobalShortcutRecorder("Manual Translation:", name: .inputTranslation)
+                GlobalShortcutRecorder("Translate Selection:", name: .translateSelection)
                 GlobalShortcutRecorder("Translate Clipboard:", name: .clipboardTranslation)
                 GlobalShortcutRecorder("Screenshot Copy:", name: .screenshotCopy)
                 GlobalShortcutRecorder("Scan Barcodes/QR Codes:", name: .scanBarcodes)
