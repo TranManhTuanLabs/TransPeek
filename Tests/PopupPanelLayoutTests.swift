@@ -89,18 +89,24 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
 
         panel.isUserResizing = true
-        // Manual height 450: the panel's fitted height for this content is
-        // the 450pt minimum (Manh 2026-11-16, min height = Windows' 450),
-        // so a manual frame at the minimum must match it — a manual frame
-        // below the fitted height gets re-fit to the fitted height when
-        // content streams in (Tests #165).
+        // Manual frame 440x450 (the 450 minimum). Set the manual-resize
+        // generation BEFORE streaming: the generation guard is what
+        // protects a manual resize, because isUserResizing alone is not
+        // enough in a test — resizeForResultContent() clears a "stale"
+        // isUserResizing flag when no mouse button is held, and a test
+        // sets the flag programmatically with no mouse press, so it
+        // looks stale. A real drag always holds the button, so this
+        // only affects the test. (The fitted height for this long
+        // content is 467 — chrome + 260 cap — above the 450 manual
+        // frame, so without the generation guard the panel would
+        // re-fit to 467; run #196.)
         let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 450, width: 440, height: 450)
         panel.setFrame(manualFrame, display: true)
+        panel.manualResizeGeneration = coordinator.translationGeneration
         continuation.yield(longText)
         try await Task.sleep(for: .milliseconds(100))
         #expect(panel.frame == manualFrame)
 
-        panel.manualResizeGeneration = coordinator.translationGeneration
         panel.isUserResizing = false
         continuation.yield(longText + "\n" + longText)
         continuation.finish()
