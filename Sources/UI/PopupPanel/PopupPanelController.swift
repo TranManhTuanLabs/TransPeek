@@ -188,9 +188,13 @@ final class PopupPanelController {
 
     @discardableResult
     private func setupPanel() -> CGSize {
+        // Clamp the restored size to the panel minimum: a size saved by
+        // an older build (when the minimum was 280x200) can be below the
+        // current 400x260 minimum, and the panel would otherwise open
+        // smaller than the drag handles allow (Manh 2026-11-16).
         let initialSize = CGSize(
-            width: CGFloat(Defaults[.popupDefaultWidth]),
-            height: CGFloat(Defaults[.popupDefaultHeight])
+            width: max(CGFloat(Defaults[.popupDefaultWidth]), PopupPanel.minimumSize.width),
+            height: max(CGFloat(Defaults[.popupDefaultHeight]), PopupPanel.minimumSize.height)
         )
 
         if panel == nil {
