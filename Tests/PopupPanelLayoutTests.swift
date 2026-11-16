@@ -6,9 +6,9 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct PopupPanelLayoutTests {
-    @Test(arguments: [200, 350, 500], [12, 13, 16, 20])
-    func longTextLayoutSettles(baselineHeight: Int, fontSize: Int) async throws {
-        let preferences = LayoutTestPreferences(height: baselineHeight, fontSize: fontSize)
+    @Test(arguments: [450, 500, 600], [12, 13, 16, 20])
+    func longTextLayoutSettles(openHeight: Int, fontSize: Int) async throws {
+        let preferences = LayoutTestPreferences(height: openHeight, fontSize: fontSize)
         defer { preferences.restore() }
 
         let coordinator = makeCoordinator()
@@ -64,17 +64,17 @@ struct PopupPanelLayoutTests {
         // (stdout) into the .xcresult and xcbeautify strips #expect
         // messages from the CI log, so neither is visible when a run
         // goes red. Stderr reaches the console log.
-        FileHandle.standardError.write(Data("[PopupPanelLayoutTests] baselineHeight=\(baselineHeight) fontSize=\(fontSize) heights.count=\(probe.heights.count) stablePolls=\(stablePolls) isVisible=\(controller.isVisible) resizedDuringViewUpdate=\(probe.resizedDuringViewUpdate) heights=\(probe.heights)\n".utf8))
+        FileHandle.standardError.write(Data("[PopupPanelLayoutTests] openHeight=\(openHeight) fontSize=\(fontSize) heights.count=\(probe.heights.count) stablePolls=\(stablePolls) isVisible=\(controller.isVisible) resizedDuringViewUpdate=\(probe.resizedDuringViewUpdate) heights=\(probe.heights)\n".utf8))
         #expect(stablePolls >= 2, "Popup layout did not settle within 10s (resizes: \(probe.heights.count))")
         #expect(controller.isVisible)
         #expect(!probe.resizedDuringViewUpdate, "Automatic resizing reentered AppKit from a SwiftUI update action")
-        if baselineHeight == 350 {
+        if openHeight == 450 {
             #expect(!probe.heights.isEmpty, "Long results must still grow the popup")
         }
     }
 
     @Test func streamingResultsRespectManualResize() async throws {
-        let preferences = LayoutTestPreferences(height: 350, fontSize: 12)
+        let preferences = LayoutTestPreferences(height: 450, fontSize: 12)
         defer { preferences.restore() }
         let (stream, continuation) = AsyncThrowingStream<String, Error>.makeStream()
         defer { continuation.finish() }
@@ -89,18 +89,12 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
 
         panel.isUserResizing = true
-        // Manual height 260: the panel's fitted height for this content.
-        // The Actions row (Pin + Settings, added 2026-11-15 to match
-        // Windows' TranslatePanelWindow.xaml) adds 18pt of chrome, so the
-        // fitted height grew from 220 to 238; the float-icon hint line
-        // under the slogan (added 2026-11-15, 13pt + 2pt spacing) adds
-        // ~18pt more, so it was 256; the bottom bar's top gap (6pt to
-        // 14pt, to balance the GitHub icon, 2026-11-16) adds 8pt more,
-        // so it was 264; the even 12pt top+bottom gaps (Manh 2026-11-16)
-        // take 4pt back, so it is 260 now. A manual frame below the
-        // fitted height gets re-fit to the fitted height when content
-        // streams in, so the manual height must match it (Tests #165).
-        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 260, width: 450, height: 260)
+        // Manual height 450: the panel's fitted height for this content is
+        // the 450pt minimum (Manh 2026-11-16, min height = Windows' 450),
+        // so a manual frame at the minimum must match it — a manual frame
+        // below the fitted height gets re-fit to the fitted height when
+        // content streams in (Tests #165).
+        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 450, width: 440, height: 450)
         panel.setFrame(manualFrame, display: true)
         continuation.yield(longText)
         try await Task.sleep(for: .milliseconds(100))
@@ -116,7 +110,7 @@ struct PopupPanelLayoutTests {
     }
 
     @Test func dismissAndReopenDiscardsPendingResize() async throws {
-        let preferences = LayoutTestPreferences(height: 350, fontSize: 12)
+        let preferences = LayoutTestPreferences(height: 450, fontSize: 12)
         defer { preferences.restore() }
         let coordinator = makeCoordinator()
         let controller = PopupPanelController(coordinator: coordinator)
@@ -144,19 +138,15 @@ struct PopupPanelLayoutTests {
         #expect(coordinator.allFinished)
         // Reopened panel fits the short result, not the dismissed long
         // text — but the exact height is NOT stable: the panel starts at
-        // the 350 baseline (LayoutTestPreferences height) and the async
-        // resize lifts it to the fitted height (372–380 with the hint
-        // line: 372 without the Actions row's 8pt padding, 380 with it;
-        // the bottom bar's top gap added 8pt on 2026-11-16, and the even
-        // 12pt top+bottom gaps took 4pt back the same day).
-        // Reading the height right after the translation finishes can
-        // catch it before the resize runs, so it may still be 350
-        // (Tests #172 read < 368). Polling for the fitted height does
-        // not help (Tests #169 waited 2s and the height stayed 350).
-        // So assert the range 350–380: any value in it means the panel
-        // is at its short-content height, not grown for the dismissed
-        // long text.
-        #expect(panel.frame.height >= 350 && panel.frame.height <= 380)
+        // the 450 minimum (LayoutTestPreferences height, = the new default
+        // and minimum, Manh 2026-11-16) and the async resize lifts it to
+        // the fitted height (at most ~480: chrome + short content, capped
+        // by the 260pt output cap). Reading the height right after the
+        // translation finishes can catch it before the resize runs, so it
+        // may still be 450. So assert the range 450–480: any value in it
+        // means the panel is at its short-content height, not grown for
+        // the dismissed long text.
+        #expect(panel.frame.height >= 450 && panel.frame.height <= 480)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)
@@ -189,7 +179,7 @@ private struct LayoutTestPreferences {
     init(height: Int, fontSize: Int) {
         // Override only this process; never persist test dimensions to the user's app settings.
         UserDefaults.standard.setVolatileDomain(previous.merging([
-            "popupDefaultWidth": 450,
+            "popupDefaultWidth": 440,
             "popupDefaultHeight": height,
             "popupInputHeight": 48,
             "popupFontSize": fontSize,

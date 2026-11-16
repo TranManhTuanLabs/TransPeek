@@ -12,11 +12,14 @@ final class PopupPanelController {
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
-    private var resizeCursorMonitor: PopupResizeCursorMonitor?
     private var copyShortcutDismissTask: Task<Void, Never>?
     private var panelMoveObserver: NSObjectProtocol?
     private var resultLayout = PopupResultLayout()
     private var resizeTask: Task<Void, Never>?
+    /// Set when auto-fit retried once for missing measurements (report P2);
+    /// cleared when a resize runs with valid measurements, so each new
+    /// episode gets one retry.
+    private var resizeRetryUsed = false
 
     private let coordinator: TranslationCoordinator
     private let ttsCoordinator: TTSCoordinator?
@@ -50,7 +53,6 @@ final class PopupPanelController {
         if coordinator.isPinned, panel.isVisible {
             panel.orderFront(nil)
             startDismissMonitor()
-            startResizeCursorMonitor()
             return
         }
 
@@ -78,7 +80,6 @@ final class PopupPanelController {
         scheduleResultResize()
 
         startDismissMonitor()
-        startResizeCursorMonitor()
     }
 
     func showAtScreenCenter() {
@@ -113,7 +114,6 @@ final class PopupPanelController {
         panel.focusSourceInput()
 
         startDismissMonitor()
-        startResizeCursorMonitor()
     }
 
     func dismiss() {
@@ -123,8 +123,6 @@ final class PopupPanelController {
         copyShortcutDismissTask = nil
         dismissMonitor?.stop()
         dismissMonitor = nil
-        resizeCursorMonitor?.stop()
-        resizeCursorMonitor = nil
         if let observer = panelMoveObserver {
             NotificationCenter.default.removeObserver(observer)
             panelMoveObserver = nil
@@ -178,8 +176,6 @@ final class PopupPanelController {
         copyShortcutDismissTask = nil
         dismissMonitor?.stop()
         dismissMonitor = nil
-        resizeCursorMonitor?.stop()
-        resizeCursorMonitor = nil
         ttsCoordinator?.stop()
         panel?.orderOut(nil)
     }
@@ -278,20 +274,40 @@ final class PopupPanelController {
             panel.isUserResizing = false
         }
         guard let panel, panel.isVisible, !panel.isUserResizing,
-              panel.manualResizeGeneration != coordinator.translationGeneration,
-              let resultContentHeight = resultLayout.contentHeight,
+              panel.manualResizeGeneration != coordinator.translationGeneration
+        else { return }
+        guard let resultContentHeight = resultLayout.contentHeight,
               let resultViewportHeight = resultLayout.viewportHeight,
               let measuredContainerHeight = resultLayout.containerHeight,
               resultViewportHeight > 0,
               let screen = panel.screen ?? NSScreen.screens.first(where: { $0.frame.intersects(panel.frame) })
-        else { return }
+        else {
+            // Measurements missing — retry once after a short delay, so a
+            // single missed layout pass does not leave the panel unexpanded
+            // (report P2, Manh 2026-11-16). At most one retry per episode:
+            // the flag is set here and only cleared when a resize runs
+            // with valid measurements, so a still-missing retry does not
+            // schedule another one.
+            if !resizeRetryUsed {
+                resizeRetryUsed = true
+                Task { @MainActor [weak self] in
+                    try? await Task.sleep(for: .milliseconds(100))
+                    guard let self else { return }
+                    self.resizeForResultContent()
+                }
+            }
+            return
+        }
+        // Valid measurements — a later missing-measurement episode may
+        // retry again.
+        resizeRetryUsed = false
 
         let frame = PopupPanelSizing.frameToFit(
             currentFrame: panel.frame,
             contentHeight: resultContentHeight,
             viewportHeight: resultViewportHeight,
             measuredContainerHeight: measuredContainerHeight,
-            baselineHeight: CGFloat(Defaults[.popupDefaultHeight]),
+            minimumHeight: PopupPanel.minimumSize.height,
             maximumHeight: panel.maxSize.height,
             visibleFrame: screen.visibleFrame
         )
@@ -363,12 +379,5 @@ final class PopupPanelController {
             self?.dismiss()
         }
         dismissMonitor?.start()
-    }
-
-    private func startResizeCursorMonitor() {
-        guard let panel else { return }
-        resizeCursorMonitor?.stop()
-        resizeCursorMonitor = PopupResizeCursorMonitor(panel: panel)
-        resizeCursorMonitor?.start()
     }
 }

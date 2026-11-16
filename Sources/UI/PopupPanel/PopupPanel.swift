@@ -24,13 +24,13 @@ final class PopupPanel: NSPanel {
     /// buttons (language pickers + Capture OCR, results, Pin/Settings,
     /// dictionary links, GitHub bar), so it must not shrink to a size where
     /// they no longer fit. Width 400 fits the language row (same as the
-    /// Windows panel's minimum); height 260 is the fitted height for short
-    /// content, so the panel never goes below its own natural height.
+    /// Windows panel's minimum); height 450 matches the Windows panel's
+    /// minimum/compact open height (Manh 2026-11-16, unify mac+Windows).
     /// The drag handles clamp to this constant directly — not via the
     /// window's `minSize` property, which NSHostingView can reset when the
     /// SwiftUI content is laid out, so reading `minSize` at drag time is
     /// not reliable (the minimum was silently ignored on build #191).
-    static let minimumSize = CGSize(width: 400, height: 260)
+    static let minimumSize = CGSize(width: 400, height: 450)
     var onCopyResultShortcut: ((Int) -> Bool)?
     var onSwapLanguagesShortcut: ((NSEvent) -> Bool)?
 

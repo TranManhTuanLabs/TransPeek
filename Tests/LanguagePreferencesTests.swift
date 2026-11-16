@@ -61,17 +61,32 @@ import Testing
         ) == "pl")
     }
 
-    @Test func autoFlipPrefersLegacyFallbackBeforeFavoriteOrder() {
+    // No hardcoded pair (Manh 2026-11-16): the flip follows the user's
+    // favorite order — the first favorite that differs from the detected
+    // source wins. With the default favorites (vi first, then en) a
+    // Vietnamese source flips to English and an English source flips to
+    // Vietnamese, without naming the pair in code.
+    @Test func autoFlipFollowsFavoriteOrder() {
         #expect(SupportedLanguages.resolvedTarget(
             "fr",
             detectedLanguage: "fr",
             favoriteCodes: SupportedLanguages.defaultTargetCodes
-        ) == "zh-Hans")
+        ) == "vi")
         #expect(SupportedLanguages.resolvedTarget(
             "ja",
             detectedLanguage: "ja",
             favoriteCodes: SupportedLanguages.defaultTargetCodes
-        ) == "zh-Hans")
+        ) == "vi")
+        #expect(SupportedLanguages.resolvedTarget(
+            "vi",
+            detectedLanguage: "vi",
+            favoriteCodes: SupportedLanguages.defaultTargetCodes
+        ) == "en")
+        #expect(SupportedLanguages.resolvedTarget(
+            "en",
+            detectedLanguage: "en",
+            favoriteCodes: SupportedLanguages.defaultTargetCodes
+        ) == "vi")
         #expect(SupportedLanguages.resolvedTarget(
             "zh-Hant",
             detectedLanguage: "zh-Hans",
@@ -84,13 +99,13 @@ import Testing
         ) == "pl")
     }
 
-    @Test func sameScriptChineseStillAutoFlipsToEnglish() {
+    @Test func sameScriptChineseFlipsToFirstFavoriteThatDiffers() {
         for target in ["zh-Hans", "zh-Hant"] {
             #expect(SupportedLanguages.resolvedTarget(
                 target,
                 detectedLanguage: target,
                 favoriteCodes: SupportedLanguages.defaultTargetCodes
-            ) == "en")
+            ) == "vi")
         }
     }
 

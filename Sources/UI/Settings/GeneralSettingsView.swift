@@ -216,7 +216,7 @@ struct GeneralSettingsView: View {
                             get: { Double(popupDefaultWidth) },
                             set: { popupDefaultWidth = Int($0) }
                         ),
-                        in: 280...800,
+                        in: 400...800,
                         step: 10
                     )
                 }
@@ -227,7 +227,7 @@ struct GeneralSettingsView: View {
                             get: { Double(popupDefaultHeight) },
                             set: { popupDefaultHeight = Int($0) }
                         ),
-                        in: 200...800,
+                        in: 450...800,
                         step: 10
                     )
                 }

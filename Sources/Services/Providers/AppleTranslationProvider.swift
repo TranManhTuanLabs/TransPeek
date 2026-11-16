@@ -207,7 +207,7 @@ struct LanguageDownloadView: View {
     static var languages: [(code: String, name: String)] { SupportedLanguages.all }
 
     @State private var selectedSource = "en"
-    @State private var selectedTarget = "zh-Hans"
+    @State private var selectedTarget = "vi"
     @State private var pairStatus: PairStatus?
     @State private var downloadConfiguration: TranslationSession.Configuration?
 

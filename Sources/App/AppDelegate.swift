@@ -107,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         migrateV3RemovedProviders()
         migrateV4PopupPositionKeys()
         migrateV5TargetToVietnamese()
+        migrateV6TargetChineseToVietnamese()
     }
 
     /// V5: The old default target was Chinese (zh-Hans); the app is for Vietnamese
@@ -127,6 +128,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             favorites.remove(at: viIndex)
             favorites.insert("vi", at: 0)
             Defaults[.favoriteTargetLanguages] = favorites
+        }
+
+        UserDefaults.standard.set(true, forKey: migrationKey)
+    }
+
+    /// V6: V5 only reset an exact "zh-Hans" value, so a saved "zh-Hant"
+    /// (or a Chinese value picked after V5 ran) stayed Chinese — Manh
+    /// still saw Chinese as the target on 2026-11-16. Reset ANY saved
+    /// Chinese target (zh-Hans or zh-Hant) to Vietnamese once.
+    private func migrateV6TargetChineseToVietnamese() {
+        let migrationKey = "hasMigratedTargetChineseToVietnameseV6"
+        guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+        if Defaults[.targetLanguage].hasPrefix("zh") {
+            Defaults[.targetLanguage] = "vi"
         }
 
         UserDefaults.standard.set(true, forKey: migrationKey)

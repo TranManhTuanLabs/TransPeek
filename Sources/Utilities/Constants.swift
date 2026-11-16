@@ -366,8 +366,8 @@ extension Defaults.Keys {
     static let hasCompletedOnboarding = Key<Bool>("hasCompletedOnboarding", default: false)
 
     // Popup panel default size
-    static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 450)
-    static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 350)
+    static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 440)
+    static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 450)
     static let popupInputHeight = Key<Int>("popupInputHeight", default: 48)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
     // App interface text size (Settings window): 14 maps to the system

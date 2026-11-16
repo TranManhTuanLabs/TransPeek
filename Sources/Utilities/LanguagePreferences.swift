@@ -53,11 +53,15 @@ extension SupportedLanguages {
               sameLanguage(detectedLanguage, preferred)
         else { return preferred }
 
-        let legacyFallback = detectedLanguage.hasPrefix("zh") ? "en" : "zh-Hans"
-        if available.contains(legacyFallback) {
-            return legacyFallback
-        }
-
+        // No hardcoded language pair (Manh 2026-11-16 — don't hardcode
+        // unless really needed; prefer extensible / self-detecting rules):
+        // flip to the user's most-preferred target that differs from the
+        // detected source, following their favorite order. With the
+        // default favorites (vi first, then en) this gives Vietnamese
+        // source -> English and English source -> Vietnamese without
+        // naming the pair in code, and it follows the user if they
+        // reorder their favorites. If no favorite differs (e.g. a single
+        // favorite equal to the source), keep the preferred target.
         return available.first { !sameLanguage($0, detectedLanguage) } ?? preferred
     }
 

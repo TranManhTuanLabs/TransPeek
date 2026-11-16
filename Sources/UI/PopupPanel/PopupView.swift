@@ -612,17 +612,21 @@ private func popupFittedFrame(for panel: PopupPanel, layout: PopupResultLayout) 
         contentHeight: contentHeight,
         viewportHeight: viewportHeight,
         measuredContainerHeight: containerHeight,
-        baselineHeight: CGFloat(Defaults[.popupDefaultHeight]),
+        minimumHeight: PopupPanel.minimumSize.height,
         maximumHeight: panel.maxSize.height,
         visibleFrame: screen.visibleFrame
     )
 }
 
 /// Shared drag-end for panel resize handles (corner grip + edge handles).
-/// Saves the width; when `resizeHeight` is true, snaps the height back to
-/// the fitted height when the content is short (no useless whitespace),
-/// otherwise saves the height and suppresses auto-fit for this generation.
-/// A width-only drag must not touch the height.
+/// No size is saved here: the panel always opens at the Settings default
+/// size (Manh 2026-11-16 — Settings only sets the default minimum; a
+/// manual drag only changes the size for this session, so there is no
+/// dragged size to persist and no conflict with the default).
+/// When `resizeHeight` is true, snaps the height back to the fitted height
+/// when the content is short (no useless whitespace), otherwise suppresses
+/// auto-fit for this generation. A width-only drag must not touch the
+/// height — but it CAN snap the width back (see below).
 private func finishPanelResize(
     panel: PopupPanel,
     dragStartFrame: NSRect?,
@@ -630,23 +634,37 @@ private func finishPanelResize(
     layout: PopupResultLayout,
     resizeHeight: Bool
 ) {
-    Defaults[.popupDefaultWidth] = Int(panel.frame.width)
-    guard resizeHeight else { return }
-    let draggedHeight = panel.frame.height
-    // Snap back on release (Manh 2026-11-15, "Windows full" vertical resize,
+    let fitted = popupFittedFrame(for: panel, layout: layout)
+    var targetFrame = panel.frame
+
+    // Vertical snap-back (Manh 2026-11-15, "Windows full" vertical resize,
     // native mac way): if the user dragged the panel taller than the content
     // needs, shrink it back to the fitted height so no useless whitespace
     // is left under the results. Long content keeps the dragged height —
     // the results ScrollView already expanded to show more text.
-    if let fitted = popupFittedFrame(for: panel, layout: layout),
-       draggedHeight > fitted.height + 0.5 {
-        panel.setFrame(fitted, display: true, animate: true)
-        // Do not save the tall height and do not suppress auto-fit:
-        // the panel is back at its fitted size.
-    } else if let initial = dragStartFrame,
-              abs(draggedHeight - initial.height) > 8 {
-        Defaults[.popupDefaultHeight] = Int(draggedHeight)
+    // Do not suppress auto-fit when snapping back: the panel is back at
+    // its fitted size.
+    if resizeHeight, let fitted, panel.frame.height > fitted.height + 0.5 {
+        targetFrame.size.height = fitted.height
+        targetFrame.origin.y = fitted.origin.y
+    } else if resizeHeight, let initial = dragStartFrame,
+              abs(panel.frame.height - initial.height) > 8 {
         panel.manualResizeGeneration = translationGeneration
+    }
+
+    // Horizontal snap-back (Manh 2026-11-16, report 4.2): if the content
+    // is short (fitted height at the panel minimum) and the panel was
+    // dragged wider than the default, snap the width back to the default
+    // so a too-wide drag does not leave an ugly wide panel. Long content
+    // keeps the dragged width — a wider panel shows more of it per line.
+    if let fitted,
+       panel.frame.width > CGFloat(Defaults[.popupDefaultWidth]) + 0.5,
+       fitted.height <= PopupPanel.minimumSize.height + 0.5 {
+        targetFrame.size.width = CGFloat(Defaults[.popupDefaultWidth])
+    }
+
+    if targetFrame != panel.frame {
+        panel.setFrame(targetFrame, display: true, animate: true)
     }
 }
 
