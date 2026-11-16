@@ -12,6 +12,7 @@ final class PopupPanelController {
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
+    private var resizeCursorMonitor: PopupResizeCursorMonitor?
     private var copyShortcutDismissTask: Task<Void, Never>?
     private var panelMoveObserver: NSObjectProtocol?
     private var resultLayout = PopupResultLayout()
@@ -49,6 +50,7 @@ final class PopupPanelController {
         if coordinator.isPinned, panel.isVisible {
             panel.orderFront(nil)
             startDismissMonitor()
+            startResizeCursorMonitor()
             return
         }
 
@@ -76,6 +78,7 @@ final class PopupPanelController {
         scheduleResultResize()
 
         startDismissMonitor()
+        startResizeCursorMonitor()
     }
 
     func showAtScreenCenter() {
@@ -110,6 +113,7 @@ final class PopupPanelController {
         panel.focusSourceInput()
 
         startDismissMonitor()
+        startResizeCursorMonitor()
     }
 
     func dismiss() {
@@ -119,6 +123,8 @@ final class PopupPanelController {
         copyShortcutDismissTask = nil
         dismissMonitor?.stop()
         dismissMonitor = nil
+        resizeCursorMonitor?.stop()
+        resizeCursorMonitor = nil
         if let observer = panelMoveObserver {
             NotificationCenter.default.removeObserver(observer)
             panelMoveObserver = nil
@@ -172,6 +178,8 @@ final class PopupPanelController {
         copyShortcutDismissTask = nil
         dismissMonitor?.stop()
         dismissMonitor = nil
+        resizeCursorMonitor?.stop()
+        resizeCursorMonitor = nil
         ttsCoordinator?.stop()
         panel?.orderOut(nil)
     }
@@ -340,5 +348,12 @@ final class PopupPanelController {
             self?.dismiss()
         }
         dismissMonitor?.start()
+    }
+
+    private func startResizeCursorMonitor() {
+        guard let panel else { return }
+        resizeCursorMonitor?.stop()
+        resizeCursorMonitor = PopupResizeCursorMonitor(panel: panel)
+        resizeCursorMonitor?.start()
     }
 }
