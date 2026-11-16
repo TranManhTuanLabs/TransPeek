@@ -6,6 +6,16 @@ why, so a future maintainer (or another AI entering this repo) can
 investigate a red run, fix a failure, or change the setup without
 rediscovering everything.
 
+> **Rule (Manh, 2026-11-17 — applies to all repos): these two workflow
+> docs (`GIT-CI-BUILD-SETUP.md` + `BUILD-TEST-WORKFLOW-GITHUB-CI.md`)
+> must be updated AT THE SAME TIME as any workflow change — same round,
+> same commit if possible, never deferred to later.** When you edit
+> `test.yml` / `release.yml` or any workflow configuration, update the
+> related doc in the same commit: the intervention log (§4 here) for what
+> changed and why, and `BUILD-TEST-WORKFLOW-GITHUB-CI.md` for how the
+> workflow now works. A workflow change without its doc update is an
+> incomplete change.
+
 Related docs:
 
 - `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` — the A–Z signing guide (why

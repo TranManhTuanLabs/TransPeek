@@ -4,6 +4,12 @@ How the `Tests` workflow (`.github/workflows/test.yml`) is set up and how to
 read a red run. Written so the next person (or future us) does not have to
 rediscover any of this.
 
+> **Rule (Manh, 2026-11-17 — applies to all repos):** this doc and
+> `GIT-CI-BUILD-SETUP.md` must be updated AT THE SAME TIME as any
+> workflow change — same round, same commit if possible, never deferred
+> to later. A workflow change without its doc update is an incomplete
+> change. (Full rule at the top of `GIT-CI-BUILD-SETUP.md`.)
+
 ## Workflow at a glance
 
 - Trigger: push to `main`, PRs, `workflow_dispatch`.
