@@ -89,17 +89,18 @@ struct PopupPanelLayoutTests {
         let panel = try #require(visiblePanel)
 
         panel.isUserResizing = true
-        // Manual height 264: the panel's fitted height for this content.
+        // Manual height 260: the panel's fitted height for this content.
         // The Actions row (Pin + Settings, added 2026-11-15 to match
         // Windows' TranslatePanelWindow.xaml) adds 18pt of chrome, so the
         // fitted height grew from 220 to 238; the float-icon hint line
         // under the slogan (added 2026-11-15, 13pt + 2pt spacing) adds
         // ~18pt more, so it was 256; the bottom bar's top gap (6pt to
         // 14pt, to balance the GitHub icon, 2026-11-16) adds 8pt more,
-        // so it is 264 now. A manual frame below the
+        // so it was 264; the even 12pt top+bottom gaps (Manh 2026-11-16)
+        // take 4pt back, so it is 260 now. A manual frame below the
         // fitted height gets re-fit to the fitted height when content
         // streams in, so the manual height must match it (Tests #165).
-        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 264, width: 450, height: 264)
+        let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 260, width: 450, height: 260)
         panel.setFrame(manualFrame, display: true)
         continuation.yield(longText)
         try await Task.sleep(for: .milliseconds(100))
@@ -144,17 +145,18 @@ struct PopupPanelLayoutTests {
         // Reopened panel fits the short result, not the dismissed long
         // text — but the exact height is NOT stable: the panel starts at
         // the 350 baseline (LayoutTestPreferences height) and the async
-        // resize lifts it to the fitted height (376–384 with the hint
-        // line: 376 without the Actions row's 8pt padding, 384 with it;
-        // the bottom bar's top gap added 8pt on 2026-11-16).
+        // resize lifts it to the fitted height (372–380 with the hint
+        // line: 372 without the Actions row's 8pt padding, 380 with it;
+        // the bottom bar's top gap added 8pt on 2026-11-16, and the even
+        // 12pt top+bottom gaps took 4pt back the same day).
         // Reading the height right after the translation finishes can
         // catch it before the resize runs, so it may still be 350
         // (Tests #172 read < 368). Polling for the fitted height does
         // not help (Tests #169 waited 2s and the height stayed 350).
-        // So assert the range 350–384: any value in it means the panel
+        // So assert the range 350–380: any value in it means the panel
         // is at its short-content height, not grown for the dismissed
         // long text.
-        #expect(panel.frame.height >= 350 && panel.frame.height <= 384)
+        #expect(panel.frame.height >= 350 && panel.frame.height <= 380)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)
