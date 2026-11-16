@@ -728,7 +728,16 @@ private struct ResizeGripView: View {
                     dragStartFrame = nil
                 }
         )
-        .onDisappear { panel?.isUserResizing = false }
+        .onDisappear {
+            // Only clear the flag when no drag is in progress. If SwiftUI
+            // recreates this view mid-drag, the old instance's onDisappear
+            // must NOT clear isUserResizing, or resizeForResultContent
+            // will snap the panel back to the fitted height and fight the
+            // drag — the vertical jerk when dragging down (Manh 2026-11-16).
+            if dragStartMouse == nil {
+                panel?.isUserResizing = false
+            }
+        }
         .onHover { hovering in
             if hovering {
                 if #available(macOS 15.0, *) {
@@ -816,7 +825,16 @@ private struct EdgeResizeHandle: View {
                         dragStartFrame = nil
                     }
             )
-            .onDisappear { panel?.isUserResizing = false }
+            .onDisappear {
+                // Only clear the flag when no drag is in progress — same
+                // mid-drag view-recreation guard as the corner grip (see
+                // ResizeGripView): clearing isUserResizing mid-drag lets
+                // resizeForResultContent snap the height back and fight
+                // the drag, which is the vertical jerk (Manh 2026-11-16).
+                if dragStartMouse == nil {
+                    panel?.isUserResizing = false
+                }
+            }
             .onHover { hovering in
                 if hovering {
                     switch axis {

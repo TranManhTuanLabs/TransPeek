@@ -50,7 +50,14 @@ final class PopupPanel: NSPanel {
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
         isReleasedWhenClosed = false
-        minSize = CGSize(width: 280, height: 200)
+        // Minimum frame (Manh 2026-11-16): the panel holds many rows and
+        // buttons (language pickers + Capture OCR, results, Pin/Settings,
+        // dictionary links, GitHub bar), so it must not shrink to a size
+        // where they no longer fit. Width 400 fits the language row
+        // (same as the Windows panel's minimum); height 260 is the
+        // fitted height for short content, so the panel never goes below
+        // its own natural height. (Was 280 x 200 — too narrow/short.)
+        minSize = CGSize(width: 400, height: 260)
         maxSize = CGSize(width: 800, height: 800)
 
         // Rounded corners
