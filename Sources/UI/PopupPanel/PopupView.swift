@@ -702,8 +702,12 @@ private struct ResizeGripView: View {
                     let deltaY = mouse.y - start.y
                     panel.isUserResizing = true
 
-                    let newW = min(max(initial.width + deltaX, panel.minSize.width), panel.maxSize.width)
-                    let newH = min(max(initial.height - deltaY, panel.minSize.height), panel.maxSize.height)
+                    // Clamp to PopupPanel.minimumSize directly, not
+                    // panel.minSize — the window property can be reset by
+                    // NSHostingView, so reading it at drag time silently
+                    // ignored the minimum on build #191 (Manh 2026-11-16).
+                    let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), panel.maxSize.width)
+                    let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), panel.maxSize.height)
 
                     // Keep top-left corner fixed
                     let newY = initial.maxY - newH
@@ -793,14 +797,17 @@ private struct EdgeResizeHandle: View {
                         switch axis {
                         case .width:
                             let deltaX = mouse.x - start.x
-                            let newW = min(max(initial.width + deltaX, panel.minSize.width), panel.maxSize.width)
+                            // Clamp to PopupPanel.minimumSize directly (see
+                            // ResizeGripView): panel.minSize is not reliable
+                            // at drag time.
+                            let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), panel.maxSize.width)
                             panel.setFrame(
                                 NSRect(x: initial.origin.x, y: initial.origin.y, width: newW, height: initial.height),
                                 display: true
                             )
                         case .height:
                             let deltaY = mouse.y - start.y
-                            let newH = min(max(initial.height - deltaY, panel.minSize.height), panel.maxSize.height)
+                            let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), panel.maxSize.height)
                             // Keep top-left corner fixed
                             let newY = initial.maxY - newH
                             panel.setFrame(
