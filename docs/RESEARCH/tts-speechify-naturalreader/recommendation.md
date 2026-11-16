@@ -9,6 +9,14 @@
 
 **Quy tắc chung:** chỉ học *pattern* (cách bố trí UI, luồng tương tác), tự viết lại code native. Không copy code, giọng đọc, endpoint hay dữ liệu từ điển proprietary của các extension.
 
+## Cập nhật 17/11/2026 — những gì Manh đã chốt sau khi đọc bản này
+
+- **Model A là hướng thực tế cho app native; Model B KHÔNG làm.** Ngay cả Speechify cũng chỉ Model B ở site quen (selector viết tay), trang lạ dùng Model A; NaturalReader cũng vậy. Native không có DOM/MutationObserver, quét cây Accessibility/UI Automation liên tục đắt CPU, icon không bám scroll.
+- **Luồng vào RSVP — CHỐT (thứ tự ưu tiên):** (1) Option-click Mac / Alt-click Windows → RSVP thẳng; (2) chuột phải icon → menu "Đọc nhanh"; (3) nút "Đọc nhanh" trong panel dịch; (4) menubar/tray; (5) shortcut global chỉ là fallback. Cộng thêm Settings toggle đổi click → RSVP cho người dùng RSVP là chính.
+- **Vị trí view đọc RSVP — GIỮ CẢ 2 PHƯƠNG ÁN, quyết ở lúc prototype:** (a) tab 2/3/4 dãn to như max snapback, hoặc (b) panel riêng. Nếu bản tab dãn đọc vẫn tập trung, không giật, không bị auto-hide phá thì làm tab; không thì chuyển panel riêng. Điều kiện bắt buộc nếu làm tab: **ẩn HOÀN TOÀN chức năng panel dịch khi đang đọc** (không chỉ ẩn giao diện mà vẫn bấm được), ẩn hết chrome dịch + hàng chấm, tắt swipe/lăn chuyển tab lúc đang đọc, tạm dừng auto-hide, cân nhắc căn giữa. Lý do giữ 2 hướng: tách ra tránh lag / lỗi đè chéo lên luồng dịch.
+- **SwiftRead — ĐÃ ĐỌC SOURCE THẬT (17/11 ~02:30):** Manh gửi 2 file `.crx` (6.11.2.0 + 5.9.2.0). Phát hiện lớn: 3 chế độ Focus/Flow/Spotlight **không có trong source `.crx`** (nằm ở web app host); trong extension chỉ có 1 engine RSVP + toggle hiển thị. Engine legacy: WPM mặc định 275, max 2000, chunk 1–6, micro-pause hệ số nhân, ORP pivot = ký tự giữa, TTS cloud + timepoints server + poll 50 ms (chỉ khi chunk = 1), không có hạn mức ngày trong code. Chi tiết đã bổ sung vào `rsvp-report.md`. **4 kết luận cốt lõi không đổi.**
+- **Thứ tự triển khai (§8) giữ nguyên**, trừ mục 6 RSVP cập nhật theo 2 chốt trên.
+
 ---
 
 ## 1. Kết luận tổng — Path HỖN HỢP (không phải thuần 1 hay thuần 2)
@@ -21,10 +29,10 @@
 | Model A: hover block text → hiện icon loa | **Path 1 — tích hợp, có giới hạn** | Hit-test qua Accessibility (mac) / UI Automation (Windows) khả thi; chỉ tốt ở app expose text, cần quyền Accessibility + track chuột toàn cục, giữ flow bôi chọn làm fallback. |
 | Quick panel (ENVI-style): hover → panel nhỏ chỉ có bản dịch | **Path 1 — tích hợp** | Quyết định sản phẩm chuyển trực tiếp; chỉ cần viết lại phần bắt từ-dưới-con-trỏ và định vị panel bằng API native. |
 | Điều chỉnh nhanh khi đang phát (tốc độ/giọng) | **Path 1 — tab 2/3 của panel** | Xem §6. |
-| RSVP đọc nhanh | **Path 1 — tích hợp native, panel riêng** | Engine RSVP là logic thuần nhỏ, port sang Swift/C# dễ; capture text dùng pipeline selection sẵn có. |
+| RSVP đọc nhanh | **Path 1 — tích hợp native; view đọc GIỮ CẢ 2 PHƯƠNG ÁN (Manh chốt 17/11)** | Engine RSVP là logic thuần nhỏ, port sang Swift/C# dễ; capture text dùng pipeline selection sẵn có. Tab dãn hay panel riêng quyết ở lúc prototype (xem §5). |
 | Multi-tab panel (chấm tròn) | **Path 1 — tích hợp, tối đa 3 tab** | Pattern đơn giản, API cử chỉ công khai cả 2 nền tảng. |
 | Timer nhắc nghỉ mắt/Pomodoro | **Path 1 bản NHẸ trong tab panel, hoặc dùng app riêng** | Xem §5. Không tích hợp full break-app. |
-| **Model B: icon hiển thị sẵn trong mọi block text (không cần hover)** | **Path 2 — CHỈ làm trong browser extension riêng (Edge/Chrome)** | Quét liên tục cây Accessibility/UI Automation đắt, không có MutationObserver/scroll notification, icon không tự bám scroll; chỉ trong DOM web mới thực tế. |
+| **Model B: icon hiển thị sẵn trong mọi block text (không cần hover)** | **KHÔNG LÀM (Manh chốt 17/11)** | Quét liên tục cây Accessibility/UI Automation đắt, không có MutationObserver/scroll notification, icon không tự bám scroll; chỉ trong DOM web mới thực tế — và ngay cả Speechify cũng chỉ làm Model B ở site quen có selector viết tay, trang lạ dùng Model A. |
 
 **Không nên làm extension chỉ vì Model B ngay bây giờ** — Model B là tính năng duy nhất bắt buộc extension, mà nó chỉ là "tiện hơn một chút" so với Model A. Thứ tự ưu tiên: làm tốt Path 1 trước (TTS + Model A + Quick panel + RSVP + tab panel), rồi mới cân nhắc extension Edge/Chrome cho Model B khi app native đã ổn định. Làm extension sớm = gánh thêm 1 codebase, 1 quy trình phát hành (Web Store review), 1 bề mặt bảo trì — trong khi giá trị nó mang lại (icon hiện sẵn) chưa chứng minh là deal-breaker.
 
@@ -78,9 +86,8 @@ Lưu ý: ENVI không bundle dữ liệu từ điển — nghĩa tra qua API `en.
 **Verdict: TÍCH HỢP vào TransPeek native (Path 1), panel đọc RIÊNG.**
 
 - Engine RSVP là logic thuần nhỏ (parser của jetzt ~250 dòng, port sang Swift/C# dễ); render 1 từ/lần bằng Text native với ORP highlight; timing WPM bằng timer hệ thống; capture text dùng pipeline selection sẵn có; PDF qua PDFKit (mac) / Windows.Data.Pdf (Windows); ePub unzip+parse. Chỉ "auto-extract cả trang web" và Kindle/Libby là browser-only — ngoài scope v1.
-- **Flow 1 icon, 3 chức năng — giữ hover = dịch, click = nghe (TTS).** RSVP vào bằng: (1) 1 global shortcut duy nhất để bắt đầu đọc từ selection/clipboard; (2) menu chuột phải trên float icon; (3) mục menubar/tray; (4) nút "Đọc nhanh" trong panel dịch; (5) Settings toggle đổi click → RSVP thẳng (cho người dùng RSVP là chính). **Loại:** middle-click (không có trên trackpad Mac và hầu hết touchpad laptop Windows), long-press (đụng thao tác kéo icon), chooser hiện mỗi lần click (thêm ma sát cho 2 flow chính).
-- **Riêng Mac:** thêm Option-click làm đường phụ; không dùng gesture 3 ngón (hệ thống giữ). Nếu phải khác nhau giữa 2 nền tảng thì khác ở entry phụ (Windows: chuột phải là chính; Mac: menubar + shortcut + Option-click là chính) — flow chính (hover dịch / click nghe / shortcut đọc nhanh) giữ chung.
-- **Vị trí reading view: PANEL RIÊNG, không phải tab 2/3/4.** Panel dịch (~400px) quá nhỏ cho từ RSVP 50–110px; panel riêng tránh chuyển tab nhầm giữa lúc đọc và đủ chỗ cho điều khiển WPM/chunk/seek. Tab panel chỉ đặt nút mở RSVP nếu cần.
+- **Flow 1 icon, 3 chức năng — giữ hover = dịch, click = nghe (TTS). RSVP vào theo thứ tự MANH CHỐT 17/11:** (1) Option-click Mac / Alt-click Windows → RSVP thẳng; (2) menu chuột phải trên float icon ("Đọc nhanh"); (3) nút "Đọc nhanh" trong panel dịch; (4) mục menubar/tray; (5) 1 global shortcut duy nhất chỉ là fallback. Cộng thêm Settings toggle đổi click → RSVP thẳng (cho người dùng RSVP là chính). **Loại:** middle-click (không có trên trackpad Mac và hầu hết touchpad laptop Windows), long-press (đụng thao tác kéo icon), chooser hiện mỗi lần click (thêm ma sát cho 2 flow chính).
+- **Vị trí reading view — GIỮ CẢ 2 PHƯƠNG ÁN, quyết ở lúc prototype (Manh 17/11).** Báo cáo khuyên panel riêng: panel dịch (~400px) quá nhỏ cho từ RSVP 50–110px; panel riêng tránh chuyển tab nhầm giữa lúc đọc và đủ chỗ cho điều khiển WPM/chunk/seek. Phương án tab chỉ được nếu panel dãn to mà đọc vẫn tập trung, không giật, không bị auto-hide phá — và khi đang đọc phải **ẩn HOÀN TOÀN chức năng panel dịch** (không chỉ ẩn giao diện mà vẫn bấm được), ẩn hết chrome dịch + hàng chấm, tắt swipe/lăn chuyển tab, tạm dừng auto-hide, cân nhắc căn giữa.
 - **Shortcut budget: chỉ 1 global shortcut** (mở RSVP từ selection/clipboard); mọi phím trong lúc đọc (Space, ←/→, ↑/↓…) chỉ active khi panel đọc đang focus — 0 xung đột global. Không tách RSVP thành app/extension riêng.
 - **Mobile: KHÔNG làm bây giờ.** Thị trường app RSVP mobile đã đông và nặng subscription (Spreeder, Outread, Reedy, Spritz, SwiftRead); lợi thế cốt lõi của TransPeek (float icon trên text của app khác) không tồn tại trên mobile — capture chỉ qua share-sheet/clipboard, panel đọc thành full-screen. Xem lại chỉ sau khi RSVP desktop chứng minh có người dùng.
 
@@ -118,7 +125,7 @@ Thứ tự làm: (1) 2 tab Dịch + Trợ giúp với chấm tròn; (2) tab time
 3. **Model A hover icon** (hit-test AX/UIA; debounce; fallback bôi chọn).
 4. **Tab chỉnh nhanh khi đang phát** (tab 2/3: preset tốc độ, chọn giọng, autoswitch 2 ngôn ngữ).
 5. **Multi-tab panel** (Tab 1 Dịch + Tab 2 Trợ giúp, chấm tròn; cử chỉ theo nền tảng).
-6. **RSVP** (panel riêng, 1 global shortcut + menu chuột phải/menubar + nút trong panel dịch).
+6. **RSVP** (thứ tự vào đã chốt 17/11: Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray → shortcut global fallback + toggle đổi click; view đọc giữ cả 2 phương án tab dãn/panel riêng, quyết ở prototype).
 7. **Timer nhẹ** trong tab panel (mặc định TẮT) — hoặc bỏ qua, dùng Pandan/tadama/wnr riêng.
 8. **Sau cùng, nếu cần: extension Edge/Chrome riêng** chỉ để làm Model B (icon hiện sẵn trong trang web) — cân nhắc lại sau khi app native ổn định.
 
@@ -130,4 +137,4 @@ Thứ tự làm: (1) 2 tab Dịch + Trợ giúp với chấm tròn; (2) tab time
 - Windows highlight theo từ cần spike (WinRT không có word callback); đừng chốt UI highlight-từ trên Windows trước khi spike xong.
 - Autoswitch voice 2 ngôn ngữ chưa có mẫu trong các extension đã đọc — tự thiết kế + spike.
 - Các ngưỡng cử chỉ (swipe 50px, wheel 120 delta, debounce 300 ms) là điểm khởi đầu để test bằng prototype, chưa kiểm chứng.
-- SwiftRead/Sprint Reader .crx không tải được (proxy chặn endpoint Web Store, mirror 404) — SwiftRead chỉ nghiên cứu qua store listing + web; Sprint Reader đủ qua GitHub open source.
+- SwiftRead .crx **đã đọc được source thật từ 17/11** (Manh gửi 2 file 6.11.2.0 + 5.9.2.0) — xem ghi chú ở đầu file và `rsvp-report.md`. Sprint Reader .crx vẫn chưa tải được (proxy chặn endpoint Web Store, mirror 404) nhưng đủ qua GitHub open source.

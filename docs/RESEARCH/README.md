@@ -17,9 +17,12 @@
 - **`transpeek-panel-sizing/`** (16/11/2026) — Panel macOS: hành vi co dãn
   (input / output / snap-back / khung). Báo cáo gốc viết cho mac, có đối chiếu Windows.
   Cơ sở cho thiết kế panel chung mac + Windows chốt 16/11.
-- **`tts-speechify-naturalreader/`** (16/11/2026) — TTS: 5 báo cáo
+- **`tts-speechify-naturalreader/`** (16/11/2026, cập nhật chốt 17/11) — TTS: 5 báo cáo
   (Speechify, NaturalReader, ENVI, RSVP, panel nhiều tab + break) + `recommendation.md`.
-  Kết luận: tích hợp native phần lớn; Model B chỉ làm extension riêng; RSVP panel riêng.
+  Kết luận: tích hợp native phần lớn; **Model B KHÔNG làm (chốt 17/11)**; RSVP vào theo
+  thứ tự Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray →
+  shortcut fallback + toggle; view đọc RSVP giữ cả 2 phương án (tab dãn / panel riêng),
+  quyết ở prototype. SwiftRead đã đọc source thật (.crx 6.11.2 + 5.9.2).
   Xem `FEATURES/SPEECH_PLAYER.MD`. (Thư mục `src/` chứa source extension + audio mẫu
   ~92MB KHÔNG đưa vào repo — chỉ đưa 6 báo cáo .md; source gốc còn ở workspace.)
 - **`transpeek-windows-packaging-signing/`** (15–16/11/2026) — **Windows-specific:**
