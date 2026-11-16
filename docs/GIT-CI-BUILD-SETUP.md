@@ -891,3 +891,9 @@ each recurring problem.
   the END of the "Run tests" step log. If the log is huge, download the
   log archive. For per-test detail, download the `macOS-test-results`
   artifact.
+
+## Liên kết
+
+- [CI detail](BUILD-TEST-WORKFLOW-GITHUB-CI.md)
+- [Quy tắc làm việc](AGENTS.MD)
+- [Bản đồ docs](STRUCTURE_MAP.md)

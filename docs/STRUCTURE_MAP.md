@@ -1,0 +1,91 @@
+# Structure Map (bản nháp)
+
+> Trạng thái: **bản nháp** — bản đồ repo + docs. Cập nhật dần khi thêm/sửa doc.
+
+## 1. Repo
+
+- **Repo:** `TranManhTuanLabs/TransPeek`, branch `main`, public. Fork từ cosZone/MoePeek.
+- **Code:** `Sources/` (Swift 6, Tuist), `Tests/`, `Resources/`.
+- **Docs:** `docs/` (xem §2).
+
+## 2. Bản đồ docs
+
+| File | Nội dung | Trạng thái |
+|---|---|---|
+| `docs/SPEC-v0.1.md` | SPEC + tên đã chốt | Đang dùng |
+| `docs/GIT-CI-BUILD-SETUP.md` | Setup + intervention log | Đang dùng |
+| `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md` | CI detail | Đang dùng |
+| `docs/LOCALIZATION.md` | Localisation | Đang dùng |
+| `docs/M2-M3-TESTING.md` | Test M2/M3 (nhánh cũ đã xoá) | Lưu trữ |
+| `docs/MANUAL-RELEASE.md` | Phát hành thủ công | Đang dùng |
+| `docs/RELEASE-PROCESS.md` | Quy trình release | Đang dùng |
+| `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` | Cert tự ký | Đang dùng |
+| `docs/APP-SIGN-KEY-PERMISSIONS.md` | Quyền ký app | Đang dùng |
+| `docs/ARCHITECTURE.MD` | Kiến trúc tổng | Bản nháp |
+| `docs/MASTER_PLAN.md` | Lộ trình | Bản nháp |
+| `docs/STRUCTURE_MAP.md` | Doc này | Bản nháp |
+| `docs/TASK_QUEUE.MD` | Việc đang làm / chờ | Bản nháp |
+| `docs/UI_DESIGN.MD` | Chỉ mục UX | Bản nháp |
+| `docs/FEATURES/FLOAT_ICON.MD` | Tính năng icon float | Bản nháp |
+| `docs/FEATURES/SPEECH_ENGINE.MD` | Engine TTS | Bản nháp |
+| `docs/FEATURES/SPEECH_PLAYER.MD` | Player TTS + RSVP | Bản nháp |
+| `docs/FEATURES/OCR_TEXT_CAPTURE.MD` | OCR | Bản nháp |
+| `docs/FEATURES/SETTINGS.MD` | Tính năng Settings | **CHƯA VIẾT** |
+| `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.MD` | Panel UX | **CHƯA VIẾT (chưa chốt size)** |
+| `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.MD` | Icon float UX | Bản nháp |
+| `docs/UI/UX_DESIGN/APP_UX_OVERVIEW.MD` | Tổng quan UX | Bản nháp |
+| `docs/UI/UX_DESIGN/SETTING_UX.MD` | Settings UX | **CHƯA VIẾT** |
+| `docs/UI/UX_DESIGN/MAIN_NAVIGATION_UX.MD` | Menu bar + Settings | Bản nháp |
+| `docs/AGENTS.MD` | Quy tắc làm việc cho AI trong repo | Đang dùng |
+| `docs/AI_CONTEXT.MD` | Bối cảnh cho AI | Đang dùng |
+| `docs/PROJECT_STATE.MD` | Trạng thái dự án hiện tại | Đang dùng |
+
+## 3. Cây docs
+
+```
+docs/
+├── SPEC-v0.1.md                  # SPEC + tên đã chốt
+├── GIT-CI-BUILD-SETUP.md         # setup + intervention log
+├── BUILD-TEST-WORKFLOW-GITHUB-CI.md
+├── LOCALIZATION.md
+├── M2-M3-TESTING.md              # lưu trữ (nhánh cũ đã xoá)
+├── MANUAL-RELEASE.md
+├── RELEASE-PROCESS.md
+├── SELF-SIGNED-CERTIFICATE-GUIDE.md
+├── APP-SIGN-KEY-PERMISSIONS.md
+├── AGENTS.MD                     # quy tắc làm việc cho AI
+├── AI_CONTEXT.MD                 # bối cảnh cho AI
+├── PROJECT_STATE.MD              # trạng thái dự án hiện tại
+├── ARCHITECTURE.MD               # kiến trúc tổng
+├── MASTER_PLAN.md                # lộ trình
+├── STRUCTURE_MAP.md              # doc này (bản đồ + cây docs)
+├── TASK_QUEUE.MD                 # việc đang làm / chờ
+├── UI_DESIGN.MD                  # chỉ mục UX
+├── FEATURES/
+│   ├── FLOAT_ICON.MD             # tính năng icon float
+│   ├── SPEECH_ENGINE.MD          # engine TTS
+│   ├── SPEECH_PLAYER.MD          # player TTS + RSVP
+│   ├── OCR_TEXT_CAPTURE.MD       # OCR
+│   └── SETTINGS.MD               # tính năng Settings (CHƯA VIẾT)
+└── UI/
+    └── UX_DESIGN/
+        ├── FLOAT_POPUP_PANEL_UX.MD   # panel UX (CHƯA VIẾT — chưa chốt size)
+        ├── FLOAT_ICON_UX_SPEC.MD     # icon float UX
+        ├── APP_UX_OVERVIEW.MD        # tổng quan UX
+        ├── MAIN_NAVIGATION_UX.MD     # menu bar + Settings
+        └── SETTING_UX.MD             # Settings UX (CHƯA VIẾT)
+```
+
+## 4. Quy ước
+
+- Doc trong `docs/` viết tiếng Việt (trừ các doc cũ viết tiếng Anh từ đầu — giữ nguyên).
+- Panel UX mac chưa viết vì chưa chốt size; khi chốt thì viết đầy đủ như bản Windows
+  (`TranManhTuanLabs/TransPeek-Windows`, `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.MD`).
+
+## Liên kết
+
+- [Quy tắc làm việc](AGENTS.MD)
+- [Bối cảnh AI](AI_CONTEXT.MD)
+- [Trạng thái dự án](PROJECT_STATE.MD)
+- [Panel UX (chưa viết)](UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.MD)
+- [Chỉ mục UX](UI_DESIGN.MD)

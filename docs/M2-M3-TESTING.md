@@ -122,3 +122,9 @@ Live checks (all need a Mac; none were possible on the VM):
 - `Sec-MS-GEC` header is not sent (the WS protocol works without it in
   current `edge-tts`-compatible clients); if Microsoft tightens the
   handshake, add token generation per the `edge-tts` client.
+
+## Liên kết
+
+- [Lộ trình](MASTER_PLAN.md)
+- [Việc đang làm / chờ](TASK_QUEUE.MD)
+- [Bản đồ docs](STRUCTURE_MAP.md)

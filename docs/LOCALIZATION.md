@@ -63,3 +63,8 @@ harmless until then — at runtime it simply falls back to English.
 3. No code changes are needed for strings already in the catalog.
    Any new UI string added in code after this must also be added to
    the catalog, or it will stay English in other languages.
+
+## Liên kết
+
+- [SPEC v0.1](SPEC-v0.1.md)
+- [Bản đồ docs](STRUCTURE_MAP.md)

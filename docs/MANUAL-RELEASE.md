@@ -199,3 +199,9 @@ If the version, build number or enclosure URL is wrong, fix the inputs
   openssl hand-signing method in `RELEASE-PROCESS.md` §3 for manual
   releases — `generate_appcast` is the same tool the Release workflow
   uses, so the manual and automatic paths now produce the same appcast.
+
+## Liên kết
+
+- [Quy trình release](RELEASE-PROCESS.md)
+- [Lộ trình](MASTER_PLAN.md)
+- [Bản đồ docs](STRUCTURE_MAP.md)

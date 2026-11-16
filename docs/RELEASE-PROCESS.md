@@ -192,3 +192,9 @@ because the feed now exists.
   a git tag) — push the tag first for real releases. v0.1.0 remains the
   only published/latest release; the draft does not affect the Sparkle
   feed. History of the fixes: `GIT-CI-BUILD-SETUP.md` §4.
+
+## Liên kết
+
+- [Phát hành thủ công](MANUAL-RELEASE.md)
+- [Lộ trình](MASTER_PLAN.md)
+- [Bản đồ docs](STRUCTURE_MAP.md)

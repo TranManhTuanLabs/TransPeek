@@ -257,3 +257,9 @@ re-add, and relaunch — do not just toggle the old entry.
   `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
   valid 10/11/2026 → 17/10/2126. A new identity means every machine must
   grant the two permissions once for the newly signed app.
+
+## Liên kết
+
+- [Cert tự ký](SELF-SIGNED-CERTIFICATE-GUIDE.md)
+- [Kiến trúc](ARCHITECTURE.MD)
+- [Bản đồ docs](STRUCTURE_MAP.md)

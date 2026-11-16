@@ -175,3 +175,9 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   Tests #170 went green with the range assertion — the flaky test stopped
   flipping. When you add, remove or resize a row in the popup panel,
   update the hardcoded heights in that test file in the same commit.
+
+## Liên kết
+
+- [Setup + intervention log](GIT-CI-BUILD-SETUP.md)
+- [Quy tắc làm việc](AGENTS.MD)
+- [Bản đồ docs](STRUCTURE_MAP.md)

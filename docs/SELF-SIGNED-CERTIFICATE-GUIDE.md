@@ -973,3 +973,9 @@ why the old flow was abandoned — do not apply them to the current
   (2026-11-13 03:37, all 22 steps)** — direction B proven. §8.5
   records the current (no-signing) behaviour. Full history:
   `docs/GIT-CI-BUILD-SETUP.md` §4.
+
+## Liên kết
+
+- [Quyền ký app](APP-SIGN-KEY-PERMISSIONS.md)
+- [Kiến trúc](ARCHITECTURE.MD)
+- [Bản đồ docs](STRUCTURE_MAP.md)
