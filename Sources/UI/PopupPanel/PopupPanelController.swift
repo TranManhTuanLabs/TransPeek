@@ -262,6 +262,17 @@ final class PopupPanelController {
     }
 
     private func resizeForResultContent() {
+        // A drag always holds the mouse button down. If the flag says a
+        // drag is in progress but no button is held, the flag is stale —
+        // the drag was interrupted without onEnded (e.g. the handle view
+        // was recreated mid-drag, so onDisappear kept the flag because
+        // dragStartMouse was non-nil) and was never cleared. Clear it so
+        // auto-fit can run; otherwise long results never expand the panel
+        // until the user drags again (Manh 2026-11-16: long text stayed
+        // clipped until he dragged a bit and released).
+        if let panel, panel.isUserResizing, NSEvent.pressedMouseButtons == 0 {
+            panel.isUserResizing = false
+        }
         guard let panel, panel.isVisible, !panel.isUserResizing,
               panel.manualResizeGeneration != coordinator.translationGeneration,
               let resultContentHeight = resultLayout.contentHeight,
