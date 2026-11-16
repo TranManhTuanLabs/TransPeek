@@ -450,7 +450,13 @@ struct PopupView: View {
                 .background { InteractiveMarker() }
             }
             .padding(.horizontal, contentHorizontalPadding)
-            .padding(.top, 6)
+            // Top gap matches the bottom gap (contentHorizontalPadding, 14):
+            // the GitHub icon used to sit only 6pt below the dictionary
+            // links but 14pt above the bottom edge, which read as
+            // unbalanced once the 3-line corner grip drew the eye to the
+            // bottom (Manh 2026-11-16). This adds 8pt to the fitted
+            // height — PopupPanelLayoutTests was updated in the same commit.
+            .padding(.top, contentHorizontalPadding)
         }
         .padding(.bottom, contentHorizontalPadding)
     }
