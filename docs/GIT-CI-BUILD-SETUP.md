@@ -93,14 +93,16 @@ Related docs:
   `tests-${{ github.event.pull_request.number || github.ref }}` with
   `cancel-in-progress: true` — a new push cancels the run still going.
   (This is why run #80 was Cancelled: run #81 superseded it.)
-- Permissions: `contents: read`, `actions: write` (needed to delete old
+- Permissions: `contents: write`, `actions: write` (`contents: write` is
+  needed to create/delete pre-releases; `actions: write` to delete old
   artifacts).
 - Steps: Checkout → Cache mise tools (Tuist) → Install Tuist via mise →
   Cache SPM artifacts → Resolve dependencies + generate project (retries
   3 times, 30 s apart) → Install xcbeautify → Run tests → Build app
   (only `[build-app]`) → Sign app (only `[build-app]`) → Zip app (only
   `[build-app]`) → Upload app artifact (only `[build-app]`) → Delete older
-  app artifacts (only `[build-app]`) → Upload test results (always).
+  app artifacts (only `[build-app]`) → Publish pre-release (only
+  `[build-app]`) → Upload test results (always).
 
 ### How tests run
 
@@ -199,6 +201,15 @@ Related docs:
 - **Upload app:** artifact `TransPeek-macOS`, 7-day retention.
 - **Delete older app artifacts:** keeps only the newest `TransPeek-macOS`
   artifact (older links die). `continue-on-error: true`.
+- **Publish pre-release:** tag `v0.1.3.<run number>`, prerelease, uploads
+  the same zip as a release asset so the app has a direct download link
+  (Releases page) instead of only the Actions artifact; deletes all older
+  `v0.1.3.<number>` pre-releases, keeping only the newest. The regex only
+  matches the 4-part preview tags, never the stable `v0.1.3`. Same pattern
+  as the Windows repo. Added 2026-11-16 (commit `04e5727`). The "0.1.3"
+  in the tag is the current `MARKETING_VERSION` — update it in `test.yml`
+  when the app version bumps. The artifact is still kept because
+  `release.yml` (direction B) promotes the tested artifact.
 - **Upload test results:** always runs, artifact `macOS-test-results`,
   14-day retention.
 

@@ -16,11 +16,17 @@ rediscover any of this.
   project (retries 3 times) → Run tests → Build app (Release) → Zip app
   (`ditto`, keeps the `.app` bundle) → Upload artifact
   `TransPeek-macOS-<run number>` (7-day retention) + delete older app
-  artifacts, keeping only the newest → Upload test results
-  (`macOS-test-results`). The artifact name carries the run number since
+  artifacts, keeping only the newest → Publish pre-release
+  `v0.1.3.<run number>` (direct download link on the Releases page,
+  keeps only the newest, same pattern as the Windows repo) → Upload test
+  results (`macOS-test-results`). The artifact name carries the run number since
   2026-11-13 (commit `f617b7a`) so each download is distinct — before
   that every artifact was named the plain `TransPeek-macOS` and
-  downloads collided.
+  downloads collided. The pre-release was added 2026-11-16 (commit
+  `04e5727`) so the app can be downloaded from a direct link instead of
+  digging into the Actions run for the artifact; the artifact itself is
+  still kept because `release.yml` (direction B) promotes the tested
+  artifact, and the pre-release is only a convenience download.
 
 ## When CI runs, and when the app is built
 
@@ -33,7 +39,7 @@ To avoid wasting CI runs (and other people's runners):
   editing `release.yml` used to start a pointless Tests run, e.g. #127/#128.)
 - **Tests run on every code commit**, but the app artifact is only built
   when the commit message contains `[build-app]`. The Build app / Zip app
-  / Upload app / Delete older artifacts steps have
+  / Upload app / Delete older artifacts / Publish pre-release steps have
   `if: contains(github.event.head_commit.message, '[build-app]')`.
   A plain code commit runs tests only; add `[build-app]` to the message
   when a testable app build is actually needed. (Same pattern as SeekZip.)
