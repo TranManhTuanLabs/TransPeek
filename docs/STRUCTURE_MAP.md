@@ -39,6 +39,11 @@
 | `docs/AGENTS.MD` | Quy tắc làm việc cho AI trong repo | Đang dùng |
 | `docs/AI_CONTEXT.MD` | Bối cảnh cho AI | Đang dùng |
 | `docs/PROJECT_STATE.MD` | Trạng thái dự án hiện tại | Đang dùng |
+| `docs/BUILD_FROM_ZERO.MD` | Build app từ máy trắng | Đang dùng |
+| `docs/RESEARCH/README.md` | Chỉ mục research | Đang dùng |
+| `docs/RESEARCH/transpeek-panel-sizing/report.md` | Research panel co dãn | Đang dùng |
+| `docs/RESEARCH/tts-speechify-naturalreader/` | Research TTS (6 báo cáo) | Đang dùng |
+| `docs/RESEARCH/transpeek-windows-packaging-signing/report.md` | Research đóng gói/ký/Store (Windows) | Đang dùng |
 
 ## 3. Cây docs
 
@@ -56,6 +61,12 @@ docs/
 ├── AGENTS.MD                     # quy tắc làm việc cho AI
 ├── AI_CONTEXT.MD                 # bối cảnh cho AI
 ├── PROJECT_STATE.MD              # trạng thái dự án hiện tại
+├── BUILD_FROM_ZERO.MD            # build app từ máy trắng
+├── RESEARCH/
+│   ├── README.md                     # chỉ mục research
+│   ├── transpeek-panel-sizing/       # panel co dãn (gốc mac, đối chiếu Windows)
+│   ├── tts-speechify-naturalreader/  # TTS (6 báo cáo)
+│   └── transpeek-windows-packaging-signing/  # đóng gói/ký/Store (Windows-specific)
 ├── ARCHITECTURE.MD               # kiến trúc tổng
 ├── MASTER_PLAN.md                # lộ trình
 ├── STRUCTURE_MAP.md              # doc này (bản đồ + cây docs)
