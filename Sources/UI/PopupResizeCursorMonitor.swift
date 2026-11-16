@@ -8,16 +8,24 @@ import AppKit
 /// approached from outside: the edges are long strips, so they still felt
 /// instant, but the corner is a single point.
 ///
-/// The monitor only ever SETS a resize cursor when near a zone; it never
-/// forces the arrow cursor. Resetting is left to the panel's own onHover
-/// handlers (once the mouse is inside) and to the app under the mouse
-/// (once it moves away to another app/desktop), so it cannot fight a text
-/// field's I-beam or another app's cursor.
+/// The monitor SETS a resize cursor when near a zone, and releases it
+/// (back to the arrow) exactly once when the mouse leaves a zone for
+/// outside the panel — otherwise the resize cursor would stay stuck after
+/// the mouse moves away, because nothing else resets it. It never touches
+/// the cursor while the mouse is INSIDE the panel: the panel's own onHover
+/// handlers own it there (including a text field's I-beam), so the monitor
+/// cannot fight them.
 @MainActor
 final class PopupResizeCursorMonitor {
     private weak var panel: NSPanel?
     private var globalMonitor: Any?
     private var localMonitor: Any?
+
+    /// True after the monitor set a resize cursor; cleared once it releases
+    /// the cursor (or the mouse moves back inside the panel, where onHover
+    /// owns the cursor). Only used to release the cursor once when the
+    /// mouse leaves a hot zone for outside the panel.
+    private var didSetResizeCursor = false
 
     /// How far outside the panel frame the hot zone reaches (points).
     private let outsideMargin: CGFloat = 8
@@ -48,6 +56,11 @@ final class PopupResizeCursorMonitor {
         if let monitor = localMonitor { NSEvent.removeMonitor(monitor) }
         globalMonitor = nil
         localMonitor = nil
+        // Never leave a stuck resize cursor behind when the panel goes away.
+        if didSetResizeCursor {
+            NSCursor.arrow.set()
+            didSetResizeCursor = false
+        }
     }
 
     deinit {
@@ -76,6 +89,7 @@ final class PopupResizeCursorMonitor {
             if #available(macOS 15.0, *) {
                 NSCursor.frameResize(position: .bottomRight, directions: .all).set()
             }
+            didSetResizeCursor = true
             return
         }
 
@@ -88,6 +102,7 @@ final class PopupResizeCursorMonitor {
         )
         if rightEdge.contains(mouse) {
             NSCursor.resizeLeftRight.set()
+            didSetResizeCursor = true
             return
         }
 
@@ -100,7 +115,23 @@ final class PopupResizeCursorMonitor {
         )
         if bottomEdge.contains(mouse) {
             NSCursor.resizeUpDown.set()
+            didSetResizeCursor = true
             return
+        }
+
+        // Not near any zone. Inside the panel, leave the cursor alone —
+        // the panel's onHover handlers own it there (including a text
+        // field's I-beam). Outside the panel, if the monitor previously
+        // set a resize cursor, release it back to the arrow exactly once;
+        // otherwise the resize cursor stays stuck after the mouse moves
+        // away, because nothing else resets it (Manh 2026-11-16).
+        if frame.contains(mouse) {
+            didSetResizeCursor = false
+            return
+        }
+        if didSetResizeCursor {
+            NSCursor.arrow.set()
+            didSetResizeCursor = false
         }
     }
 }
