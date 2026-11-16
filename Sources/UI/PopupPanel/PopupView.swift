@@ -613,7 +613,7 @@ private func popupFittedFrame(for panel: PopupPanel, layout: PopupResultLayout) 
         viewportHeight: viewportHeight,
         measuredContainerHeight: containerHeight,
         minimumHeight: PopupPanel.minimumSize.height,
-        maximumHeight: panel.maxSize.height,
+        maximumHeight: PopupPanel.maximumSize.height,
         visibleFrame: screen.visibleFrame
     )
 }
@@ -644,7 +644,11 @@ private func finishPanelResize(
     // the results ScrollView already expanded to show more text.
     // Do not suppress auto-fit when snapping back: the panel is back at
     // its fitted size.
-    if resizeHeight, let fitted, panel.frame.height > fitted.height + 0.5 {
+    // The +8 threshold mirrors Windows' SettleResizedSize (Manh
+    // 2026-11-17, Windows parity): only snap back when the drag left
+    // more than 8pt of white space — a smaller overshoot is tolerated,
+    // so the panel does not visibly jump for a 1–2pt overshoot.
+    if resizeHeight, let fitted, panel.frame.height > fitted.height + 8 {
         targetFrame.size.height = fitted.height
         targetFrame.origin.y = fitted.origin.y
     } else if resizeHeight, let initial = dragStartFrame,
@@ -657,8 +661,10 @@ private func finishPanelResize(
     // dragged wider than the default, snap the width back to the default
     // so a too-wide drag does not leave an ugly wide panel. Long content
     // keeps the dragged width — a wider panel shows more of it per line.
+    // The +8 threshold mirrors Windows' SettleResizedSize (Manh
+    // 2026-11-17): only snap back a width more than 8pt past the default.
     if let fitted,
-       panel.frame.width > CGFloat(Defaults[.popupDefaultWidth]) + 0.5,
+       panel.frame.width > CGFloat(Defaults[.popupDefaultWidth]) + 8,
        fitted.height <= PopupPanel.minimumSize.height + 0.5 {
         targetFrame.size.width = CGFloat(Defaults[.popupDefaultWidth])
     }
@@ -720,12 +726,14 @@ private struct ResizeGripView: View {
                     let deltaY = mouse.y - start.y
                     panel.isUserResizing = true
 
-                    // Clamp to PopupPanel.minimumSize directly, not
-                    // panel.minSize — the window property can be reset by
-                    // NSHostingView, so reading it at drag time silently
-                    // ignored the minimum on build #191 (Manh 2026-11-16).
-                    let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), panel.maxSize.width)
-                    let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), panel.maxSize.height)
+                    // Clamp to PopupPanel.minimumSize / maximumSize directly,
+                    // not panel.minSize / panel.maxSize — the window
+                    // properties can be reset by NSHostingView, so reading
+                    // them at drag time silently ignored the minimum on
+                    // build #191 (Manh 2026-11-16). windowWillResize is the
+                    // AppKit-level backstop for the same bounds.
+                    let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), PopupPanel.maximumSize.width)
+                    let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), PopupPanel.maximumSize.height)
 
                     // Keep top-left corner fixed
                     let newY = initial.maxY - newH
@@ -798,7 +806,19 @@ private struct EdgeResizeHandle: View {
     @State private var dragStartFrame: NSRect?
 
     var body: some View {
-        Color.clear
+        // NOT Color.clear: a clear view draws nothing, and on first
+        // appearance its hover/drag tracking is not reliably established
+        // — the first hover over an edge did not change the cursor, and
+        // the first drag could start late and jump (Manh 2026-11-17: "lần
+        // đầu di chuột vào cạnh thì chuột không đổi icon, phải kéo góc
+        // lần đầu", and the drag-down jerk). A white fill at 0.001
+        // opacity is invisible but DOES draw, so the tracking area is
+        // solid from the first layout — the corner grip (a Canvas that
+        // draws) never had this problem. The drag jerk and the missing
+        // first-hover cursor share this root cause: when hit-testing is
+        // broken the DragGesture engages late, so the panel jumps when
+        // it finally catches the mouse.
+        Color.white.opacity(0.001)
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 1)
@@ -815,17 +835,17 @@ private struct EdgeResizeHandle: View {
                         switch axis {
                         case .width:
                             let deltaX = mouse.x - start.x
-                            // Clamp to PopupPanel.minimumSize directly (see
-                            // ResizeGripView): panel.minSize is not reliable
-                            // at drag time.
-                            let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), panel.maxSize.width)
+                            // Clamp to PopupPanel.minimumSize / maximumSize
+                            // directly (see ResizeGripView): panel.minSize /
+                            // panel.maxSize are not reliable at drag time.
+                            let newW = min(max(initial.width + deltaX, PopupPanel.minimumSize.width), PopupPanel.maximumSize.width)
                             panel.setFrame(
                                 NSRect(x: initial.origin.x, y: initial.origin.y, width: newW, height: initial.height),
                                 display: true
                             )
                         case .height:
                             let deltaY = mouse.y - start.y
-                            let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), panel.maxSize.height)
+                            let newH = min(max(initial.height - deltaY, PopupPanel.minimumSize.height), PopupPanel.maximumSize.height)
                             // Keep top-left corner fixed
                             let newY = initial.maxY - newH
                             panel.setFrame(

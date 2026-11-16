@@ -30,7 +30,16 @@ final class PopupPanel: NSPanel {
     /// window's `minSize` property, which NSHostingView can reset when the
     /// SwiftUI content is laid out, so reading `minSize` at drag time is
     /// not reliable (the minimum was silently ignored on build #191).
+    /// The `windowWillResize` delegate below is the backstop: it clamps
+    /// EVERY resize (drag, setFrame, auto-fit) at the AppKit level, the
+    /// macOS equivalent of Windows' WM_GETMINMAXINFO, so the panel can
+    /// never be dragged below this minimum (Manh 2026-11-17).
     static let minimumSize = CGSize(width: 400, height: 450)
+    /// Maximum panel size (Manh 2026-11-17, Windows parity): width 600
+    /// matches the Windows panel's MaxPanelWidth (600 is ~1.4x the 420
+    /// default; the old 800 was ~double the default and left a too-wide
+    /// panel after a wide drag). Height 800 matches Windows' MaxPanelSize.
+    static let maximumSize = CGSize(width: 600, height: 800)
     var onCopyResultShortcut: ((Int) -> Bool)?
     var onSwapLanguagesShortcut: ((NSEvent) -> Bool)?
 
@@ -63,7 +72,11 @@ final class PopupPanel: NSPanel {
         isReleasedWhenClosed = false
         minSize = Self.minimumSize
         contentMinSize = Self.minimumSize
-        maxSize = CGSize(width: 800, height: 800)
+        maxSize = Self.maximumSize
+        // This panel is its own window delegate (delegate is weak, so no
+        // retain cycle) so windowWillResize can clamp every resize at the
+        // AppKit level — the backstop for the minimum (see below).
+        delegate = self
 
         // Rounded corners
         contentView?.wantsLayer = true
@@ -208,5 +221,27 @@ final class PopupPanel: NSPanel {
         }
 
         return nil
+    }
+}
+
+// MARK: - NSWindowDelegate (minimum/maximum enforcement)
+
+extension PopupPanel: NSWindowDelegate {
+    /// Clamp EVERY resize at the AppKit level — user drags, programmatic
+    /// setFrame, and auto-fit all pass through here, so the panel can
+    /// never end up below `minimumSize` or above `maximumSize` no matter
+    /// which code path resizes it. This is the macOS equivalent of
+    /// Windows' WM_GETMINMAXINFO min-tracking (Manh 2026-11-17: "không
+    /// thể kéo bé quá mức set min height"). It is a backstop only: the
+    /// drag handles and auto-fit already clamp to the same constants, so
+    /// in normal use this returns the size unchanged. It exists because
+    /// `minSize` alone is not reliable — NSHostingView can reset the
+    /// window's minSize during layout (build #191) — and a delegate clamp
+    /// cannot be reset that way.
+    func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
+        NSSize(
+            width: min(max(frameSize.width, Self.minimumSize.width), Self.maximumSize.width),
+            height: min(max(frameSize.height, Self.minimumSize.height), Self.maximumSize.height)
+        )
     }
 }

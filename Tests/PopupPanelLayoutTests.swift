@@ -185,7 +185,7 @@ private struct LayoutTestPreferences {
     init(height: Int, fontSize: Int) {
         // Override only this process; never persist test dimensions to the user's app settings.
         UserDefaults.standard.setVolatileDomain(previous.merging([
-            "popupDefaultWidth": 440,
+            "popupDefaultWidth": 420,
             "popupDefaultHeight": height,
             "popupInputHeight": 48,
             "popupFontSize": fontSize,

@@ -216,7 +216,10 @@ struct GeneralSettingsView: View {
                             get: { Double(popupDefaultWidth) },
                             set: { popupDefaultWidth = Int($0) }
                         ),
-                        in: 400...800,
+                        // 400...600 (Manh 2026-11-17, Windows parity):
+                        // the width cap is 600, so the slider must not
+                        // offer a default wider than the panel can open at.
+                        in: 400...600,
                         step: 10
                     )
                 }

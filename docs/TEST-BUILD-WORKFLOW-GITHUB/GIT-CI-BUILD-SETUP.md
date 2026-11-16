@@ -929,6 +929,32 @@ each recurring problem.
   change to a test/build workflow or configuration must be recorded
   in a `docs/` file in the repo, not just made in the workflow file
   — this log (§4) is where those interventions go.
+- **2026-11-17 — Panel size + resize-cursor fix (Manh: "size nhỏ
+  ngang dọc hết mức", "không thể kéo bé quá min height", values
+  from the Windows repo).** Panel values aligned to Windows
+  (TranslatePanelWindow.xaml.cs / FLOAT_POPUP_PANEL_UX.MD, baseline
+  #153): default width 440 → **420** (`Constants.popupDefaultWidth`),
+  max width 800 → **600** (`PopupPanel.maximumSize`, new static;
+  height stays 800), Settings width slider 400...800 → **400...600**.
+  Min stays 400×450, output cap 260. Snap-back thresholds 0.5 →
+  **+8** (both axes, mirroring Windows' SettleResizedSize). Min-height
+  enforcement hardened to the OS level: `PopupPanel` is now its own
+  `NSWindowDelegate` and `windowWillResize` clamps every resize to
+  [minimumSize, maximumSize] — the macOS equivalent of Windows'
+  WM_GETMINMAXINFO — so the panel can never be dragged below the set
+  minimum even if `minSize` is reset by NSHostingView (build #191).
+  Drag handles and auto-fit now clamp to the `minimumSize` /
+  `maximumSize` statics directly instead of the window properties.
+  Cursor/drag-jerk root cause (Manh: first edge hover did not change
+  the cursor until after a corner drag; drag-down jerked in one of
+  two cursor cases): the edge handles were `Color.clear`, which draws
+  nothing, so their hover/drag tracking was not reliably established
+  on first appearance — the corner grip (a Canvas that draws) never
+  had this problem. Fixed by using `Color.white.opacity(0.001)`
+  (invisible but draws, so the tracking area is solid from the first
+  layout); the missing first-hover cursor and the late-engaging drag
+  (jerk) share this root cause. Test pref updated
+  (`LayoutTestPreferences` popupDefaultWidth 440 → 420).
 
 ## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
 

@@ -365,8 +365,10 @@ extension Defaults.Keys {
     // Onboarding
     static let hasCompletedOnboarding = Key<Bool>("hasCompletedOnboarding", default: false)
 
-    // Popup panel default size
-    static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 440)
+    // Popup panel default size (Manh 2026-11-17, Windows parity):
+    // default width 420 matches the Windows panel (420x450); the
+    // previous 440 was the pre-#153 Windows default.
+    static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 420)
     static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 450)
     static let popupInputHeight = Key<Int>("popupInputHeight", default: 48)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
