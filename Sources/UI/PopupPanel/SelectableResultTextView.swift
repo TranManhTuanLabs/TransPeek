@@ -82,8 +82,17 @@ struct SelectableResultTextView: NSViewRepresentable {
                 width: textView.bounds.width,
                 height: CGFloat.greatestFiniteMagnitude
             )
+            coordinator.reportContentHeight()
+        } else {
+            // First layout: the text view still has a zero width, so the
+            // measured height would be wrong (long text stays clipped and
+            // the panel never expands until the user drags). Re-check
+            // after layout settles, when the width is valid.
+            // (Manh 2026-11-16: long text did not auto-expand on #194.)
+            DispatchQueue.main.async {
+                coordinator.reportContentHeight()
+            }
         }
-        coordinator.reportContentHeight()
     }
 
     // MARK: - Content
@@ -227,6 +236,7 @@ struct SelectableResultTextView: NSViewRepresentable {
 
         func reportContentHeight() {
             guard let textView,
+                  textView.bounds.width > 0,
                   let container = textView.textContainer,
                   let layoutManager = textView.layoutManager
             else { return }
