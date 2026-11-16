@@ -28,7 +28,12 @@ final class PopupResizeCursorMonitor {
     private var didSetResizeCursor = false
 
     /// How far outside the panel frame the hot zone reaches (points).
-    private let outsideMargin: CGFloat = 8
+    /// 0 = the cursor changes only once the mouse is ON the grip/edge
+    /// itself (exactly the corner point). A larger margin (was 8) makes
+    /// the cursor change BEFORE the mouse reaches the corner, which lies:
+    /// clicking there is still outside the panel, so it misses the grip
+    /// and dismisses the panel instead of resizing (Manh 2026-11-16).
+    private let outsideMargin: CGFloat = 0
     /// Corner zone extends this far inside the frame (matches the 20pt grip).
     private let cornerInside: CGFloat = 20
     /// Edge zones extend this far inside the frame (matches the 6pt strips).
