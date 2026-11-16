@@ -3,7 +3,7 @@
 A Release is a tag (e.g. `v0.1.0`) + a GitHub Release with the app ZIP +
 `appcast.xml`. Only a real Release makes Sparkle ("Check for Updates")
 notify users — the CI artifact alone never does (see
-`GIT-CI-BUILD-SETUP.md` §3, "Artifact ≠ Release").
+`TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §3, "Artifact ≠ Release").
 
 **Who does what:** Muse does every step below, on the VM and in the
 browser. Manh does nothing — no Terminal, no signing on his Mac. He only
@@ -25,7 +25,7 @@ downloads the app from the Releases page afterwards (see §5).
   safe to quote: `+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=`.
 - **If the private key is ever lost:** generate a new keypair and rotate
   the public key in `test.yml` *before* the release build (see
-  `GIT-CI-BUILD-SETUP.md` §4, 2026-11-11 entry). A release shipped with
+  `TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4, 2026-11-11 entry). A release shipped with
   the old key cannot be verified with a new one.
 
 ## 1. Download the CI artifact and check the app
@@ -126,7 +126,7 @@ the **fallback** (and how v0.1.0 was published); the current manual
 method is `docs/MANUAL-RELEASE.md` (Sparkle `generate_appcast`, the
 same tool the workflow uses) — §3's openssl hand-signing is the older
 method, kept for reference. Full history of what was broken and fixed:
-`GIT-CI-BUILD-SETUP.md` §4 (direction B, Release #15/#16 fixes,
+`TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4 (direction B, Release #15/#16 fixes,
 Release #17 proof, Tests #144).
 
 **Push the tag first.** A release run started by manual dispatch
@@ -159,7 +159,7 @@ because the feed now exists.
    with the version to make a draft, or push tag `v<version>` to
    publish directly — review the draft, publish it) or **manual**
    (`docs/MANUAL-RELEASE.md`). Automatic is the default now. If a
-   workflow is red, read its log first (`GIT-CI-BUILD-SETUP.md` §4
+   workflow is red, read its log first (`TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4
    has the history of every failure and fix) — a 0-step run is a
    GitHub capacity problem, not a code problem: re-run and wait, do
    not switch direction. Direction B: the Release workflow ships the
@@ -172,7 +172,7 @@ because the feed now exists.
    publish, or push the tag), or follow `MANUAL-RELEASE.md` with the
    new version/build numbers.
 4. If the EdDSA key or the code-signing certificate ever changes,
-   rotate first (see `GIT-CI-BUILD-SETUP.md` §4) and rebuild before
+   rotate first (see `TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4) and rebuild before
    releasing.
 
 ## History
@@ -191,7 +191,7 @@ because the feed now exists.
   `untagged-12395624d4c68df7eac6` (the `v0.0.0-dev` tag never existed as
   a git tag) — push the tag first for real releases. v0.1.0 remains the
   only published/latest release; the draft does not affect the Sparkle
-  feed. History of the fixes: `GIT-CI-BUILD-SETUP.md` §4.
+  feed. History of the fixes: `TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4.
 
 ## Liên kết
 

@@ -57,8 +57,8 @@
   hoa/thường. NGOẠI LỆ: slogan "Translate anywhere, Peek instantly!" — chỉ hoa T và P.
 - Manh dùng từ kỹ thuật / tiếng Anh sai thì **báo hoặc sửa cho đúng ngay lúc đó**.
 - Quyết định sản phẩm phải hỏi Manh trước, trừ khi anh liệt kê phương án và bảo Muse chọn.
-- Mỗi lần cải tiến workflow thì **tự ghi nhớ** (vào `docs/GIT-CI-BUILD-SETUP.md` và
-  `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md`), đừng để Manh nhắc lại.
+- Mỗi lần cải tiến workflow thì **tự ghi nhớ** (vào `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` và
+  `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md`), đừng để Manh nhắc lại.
 
 ## 6. Về Manh
 

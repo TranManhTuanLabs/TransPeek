@@ -13,8 +13,8 @@
 | File | Nội dung | Trạng thái |
 |---|---|---|
 | `docs/SPEC-v0.1.md` | SPEC + tên đã chốt | Đang dùng |
-| `docs/GIT-CI-BUILD-SETUP.md` | Setup + intervention log | Đang dùng |
-| `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md` | CI detail | Đang dùng |
+| `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` | Setup + intervention log | Đang dùng |
+| `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md` | CI detail | Đang dùng |
 | `docs/LOCALIZATION.md` | Localisation | Đang dùng |
 | `docs/M2-M3-TESTING.md` | Test M2/M3 (nhánh cũ đã xoá) | Lưu trữ |
 | `docs/MANUAL-RELEASE.md` | Phát hành thủ công | Đang dùng |
@@ -50,8 +50,9 @@
 ```
 docs/
 ├── SPEC-v0.1.md                  # SPEC + tên đã chốt
-├── GIT-CI-BUILD-SETUP.md         # setup + intervention log
-├── BUILD-TEST-WORKFLOW-GITHUB-CI.md
+├── TEST-BUILD-WORKFLOW-GITHUB/
+│   ├── GIT-CI-BUILD-SETUP.md     # setup + intervention log
+│   └── BUILD-TEST-WORKFLOW-GITHUB-CI.md
 ├── LOCALIZATION.md
 ├── M2-M3-TESTING.md              # lưu trữ (nhánh cũ đã xoá)
 ├── MANUAL-RELEASE.md

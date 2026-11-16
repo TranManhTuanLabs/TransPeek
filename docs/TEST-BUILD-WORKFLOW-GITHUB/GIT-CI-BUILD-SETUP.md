@@ -1,0 +1,990 @@
+# Git, CI Test & Build Workflow Setup (TransPeek)
+
+The complete setup and configuration of git, the CI test workflow, and the
+app build workflow for this repo — plus the history of what was changed and
+why, so a future maintainer (or another AI entering this repo) can
+investigate a red run, fix a failure, or change the setup without
+rediscovering everything.
+
+> **Rule (Manh, 2026-11-17 — applies to all repos): these two workflow
+> docs (`GIT-CI-BUILD-SETUP.md` + `BUILD-TEST-WORKFLOW-GITHUB-CI.md`)
+> must be updated AT THE SAME TIME as any workflow change — same round,
+> same commit if possible, never deferred to later.** When you edit
+> `test.yml` / `release.yml` or any workflow configuration, update the
+> related doc in the same commit: the intervention log (§4 here) for what
+> changed and why, and `BUILD-TEST-WORKFLOW-GITHUB-CI.md` for how the
+> workflow now works. A workflow change without its doc update is an
+> incomplete change.
+
+Related docs:
+
+- `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` — the A–Z signing guide (why
+  signing, certificate anatomy, openssl + Keychain GUI methods, local
+  signing, CI signing, the two `.p12` directions).
+- `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md` — the CI workflow in detail (how
+  to read a red run, caching, Swift/API gotchas).
+- `docs/APP-SIGN-KEY-PERMISSIONS.md` — code signing and macOS permissions
+  (why signing matters, how to create the certificate).
+- `docs/SPEC-v0.1.md` — product spec.
+
+## 1. Git setup
+
+### Repo
+
+- GitHub: `TranManhTuanLabs/TransPeek` (public).
+- Default branch: `main`. Feature branch: `m2-m3-tts-ocr` (M2 TTS + M3
+  Tesseract, not merged — see §5).
+- Local clones:
+  - Manh's Mac (primary): `/Users/manhtuan/Documents/AI-Agent-Workspace/AI_Workspace`
+    (the workspace root; the TransPeek checkout lives under it).
+  - This VM: `~/workspace/projects/moepeek-translator/transpeek/` (main
+    checkout; sync with `git fetch origin` + `git reset --hard origin/main`
+    before starting work).
+
+### Authentication
+
+- Manh's Mac: SSH with an ed25519 key. Verify with
+  `ssh -T git@github.com` — it must print `Hi TranManhTuanLabs`. SSH is
+  preferred over HTTPS.
+- Commit author follows the machine's username/hostname (no forced author).
+  On the VM the git config user is `Muse <muse@local>`; the VM has no SSH
+  key authorised to push this repo, so pushes from the VM go through the
+  GitHub connector (see below).
+- The Muse GitHub App (connector) does NOT have Workflows permission: any
+  call touching `.github/workflows/*` returns 403. Stop after the first
+  403; do not retry the same call. Edit workflow files from Manh's Mac,
+  or through the GitHub web editor (browser session) when Manh has
+  explicitly allowed it.
+
+### How pushes are done (and the rules)
+
+- **Push related files in ONE commit.** Prepare everything locally first
+  (all files written, diff re-read, names/parameters checked consistent),
+  then push the whole change as one commit. Never push related files
+  one-by-one through the browser web editor — each web edit is 1 commit,
+  so the repo passes through intermediate states where the code does not
+  fit together and CI goes red mid-batch.
+- Push routes: (a) connector snapshot push (`push-files` with a paths
+  file) — creates/edits UTF-8 text files only, cannot delete, rename, or
+  push binary; (b) local git from Manh's Mac (SSH). Deleting a file needs
+  a separate `delete_file` call (or `git rm` locally).
+- Approval cards for connector pushes expire after 30 minutes. An
+  expired/denied card only blocks that push — the code is not lost;
+  re-push and a new card appears.
+- **Branch strategy:** feature work on a branch, `main` stays clean and
+  green. Before merging a branch into `main`, sync `main` INTO the branch
+  first (merge main → branch), resolve conflicts ON the branch, rework the
+  feature to the new main structure, get CI green on the branch, THEN
+  merge via PR. Never merge a stale branch straight into main — it can
+  downgrade or lose main's newer code.
+- **"Foundation first, branch second":** if CI is red on both `main` and
+  a branch, fix `main` FIRST.
+- **Gate (milestone flow):** work locally → push one batch → CI green →
+  Manh tests live on his Mac → ok / reports bugs → fix → only then move
+  to the next milestone.
+- **Commit message marker `[build-app]`:** the app artifact is only built
+  when the commit message contains `[build-app]` (see §3). Only put
+  `[build-app]` in a commit when Manh explicitly says "build-app". Do not
+  decide it yourself, even if the change is visible in the app.
+
+## 2. CI test workflow (`test.yml`)
+
+### At a glance
+
+- File: `.github/workflows/test.yml`. Runner: `macos-26`. One job
+  (`test`), timeout 20 min.
+- Triggers: push to `main`, PRs to `main`, `workflow_dispatch`.
+- `paths-ignore`: `docs/**`, `**.md` and `.github/workflows/**` (both push
+  and PR) — a docs-only or workflow-only push runs NO CI at all. (Workflows
+  added 2026-11-11: editing `release.yml` used to start a pointless Tests
+  run, e.g. #127/#128; Manh chose the professional direction — keep tests
+  automatic on every code push as the safety net, never manual-only.)
+- Concurrency group
+  `tests-${{ github.event.pull_request.number || github.ref }}` with
+  `cancel-in-progress: true` — a new push cancels the run still going.
+  (This is why run #80 was Cancelled: run #81 superseded it.)
+- Permissions: `contents: write`, `actions: write` (`contents: write` is
+  needed to create/delete pre-releases; `actions: write` to delete old
+  artifacts).
+- Steps: Checkout → Cache mise tools (Tuist) → Install Tuist via mise →
+  Cache SPM artifacts → Resolve dependencies + generate project (retries
+  3 times, 30 s apart) → Install xcbeautify → Run tests → Build app
+  (only `[build-app]`) → Sign app (only `[build-app]`) → Zip app (only
+  `[build-app]`) → Upload app artifact (only `[build-app]`) → Delete older
+  app artifacts (only `[build-app]`) → Publish pre-release (only
+  `[build-app]`) → Upload test results (always).
+
+### How tests run
+
+- `xcodebuild test -workspace TransPeek.xcworkspace -scheme TransPeek
+  -destination 'platform=macOS' -resultBundlePath build/Tests.xcresult
+  ... CODE_SIGNING_ALLOWED=NO | xcbeautify`, with `set -o pipefail` so a
+  failing `xcodebuild` still fails the step.
+- The test bundle is uploaded as artifact `macOS-test-results` (14-day
+  retention). The `.xcresult` is the source of truth for per-test detail.
+- **Log policy: never errors-only.** A failing test shows as `recorded an
+  issue` + a summary (`Test run with N tests ... failed with M issues`,
+  `Failing tests:`), not as an `error:` line. Filtering to errors-only
+  hides it. Keep the full log via xcbeautify (it drops the thousands of
+  `SwiftCompile` lines so the log loads fast, but keeps test results).
+
+### Diagnostics: what reaches the CI log and what does NOT
+
+- **xcbeautify strips Swift Testing `#expect` messages** from the log. A
+  red run shows only "Recorded an issue" — it does not say WHICH
+  assertion failed.
+- **xcbeautify also drops the result lines of parameterized Swift Testing
+  tests** (e.g. the 12 cases of `longTextLayoutSettles` never appear as
+  result lines in the log). The suite total time is the only indirect
+  evidence they ran.
+- **`print` (stdout) inside a Swift Testing test does NOT reach the
+  console log** — it is captured into the `.xcresult`.
+- **`FileHandle.standardError.write` (stderr) ALSO does NOT reach the
+  console log** (verified in run #82) — `xcodebuild` captures the test
+  process's stderr into the `.xcresult` too.
+- **Consequence:** when a test goes red, the values that explain WHY are
+  only in the uploaded `macOS-test-results` (`.xcresult`) artifact —
+  download it and inspect the test's recorded issues there. Do not add
+  more `print`/stderr diagnostics expecting them to show in the log.
+
+### Caching (rule: keep caches under ~80 MB)
+
+- SPM artifacts only (`~/Library/Caches/org.swift.swiftpm/artifacts`),
+  key by `Package.resolved`, `-v2` suffix. (~9.9 MB.)
+- mise tools only (`~/.local/share/mise/installs`), key by `.mise.toml` +
+  `.tuist-version`, `-v2` suffix. (~54.2 MB.)
+- Both were narrowed from the whole directories (SPM was ~143 MB, mise
+  ~94 MB in run #53).
+
+### GitHub limits and queue behaviour
+
+- This repo is **public**, so GitHub Actions is **free and unlimited** —
+  there is no monthly limit on the number of CI runs, and no per-run
+  minute cap that matters here. (For private repos the free plan is
+  2,000 min/month; that does not apply.)
+- Real limits: one job max 6 hours (we set 20 min), max 20 concurrent
+  jobs, 500 MB free artifact storage (we manage it by keeping only the
+  newest app artifact + 7-day retention).
+- **macOS runner capacity:** GitHub sometimes has no free macOS arm64
+  runner, and a run can sit Queued for a long time. Run #81 was Queued
+  for 26 minutes; GitHub shows the notice "Due to capacity constraints,
+  jobs targeting macOS arm64 runners may experience longer queue times."
+  A long queue is a capacity problem, NOT a failure and NOT a usage
+  limit. Do not "fix" the code for a queued run — wait, or re-check later.
+  Since 2026-11-10 the failure mode got worse: if no runner picks the
+  job up within ~15 minutes, GitHub **cancels** it (0 steps run,
+  annotation "The job was not acquired by Runner of type hosted even
+  after multiple attempts" + "Internal server error"). Runs #89, #90
+  and #91 all died this way. A cancelled-with-0-steps run says nothing
+  about the code or the signing direction — re-run it (prefer off-peak
+  US hours: late night VN is still US business hours; 08:00 +07 VN is
+  US evening and quieter) and wait. Never switch direction on a
+  capacity failure — only on a real failure at the step itself.
+
+## 3. Build workflow (app artifact + CI signing)
+
+### Build steps (all gated on `[build-app]`)
+
+- **Build app:** `xcodebuild build ... -configuration Release
+  -derivedDataPath build ... CURRENT_PROJECT_VERSION=${{ github.run_number }}
+  CODE_SIGNING_ALLOWED=NO
+  SPARKLE_ED_PUBLIC_KEY=+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=`.
+  The run number becomes the build number shown in About as "Build CI #<run>"
+  (hidden when it is "1"). The EdDSA public key is passed here (it is a
+  public key, so it is safe to hardcode in the workflow, same as the "Run
+  tests" step) — without it the built app has an empty `SUPublicEDKey` and
+  Sparkle's updater fails to start (see §4, 2026-11-10).
+- **Sign app with self-signed certificate** (added 2026-11-09, commit
+  `414e364`; PEM format since 2026-11-11, commit `48069b7`): decodes the
+  secrets `MACOS_CODESIGN_CERT_PEM` + `MACOS_CODESIGN_KEY_PEM` (base64 of
+  the PEM certificate and private key) to temp files → checks both
+  against their known SHA-256 hashes → creates a temporary keychain →
+  imports the certificate, then the key → signs the app with identity
+  `TransPeek Self-Signed 100Years` (`codesign --force --deep --sign`) →
+  verifies (`codesign --verify --verbose`) → deletes the temp files.
+  Runs after Build app, before Zip app. **Verified working: run #99
+  (2026-11-11).** Full A–Z guide (why, the five signing attempts, the
+  winner): `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.
+- **Zip app:** `ditto -c -k --keepParent` (keeps the `.app` bundle;
+  `upload-artifact` with a directory path would lose the directory
+  itself).
+- **Upload app:** artifact `TransPeek-macOS`, 7-day retention.
+- **Delete older app artifacts:** keeps only the newest `TransPeek-macOS`
+  artifact (older links die). `continue-on-error: true`.
+- **Publish pre-release:** tag `v0.1.3.<run number>`, prerelease, uploads
+  the same zip as a release asset so the app has a direct download link
+  (Releases page) instead of only the Actions artifact; deletes all older
+  `v0.1.3.<number>` pre-releases, keeping only the newest. The regex only
+  matches the 4-part preview tags, never the stable `v0.1.3`. Same pattern
+  as the Windows repo. Added 2026-11-16 (commit `04e5727`). The "0.1.3"
+  in the tag is the current `MARKETING_VERSION` — update it in `test.yml`
+  when the app version bumps. The artifact is still kept because
+  `release.yml` (direction B) promotes the tested artifact.
+- **Upload test results:** always runs, artifact `macOS-test-results`,
+  14-day retention.
+
+### CI signing — the secret and the certificate
+
+- Secrets (repo Settings → Secrets and variables → Actions → Secrets):
+  `MACOS_CODESIGN_CERT_PEM` (base64 of the PEM certificate, 1640 chars)
+  and `MACOS_CODESIGN_KEY_PEM` (base64 of the PEM private key, 2272
+  chars). The secrets and the `test.yml` on `main` are a set — always
+  update them together. No longer used: `MACOS_CODESIGN_CERT_P12` and
+  `MACOS_CODESIGN_CERT_PASSWORD` (every `.p12` format failed — see
+  `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7).
+- Certificate: self-signed **"TransPeek Self-Signed 100Years"**, SHA256
+  fingerprint
+  `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
+  valid 10 Nov 2026 → 17 Oct 2126 (100 years, `-days 36500`).
+  Extensions: `keyUsage=critical,digitalSignature,keyCertSign`,
+  `extendedKeyUsage=codeSigning`. This REPLACES the "TransPeek Local
+  100Years" certificate (fingerprint `A8:02:6E:B5…`, valid 10/11/2026 →
+  17/10/2126 — renamed to "Self-Signed" on 2026-11-10 23:22 because
+  "Local" was ambiguous), which replaced the "TransPeek Local 100Y"
+  certificate (fingerprint `8C:02:CD:18…`, valid 9/11/2026 →
+  16/10/2126), which replaced the old 10-year "TransPeek Local"
+  certificate (fingerprint `B1AB87...`, valid to 2036). A new
+  certificate is a NEW identity, so an app signed with it needs
+  Accessibility + Screen Recording granted once.
+- Source files (do not commit to the repo), kept in the local workspace
+  `~/workspace/projects/moepeek-translator/signing/`:
+  `transpeek-signing-selfsigned-100years.crt` + `.key`, and their base64
+  forms `transpeek-signing-selfsigned-100years-cert-b64.txt` (1640
+  chars) + `-key-b64.txt` (2272 chars). The `.p12` variants from the
+  failed directions (direction 1 nocrypt, direction 2 legacy-pass2,
+  direction 3 modern-pass2, direction 3b modern-nopass) are kept in the
+  same directory for reference only — do not use them for CI. The old
+  direction-2/3 password lives only in
+  `signing/transpeek-signing-100years-password.txt` (mode 600) and in
+  the GitHub secret — never in chat, memory, docs, or the repo. Keep a
+  backup of the `.crt` + `.key` somewhere safe. If they are lost, a new
+  certificate can be created and the secrets updated — macOS does not
+  limit self-signed certificates and GitHub does not limit secrets; the
+  cost is only re-creating the certificate and re-granting permissions
+  once per machine.
+- **Status (as of 2026-11-11 13:04 +07): CI signing WORKS — direction
+  4b (PEM certificate + key, no `.p12`) verified by run #99 (commit
+  `48069b7`): all steps green, artifact `TransPeek-macOS` produced.**
+  Directions 1, 2, 3 and 3b all failed at the `security import` step
+  (see the table in `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.1).
+  Runs #89, #90, #91 and the early attempts of #92/#93 never got a
+  macOS runner (0 steps run, capacity) — those say nothing about any
+  direction.
+
+### Why signing matters (TCC / cdhash)
+
+- macOS's permission system (TCC — Transparency, Consent, and Control)
+  ties Accessibility + Screen Recording grants to the app's **cdhash**
+  (code directory hash — the hash of the app's code). An unsigned build
+  gets a new cdhash on every rebuild, so permissions granted for one
+  build do not carry over — the toggles in System Settings can look ON
+  while the app still has no access.
+- Signing with a stable certificate gives the app a stable identity, so
+  permissions granted once survive rebuilds. A self-signed certificate
+  is enough for this; a real Developer ID ($99/year, Apple Developer) is
+  only needed to skip Gatekeeper's first-run block and to prove the app
+  is really from the developer.
+- Signing does NOT grant permissions by itself — permissions live in each
+  machine's TCC database and must still be granted once per machine.
+  Gatekeeper still blocks a self-signed app on first launch (right-click
+  → Open).
+- Full guide: `docs/APP-SIGN-KEY-PERMISSIONS.md`.
+
+### Artifact ≠ Release
+
+- The `TransPeek-macOS-<run>` artifact is a CI build artefact (expires
+  in 7 days, only the newest is kept, no user notification). The name
+  carries the Tests run number since 2026-11-13 (commit `f617b7a`) so
+  each download is distinct — before that every artifact was named the
+  plain `TransPeek-macOS` and downloads collided. A real Release
+  (tag + Sparkle appcast) is what makes "Check for Updates" notify
+  users. Do not confuse the two.
+- How to publish a release, step by step (download artifact, write +
+  sign the appcast, publish on GitHub, verify): `docs/RELEASE-PROCESS.md`.
+  v0.1.0 was published this way on 2026-11-11 (see §4). The current
+  manual method is `docs/MANUAL-RELEASE.md` (Sparkle `generate_appcast`,
+  same tool as the workflow); the openssl hand-signing in
+  `RELEASE-PROCESS.md` §3 is the older method, kept for reference.
+- **Release workflow (`release.yml`) — green since 2026-11-12, direction
+  B since 2026-11-13.** Triggered by pushing a tag `v*` or by manual
+  dispatch. Direction B (build once, promote the tested artifact):
+  run tests → find the green `test.yml` run for the commit → download
+  THAT already-built, already-signed app artifact (it does NOT archive
+  or sign the app again) → verify it → ZIP + DMG + PopClip/OpenClip
+  extensions → generate the appcast (Sparkle EdDSA private key from
+  the secret `SPARKLE_ED_PRIVATE_KEY`, base64 of the 32-byte seed) →
+  create a draft GitHub Release with all 5 files (a dispatch always
+  creates a draft; a tag push publishes directly). The old archive
+  flow (archive unsigned + sign by hand, green at Release #7 attempt 4,
+  commit `47d86ab`, 2026-11-12) is superseded — it stamped the Release
+  workflow's own run number as the build number, so Sparkle would have
+  seen a new release as OLDER than the installed build, and it shipped
+  a second, untested binary. Direction B was proven green by Release
+  #17 (commit `bf168c9`, 2026-11-13, all 22 steps). Full history — the
+  P12 failure, the `find-identity` dead end, the unsigned archive, the
+  capacity failures, the direction B rewrite and its two fixes — is in
+  §4. For a real release, push the tag first so the tag exists; a
+  dispatch-only draft gets filed under an auto-generated
+  `untagged-...` tag.
+
+## 4. Intervention log (what was changed, when, why)
+
+Chronological, so a future investigator can see the cause and the fix for
+each recurring problem.
+
+- **2026-11-09 — `[build-app]` gating + docs `paths-ignore` (commits
+  `d55fb13`, `504f14e`).** Problem: every push built the app (wasting
+  runners) and docs-only pushes ran CI. Fix: build/zip/upload/delete
+  steps gated on `[build-app]` in the commit message; `paths-ignore` for
+  `docs/**` + `**.md` on push and PR. Verified by run #75 (SUCCESS).
+  Rule going forward: only add `[build-app]` when Manh explicitly says
+  so.
+- **2026-11-09 — Sparkle 504 on dependency resolve.** The Sparkle
+  binary zip download failed intermittently with HTTP 504. Fix: retry
+  the resolve step 3 times (30 s apart) + narrow the SPM cache to
+  artifacts only. A red "Resolve dependencies" step is usually this
+  flake — re-run before touching code.
+- **2026-11-09 — CI signing step added (commit `414e364`).** Added the
+  "Sign app with self-signed certificate" step (secret
+  `MACOS_CODESIGN_CERT_P12`, identity "TransPeek Self-Signed 100Years" —
+  named "100Y" at the time, renamed 2026-11-10). See §3.
+  Still untested as of 2026-11-10 (see above).
+- **2026-11-09 — Run #81 queued 26 min, then failed.** Cause of the
+  queue: GitHub macOS arm64 runner capacity (not a usage limit, not a
+  code problem). Cause of the failure: the flaky test below. Run #80 was
+  Cancelled because #81 superseded it under the concurrency group — that
+  is expected behaviour, not a problem.
+- **2026-11-09/10 — Flaky test `PopupPanelLayoutTests.longTextLayoutSettles`
+  (fixed in commit `afa4d5b`, verified by run #82 SUCCESS, 3m45s).** The
+  test (12 cases: height {200,350,500} × fontSize {12,13,16,20}) was red
+  in runs #61, #66, #70, #74, #77, #81 and green in #62, #65, #67, #68,
+  #71, #78, #79. Root cause: the test capped the total resize count at
+  30 and hid the panel (`orderOut`) when exceeded. On a loaded CI runner
+  the panel legitimately resizes more than 30 times, so ONE slow layout
+  produced TWO failures (panel hidden → `isVisible` false, AND count >
+  30) — that is the "2 issue(s)" seen in run #81. Earlier fixes did not
+  address this: polling for 400 ms stability within 5 s still flaked
+  (#74), and removing the `settled` assertion did not help (#77) because
+  the failures were the count + visibility, not the assertion. Fix
+  (`afa4d5b`): removed the count cap and the panel-hide side effect
+  entirely; the test now asserts the layout SETTLES (two consecutive
+  200 ms polls with no new resize, up to 10 s) via `stablePolls >= 2`.
+  An unbounded resize loop never settles, so it is still caught (bounded
+  at 10 s, no hang). How many resizes it takes to settle is
+  load-dependent and is no longer asserted. If this test goes red again,
+  do NOT just re-run — read the `.xcresult` (see §2 diagnostics) and
+  check whether it is the settling assertion, the visibility, or the
+  reentrancy check.
+- **2026-11-10 — Diagnostics lesson.** `print` (stdout) and
+  `FileHandle.standardError` (stderr) inside a Swift Testing test both
+  end up in the `.xcresult`, NOT the console log; xcbeautify strips
+  `#expect` messages and parameterized test result lines from the log.
+  So a red run's "why" is only in the `macOS-test-results` artifact.
+  (The stderr diagnostic added in `afa4d5b` is still useful — it is
+  recorded in the `.xcresult` — but it does not appear in the log as
+  originally expected.)
+- **2026-11-10 — Updater "Unable to Check For Updates / updater failed to
+  start" on every launch (fixed in commit `0048aa9`, untested).** Root
+  cause: the built app had no Sparkle EdDSA public key. `Project.swift`
+  sets `SUPublicEDKey` to `$(SPARKLE_ED_PUBLIC_KEY)`; the "Run tests" step
+  passed the key, but the "Build app" step did not, and
+  `Signing.xcconfig.example` leaves the key commented out — so the app
+  artifact was built with an empty key (and unsigned), and Sparkle could
+  not start the updater. Fix (`0048aa9`): pass
+  `SPARKLE_ED_PUBLIC_KEY=11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=` in
+  the "Build app" step (same value as the test step; a public key, so it
+  is fine to hardcode in the workflow). Still untested — needs one
+  `[build-app]` run (app with the key + CI-signed) to confirm the updater
+  starts. Note: the feed URL
+  (`.../releases/latest/download/appcast.xml`) has no release behind it
+  yet, so a successful start is the check here, not a found update.
+- **2026-11-10 — Flaky test `PopupPanelLayoutTests.dismissAndReopenDiscardsPendingResize`
+  (fixed in commit `56fef05`, verified by run #88's green Run tests step).**
+  Run #86 failed with exactly one red test: after dismiss/reopen, the
+  coordinator had not finished when the test asserted `allFinished`.
+  Same flaky family as `longTextLayoutSettles`: a fixed 200 ms sleep
+  after reopen is too short on a slow CI runner. Fix (`56fef05`):
+  replace the fixed sleep with a poll (up to 2 s, 200 × 10 ms) waiting
+  for `allFinished`; a real hang never finishes, so it still fails.
+- **2026-11-10 — Certificate renamed 100Y → 100Years (commit `4d92dc2`,
+  `[build-app]`).** "100Y" was unclear as an abbreviation; the new
+  certificate is "TransPeek Local 100Years", fingerprint SHA256
+  `A8:02:6E:B5:A1:09:B2:EC:EE:0F:04:11:01:4F:9F:A8:F6:DD:BF:D9:94:3D:79:F1:F4:F1:61:16:F8:63:10:CC`,
+  valid 10/11/2026 → 17/10/2126. `test.yml` also gained comments
+  explaining each step. Run #88 (this commit) failed at the Sign step —
+  see next entry.
+- **2026-11-10 — Run #88: legacy-without-password is NOT enough.**
+  Run #88 (commit `4d92dc2`): Run tests green, Build app green, Sign
+  step red after 0 s with the identical error as #85: `security
+  import ... -P ""` → "MAC verification failed during PKCS12 import
+  (wrong password?)". The `.p12` was verified good locally (openssl
+  reads it, base64 round-trips, key matches certificate), so the file
+  and the secret are not corrupt. Conclusion: on recent macOS a `.p12`
+  with an empty password cannot be imported at all — changing only the
+  format to legacy does not fix it. Two directions prepared from the
+  same 100Years certificate (see `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`
+  §7): direction 1, unencrypted `.p12` (`-legacy -keypbe NONE -certpbe
+  NONE`, import `-P ""`); direction 2, legacy `.p12` with a non-empty
+  password (`-legacy -macalg sha1`, secret
+  `MACOS_CODESIGN_CERT_PASSWORD`).
+- **2026-11-10 — Runs #89/#90/#91: capacity kills the run before it
+  starts (0 steps).** Direction 1 pushed (commit `05cf520`, run #89)
+  → job Queued 15 min, cancelled, 0 steps, twice (attempt 1 and re-run
+  attempt 2). Direction 2 pushed too quickly (commit `95d2ccd`, run
+  #90) → Manh corrected: a capacity failure is not a signing failure,
+  direction 1 must be tested first. A revert task briefly left the
+  secret and workflow mismatched (secret direction 1, workflow
+  direction 2, 21:55) — fixed within minutes (21:58, secret restored
+  to direction 2). Run #90 → 0 steps. Direction 1 restored (commit
+  `8132d99`, run #91) → 0 steps again (22:22). **Rule learned: only
+  switch direction when a direction has actually run and failed at the
+  Sign step; a 0-step capacity failure only ever means re-run and wait.**
+  Cause of the capacity crunch: 22:00 +07 VN is 10:00 US East Coast
+  business hours — GitHub's macOS arm64 pool is shared and busy. This
+  repo is public, so Actions is free and unlimited; there is no "free
+  plan gets deprioritised" queue — the limit is the shared macOS pool
+  (5 concurrent macOS jobs on Free/Pro/Team), and this repo runs one
+  job, so the cap is not the cause. Re-run of #91 scheduled ~23:40 +07
+  (cron `transpeek-rerun-91-late-night`); if capacity fails again,
+  follow-up 2026-11-11 08:00 +07 (US evening, quieter).
+- **2026-11-10 — A–Z signing guide written
+  (`docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`).** Synthesises the whole
+  signing story from this chat: why signing, certificate anatomy, the
+  openssl method (verified), the Keychain GUI method including the
+  100-year path (UNVERIFIED screen-by-screen), local signing, CI
+  signing, the two `.p12` directions and their status. CI signing is
+  still unverified — after one direction works, update the guide §7 and
+  §3–§4 here with the verified winner.
+- **2026-11-10 23:22 — Certificate renamed to "TransPeek Self-Signed
+  100Years".** No Apple standard governs self-signed names (free
+  choice; only Developer ID names are Apple-imposed) — "Self-Signed"
+  was chosen because it says exactly what the certificate is, following
+  the "Tinycast Self-Signed" pattern. New certificate created with
+  openssl (fingerprint SHA256
+  `28:7A:3E:21:62:A8:44:1E:47:94:1F:27:0D:0A:B6:F4:A1:29:E7:3F:BD:77:CA:BC:5C:D6:DF:93:D6:47:E6:40`,
+  valid 10/11/2026 → 17/10/2126); both `.p12` directions regenerated
+  from it (direction 1 unencrypted 2362 bytes / base64 3152 chars,
+  direction 2 legacy + same password 2469 bytes / base64 3292 chars).
+  The old "TransPeek Local 100Years" certificate never signed a
+  successful CI build, so the rename costs no machine a re-grant of
+  permissions. Secret + `test.yml` updated together (direction 1) with
+  a `[build-app]` commit; the 23:40 re-run plan moves from run #91 to
+  the new run.
+
+- **2026-11-11 — Direction 1 LOSES (run #92 attempt 4, commit
+  `2f3e64f`).** Attempts 1–3 died of capacity (0 steps). Attempt 4
+  (finished 01:48): Run tests green, Build app green, Sign red in ~1 s
+  — `security import ... -P ""` → "MAC verification failed during
+  PKCS12 import". Unencrypted legacy `.p12` is dead. (Capacity note:
+  Manh re-ran attempt 2 himself at 23:46 on 2026-11-10.)
+- **2026-11-11 — Direction 2 LOSES (run #93 attempt 3, commit
+  `5530bb9`).** Attempts 1–2 died of capacity (0 steps). Attempt 3
+  (finished 04:44): tests + build green, Sign red — `security import`
+  → "Unknown format in import" (the RC2-40 certificate bag). Legacy
+  `.p12` with password is dead. This was the only direction that got
+  past the MAC check.
+- **2026-11-11 — English UI + i18n (commits `9076c25`, `41e5124`,
+  `fedbf93`; runs #94, #96, #97 — all SUCCESS).** Interface switched
+  to English (Manh's decision: English first for mac + Windows,
+  Vietnamese/Chinese/Korean only when the app is finished). The
+  `Localizable.xcstrings` catalog went 319 → 331 → 416 keys, all
+  extracted by script (verify with Xcode Export Localizations when a
+  Mac with Xcode is available). See `docs/LOCALIZATION.md`.
+- **2026-11-11 — Direction 3 LOSES (run #95, commit `596b5a4`,
+  attempts 1 + 2).** Modern `.p12` (OpenSSL 3 default, PBES2/AES-256 +
+  SHA-256 MAC) + password: both attempts failed at import with "MAC
+  verification failed". Suspected cause: the password value in secret
+  `MACOS_CODESIGN_CERT_PASSWORD` did not match the `.p12`. The local
+  password file (17 chars) and the file itself were verified good, and
+  the secret was re-created from the verified file at 06:06 (cron
+  `transpeek-check-93-6am`) — attempt 2 still failed identically, so
+  the file was exonerated. A background check the same morning wrongly
+  claimed the legacy file "does not open with the saved password" and
+  that a second 21-char password file existed — both false (the check
+  had omitted the `-provider legacy` flag; no second file exists).
+  Re-verified the same morning. Lesson: re-verify a surprising claim
+  against the actual files before acting on it.
+- **2026-11-11 — GitHub sudo-mode codes: authenticator app first.**
+  Updating a secret triggered sudo-mode; the browser task clicked
+  "send code by email", which made the input accept only 8-digit
+  codes — two 6-digit authenticator codes were rejected as wrong
+  format before the 8-digit email code worked. Rule (Manh, 02:22):
+  default to the authenticator app (6 digits); use the email code (8
+  digits) only when needed. Gmail is not connected to Muse, so email
+  codes must come from Manh.
+- **2026-11-11 — Direction 3b LOSES (run #98, commit `3726ade`).**
+  Modern `.p12` with an EMPTY password, import `-P ""`: failed at
+  import in 1 s with the same "MAC verification failed". This proved
+  the password was NOT the cause. Web check afterwards confirmed
+  macOS `security` only understands legacy PKCS12 (3DES/SHA-1) and
+  rejects OpenSSL 3's modern format — and direction 2 had already
+  shown RC2-40 is dead on macOS 26. So the remaining space was:
+  legacy-3DES-only (direction 4a) or skip `.p12` entirely (4b).
+- **2026-11-11 — Direction 4b WINS (run #99, commit `48069b7`).**
+  Certificate + private key as separate PEM secrets
+  (`MACOS_CODESIGN_CERT_PEM`, 1640 chars; `MACOS_CODESIGN_KEY_PEM`,
+  2272 chars), SHA-256 checks of both decoded files at the start of
+  the Sign step, `security import` of each file, then `codesign` —
+  **all steps green, first successful CI signing, artifact
+  `TransPeek-macOS` produced.** Manh approved trying both 4a and 4b
+  (13:00); 4b ran first and won, so 4a (legacy `-descert`, both bags
+  3DES, no RC2) was never run and is not needed. Full history and
+  lessons: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md` §7.
+- **2026-11-11 — Panel UI tweaks (commits `ce4befb`, `9e03b25`,
+  `165bc0e9`; build requested by Manh 15:33).** From a screenshot of
+  the signed 0.21.0 (CI #99) panel: source speak + Copy moved to the
+  right, mirroring the result card (bordered mini buttons, speaker icon
+  the same colour as the target side), shortcut hints on the left;
+  GitHub cat icon + "GitHub" link centred as one group in the bottom
+  bar (version stays right), link opens the mac repo. The US accent
+  label was first removed (`9e03b25`) because it only shows for
+  English and differs between input/output — then kept after all
+  (`165bc0e9`), merged inside the speaker button, as decoration; per-
+  language labels (US, VI, KO…) were judged not worth it because the
+  language is already shown in the language bar and non-English has
+  no accent choice. Speaker and Copy buttons share a 56pt minimum
+  width so they sit evenly at the default font size. Decisions also
+  recorded in `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 2 (feedback from build
+  0.21.0 (103); push 18:32, `[build-app]`).** New slogan "Translate
+  anywhere, Peek instantly!" (capital P + !) in the panel top bar,
+  About, and the catalog key (still 416 keys); README EN/ZH updated
+  in the same push (icon image link fixed to
+  `Resources/AppIcon.icon/Assets/TransPeek.png` — the old
+  `MoePeek.png` link was dead after commit `0b28b5f` deleted that
+  file). Shortcut hint aligned left. The 56pt minWidth on the four
+  speaker/Copy buttons was dropped — it only added padding and pushed
+  the two buttons apart — and the speaker icon itself was enlarged
+  (+2pt, 14pt at the default size). The GitHub link in the bottom bar
+  was not clickable: the panel treats any click without an
+  `InteractiveMarker` as a window drag, and the GitHub group had none
+  (the Copy button worked because it has one) — marker added; not
+  verified live. About: link relabelled "Github/TranManhTuanLabs",
+  copyright merged to one line "Copyright © 2025-2026 TransPeek
+  Licensed under AGPL-3.0" (the "Fork of MoePeek by cosZone" line is
+  gone from About; README still states the fork), Email link added
+  (`mailto:tuanmanhtran.vn@gmail.com`). Local clone was reset to
+  `cda67be` (newest main) before the push so no stale code went in.
+  Decisions also recorded in `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 3 (push 2026-11-11,
+  `[build-app]`).** About GitHub link relabelled
+  "Github.com/TranManhTuanLabs" and now points at the org page
+  (https://github.com/TranManhTuanLabs) instead of the repo. The
+  output row (ProviderResultCard) used the default 8pt HStack
+  spacing, so its speaker + Copy buttons sat further apart than the
+  input row's 4pt — changed to `HStack(spacing: 4)` to match. The
+  version text was removed from the panel bottom bar entirely
+  (version still shown in About); the unused
+  `appVersion`/`buildNumber`/`versionText` helpers in PopupView were
+  removed with it. Decisions also recorded in
+  `docs/SPEC-v0.1.md` §8.
+- **2026-11-11 — Panel UI tweaks, round 3b (push 2026-11-11,
+  `[build-app]`).** The version text was restored to the panel
+  bottom bar, dimmed instead of removed: `.foregroundStyle
+  (.quaternary)` like the shortcut hint in the input row, so it
+  reads as metadata while still identifying the running build when
+  reporting a bug from the panel. The round-3 removal is reverted
+  in `PopupView.swift` only; the About org link and the 4pt output
+  spacing from round 3 are unchanged.
+- **2026-11-11 — Version scheme unified: TransPeek's own line
+  starts at 0.1.0 (push 2026-11-11, `[build-app]`).** The app had
+  carried upstream MoePeek's `MARKETING_VERSION` 0.21.0; the first
+  public release now starts TransPeek's own SemVer line at 0.1.0
+  (`Project.swift`; tag `v0.1.0`). 1.0.0 was considered and rejected
+  for the first release — it means stable and feature-complete, and
+  M4/M5 (Keychain, retry, real Sparkle feed, notarize) are still
+  open. Going forward: patch for bug fixes (0.1.1), minor for new
+  features (0.2.0), major for the stable milestone (1.0.0). The
+  build number is unchanged (CI run number as `CFBundleVersion`).
+  Two comments citing 0.21.0 as an example were updated with it.
+- **2026-11-11 — Sparkle EdDSA key rotated for the first release
+  (commit `d84f0ff`, `[build-app]`).** The private key of the
+  original EdDSA keypair (public key
+  `11qYAYKxCrfVS/7TyWQHOg7hcvPapiMlrwIaaPcHURo=`, added in
+  `0048aa9`) could not be found anywhere in the workspace — only
+  the public key was ever recorded. A fresh keypair was generated
+  with OpenSSL Ed25519 and sign/verify-tested; the new public key
+  `+aGGc4fF2j3XJ3maoDbbwh/MmxP7BqDBdRs4A/r8f2M=` replaced the old
+  one in both `test.yml` steps. Safe because no release has ever
+  shipped with the old key: the first release (v0.1.0) carries the
+  new public key and its appcast is signed with the new private
+  key. Private key: `signing/transpeek-sparkle-eddsa.key` (mode
+  600, on the VM) — back it up like the code-signing key; if it is
+  lost, rotate again the same way before the next release. The
+  historical `0048aa9` entry above still quotes the old key — that
+  was the value at the time.
+- **2026-11-11 — Release v0.1.0 published manually; process documented
+  (new `docs/RELEASE-PROCESS.md`).** Run #126 (commit `d84f0ff`)
+  SUCCESS → artifact downloaded and verified (app 0.1.0 build 126,
+  new EdDSA public key, feed URL) → `appcast.xml` written and signed
+  with the new EdDSA private key (`openssl pkeyutl -sign -rawin`,
+  verified round-trip) → release published via the browser (tag
+  `v0.1.0` from `3a5acf1`, 2 assets: `TransPeek-0.1.0.zip` +
+  `appcast.xml`, not draft/prerelease) → feed URL and ZIP link verified
+  200 with matching bytes. The new doc records the exact commands so
+  the next release repeats them, and explains the two kinds of
+  "signing" (code signing is already done by CI; appcast signing is
+  the only signing in the release step). Pushing the tag also triggered
+  the `Release` workflow (`release.yml`), which FAILED at "Import
+  signing certificate" — it expects P12 secrets that do not exist;
+  the manual release was not affected. Fix in progress: switch
+  `release.yml` to the same PEM signing as `test.yml`.
+- **2026-11-11 — `test.yml`: `paths-ignore` extended to workflow files
+  (commit `425a77d`, `[skip ci]`).** Manh asked why every commit starts a
+  test run and how professionals do it: GitHub runs nothing by default —
+  the auto-run comes from `test.yml`'s own `on: push` trigger, and the
+  professional standard is automatic tests on every push/PR (main
+  protected, merge only when green) with path filters + tiered builds so
+  nothing pointless runs. Manh chose that direction, NOT manual-only
+  (manual risks forgetting to run). Fix: `.github/workflows/**` added to
+  `paths-ignore` (push + PR), so editing a workflow file no longer starts
+  a Tests run — the `release.yml` edits had spawned pointless runs #127
+  (SUCCESS) and #128 (queued, cancelled by Manh). The commit itself
+  carried `[skip ci]`, verified: no new Tests run appeared after it
+  (latest still #128 cancelled). Docs updated in the same round (§2 here
+  + `BUILD-TEST-WORKFLOW-GITHUB-CI.md`).
+- **2026-11-11 — `release.yml` switched to PEM signing (commit
+  `d4f61c9`) + secret `SPARKLE_ED_PRIVATE_KEY` created.** Cause: the
+  v0.1.0 tag triggered the `Release` workflow, which FAILED at "Import
+  signing certificate" — it read the P12 secrets
+  (`SIGNING_CERTIFICATE_P12` / `SIGNING_CERTIFICATE_PASSWORD`) that do
+  not exist on this repo. Fix (Manh chose "fix the workflow, do not
+  disable it"): the same direction 4b as `test.yml` — decode
+  `MACOS_CODESIGN_CERT_PEM` / `MACOS_CODESIGN_KEY_PEM`, check both
+  SHA-256 hashes, import into the temp keychain
+  `/tmp/ci-signing.keychain-db`; the "Write Signing.xcconfig" step reads
+  the identity from that keychain; `SPARKLE_ED_PUBLIC_KEY` is hardcoded
+  (same public literal as `test.yml`, no longer read from a secret);
+  the "Verify code signature" step only warns (no longer fails) when
+  `TeamIdentifier` is not set, which is expected for a self-signed
+  certificate. Secret check (browser, names only): the repo held only
+  the four `MACOS_*` secrets — `SPARKLE_ED_PRIVATE_KEY`,
+  `SPARKLE_ED_PUBLIC_KEY` and `DEVELOPMENT_TEAM` did not exist, so
+  `SPARKLE_ED_PRIVATE_KEY` was created (base64 of the 32-byte EdDSA
+  seed, the format `generate_appcast --ed-key-file` needs — it parses
+  base64 seed data, not a PEM file; the public key derived from the PEM
+  matches the new key). The manual v0.1.0 release was NOT affected by
+  the workflow failure. Full manual process:
+  `docs/RELEASE-PROCESS.md`.
+- **2026-11-11 — Release runs #2/#3 fail at "Write Signing.xcconfig"
+  ("found 0 identities") — the `-p codesigning` hypothesis is WRONG.**
+  Run #2 (commit `d4f61c9`) failed because `security find-identity -v
+  -p codesigning` returned 0 identities. Hypothesis: the policy flag
+  filters out self-signed certificates. Fix tried: drop the flag
+  (commit `e8a63d9`). Run #3 failed IDENTICALLY — and the Import step's
+  own `find-identity -v -p codesigning` line also printed "0 valid
+  identities found" even though the step reported "1 certificate
+  imported" + "1 key imported". Conclusion: `find-identity` cannot list
+  this self-signed certificate's identity at all, with or without the
+  flag, even though the certificate + key import fine and `codesign
+  --sign` by the same name works (`test.yml` has signed that way since
+  run #99). Lesson: never trust `find-identity` for a self-signed
+  certificate; use the identity BY NAME. (Same lesson class as §7.8 of
+  the signing guide: a failed hypothesis must be disproved by a run
+  before the next switch.)
+- **2026-11-11 — Release run #4: xcconfig step green, archive green,
+  app UNSIGNED ("code object is not signed at all").** Fix applied:
+  use the certificate name directly as `CODE_SIGN_IDENTITY` (commit
+  `c90e0d6`). Result: Import green, Write Signing.xcconfig GREEN (its
+  diagnostic found the certificate in the temp keychain, SHA-1
+  `6B4A55BEF4836CCA25AFCDF827FD514C0B261D39`), Run tests green (2m19s),
+  Archive green (3m28s) — but Verify red: the archived app was not
+  signed at all. Inference: `xcodebuild archive` does NOT sign through
+  this xcconfig — most likely `CODE_SIGN_IDENTITY` resolved empty at
+  archive time (an unsigned app with a passing archive is the signature
+  of an empty identity; a wrong name would have failed the build
+  loudly). Note: `test.yml` never proved xcodebuild can sign — it always
+  builds with `CODE_SIGNING_ALLOWED=NO` and signs by hand with
+  `codesign` afterwards. Evidence collected: the heredoc that writes the
+  xcconfig was simulated locally and produces the file byte-exact
+  (correct values, no hidden characters); the certificate is proven in
+  the keychain; upstream proves the xcconfig mechanism works with a
+  real certificate + hash. Still unknown: whether the file survived
+  unchanged until Archive, or whether Xcode treats a self-signed
+  certificate + empty team differently at archive time.
+- **2026-11-11/12 — Release fix #3 (commit `47d86ab`): archive unsigned
+  + sign by hand — GREEN on run #7 attempt 4.** Fix: Archive runs with
+  `CODE_SIGNING_ALLOWED=NO`, then a new step "Sign archived app" signs
+  the archived app by hand (`codesign --force --deep --sign "TransPeek
+  Self-Signed 100Years"`, exactly like `test.yml`), and the Write
+  Signing.xcconfig step now also prints the written file with `cat`
+  (log evidence). Runs #5 (22:05), #6 (22:26) and #7 (22:44) all failed
+  with 0 steps — GitHub macOS runner capacity (job queued ~15 min then
+  cancelled: "The job was not acquired by Runner of type hosted even
+  after multiple attempts" + "Internal server error" + macOS arm64
+  capacity notices), so fix #3 was untested. Manh re-ran run #7; a
+  runner picked it up at 00:16 on 2026-11-12 and **attempt 4 went
+  SUCCESS — all 24 steps green, the first green Release workflow**
+  (7m21s). The run created draft release `v0.0.0-dev` with all 5
+  assets (ZIP 7.85 MB, DMG 7.79 MB, `appcast.xml` 2.5 KB, PopClip 519 B,
+  OpenClip 649 B). Fix #3 is proven: archive unsigned + manual
+  `codesign` is the working pattern for this repo. Capacity notes: the
+  same GitHub-wide macOS arm64 capacity problem of early Nov 2026
+  (macos-15/26/latest all affected; switching labels does not reliably
+  help — one project failed 8 times on macos-15). Rule: a capacity
+  failure (0 steps) means re-run and wait, never change direction.
+  Caution: a browser report that run #7 was "cancelled" at 23:05 was
+  WRONG — it read a stale page; the run had been re-run and went green.
+  Always verify run status via the API or a fresh page load. The draft
+  is filed under auto-generated tag
+  `untagged-12395624d4c68df7eac6`, NOT `v0.0.0-dev`, because that tag
+  never existed as a git tag — for a real release, push the tag first
+  so the tag exists (tag trigger), then the workflow files the release
+  under the real tag. v0.1.0 remains the only published/latest release;
+  the draft does not affect the Sparkle feed. The morning retry cron
+  created for this fix was removed once #7 went green — it was no
+  longer needed.
+- **2026-11-12 — Working rule set by Manh for release failures.**
+  When a new log arrives, investigate the cause from the log FIRST; if
+  investigation finds nothing, try the next fix, one per run, no
+  jumping ahead. The three approaches in the order presented: (1) keep
+  fix #3 + add an `xcodebuild -showBuildSettings` diagnostic before
+  Archive; (2) replace `xcodebuild archive` with `xcodebuild build`
+  (the `test.yml` pattern); (3) pass `CODE_SIGN_IDENTITY` on the archive
+  command line. Fallback order: the automatic workflow first; manual
+  release (`docs/RELEASE-PROCESS.md`) only as a last resort after
+  investigation finds no other way. Terminology fixed this night:
+  "release via web" means manually uploading the app to a GitHub
+  Release through the browser — NOT a separate website; there is only
+  one release location (GitHub Releases).
+- **2026-11-12/13 — Direction B: build once, promote the tested
+  artifact (`release.yml` rewritten, Manh chose it).** Root cause of
+  the rewrite: the archive flow (fix #3, green at Release #7) had two
+  defects that only show at release time. (1) Build number: the
+  Archive step stamped `CURRENT_PROJECT_VERSION` with the Release
+  workflow's own run number (the `v0.0.0-dev` draft was build 7, while
+  the installed v0.1.0 is build 126), so Sparkle would read a new
+  release as OLDER and never offer it as an update. (2) The shipped
+  binary was a second, different binary from the one `test.yml` had
+  tested. Direction B fixes both: `test.yml` builds the app once (on a
+  `[build-app]` commit), signs it by hand with the self-signed
+  certificate and uploads it as artifact `TransPeek-macOS-<Tests run
+  number>`; `release.yml` runs tests, finds the green `test.yml` run
+  for the commit, downloads THAT artifact and ships it — it does NOT
+  archive or sign the app again. For a tag run it looks for the Tests
+  run matching the tag commit; for a manual dispatch, if there is no
+  matching Tests run for the dispatch commit, it falls back to the
+  latest green Tests run on `main`. A release therefore needs a green
+  `[build-app]` Tests run for the tagged commit; if there is none, the
+  workflow fails loudly instead of shipping an untested build. A
+  dispatch always creates a draft; a tag push publishes directly.
+- **2026-11-13 — Artifact renamed to `TransPeek-macOS-<run number>`
+  (commit `f617b7a`).** Cause: every downloaded CI app artifact was
+  named the plain `TransPeek-macOS`, so Manh's downloads collided and
+  he had to rename files by hand. Fix: `test.yml` names the ZIP and
+  the upload `TransPeek-macOS-<Tests run number>` (e.g.
+  `TransPeek-macOS-139`, 14,453,616 bytes, from Tests #139), and
+  `release.yml` finds/downloads by that exact name; both accept the old
+  plain name as a fallback. Manh considered a versioned name
+  (`TransPeek-macOS-0.1.1-CI139`) and chose the short form: compact,
+  clearly a CI test build, and a versioned CI name could be confused
+  with the release file (`TransPeek-0.1.1.zip`) in Downloads. Avoid
+  parentheses and `#` in artifact names (bad for URLs/downloads).
+  Changing the name does not affect build/test/signing internals
+  (those operate on `TransPeek.app`); it only requires the workflow
+  references to stay consistent.
+- **2026-11-13 — Release #15 (run `43290148937`, commit `99660c2`):
+  "Run tests" failed — signing placeholder.** Cause: `release.yml`
+  ran plain `xcodebuild test` without `CODE_SIGNING_ALLOWED=NO` and
+  without `SPARKLE_ED_PUBLIC_KEY`, while `test.yml` already passed
+  both flags. Without `CODE_SIGNING_ALLOWED=NO`, Xcode tried to sign
+  using the placeholder identity from `Signing.xcconfig` (`Apple
+  Development: YOUR_NAME (YOUR_TEAM_ID)` / `YOUR_TEAM_ID`), so the
+  build-for-testing phase failed before any test ran (no test actually
+  ran — the log showed the signing failure, not a test failure). Fix
+  (commit `cfe923f`): pass `CODE_SIGNING_ALLOWED=NO` and the Sparkle
+  key to the "Run tests" step, matching `test.yml`. Verified by
+  Release #16, whose "Run tests" passed.
+- **2026-11-13 — Release #16 (run `43294070520`, commit `cfe923f`):
+  "Find tested build" failed in ~1 second — `gh api --jq -r` syntax
+  error.** Cause: the Find step used `gh api ... --jq -r '...'`, but
+  `gh api` has NO `-r` flag (`-r` belongs to standalone `jq`); `--jq`
+  consumed `-r` as its value, leaving the jq expression as a second
+  positional argument, so `gh` reported "accepts 1 arg(s), received
+  2" on both calls (listing Tests runs and listing a run's artifacts).
+  The artifact-name filter was never reached and was not the cause —
+  Tests #139 and artifact `TransPeek-macOS-139` existed and should
+  have been found by the `branch=main` fallback. The bug was introduced
+  during the artifact-rename rewrite (`f617b7a`) but stayed hidden
+  because earlier Release runs died from capacity or earlier at "Run
+  tests". Fix (commit `bf168c9`): drop the erroneous `-r` flag after
+  `gh api --jq` in both calls. Verified by Release #17.
+- **2026-11-13 — Release #17 (run `43295817927`, commit `bf168c9`):
+  direction B PROVEN GREEN — all 22 steps success.** Dispatched
+  02:59, completed 03:37 (38 min, mostly waiting for a runner). Steps
+  include Run tests, Find tested build, Download tested app, Verify
+  downloaded app, Create ZIP, Package PopClip/OpenClip extensions,
+  Create DMG, Generate appcast, Create GitHub Release. It updated the
+  existing draft `v0.0.0-dev` (version input left at default
+  `0.0.0-dev`); all 5 assets verified present: `appcast.xml` 2.49 KB,
+  `TransPeek-v0.0.0-dev-macOS.zip` 13.9 MB,
+  `TransPeek-v0.0.0-dev-macOS.dmg` 13.8 MB,
+  `TransPeek.openclipext.zip` 649 B, `TransPeek.popclipext.zip` 519 B.
+  The draft remains unpublished; published v0.1.0 is untouched. Note:
+  the packaged app was the Tests #139 artifact (commit `8536628`),
+  because `bf168c9` is a workflow-only commit with no matching Tests
+  artifact, so the dispatch fallback used the latest green Tests run
+  on main — the font-size feature (commit `81493f5`, whose Tests #140
+  died from capacity) was NOT in that packaged app. That is expected
+  direction-B behaviour, not a bug: the Release workflow ships the
+  tested artifact, never the tree it runs on.
+- **2026-11-13 — Tests #140–#143 died from GitHub macOS runner
+  capacity (0 steps); Tests #144 `[build-app]` went GREEN.** Pattern,
+  verified repeatedly: the run queues ~15 minutes, the job is
+  cancelled, 0 steps ran. That is a capacity failure, NOT a code
+  failure — do not "fix" code for it; retry or re-run and wait. #140
+  (`81493f5`, top-bar font size) and #141 (`c567e63`, About fixes) and
+  #142 (`47ab922`, language favourites) and #143 (`82b794a`, Release
+  line) all died this way, so none of those changes was verified by CI
+  until #144. **Tests #144 (run `43312443666`, commit `f91c118`,
+  `[build-app]`) went SUCCESS — 18/18 steps green** (Run tests, Build
+  app, Sign app, Zip app, Upload app, Delete older artifacts, Upload
+  test results), artifact `TransPeek-macOS-144` 14,465,695 bytes. It
+  carries ALL of: the About fixes (Copy "Copied" + checkmark, Support
+  text scrolls with fixed buttons, updater above Support), the top-bar
+  AppName & Slogan font size, the language favourites (Move to Top /
+  Bottom, default order en → vi → zh, default target Vietnamese), and
+  the single "Release 0.1.1 (Build CI #144)" link line. This is the
+  build to test before publishing v0.1.1. The overnight retry cron
+  created for the Release workflow was deleted after it reported the
+  #16 real failure — from now on, retries are manual, not automatic.
+- **2026-11-13 — Duplicate trigger commits (lesson).** Two
+  identical-content commits exist on main: `8536628` (first
+  `[build-app]` trigger push; the connector result displayed
+  "aborted" but the commit had actually landed) and `99660c2`
+  (duplicate retry with the same change and message). Lesson: if a
+  push reports "aborted", check `origin/main` HEAD before pushing
+  again.
+- **2026-11-13 — Releases v0.1.1, v0.1.2, v0.1.3 published
+  (direction B).** v0.1.3 (build 164, 5 assets) is the current stable
+  release; v0.1.1 (build 158) and v0.1.2 (build 159) were published
+  the same day. Manh deleted the v0.1.1 and v0.1.2 releases himself
+  (whether assets-only or whole releases is unconfirmed). Rule
+  (Manh, 2026-11-13): never delete a published release to re-release
+  the same version — a published tag is immutable; only an
+  unpublished draft can be fixed by re-running the Release workflow,
+  and a post-publish bug means bumping to the next version.
+- **2026-11-16 — Pre-release step added to `test.yml` (commits
+  `04e5727`, `2fba8b9`, `6278ff6`; verified by run #188).** Step
+  "Publish pre-release (direct download, keep only the newest)"
+  (after "Delete older app artifacts", gated on `[build-app]`):
+  creates prerelease tag `v0.1.3.<run number>` with
+  `TransPeek-macOS-<run>.zip` attached, then deletes older
+  prereleases matching `^v0\.1\.3\.[0-9]+$` (4-part tags only — never
+  the stable `v0.1.3`). Two bugs on the way in, both fixed via
+  browser web-editor edits and verified by fetching the raw file:
+  (1) indentation corruption — the web editor silently mangled the
+  indentation and GitHub silently dropped the step while the run
+  stayed green; (2) a jq escape bug (`\.` inside a double-quoted jq
+  string, fixed by doubling backslashes). **Lesson: a green run does
+  NOT prove a new workflow step actually ran — check the run's
+  job-step list for the step by name.** The `"0.1.3"` literal in the
+  step is the current `MARKETING_VERSION` — it must be updated in
+  `test.yml` when the version bumps. See
+  `BUILD-TEST-WORKFLOW-GITHUB-CI.md` for the step order.
+- **2026-11-16/17 — CI #196 red: one test,
+  `PopupPanelLayoutTests.streamingResultsRespectManualResize`
+  (fixed in commit `67c470e`, `[build-app]`).** 112 tests passed, 1
+  failed. The panel grew to 467pt instead of staying at the manual
+  450pt frame. Cause: the test relied on `isUserResizing = true`
+  alone to block auto-fit while content streamed in, but
+  `resizeForResultContent()` clears a "stale" `isUserResizing` flag
+  when no mouse button is held — and a test sets the flag
+  programmatically with no mouse press, so it looked stale, the flag
+  was cleared, and auto-fit ran (fitted height for that long text is
+  chrome 207 + output cap 260 = 467, above the 450 manual frame).
+  In real use this does not happen: a real drag always holds the
+  mouse button, so the flag is never cleared mid-drag. Fix
+  (`67c470e`): the test sets `manualResizeGeneration` BEFORE
+  streaming, so the generation guard — the durable mechanism —
+  blocks auto-fit. Lesson: `isUserResizing` alone is not a reliable
+  guard in a test; set the generation too.
+- **2026-11-17 — CI #197: 3 attempts cancelled by GitHub
+  infrastructure (no runner acquired).** Attempts 1, 2 and 3 all
+  failed identically: the `test` job queued ~15 minutes, then was
+  cancelled with 0 steps — "The job was not acquired by Runner of
+  type hosted even after multiple attempts" + "Internal server
+  error" + macOS arm64 capacity notices. NOT a code or test failure:
+  no test step ever ran, so the test fix (commit `67c470e`) was never
+  actually executed. Attempt 2 was re-run by Muse (03:34 +07),
+  attempt 3 by Manh (03:50 +07); attempt 4 was re-run ~05:17 +07
+  (over 1.5 h after attempt 3). Same rule as runs #89/#90/#91 and
+  #140–#143: a 0-step capacity failure only ever means re-run and
+  wait — never change code or direction for it. No pre-release
+  `v0.1.3.197` exists (newest is still `v0.1.3.195`).
+- **2026-11-17 — Branch `m2-m3-tts-ocr` deleted (Manh's
+  decision).** PR #1 (draft, M2 Edge TTS / fallback chain /
+  autoswitch + M3 Tesseract) was closed without merging and the
+  branch deleted via the PR page's "Delete branch" button; the repo
+  now has only `main`. The branch was 221 commits behind main, so
+  merging was not worth it; Edge TTS is no longer wanted (research
+  16/11: no Edge Read Aloud) and Tesseract (M3) is postponed. The
+  code is not lost: the closed PR still shows the diff, so Edge TTS
+  / autoswitch / Tesseract can be pulled back as reference. M2 will
+  be re-implemented fresh on current main when the time comes.
+- **2026-11-17 — Repo rules (Manh, 05:13): mac first, Windows
+  follows; workflow changes must be documented.** The mac repo is
+  always the newest features; Windows follows after mac is stable
+  (replaces the 2026-11-08 direction of Windows first). And every
+  change to a test/build workflow or configuration must be recorded
+  in a `docs/` file in the repo, not just made in the workflow file
+  — this log (§4) is where those interventions go.
+
+## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
+
+- Branch `m2-m3-tts-ocr` (head `841ef9a1`) held the finished M2 (EdgeTTS,
+  TTSFallbackChain, TTSAutoswitch, DictionaryAudioService) and M3
+  (Tesseract OCR fallback) code, with Draft PR #1 unmerged.
+- M3 is POSTPONED by Manh's decision (2026-11-09): Vision is the Mac
+  OCR; Tesseract stays on the branch, not merged into main.
+- **Deleted 2026-11-17 (Manh's decision):** PR #1 closed without merging
+  and the branch deleted via the PR page's "Delete branch" button — the
+  repo now has only `main`. The branch was 221 commits behind main
+  (not 71 as noted below from 2026-11-09), so merging was not worth
+  it. The code is preserved in the closed PR's diff for reference;
+  M2 will be re-implemented fresh on current main when the time comes.
+  The rest of this section is kept as history.
+- The branch was behind main (71 commits as of 2026-11-09) and its
+  `SettingsView` body was the old `TabView`, while main now uses a custom
+  tab-button bar — merging would have needed the "sync main into branch first"
+  procedure (§1), keeping main's body + the branch's taller `tabHeight`
+  (OCR 620 / audio 680).
+
+## 6. Quick reference
+
+- Repo: https://github.com/TranManhTuanLabs/TransPeek
+- Actions: https://github.com/TranManhTuanLabs/TransPeek/actions
+- Workflow file: `.github/workflows/test.yml`
+- Test file: `Tests/PopupPanelLayoutTests.swift`
+- Secrets: `MACOS_CODESIGN_CERT_PEM` (base64 PEM certificate, 1640
+  chars) and `MACOS_CODESIGN_KEY_PEM` (base64 PEM private key, 2272
+  chars) — direction 4b, verified by run #99. No longer used:
+  `MACOS_CODESIGN_CERT_P12` + `MACOS_CODESIGN_CERT_PASSWORD` (every
+  `.p12` format failed). Identity: "TransPeek Self-Signed 100Years"
+  (fingerprint SHA256 `28:7A:3E:21…`, valid to 17/10/2126). Full
+  signing guide: `docs/SELF-SIGNED-CERTIFICATE-GUIDE.md`.
+  `SPARKLE_ED_PRIVATE_KEY` (base64 of the 32-byte EdDSA seed, created
+  2026-11-11) is used by `release.yml` to sign the appcast — the value
+  is never quoted in docs; the seed lives in
+  `signing/transpeek-sparkle-eddsa.key` (mode 600). Release workflow
+  file: `.github/workflows/release.yml` (green since run #7 attempt 4,
+  2026-11-12; direction B proven by Release #17, 2026-11-13; history
+  in §4).
+- Local signing backup:
+  `~/workspace/projects/moepeek-translator/signing/` — `.crt` + `.key`
+  for `transpeek-signing-selfsigned-100years` and their base64 forms
+  (`*-cert-b64.txt`, `*-key-b64.txt`). The `.p12` variants from the
+  failed directions are kept in the same directory for reference only.
+  The old direction-2/3 password is only in
+  `signing/transpeek-signing-100years-password.txt` (mode 600) and in
+  the GitHub secret — never in chat, memory, docs, or the repo.
+- Check CI: open the Actions page, newest run first; the failure is at
+  the END of the "Run tests" step log. If the log is huge, download the
+  log archive. For per-test detail, download the `macOS-test-results`
+  artifact.
+
+## Liên kết
+
+- [CI detail](BUILD-TEST-WORKFLOW-GITHUB-CI.md)
+- [Quy tắc làm việc](../AGENTS.MD)
+- [Bản đồ docs](../STRUCTURE_MAP.md)

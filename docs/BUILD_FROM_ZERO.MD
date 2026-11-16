@@ -1,7 +1,7 @@
 # Build From Zero — TransPeek (mac)
 
 > Hướng dẫn build app từ máy trắng (chưa cài gì), từ lúc clone tới lúc chạy được.
-> Chi tiết CI: `GIT-CI-BUILD-SETUP.md`, `BUILD-TEST-WORKFLOW-GITHUB-CI.md`.
+> Chi tiết CI: `TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md`, `TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md`.
 > Kiến trúc tổng: `ARCHITECTURE.MD`. Quy tắc làm việc: `AGENTS.MD`.
 
 ## 1. Cần gì (máy Mac)
@@ -93,8 +93,8 @@ xcodebuild test -workspace TransPeek.xcworkspace -scheme TransPeek \
 
 ## Liên kết
 
-- [Setup CI + intervention log](GIT-CI-BUILD-SETUP.md)
-- [CI detail](BUILD-TEST-WORKFLOW-GITHUB-CI.md)
+- [Setup CI + intervention log](TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md)
+- [CI detail](TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md)
 - [Kiến trúc](ARCHITECTURE.MD)
 - [Quy tắc làm việc](AGENTS.MD)
 - [Trạng thái dự án](PROJECT_STATE.MD)

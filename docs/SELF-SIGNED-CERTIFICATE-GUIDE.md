@@ -15,9 +15,9 @@ Related docs:
 - `docs/APP-SIGN-KEY-PERMISSIONS.md` — the shorter local-signing guide
   (create a certificate, sign the app, grant permissions, troubleshooting
   table). Start there if you only want to sign a downloaded build.
-- `docs/GIT-CI-BUILD-SETUP.md` — git / CI / build setup and the
+- `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` — git / CI / build setup and the
   intervention log (including the signing history).
-- `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md` — the CI workflow in detail.
+- `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md` — the CI workflow in detail.
 
 > **Status note (2026-11-10, 22:28 +07):** local signing with a
 > self-signed certificate is DONE and verified working (build #71, signed
@@ -730,7 +730,7 @@ re-introduce them — every `.p12` format failed (§7).
 ### 8.2 The workflow step (`.github/workflows/test.yml`)
 
 The step runs only when the commit message contains `[build-app]`
-(see `docs/GIT-CI-BUILD-SETUP.md` §3). In order, it:
+(see `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §3). In order, it:
 
 1. Decodes both secrets from base64 into `/tmp/TransPeek-signing.crt`
    and `/tmp/TransPeek-signing.key`.
@@ -834,7 +834,7 @@ why the old flow was abandoned — do not apply them to the current
   number (the `v0.0.0-dev` draft was build 7, while the installed
   v0.1.0 is build 126), so Sparkle would have seen a new release as
   OLDER and never offered it — and it shipped a second, untested
-  binary. Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
+  binary. Full history: `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4.
 
 ---
 
@@ -935,7 +935,7 @@ why the old flow was abandoned — do not apply them to the current
   workflow, `security import` of each file — **all steps green, first
   successful CI signing, artifact `TransPeek-macOS` produced.**
   Direction 4a was never run and is not needed. This guide and
-  `docs/GIT-CI-BUILD-SETUP.md` §3–§4 updated the same day with the
+  `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §3–§4 updated the same day with the
   full history and the lessons (§7.8).
 - **2026-11-11/12 — The Release workflow learns the same lesson the
   hard way.** The v0.1.0 tag triggered `release.yml`, which failed at
@@ -954,7 +954,7 @@ why the old flow was abandoned — do not apply them to the current
   Manh re-ran run #7 and **attempt 4 went SUCCESS (2026-11-12 00:23,
   all 24 steps green)** — first green Release workflow, draft
   `v0.0.0-dev` with all 5 assets. §8.5 records the three rules.
-  Full history: `docs/GIT-CI-BUILD-SETUP.md` §4.
+  Full history: `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4.
 - **2026-11-12/13 — Direction B replaces the archive flow
   (`release.yml` rewritten).** The archive flow (fix #3) had two
   defects: it stamped the Release workflow's own run number as the
@@ -972,7 +972,7 @@ why the old flow was abandoned — do not apply them to the current
   flag (fixed by commit `bf168c9`). **Release #17 went SUCCESS
   (2026-11-13 03:37, all 22 steps)** — direction B proven. §8.5
   records the current (no-signing) behaviour. Full history:
-  `docs/GIT-CI-BUILD-SETUP.md` §4.
+  `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4.
 
 ## Liên kết
 

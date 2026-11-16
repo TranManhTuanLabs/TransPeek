@@ -41,7 +41,7 @@
 
 - Spec: `docs/SPEC-v0.1.md`.
 - CI: `.github/workflows/test.yml` (test + pre-release), `.github/workflows/release.yml`.
-- Setup CI: `docs/GIT-CI-BUILD-SETUP.md`, `docs/BUILD-TEST-WORKFLOW-GITHUB-CI.md`.
+- Setup CI: `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md`, `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md`.
 - Panel UX (chưa viết): `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.MD`.
 
 ## 5. Người dùng

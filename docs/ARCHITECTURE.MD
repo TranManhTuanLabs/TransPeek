@@ -19,8 +19,9 @@ Tests/            # XCTest
 Resources/        # tài nguyên
 docs/
   SPEC-v0.1.md    # SPEC + tên đã chốt
-  GIT-CI-BUILD-SETUP.md
-  BUILD-TEST-WORKFLOW-GITHUB-CI.md
+  TEST-BUILD-WORKFLOW-GITHUB/
+    GIT-CI-BUILD-SETUP.md
+    BUILD-TEST-WORKFLOW-GITHUB-CI.md
   FEATURES/       # mô tả từng tính năng
   UI/UX_DESIGN/   # spec UX (panel CHƯA VIẾT — chưa chốt size)
   ARCHITECTURE.MD # doc này

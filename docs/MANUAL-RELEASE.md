@@ -21,7 +21,7 @@ only key you need is the **Sparkle EdDSA private key**, which signs the
   for your app. Store it somewhere safe (for example a password manager
   or an encrypted disk). If it is ever lost or leaked, generate a new
   keypair and rotate the public key in `test.yml` *before* the release
-  build (see `GIT-CI-BUILD-SETUP.md` §4). A release shipped with the old
+  build (see `TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` §4). A release shipped with the old
   key cannot be verified with a new one.
 - A green `[build-app]` Tests run on `main` carrying the version you want
   to release. The app's build number (`CFBundleVersion`) is the CI run
