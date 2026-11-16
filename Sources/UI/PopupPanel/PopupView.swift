@@ -183,6 +183,17 @@ struct PopupView: View {
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.top, 10)
             .padding(.bottom, 2)
+            // TopBarDragMarker: the whole top bar (app name / slogan /
+            // hint) is a drag handle. The app-name Text ("TransPeek",
+            // bold) is backed by NSTextField, which refuses
+            // mouseDownCanMoveWindow, so without this marker a drag
+            // starting on the app name — the spot the user grabs most —
+            // would not move the panel (Manh 2026-11-16; the slogan/hint
+            // drag fine, only the app name is affected).
+            // PopupPanel.shouldStartWindowDrag treats this region as
+            // always draggable. The top bar has no buttons, so nothing
+            // interactive is covered.
+            .background { TopBarDragMarker() }
 
             // Global error (no providers, permissions, etc.)
             if let message = coordinator.globalError {
@@ -882,4 +893,20 @@ final class InteractiveMarkerView: NSView {
 struct InteractiveMarker: NSViewRepresentable {
     func makeNSView(context: Context) -> InteractiveMarkerView { InteractiveMarkerView() }
     func updateNSView(_: InteractiveMarkerView, context: Context) {}
+}
+
+// MARK: - Top Bar Drag Marker
+
+/// NSView marker placed as `.background()` on the top bar (app name /
+/// slogan / hint). `PopupPanel.sendEvent` treats this region as always
+/// draggable, so the app-name Text — backed by NSTextField, which refuses
+/// `mouseDownCanMoveWindow` — never blocks window dragging. (Only the app
+/// name is affected; the slogan/hint drag fine.) The opposite of
+/// InteractiveMarker: this one *allows* dragging instead of preventing it.
+/// The top bar contains no buttons, so nothing interactive is covered.
+final class TopBarDragMarkerView: NSView {}
+
+struct TopBarDragMarker: NSViewRepresentable {
+    func makeNSView(context: Context) -> TopBarDragMarkerView { TopBarDragMarkerView() }
+    func updateNSView(_: TopBarDragMarkerView, context: Context) {}
 }

@@ -134,6 +134,18 @@ final class PopupPanel: NSPanel {
     private func shouldStartWindowDrag(for event: NSEvent) -> Bool {
         guard let contentView else { return true }
         let point = contentView.convert(event.locationInWindow, from: nil)
+
+        // The top bar (app name / slogan / hint) is always draggable: the
+        // app-name Text ("TransPeek", bold) is backed by NSTextField,
+        // which refuses mouseDownCanMoveWindow, so a plain walk-up would
+        // block dragging from the app name — the spot the user grabs most
+        // (Manh 2026-11-16; only the app name is affected, the slogan/hint
+        // drag fine). A TopBarDragMarkerView marks that region; it takes
+        // precedence over the checks below. The top bar has no buttons.
+        if hasTopBarDragMarker(in: contentView, containing: event.locationInWindow) {
+            return true
+        }
+
         guard let hitView = contentView.hitTest(point) else { return true }
 
         // Walk up the view hierarchy: any standard AppKit control that refuses
@@ -156,6 +168,17 @@ final class PopupPanel: NSPanel {
         }
         for subview in view.subviews {
             if hasInteractiveMarker(in: subview, containing: point) { return true }
+        }
+        return false
+    }
+
+    private func hasTopBarDragMarker(in view: NSView, containing point: NSPoint) -> Bool {
+        if let marker = view as? TopBarDragMarkerView {
+            let rect = marker.convert(marker.bounds, to: nil)
+            if rect.contains(point) { return true }
+        }
+        for subview in view.subviews {
+            if hasTopBarDragMarker(in: subview, containing: point) { return true }
         }
         return false
     }
