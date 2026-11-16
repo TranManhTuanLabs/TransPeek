@@ -175,6 +175,25 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
   Tests #170 went green with the range assertion — the flaky test stopped
   flipping. When you add, remove or resize a row in the popup panel,
   update the hardcoded heights in that test file in the same commit.
+- `PopupPanelLayoutTests.streamingResultsRespectManualResize` (CI #196,
+  2026-11-16/17): `isUserResizing = true` alone does NOT block auto-fit
+  in a test. `resizeForResultContent()` clears a "stale" `isUserResizing`
+  flag when no mouse button is held, and a test sets the flag
+  programmatically with no mouse press, so it looks stale and auto-fit
+  runs — the panel grew to 467 (chrome 207 + output cap 260) instead of
+  staying at the manual 450. A real drag always holds the button, so
+  this only bites tests. Fix (commit `67c470e`): the test sets
+  `manualResizeGeneration` BEFORE streaming, so the generation guard
+  (the durable mechanism) blocks auto-fit. When a test simulates a
+  manual resize, set the generation too, not just the flag.
+- A run whose job is cancelled after ~15 minutes with 0 steps and the
+  annotations "The job was not acquired by Runner of type hosted even
+  after multiple attempts" + "Internal server error" + macOS arm64
+  capacity notices is a GitHub infrastructure failure, NOT a code or
+  test failure — no test step ever ran (CI #197, 2026-11-17, three
+  attempts in a row). Re-run and wait; never change code or direction
+  for it. See `GIT-CI-BUILD-SETUP.md` §4 for the full history of this
+  pattern (runs #89/#90/#91, #140–#143, #197).
 
 ## Liên kết
 

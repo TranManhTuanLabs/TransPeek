@@ -845,17 +845,98 @@ each recurring problem.
   (duplicate retry with the same change and message). Lesson: if a
   push reports "aborted", check `origin/main` HEAD before pushing
   again.
+- **2026-11-13 — Releases v0.1.1, v0.1.2, v0.1.3 published
+  (direction B).** v0.1.3 (build 164, 5 assets) is the current stable
+  release; v0.1.1 (build 158) and v0.1.2 (build 159) were published
+  the same day. Manh deleted the v0.1.1 and v0.1.2 releases himself
+  (whether assets-only or whole releases is unconfirmed). Rule
+  (Manh, 2026-11-13): never delete a published release to re-release
+  the same version — a published tag is immutable; only an
+  unpublished draft can be fixed by re-running the Release workflow,
+  and a post-publish bug means bumping to the next version.
+- **2026-11-16 — Pre-release step added to `test.yml` (commits
+  `04e5727`, `2fba8b9`, `6278ff6`; verified by run #188).** Step
+  "Publish pre-release (direct download, keep only the newest)"
+  (after "Delete older app artifacts", gated on `[build-app]`):
+  creates prerelease tag `v0.1.3.<run number>` with
+  `TransPeek-macOS-<run>.zip` attached, then deletes older
+  prereleases matching `^v0\.1\.3\.[0-9]+$` (4-part tags only — never
+  the stable `v0.1.3`). Two bugs on the way in, both fixed via
+  browser web-editor edits and verified by fetching the raw file:
+  (1) indentation corruption — the web editor silently mangled the
+  indentation and GitHub silently dropped the step while the run
+  stayed green; (2) a jq escape bug (`\.` inside a double-quoted jq
+  string, fixed by doubling backslashes). **Lesson: a green run does
+  NOT prove a new workflow step actually ran — check the run's
+  job-step list for the step by name.** The `"0.1.3"` literal in the
+  step is the current `MARKETING_VERSION` — it must be updated in
+  `test.yml` when the version bumps. See
+  `BUILD-TEST-WORKFLOW-GITHUB-CI.md` for the step order.
+- **2026-11-16/17 — CI #196 red: one test,
+  `PopupPanelLayoutTests.streamingResultsRespectManualResize`
+  (fixed in commit `67c470e`, `[build-app]`).** 112 tests passed, 1
+  failed. The panel grew to 467pt instead of staying at the manual
+  450pt frame. Cause: the test relied on `isUserResizing = true`
+  alone to block auto-fit while content streamed in, but
+  `resizeForResultContent()` clears a "stale" `isUserResizing` flag
+  when no mouse button is held — and a test sets the flag
+  programmatically with no mouse press, so it looked stale, the flag
+  was cleared, and auto-fit ran (fitted height for that long text is
+  chrome 207 + output cap 260 = 467, above the 450 manual frame).
+  In real use this does not happen: a real drag always holds the
+  mouse button, so the flag is never cleared mid-drag. Fix
+  (`67c470e`): the test sets `manualResizeGeneration` BEFORE
+  streaming, so the generation guard — the durable mechanism —
+  blocks auto-fit. Lesson: `isUserResizing` alone is not a reliable
+  guard in a test; set the generation too.
+- **2026-11-17 — CI #197: 3 attempts cancelled by GitHub
+  infrastructure (no runner acquired).** Attempts 1, 2 and 3 all
+  failed identically: the `test` job queued ~15 minutes, then was
+  cancelled with 0 steps — "The job was not acquired by Runner of
+  type hosted even after multiple attempts" + "Internal server
+  error" + macOS arm64 capacity notices. NOT a code or test failure:
+  no test step ever ran, so the test fix (commit `67c470e`) was never
+  actually executed. Attempt 2 was re-run by Muse (03:34 +07),
+  attempt 3 by Manh (03:50 +07); attempt 4 was re-run ~05:17 +07
+  (over 1.5 h after attempt 3). Same rule as runs #89/#90/#91 and
+  #140–#143: a 0-step capacity failure only ever means re-run and
+  wait — never change code or direction for it. No pre-release
+  `v0.1.3.197` exists (newest is still `v0.1.3.195`).
+- **2026-11-17 — Branch `m2-m3-tts-ocr` deleted (Manh's
+  decision).** PR #1 (draft, M2 Edge TTS / fallback chain /
+  autoswitch + M3 Tesseract) was closed without merging and the
+  branch deleted via the PR page's "Delete branch" button; the repo
+  now has only `main`. The branch was 221 commits behind main, so
+  merging was not worth it; Edge TTS is no longer wanted (research
+  16/11: no Edge Read Aloud) and Tesseract (M3) is postponed. The
+  code is not lost: the closed PR still shows the diff, so Edge TTS
+  / autoswitch / Tesseract can be pulled back as reference. M2 will
+  be re-implemented fresh on current main when the time comes.
+- **2026-11-17 — Repo rules (Manh, 05:13): mac first, Windows
+  follows; workflow changes must be documented.** The mac repo is
+  always the newest features; Windows follows after mac is stable
+  (replaces the 2026-11-08 direction of Windows first). And every
+  change to a test/build workflow or configuration must be recorded
+  in a `docs/` file in the repo, not just made in the workflow file
+  — this log (§4) is where those interventions go.
 
-## 5. Branch note — `m2-m3-tts-ocr`
+## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
 
-- Branch `m2-m3-tts-ocr` (head `841ef9a1`) holds the finished M2 (EdgeTTS,
+- Branch `m2-m3-tts-ocr` (head `841ef9a1`) held the finished M2 (EdgeTTS,
   TTSFallbackChain, TTSAutoswitch, DictionaryAudioService) and M3
   (Tesseract OCR fallback) code, with Draft PR #1 unmerged.
 - M3 is POSTPONED by Manh's decision (2026-11-09): Vision is the Mac
   OCR; Tesseract stays on the branch, not merged into main.
-- The branch is behind main (71 commits as of 2026-11-09) and its
-  `SettingsView` body is the old `TabView`, while main now uses a custom
-  tab-button bar — merging needs the "sync main into branch first"
+- **Deleted 2026-11-17 (Manh's decision):** PR #1 closed without merging
+  and the branch deleted via the PR page's "Delete branch" button — the
+  repo now has only `main`. The branch was 221 commits behind main
+  (not 71 as noted below from 2026-11-09), so merging was not worth
+  it. The code is preserved in the closed PR's diff for reference;
+  M2 will be re-implemented fresh on current main when the time comes.
+  The rest of this section is kept as history.
+- The branch was behind main (71 commits as of 2026-11-09) and its
+  `SettingsView` body was the old `TabView`, while main now uses a custom
+  tab-button bar — merging would have needed the "sync main into branch first"
   procedure (§1), keeping main's body + the branch's taller `tabHeight`
   (OCR 620 / audio 680).
 
