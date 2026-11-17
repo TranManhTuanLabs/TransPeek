@@ -146,13 +146,15 @@ struct PopupPanelLayoutTests {
         // text — but the exact height is NOT stable: the panel starts at
         // the 450 minimum (LayoutTestPreferences height, = the new default
         // and minimum, Manh 2026-11-16) and the async resize lifts it to
-        // the fitted height (at most ~480: chrome + short content, capped
-        // by the output cap — 260pt text + 90pt card chrome). Reading the height right after the
-        // translation finishes can catch it before the resize runs, so it
-        // may still be 450. So assert the range 450–480: any value in it
-        // means the panel is at its short-content height, not grown for
-        // the dismissed long text.
-        #expect(panel.frame.height >= 450 && panel.frame.height <= 480)
+        // the fitted height (at most ~510: chrome + short content, capped
+        // by the output cap — 260pt text + 90pt card chrome — plus the
+        // 20pt dots row of the multi-tab frame, Manh 2026-11-17).
+        // Reading the height right after the translation finishes can
+        // catch it before the resize runs, so it may still be 450. So
+        // assert the range 450–510: any value in it means the panel is
+        // at its short-content height, not grown for the dismissed long
+        // text.
+        #expect(panel.frame.height >= 450 && panel.frame.height <= 510)
         controller.dismiss()
         try await Task.sleep(for: .milliseconds(50))
         #expect(!controller.isVisible)

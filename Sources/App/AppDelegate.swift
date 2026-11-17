@@ -379,19 +379,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return String(payload.prefix(maxLength)) + "…"
     }
 
-    /// Translate Selection: translate the currently selected text; show the
-    /// panel at the cursor when there is something to show.
-    func performTranslateSelection() {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            await self.cancelSmartTranslationAndWait()
-            let outcome = await self.coordinator.translateSelection()
-            if outcome.shouldPresent {
-                self.panelController.showAtCursor()
-            }
-        }
-    }
-
     /// Fast Read (RSVP, Manh 2026-11-17): open the reading window with the
     /// selected text, falling back to the clipboard. When `text` is given
     /// (the panel's "Fast Read" button passes the text being translated)
@@ -413,6 +400,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let sourceText,
                   !sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             self.rsvpWindowController.show(text: sourceText)
+        }
+    }
+
+    /// Translate Selection: translate the currently selected text; show the
+    /// panel at the cursor when there is something to show.
+    func performTranslateSelection() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            let outcome = await self.coordinator.translateSelection()
+            if outcome.shouldPresent {
+                self.panelController.showAtCursor()
+            }
         }
     }
 
@@ -455,7 +455,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// exactly the same code as the physical hotkey, so the Run button and
     /// the keyboard shortcut can never drift apart: each case below is the
     /// same perform* method the hotkey registration calls.
+    /// Capture actions hide the panel first (Manh 2026-11-17): the user is
+    /// looking at the panel when they click Run, so it would cover the
+    /// screen region to capture — exactly like the Capture OCR button's
+    /// performPanelOCR does (hide, capture, show again with the result).
+    /// Non-capture actions keep the panel visible to show the result.
     func performShortcut(_ name: KeyboardShortcuts.Name) {
+        switch name {
+        case .ocrScreenshot, .silentOCR, .silentOCRTranslated, .screenshotCopy, .scanBarcodes:
+            panelController.hidePanelTemporarily()
+        default:
+            break
+        }
         switch name {
         case .smartTranslation:
             performSmartTranslation()
@@ -471,12 +482,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             performTranslateSelection()
         case .clipboardTranslation:
             performClipboardTranslation()
-        case .fastRead:
-            performFastRead()
         case .screenshotCopy:
             performScreenshotCopy()
         case .scanBarcodes:
             performScanBarcodes()
+        case .fastRead:
+            performFastRead()
         default:
             break
         }
@@ -512,16 +523,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.performScanBarcodes()
         }
 
+        KeyboardShortcuts.onKeyUp(for: .fastRead) { [weak self] in
+            self?.performFastRead()
+        }
+
         KeyboardShortcuts.onKeyUp(for: .inputTranslation) { [weak self] in
             self?.performInputTranslation()
         }
 
         KeyboardShortcuts.onKeyUp(for: .clipboardTranslation) { [weak self] in
             self?.performClipboardTranslation()
-        }
-
-        KeyboardShortcuts.onKeyUp(for: .fastRead) { [weak self] in
-            self?.performFastRead()
         }
     }
 

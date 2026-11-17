@@ -165,7 +165,13 @@ final class PopupPanelController {
         }
     }
 
-    private func hidePanelTemporarily() {
+    /// Hide the panel temporarily for a screen capture (the Capture OCR
+    /// button's performPanelOCR, and the "?" Run buttons / performShortcut
+    /// for capture actions — Manh 2026-11-17). The panel would otherwise
+    /// cover the screen region to capture. Unlike dismiss(), this does NOT
+    /// clear the coordinator state, so the caller can show the panel again
+    /// with the result.
+    func hidePanelTemporarily() {
         resizeTask?.cancel()
         resizeTask = nil
         copyShortcutDismissTask?.cancel()

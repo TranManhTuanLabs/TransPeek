@@ -3,6 +3,19 @@ import Defaults
 import KeyboardShortcuts
 import SwiftUI
 
+/// The three panels of the multi-tab frame (Manh 2026-11-17, hub layout).
+/// Panel dịch is in the middle (default); panel shortcut is on the left
+/// (temporarily the shortcuts table); panel Fast Read (temporary name) is
+/// on the right (placeholder until Fast Read ships). The enum order is
+/// left → right, so rawValue is the dot index — the cases are named by
+/// feature, not by number, because the numbers may map to different
+/// features later (Manh 2026-11-17 12:24).
+private enum PanelTab: Int, CaseIterable {
+    case shortcut = 0
+    case translate = 1
+    case fastRead = 2
+}
+
 /// The SwiftUI content displayed inside the popup translation panel.
 struct PopupView: View {
     let coordinator: TranslationCoordinator
@@ -17,8 +30,14 @@ struct PopupView: View {
     /// opens the RSVP reading window with the text being translated
     /// (Manh 2026-11-17).
     var onFastRead: ((String) -> Void)?
-    /// Whether the "?" shortcuts panel (popover) is open.
+    /// Whether the "?" shortcuts table (embedded at the top of the
+    /// output box, Manh 2026-11-17) is shown. It is a plain section, not
+    /// a popover and not a provider card.
     @State private var showingShortcuts = false
+    /// Which panel of the multi-tab frame is showing (Manh 2026-11-17).
+    /// Panel dịch (middle) is the default; a new translation always
+    /// returns here (see the sourceText onChange below).
+    @State private var selectedTab: PanelTab = .translate
     @State private var editableText: String = ""
     /// Text the dictionary links look up (SPEC §3.2): the text selected
     /// inside the source editor or a translation result when there is one,
@@ -119,6 +138,10 @@ struct PopupView: View {
             // A new source text means a new lookup: forget any in-panel
             // selection from the previous text (SPEC §3.2).
             lookupText = nil
+            // A new translation always opens on panel dịch (the middle,
+            // default tab) — the user is here to see the translation, not
+            // whichever tab they left the panel on (Manh 2026-11-17).
+            selectedTab = .translate
             if Defaults[.ttsAutoPlaySource],
                !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                let tts = ttsCoordinator
@@ -188,42 +211,75 @@ struct PopupView: View {
     // MARK: - Active Content
 
     @ViewBuilder
+    /// The multi-tab frame (Manh 2026-11-17, hub layout): the top bar
+    /// and the bottom bar stay the same on every tab; only the middle
+    /// content switches — panel dịch (middle, default), panel shortcut
+    /// (left, the shortcuts table), panel Fast Read (temporary name)
+    /// (right, placeholder until Fast Read ships). The dots row below the
+    /// content is the tab switcher (tap a dot, or swipe on the dots row).
     private var activeContent: some View {
         VStack(alignment: .leading, spacing: 0) {
+            topBar
+
+            switch selectedTab {
+            case .translate:
+                translateContent
+            case .shortcut:
+                shortcutContent
+            case .fastRead:
+                fastReadContent
+            }
+
+            dotsRow
+            bottomBar
+        }
+        .padding(.bottom, 12)
+    }
+
+    /// Top bar (same on every tab): app name + slogan + float-icon hint,
+    /// centered. The whole top bar is a drag handle (TopBarDragMarker).
+    private var topBar: some View {
+        VStack(spacing: 2) {
             // Top bar: app name + slogan + float-icon hint, centered.
             // App name uses the top bar font size; slogan is 1pt smaller
             // (Windows parity 17/16/13, Manh 2026-11-17).
             // The hint is 4pt smaller than the app name and dimmer — it
             // tells new users the float icon's two gestures (Manh 2026-11-15).
-            VStack(spacing: 2) {
-                Text("TransPeek")
-                    .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
-                Text("Translate anywhere, Peek instantly!")
-                    .font(.system(size: CGFloat(max(topBarFontSize - 1, 8))))
-                    .italic()
-                    .foregroundStyle(.secondary)
-                Text("Hover icon to translate, Click to listen")
-                    .font(.system(size: CGFloat(max(topBarFontSize - 4, 8))))
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, contentHorizontalPadding)
-            .padding(.top, 10)
-            .padding(.bottom, 2)
-            // TopBarDragMarker: the whole top bar (app name / slogan /
-            // hint) is a drag handle. The app-name Text ("TransPeek",
-            // bold) is backed by NSTextField, which refuses
-            // mouseDownCanMoveWindow, so without this marker a drag
-            // starting on the app name — the spot the user grabs most —
-            // would not move the panel (Manh 2026-11-16; the slogan/hint
-            // drag fine, only the app name is affected).
-            // PopupPanel.shouldStartWindowDrag treats this region as
-            // always draggable. The top bar has no buttons, so nothing
-            // interactive is covered.
-            .background { TopBarDragMarker() }
+            Text("TransPeek")
+                .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
+            Text("Translate anywhere, Peek instantly!")
+                .font(.system(size: CGFloat(max(topBarFontSize - 1, 8))))
+                .italic()
+                .foregroundStyle(.secondary)
+            Text("Hover icon to translate, Click to listen")
+                .font(.system(size: CGFloat(max(topBarFontSize - 4, 8))))
+                .foregroundStyle(.tertiary)
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .multilineTextAlignment(.center)
+        .padding(.horizontal, contentHorizontalPadding)
+        .padding(.top, 10)
+        .padding(.bottom, 2)
+        // TopBarDragMarker: the whole top bar (app name / slogan /
+        // hint) is a drag handle. The app-name Text ("TransPeek",
+        // bold) is backed by NSTextField, which refuses
+        // mouseDownCanMoveWindow, so without this marker a drag
+        // starting on the app name — the spot the user grabs most —
+        // would not move the panel (Manh 2026-11-16; the slogan/hint
+        // drag fine, only the app name is affected).
+        // PopupPanel.shouldStartWindowDrag treats this region as
+        // always draggable. The top bar has no buttons, so nothing
+        // interactive is covered.
+        .background { TopBarDragMarker() }
+    }
 
-            // Global error (no providers, permissions, etc.)
+    /// Panel dịch (middle, default tab): the full translate panel —
+    /// global error, or the source input + language bar + provider
+    /// results (with the embedded "?" shortcuts table) + OCR section +
+    /// Actions row + dictionary bar. Unchanged from the single-panel
+    /// layout; only moved into its own property for the multi-tab frame.
+    private var translateContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
             if let message = coordinator.globalError {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(message, systemImage: "exclamationmark.triangle")
@@ -327,6 +383,21 @@ struct PopupView: View {
                 // Provider results
                 ScrollView {
                     VStack(spacing: 6) {
+                        // "?" shortcuts table (Manh 2026-11-17): embedded
+                        // at the top of the output box, above the provider
+                        // cards — a plain section, not a provider card and
+                        // not a popover (a popover lost focus to the
+                        // panel's click-outside auto-hide, so it could not
+                        // be clicked). The providers stay below it; the
+                        // table scrolls with the content, and the panel
+                        // auto-fits up to the output cap.
+                        if showingShortcuts {
+                            ShortcutsTableView(
+                                onRunShortcut: onRunShortcut,
+                                onClose: { showingShortcuts = false }
+                            )
+                        }
+
                         ForEach(coordinator.activeSlots, id: \.id) { provider in
                             if let state = coordinator.providerStates[provider.id] {
                                 ProviderResultCard(
@@ -417,14 +488,15 @@ struct PopupView: View {
                 // Order is Pin then Settings, like Windows (PinButton
                 // before SettingsButton in the Actions StackPanel).
                 // The "?" shortcuts button (Manh 2026-11-17) sits directly
-                // left of Pin: it opens a popover listing every shortcut
-                // with a Run button, so the user can trigger an action by
-                // clicking instead of pressing the physical keys.
+                // left of Pin: it toggles the shortcuts table embedded at
+                // the top of the output box (not a popover — a popover
+                // lost focus to the panel's click-outside auto-hide, so
+                // the table could not be clicked). The button shows a
+                // filled accent icon while the table is open. Tapping "?"
+                // again (or the table's close button) hides the table.
                 // This row's height is asserted in PopupPanelLayoutTests
                 // (256 / 376) — update those numbers if this row changes.
                 HStack(spacing: 4) {
-                    Spacer()
-
                     // Fast Read (Manh 2026-11-17): opens the RSVP reading
                     // window with the text being translated — no need to
                     // re-select it. Sits at the left end of the Actions row.
@@ -439,19 +511,18 @@ struct PopupView: View {
                     .help("Fast Read (RSVP)")
                     .background { InteractiveMarker() }
 
+                    Spacer()
+
                     Button {
                         showingShortcuts.toggle()
                     } label: {
-                        Image(systemName: "questionmark.circle")
+                        Image(systemName: showingShortcuts ? "questionmark.circle.fill" : "questionmark.circle")
                             .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(showingShortcuts ? Color.accentColor : Color.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Keyboard shortcuts")
                     .background { InteractiveMarker() }
-                    .popover(isPresented: $showingShortcuts) {
-                        ShortcutsPopoverView(onRunShortcut: onRunShortcut)
-                    }
 
                     pinButton
 
@@ -476,51 +547,191 @@ struct PopupView: View {
                     .padding(.horizontal, contentHorizontalPadding)
                     .padding(.top, 6)
             }
+        }
+    }
 
-            // Bottom bar: GitHub link centered, version dimmed on the
-            // right — quaternary like the shortcut hint in the input
-            // row, so it reads as metadata, not content. The version
-            // was briefly removed (round 3) and restored dimmed: it is
-            // the quickest way to tell which build is running when
-            // reporting a bug from the panel.
-            // The InteractiveMarker is what makes the links clickable:
-            // without it PopupPanel treats a click here as a window drag
-            // (see PopupPanel.shouldStartWindowDrag), like every other
-            // button in this panel carries one.
-            HStack {
-                Spacer()
-
-                Text(versionText)
-                    .font(.caption)
-                    .foregroundStyle(.quaternary)
-            }
-            .overlay(alignment: .center) {
-                HStack(spacing: 4) {
-                    Link(destination: Self.repoURL) {
-                        GitHubMarkShape()
-                            .fill(.secondary)
-                            .frame(width: 16, height: 16)
-                    }
-                    .buttonStyle(.plain)
-                    .help("View TransPeek on GitHub")
-
-                    Link("GitHub", destination: Self.repoURL)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+    /// Panel shortcut (left tab, temporary content): the full shortcuts
+    /// table as a page — the same ShortcutsTableView that the "?" button
+    /// embeds in panel dịch, reused here (Manh 2026-11-17). Run calls the
+    /// same code path as the hotkey; closing the table (×) returns to
+    /// panel dịch. The table scrolls inside its own ScrollView so it
+    /// still fits when the panel is short, and it reports its height
+    /// through the same layout preference as the provider results so
+    /// auto-fit sizes the panel for this tab too.
+    private var shortcutContent: some View {
+        ScrollView {
+            ShortcutsTableView(
+                onRunShortcut: onRunShortcut,
+                onClose: { selectedTab = .translate }
+            )
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.vertical, 6)
+            .background {
+                GeometryReader { geometry in
+                    Color.clear
+                        .preference(
+                            key: PopupResultLayoutPreferenceKey.self,
+                            value: PopupResultLayout(contentHeight: geometry.size.height)
+                        )
                 }
+            }
+        }
+        .background {
+            GeometryReader { geometry in
+                Color.clear
+                    .preference(
+                        key: PopupResultLayoutPreferenceKey.self,
+                        value: PopupResultLayout(viewportHeight: geometry.size.height)
+                    )
+            }
+        }
+    }
+
+    /// Panel Fast Read (right tab, temporary name): placeholder until the
+    /// Fast Read window ships (Manh 2026-11-17). The panel stays at its
+    /// minimum height on this tab; the placeholder is centered in the
+    /// ScrollView so it reads as a coming-soon page, not an empty panel.
+    private var fastReadContent: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                Image(systemName: "book.pages")
+                    .font(.system(size: 32))
+                    .foregroundStyle(.secondary)
+                Text("Fast Read — coming soon")
+                    .font(.headline)
+                Text("Fast reading (RSVP) will live here once the Fast Read window is ready.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, contentHorizontalPadding)
+            .padding(.vertical, 24)
+            .background {
+                GeometryReader { geometry in
+                    Color.clear
+                        .preference(
+                            key: PopupResultLayoutPreferenceKey.self,
+                            value: PopupResultLayout(contentHeight: geometry.size.height)
+                        )
+                }
+            }
+        }
+        .background {
+            GeometryReader { geometry in
+                Color.clear
+                    .preference(
+                        key: PopupResultLayoutPreferenceKey.self,
+                        value: PopupResultLayout(viewportHeight: geometry.size.height)
+                    )
+            }
+        }
+    }
+
+    /// Dots row (Manh 2026-11-17): 3 dots, one per panel, centered below
+    /// the tab content. The selected dot is accent-colored, the others
+    /// dimmed. Tap a dot to switch panels. A horizontal swipe on the dots
+    /// row also switches (left → next panel, right → previous panel).
+    /// Swipe lives here — not on the tab content — because a drag over the
+    /// results/input is text selection, and a swipe gesture on the content
+    /// would steal it.
+    /// The dots sit exactly in the middle of the gap between the tab
+    /// content above (dictionary bar / shortcuts table / placeholder) and
+    /// the GitHub icon below (Manh 2026-11-17 — "căn đều giữa"): 12pt
+    /// above the dots (top padding) and 12pt below (bottom bar's top
+    /// padding), so the row is 20pt tall (12 + 8 dot + 0).
+    private var dotsRow: some View {
+        HStack(spacing: 8) {
+            ForEach(PanelTab.allCases, id: \.self) { tab in
+                Button {
+                    selectedTab = tab
+                } label: {
+                    Circle()
+                        .fill(selectedTab == tab ? Color.accentColor : Color.secondary.opacity(0.4))
+                        .frame(width: 8, height: 8)
+                }
+                .buttonStyle(.plain)
+                .help(dotHelp(tab))
                 .background { InteractiveMarker() }
             }
-            .padding(.horizontal, contentHorizontalPadding)
-            // Top and bottom gaps are both 12pt (Manh 2026-11-16, try 12
-            // instead of 14): the GitHub icon used to sit only 6pt below
-            // the dictionary links but 14pt above the bottom edge, which
-            // read as unbalanced once the 3-line corner grip drew the eye
-            // to the bottom. 12pt even on both sides. This is 4pt less
-            // than the 14pt version — PopupPanelLayoutTests was updated
-            // in the same commit.
-            .padding(.top, 12)
         }
-        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.top, 12)
+        .gesture(swipeGesture)
+    }
+
+    /// A horizontal swipe on the dots row switches panels: swiping left
+    /// reveals the panel on the right, swiping right reveals the panel on
+    /// the left (standard paging). Only a clear horizontal swipe counts
+    /// (|width| > 50 and wider than tall), so a tap or a vertical scroll
+    /// never switches tabs.
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 20)
+            .onEnded { value in
+                let horizontal = value.translation.width
+                let vertical = value.translation.height
+                guard abs(horizontal) > 50, abs(horizontal) > abs(vertical) * 1.5 else { return }
+                if horizontal < 0 {
+                    selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+                } else {
+                    selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
+                }
+            }
+    }
+
+    /// The help text for a dot: the panel's feature name (not a number —
+    /// the numbers may map to different features later, Manh 2026-11-17).
+    private func dotHelp(_ tab: PanelTab) -> String {
+        switch tab {
+        case .shortcut: return "Shortcuts"
+        case .translate: return "Translate"
+        case .fastRead: return "Fast Read"
+        }
+    }
+
+    /// Bottom bar (same on every tab): GitHub link centered, version
+    /// dimmed on the right — quaternary like the shortcut hint in the
+    /// input row, so it reads as metadata, not content. The version was
+    /// briefly removed (round 3) and restored dimmed: it is the quickest
+    /// way to tell which build is running when reporting a bug from the
+    /// panel.
+    /// The InteractiveMarker is what makes the links clickable: without
+    /// it PopupPanel treats a click here as a window drag (see
+    /// PopupPanel.shouldStartWindowDrag), like every other button in
+    /// this panel carries one.
+    private var bottomBar: some View {
+        HStack {
+            Spacer()
+
+            Text(versionText)
+                .font(.caption)
+                .foregroundStyle(.quaternary)
+        }
+        .overlay(alignment: .center) {
+            HStack(spacing: 4) {
+                Link(destination: Self.repoURL) {
+                    GitHubMarkShape()
+                        .fill(.secondary)
+                        .frame(width: 16, height: 16)
+                }
+                .buttonStyle(.plain)
+                .help("View TransPeek on GitHub")
+
+                Link("GitHub", destination: Self.repoURL)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .background { InteractiveMarker() }
+        }
+        .padding(.horizontal, contentHorizontalPadding)
+        // Top and bottom gaps are both 12pt (Manh 2026-11-16, try 12
+        // instead of 14): the GitHub icon used to sit only 6pt below
+        // the dictionary links but 14pt above the bottom edge, which
+        // read as unbalanced once the 3-line corner grip drew the eye
+        // to the bottom. 12pt even on both sides. This is 4pt less
+        // than the 14pt version — PopupPanelLayoutTests was updated
+        // in the same commit.
+        .padding(.top, 12)
     }
 
     // MARK: - Helpers

@@ -121,18 +121,55 @@ cuộn — nên lúc nào cũng thấy, không cần kéo. Đó là mẫu "đưa
 nhắc tới lúc đầu; chỉ áp được cho ô nhập vì ô nhập chỉ có 1, không có bài
 toán nhiều provider.)
 
-## 7. Nút "?" bảng shortcut + nút "Fast Read" (Manh 17/11, build #200 / nhánh `feature/fast-read-rsvp`)
+## 7. Nút "?" bảng shortcut + nút "Fast Read" (Manh 17/11, build #204 → đổi ở bản sau #204 / nhánh `feature/fast-read-rsvp`)
 
 - Nút `?` (`questionmark.circle`) đứng ngay bên trái nút Pin ở hàng Actions.
-- Bấm mở 1 **popover** neo vào nút (bấm ra ngoài hoặc bấm lại "?" là đóng),
-  liệt kê **10 shortcut** theo đúng thứ tự Settings → Keyboard Shortcuts:
-  Smart Translation, Manual Translation, OCR Screen Translate, OCR to
-  Clipboard, OCR to Clipboard - Translated, Translate Selection, Translate
-  Clipboard, Screenshot Copy, Scan Barcodes/QR Codes, Fast Read (RSVP).
+- **Đổi từ popover sang NHÚNG (Manh 17/11 ~11:50, từ test build #204):**
+  bấm "?" thì panel tự ẩn nên không bấm được bảng; pin panel cũng không ổn
+  vì chụp OCR sẽ bị panel che mất nội dung chụp. Popover là cửa sổ riêng —
+  vừa mở là panel mất focus rồi tự ẩn (click-outside auto-hide). Nhúng bảng
+  vào trong ô output thì bảng là nội dung của chính panel, không còn cửa sổ
+  riêng để đấu nữa.
+- Bấm "?" → bảng hiện **nhúng ở ĐẦU ô output** (trong ScrollView kết quả,
+  ngay trên các card provider), là 1 khối riêng có tiêu đề "Keyboard
+  Shortcuts" + nút đóng [×]. Provider vẫn nằm dưới bảng, **không bị ẩn**
+  (ưa nhúng hơn phương án tạm ẩn provider). Bảng cuộn chung với nội dung;
+  panel tự vừa khung khi bảng hiện, cao quá thì cuộn trong ô.
+- Bấm "?" lần nữa hoặc bấm [×] → bảng biến mất, về lại chỉ có các card
+  provider. Nút "?" đổi màu (accent, icon đầy) khi bảng đang hiện.
+- Bảng liệt kê **10 shortcut** theo đúng thứ tự Settings → Keyboard
+  Shortcuts: Smart Translation, Manual Translation, OCR Screen Translate,
+  OCR to Clipboard, OCR to Clipboard - Translated, Translate Selection,
+  Translate Clipboard, Screenshot Copy, Scan Barcodes/QR Codes, Fast Read (RSVP).
 - Mỗi dòng có tên + phím tắt hiện tại (chưa gán thì "Not set") + nút **Run** —
   bấm là chạy thẳng hành động đó, khỏi bấm phím vật lý. Nút Run gọi đúng code
   path như bấm phím tắt (`AppDelegate.performShortcut`), nên click và phím
-  không bao giờ lệch nhau.
+  không bao giờ lệch nhau. **Bấm Run thì ẩn panel để chụp** — hành vi ẩn
+  panel khi chụp đi kèm sẵn theo code path phím tắt (panel ẩn, chụp xong
+  hiện lại với kết quả), không cần logic riêng. Bảng cũng đóng lại sau khi
+  bấm Run (đã chọn hành động, kết quả cần được thấy, không phải bảng).
+  **Riêng các hành động chụp (OCR, Screenshot, Scan) thì Run ẩn panel
+  TRƯỚC khi chụp (Manh 17/11 13:00):** lúc bấm Run người dùng đang nhìn
+  panel nên panel sẽ che mất vùng cần chụp — giống hệt nút "Capture OCR"
+  (`performPanelOCR` ẩn panel rồi mới chụp). Các hành động không chụp thì
+  panel vẫn hiện để xem kết quả.
+- **Nút [×] và Run phải có `InteractiveMarker` (Manh 17/11 12:39, từ test
+  build #207):** bản #207 bấm [×] và Run không có tác dụng — vì 2 nút này
+  thiếu `InteractiveMarker` nên panel coi click là kéo cửa sổ, nút không
+  nhận được click. Mọi nút khác trong panel đều có marker này
+  (xem `PopupView` / `ProviderResultCard`); nút nào mới thêm vào panel cũng
+  phải có, không thì bấm không ăn.
+- **Bảng này KHÔNG phải card provider** (nó không dịch gì, chỉ liệt kê
+  shortcut) và **nút "?" KHÔNG nhảy sang panel shortcut (tạm thời, ở
+  trái)** (Manh 17/11 12:01): panel shortcut tạm là bảng shortcut
+  (decor/placeholder), sau này thành timer rest-eyes/focus/tomato; khi đó
+  shortcut vẫn ở lại với nút "?" (nhúng trong ô output). Xem §9.
+- **Hướng này đã CHỐT (Manh 17/11 12:19):** bảng nhúng ở ĐẦU ô output,
+  provider không bị ẩn, bấm "?" lần nữa/[×] thì về lại chỉ có card
+  provider, bấm Run thì ẩn panel để chụp — đúng như §7 này. Hướng này
+  KHÁC đề xuất đổi nội dung ô output của chat TTS lúc 11:56 (đề xuất đó
+  chỉ là ý kiến, Manh chốt theo khung bên mac). Về sau đừng ai sửa ngược
+  lại thành đổi nội dung ô output khi chưa hỏi anh.
 - Nút **"Fast Read"** (`book.pages` + chữ) ở đầu trái hàng Actions: bấm mở
   cửa sổ đọc RSVP riêng với đúng text đang dịch trong panel (không cần bôi
   lại). Chi tiết engine + cửa sổ đọc xem `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
@@ -171,26 +208,74 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 | Nút "?" | Có (#200), bên trái Pin | Đang làm (giao 17/11), vị trí tương tự | Cùng spec, mac làm trước |
 | Loa/Copy ô nhập | Hàng riêng dưới ô text | Overlay trong ô (góc dưới-phải) | mac tách ra ngoài cho đỡ cuộn; Windows giữ overlay |
 
-## 9. Layout 3 tab panel — hướng sau này (CHƯA LÀM, chỉ ghi quyết định)
+## 9. Layout 3 tab panel — khung đã lên main (Manh 17/11, build #208)
 
-> **Quyết định đã chốt (Manh 17/11 ~10:33, từ chat TTS). Chưa triển khai tab
-> lúc này** — chỉ ghi lại để lúc làm multi-tab (mục 5 theo thứ tự research)
-> thì làm theo layout này, không làm theo thứ tự cũ (Dịch là tab 1).
+> **Khung multi-tab đã triển khai trên main (Manh 17/11 ~12:35 — "xong cả
+> khung multi-tab trên main rồi mới qua nhánh + Fast Read").** 3 tab đổi được
+> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read (tên tạm) vẫn là
+> placeholder cho tới khi Fast Read window xong (nhánh
+> `feature/fast-read-rsvp` sync main rồi mới làm tiếp, sau khi khung này
+> xanh).
 
-- **Layout kiểu "hub": Dịch ở GIỮA làm mặc định (chấm 2), trái là tab 1
-  shortcut, phải là tab 3 Fast Read.**
-  - Tab 2 (giữa, mặc định): Dịch — màn chính.
-  - Tab 1 (trái): trang shortcut đầy đủ.
-  - Tab 3 (phải, dự kiến): Fast Read (đọc RSVP).
-- **Lý do Manh:** Dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để Dịch ở tab 1
-  thì sang Fast Read phải qua 2 lần. Có tiền lệ: Snapchat (camera ở giữa,
-  vuốt trái ra chat, phải ra stories). Khác thứ tự research cũ (Dịch là tab 1)
-  nhưng lý do chính đáng nên đổi.
+- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
+  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  - **panel dịch (ở giữa, mặc định)** — màn chính.
+  - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
+  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+- **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
+  panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
+  tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
+  Khác thứ tự research cũ (panel dịch ở trái) nhưng lý do chính đáng nên
+  đổi.
+- **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46).** Hàng chấm nằm dưới
+  nội dung tab, trên footer (GitHub + version): 3 chấm tròn 8pt, cách nhau
+  8pt, căn giữa, cao ~20pt. Chấm đang chọn màu accent, còn lại mờ.
+  **Bấm chấm để đổi tab.**
+- **Hàng chấm căn đều giữa nội dung tab và icon GitHub (Manh 13:00):**
+  12pt trên chấm (padding trên của hàng chấm) và 12pt dưới chấm (padding
+  trên của footer) — chấm nằm chính giữa khoảng trống giữa link dictionary
+  / nội dung tab và icon GitHub, không lệch về bên nào.
+- **Vuốt đổi tab:** vuốt ngang trên **hàng chấm** thì đổi tab (vuốt trái →
+  tab bên phải, vuốt phải → tab bên trái; chỉ tính vuốt ngang rõ ràng,
+  >50pt và ngang hơn dọc). Vuốt KHÔNG đặt trên nội dung tab — vì kéo chuột
+  trên kết quả/input là bôi chọn text, đặt gesture vuốt lên đó sẽ cướp mất
+  bôi chọn.
+- **Panel shortcut (tạm thời, ở trái) dùng lại đúng `ShortcutsTableView`**
+  của nút "?" (§7) — không viết bảng mới. Bấm Run thì chạy đúng code path
+  phím tắt rồi **về lại panel dịch** (kết quả hiện ở panel dịch, không ở
+  tab shortcut); bấm [×] cũng về panel dịch. Bảng cuộn trong ScrollView
+  riêng và báo chiều cao qua cùng layout preference như kết quả dịch, nên
+  auto-fit vẫn vừa khung cho tab này.
+- **Panel Fast Read (tên tạm, ở phải) là placeholder:** icon sách + text
+  "Fast Read — coming soon" + 1 dòng giải thích, căn giữa. Panel giữ chiều
+  cao tối thiểu (450) ở tab này. Nội dung placeholder do bên mac tự quyết.
+- **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
+  panel tự về panel dịch — người dùng mở panel là để xem bản dịch, không
+  phải tab họ bỏ lại lần trước.
+- **Hàng chấm làm panel cao thêm ~20pt:** chiều cao fitted cho text ngắn
+  từ ~480 lên ~510 — test `dismissAndReopenDiscardsPendingResize` đổi
+  khoảng 450–480 thành 450–510 trong cùng commit (16pt lúc đầu, 20pt sau
+  khi căn đều giữa theo Manh 13:00).
+- **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
+  hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
+  Read window.** Fast Read làm trước TTS (đã chốt 09:52).
+
+- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
+  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  - **panel dịch (ở giữa, mặc định)** — màn chính.
+  - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
+  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+- **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
+  panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
+  tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
+  Khác thứ tự research cũ (panel dịch ở trái) nhưng lý do chính đáng nên
+  đổi.
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
-  Khung multi-tab lên main là hiện đủ 3 chấm luôn; **tab 3 là placeholder cho
-  tới khi Fast Read ship**. Ngoại lệ này chỉ áp cho tab 3 Fast Read (đã có kế
-  hoạch cụ thể), không áp chung cho mọi tab tương lai. Nội dung placeholder
-  tab 3 (vd text "Fast Read — sắp có") bên mac tự quyết cho gọn.
+  Khung multi-tab lên main là hiện đủ 3 chấm luôn; **panel Fast Read (tên
+  tạm) là placeholder cho tới khi tính năng này ship**. Ngoại lệ này chỉ áp
+  cho panel Fast Read (tên tạm, đã có kế hoạch cụ thể), không áp chung cho
+  mọi tab tương lai. Nội dung placeholder panel Fast Read (vd text
+  "Fast Read — sắp có") bên mac tự quyết cho gọn.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
@@ -199,11 +284,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc
   của RSVP; 2 luồng tách hẳn. Chi tiết engine + UX window xem
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
-- **Tab 1 là ô linh hoạt, không cố định là shortcut.** Hiện tại ghi tạm là
-  shortcut; sau này thay được bằng nội dung khác (không khóa tab 1 = shortcut
-  vĩnh viễn).
-- **Nút "?" popover shortcut (§7) giữ nguyên** — xem nhanh shortcut trong
-  panel Dịch; tab 1 là trang shortcut đầy đủ, không thay thế nút "?".
+- **Panel shortcut (tạm thời, ở trái) là ô linh hoạt, không cố định là
+  shortcut.** **Lộ trình panel ở trái (Manh 12:01): tạm thời panel này chỉ
+  là bảng shortcut (decor/placeholder); SAU NÀY panel này dành cho
+  rest-eyes/focus/tomato** — tab nhắc nghỉ nhẹ: 20-20-20 nghỉ mắt, focus,
+  Pomodoro (theo research break reminders, bản nhẹ trong tab panel, mặc
+  định TẮT).
+- **Nút "?" KHÔNG nhảy sang panel shortcut (tạm thời, ở trái) (Manh
+  12:01).** "?" chỉ nhúng bảng shortcut trong ô output (theo hướng 11:50 —
+  nhúng đổi nội dung ô output, không tạo card mới). Lý do: bây giờ nhảy
+  cũng vô nghĩa vì panel ở trái đang là bảng shortcut (cùng nội dung với
+  bảng nhúng); sau này panel ở trái thành timer thì nhảy tới đó để xem
+  shortcut càng sai chỗ. Khi panel ở trái đổi thành timer, shortcut vẫn ở
+  lại với nút "?" (nhúng trong ô output).
 
 ## Liên kết
 
