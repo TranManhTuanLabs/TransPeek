@@ -371,6 +371,7 @@ Float icon (1 icon duy nhất)
 │                        (Mac: chạm 2 ngón hoặc Control-click)
 ├── Option-click (chỉ Mac) → Đọc nhanh (RSVP) thẳng
 └── Menubar/tray ──────→ menu có "Đọc nhanh (RSVP)" + phím tắt global
+    (menubar mac mở được submenu — mục Fast Read nằm trong list con, không làm dài menu chính; Manh 12:06)
     Phím tắt global ───→ mở RSVP từ selection/clipboard (1 phím duy nhất, xem §9)
     Panel dịch ────────→ nút "Đọc nhanh" mở RSVP với text đang dịch
 ```
