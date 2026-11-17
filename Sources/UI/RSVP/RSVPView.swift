@@ -44,6 +44,7 @@ final class RSVPViewModel: ObservableObject {
 
     var currentSlide: RSVPEngine.Slide? {
         guard engine.slides.indices.contains(currentSlideIndex) else { return nil }
+        return engine.slides[currentSlideIndex]
     }
 
     /// Fraction read, for the progress bar.
