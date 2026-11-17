@@ -182,8 +182,12 @@ struct PopupView: View {
             }
         }
         // A 2-finger trackpad swipe switches tabs (Manh 2026-11-17): next
-        // is the panel on the right, previous the one on the left — the
-        // same direction as the dots-row drag swipe.
+        // is the panel on the right, previous the one on the left.
+        // NOTE (flipped 2026-11-17 ~20:28): the trackpad swipe is now the
+        // OPPOSITE direction of the dots-row drag swipe — Manh tested the
+        // first mapping (same as drag) and it felt backwards, so fingers
+        // left is now the previous (left) panel, fingers right the next
+        // (right) panel. The mouse drag is unchanged (drag left → next).
         .onReceive(trackpadSwipeMonitor.swipePublisher) { direction in
             switch direction {
             case .next:

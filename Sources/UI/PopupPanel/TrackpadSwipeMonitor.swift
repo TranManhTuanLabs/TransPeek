@@ -3,11 +3,13 @@ import Combine
 
 /// The direction of a two-finger trackpad swipe (Manh 2026-11-17).
 enum TrackpadSwipeDirection {
-    /// Fingers moved left — the content moves left, revealing the panel on
-    /// the right (the next tab).
+    /// Fingers moved right — switch to the panel on the right (the next
+    /// tab). Flipped 2026-11-17 ~20:28: Manh tested the first mapping
+    /// (fingers left → next) and it felt backwards, so it is now
+    /// fingers right → next.
     case next
-    /// Fingers moved right — the content moves right, revealing the panel
-    /// on the left (the previous tab).
+    /// Fingers moved left — switch to the panel on the left (the previous
+    /// tab).
     case previous
 }
 
@@ -30,7 +32,10 @@ enum TrackpadSwipeDirection {
 ///   mouse-wheel events (empty phase) and momentum coasting
 ///   (`momentumPhase != []`) never trigger a switch.
 /// - `scrollingDeltaX` already honors Natural scrolling: fingers moving
-///   left gives a positive delta, which is the next panel (to the right).
+///   left gives a positive delta. Flipped 2026-11-17 ~20:28 (Manh tested
+///   the first mapping and it felt backwards): a positive delta is now the
+///   previous panel (to the left), a negative delta the next panel (to the
+///   right).
 /// - One swipe = one switch: the accumulated horizontal delta must pass
 ///   50pt, it fires once per gesture, and momentum events are drained
 ///   (ignored) until the gesture fully ends, so a single swipe never
@@ -106,7 +111,10 @@ final class TrackpadSwipeMonitor: ObservableObject {
             accumulatedX += deltaX
             if !firedForGesture, abs(accumulatedX) >= 50 {
                 firedForGesture = true
-                swipePublisher.send(accumulatedX > 0 ? .next : .previous)
+                // Flipped 2026-11-17 ~20:28 (Manh tested the first mapping
+                // and it felt backwards): fingers left (positive delta) is
+                // now the previous panel, fingers right the next panel.
+                swipePublisher.send(accumulatedX > 0 ? .previous : .next)
                 // Claim the event so the ScrollView doesn't also scroll.
                 return nil
             }

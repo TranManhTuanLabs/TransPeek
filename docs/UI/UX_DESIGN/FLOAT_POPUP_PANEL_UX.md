@@ -254,17 +254,20 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   khoảng 450–480 thành 450–510 trong cùng commit (16pt lúc đầu, 20pt sau
   khi căn đều giữa theo Manh 13:00).
 - **Vuốt 2 ngón trackpad đổi tab (Manh 13:00, làm sau #209):** vuốt ngang
-  2 ngón trên trackpad (trái/phải) đổi tab — cùng chiều với vuốt chuột trên
-  hàng chấm. **DragGesture trên hàng chấm chỉ nhận chuột kéo, KHÔNG nhận
-  vuốt trackpad:** vuốt 2 ngón đi thành event `.scrollWheel` (deltas
-  `scrollingDeltaX/Y`), không phải `swipeWithEvent:` (cái đó chỉ cho vuốt
-  3 ngón, tuỳ System Preferences). Nên panel dùng 1 local monitor
-  `NSEvent` cho `.scrollWheel` (`TrackpadSwipeMonitor.swift`): chỉ nhận
-  event có gesture phase (trackpad, `phase != []`), tích luỹ
-  `scrollingDeltaX` ngang trội (|X| > |Y| × 1.5), đủ 50pt thì đổi 1 tab
-  (1 lần vuốt = 1 tab, bỏ qua momentum), vuốt dọc thì cho qua để ScrollView
-  kết quả cuộn bình thường. Vuốt trackpad là scroll event, không phải
-  chuột kéo, nên không bao giờ cướp bôi chọn text.
+  2 ngón trên trackpad (trái/phải) đổi tab. **ĐÃ ĐẢO CHIỀU 20:28 (Manh
+  test thấy chiều đầu ngược):** vuốt 2 ngón sang trái → tab bên trái,
+  sang phải → tab bên phải — tức là NGƯỢC chiều vuốt chuột trên hàng
+  chấm (chuột kéo trái → tab phải, giữ nguyên). **DragGesture trên hàng
+  chấm chỉ nhận chuột kéo, KHÔNG nhận vuốt trackpad:** vuốt 2 ngón đi
+  thành event `.scrollWheel` (deltas `scrollingDeltaX/Y`), không phải
+  `swipeWithEvent:` (cái đó chỉ cho vuốt 3 ngón, tuỳ System Preferences).
+  Nên panel dùng 1 local monitor `NSEvent` cho `.scrollWheel`
+  (`TrackpadSwipeMonitor.swift`): chỉ nhận event có gesture phase
+  (trackpad, `phase != []`), tích luỹ `scrollingDeltaX` ngang trội
+  (|X| > |Y| × 1.5), đủ 50pt thì đổi 1 tab (1 lần vuốt = 1 tab, bỏ qua
+  momentum), vuốt dọc thì cho qua để ScrollView kết quả cuộn bình thường.
+  Vuốt trackpad là scroll event, không phải chuột kéo, nên không bao giờ
+  cướp bôi chọn text.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
