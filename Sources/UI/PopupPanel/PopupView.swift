@@ -446,7 +446,7 @@ struct PopupView: View {
                     } label: {
                         Image(systemName: showingShortcuts ? "questionmark.circle.fill" : "questionmark.circle")
                             .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(showingShortcuts ? .accentColor : .secondary)
+                            .foregroundStyle(showingShortcuts ? Color.accentColor : Color.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Keyboard shortcuts")
