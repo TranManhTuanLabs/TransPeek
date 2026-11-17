@@ -5,7 +5,7 @@
 ## 1. Repo
 
 - **Repo:** `TranManhTuanLabs/TransPeek`, branch `main`, public. Fork từ cosZone/MoePeek.
-- **Code:** `Sources/` (Swift 6, Tuist), `Tests/`, `Resources/`.
+- **Code:** `Sources/` (Swift 6, Tuist), `Tests/`, `Resources/`. Module riêng theo tính năng (xem `docs/ARCHITECTURE.md` §5.1): `Sources/FastRead/` (engine RSVP + cửa sổ đọc + view), `Sources/Shortcuts/` (bảng shortcut dùng chung).
 - **Docs:** `docs/` (xem §2).
 
 ## 2. Bản đồ docs

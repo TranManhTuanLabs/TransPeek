@@ -81,6 +81,12 @@ docs/
   panel, Settings, provider dịch.
 - **Không tách quá nhỏ** (1 file cho 1 hàm thì khó tìm) — 1 thư mục/tính năng,
   UI + logic nằm chung trong đó.
+- **Đã làm (nhánh `feature/fast-read-rsvp`, 17/11/2026):** `Sources/FastRead/`
+  có `RSVPEngine.swift` + `RSVPView.swift` + `RSVPWindowController.swift`
+  (dời từ `Sources/Services/RSVP/` + `Sources/UI/RSVP/`, nội dung không đổi);
+  `Sources/Shortcuts/` có `ShortcutsTableView.swift` (dời từ
+  `Sources/UI/PopupPanel/ShortcutsPopoverView.swift`, chỉ đổi tên file —
+  struct bên trong vốn đã tên `ShortcutsTableView`). 4 file cũ đã xoá.
 - **Lý do:** tránh conflict và tránh làm vỡ panel dịch — panel đã qua quá
   nhiều vòng sửa (chuỗi che loa, nút "?", multi-tab), cứ đụng vào file của
   nó là dễ vỡ layout; mỗi tính năng có vòng đời riêng, lỗi của RSVP hay
