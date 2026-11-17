@@ -15,7 +15,11 @@
 - **Luồng vào RSVP — CHỐT (thứ tự ưu tiên):** (1) Option-click Mac / Alt-click Windows → RSVP thẳng; (2) chuột phải icon → menu "Đọc nhanh"; (3) nút "Đọc nhanh" trong panel dịch; (4) menubar/tray; (5) shortcut global chỉ là fallback. Cộng thêm Settings toggle đổi click → RSVP cho người dùng RSVP là chính.
 - **Vị trí view đọc RSVP — GIỮ CẢ 2 PHƯƠNG ÁN, quyết ở lúc prototype:** (a) tab 2/3/4 dãn to như max snapback, hoặc (b) panel riêng. Nếu bản tab dãn đọc vẫn tập trung, không giật, không bị auto-hide phá thì làm tab; không thì chuyển panel riêng. Điều kiện bắt buộc nếu làm tab: **ẩn HOÀN TOÀN chức năng panel dịch khi đang đọc** (không chỉ ẩn giao diện mà vẫn bấm được), ẩn hết chrome dịch + hàng chấm, tắt swipe/lăn chuyển tab lúc đang đọc, tạm dừng auto-hide, cân nhắc căn giữa. Lý do giữ 2 hướng: tách ra tránh lag / lỗi đè chéo lên luồng dịch.
 - **SwiftRead — ĐÃ ĐỌC SOURCE THẬT (17/11 ~02:30):** Manh gửi 2 file `.crx` (6.11.2.0 + 5.9.2.0). Phát hiện lớn: 3 chế độ Focus/Flow/Spotlight **không có trong source `.crx`** (nằm ở web app host); trong extension chỉ có 1 engine RSVP + toggle hiển thị. Engine legacy: WPM mặc định 275, max 2000, chunk 1–6, micro-pause hệ số nhân, ORP pivot = ký tự giữa, TTS cloud + timepoints server + poll 50 ms (chỉ khi chunk = 1), không có hạn mức ngày trong code. Chi tiết đã bổ sung vào `rsvp-report.md`. **4 kết luận cốt lõi không đổi.**
-- **Thứ tự triển khai (§8) giữ nguyên**, trừ mục 6 RSVP cập nhật theo 2 chốt trên.
+- **Layout 3 tab kiểu "hub" (Manh 10:33):** Dịch ở GIỮA làm mặc định (chấm 2), trái tab 1 shortcut (tạm thời, sau này thay được), phải tab 3 Fast Read (dự kiến). Lý do: Dịch ở giữa thì vuốt sang 2 bên đều 1 lần.
+- **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46):** thay điều kiện cũ "chấm 3 chỉ hiện khi tab có nội dung thật" — khung multi-tab lên main là hiện đủ 3 chấm luôn; tab 3 là placeholder cho tới khi Fast Read ship. Ngoại lệ này chỉ áp cho tab 3 Fast Read (đã có kế hoạch cụ thể), không áp chung cho mọi tab tương lai.
+- **Thứ tự làm mới (Manh 10:46): khung multi-tab làm trên main TRƯỚC; nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast Read window.** Fast Read làm trước TTS (đã chốt 09:52).
+- **Fast Read window copy y xì UX SwiftRead; CHỈ ĐỌC, không gồm TTS trong read (Manh 10:46).** SwiftRead có tính năng Listen (TTS cloud + timepoints) nhưng TransPeek KHÔNG copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc của RSVP; 2 luồng tách hẳn.
+- **Thứ tự triển khai (§8) cập nhật theo các chốt trên** — khung multi-tab lên đầu, RSVP window ngay sau, TTS lùi xuống sau RSVP.
 
 ---
 
@@ -29,7 +33,7 @@
 | Model A: hover block text → hiện icon loa | **Path 1 — tích hợp, có giới hạn** | Hit-test qua Accessibility (mac) / UI Automation (Windows) khả thi; chỉ tốt ở app expose text, cần quyền Accessibility + track chuột toàn cục, giữ flow bôi chọn làm fallback. |
 | Quick panel (ENVI-style): hover → panel nhỏ chỉ có bản dịch | **Path 1 — tích hợp** | Quyết định sản phẩm chuyển trực tiếp; chỉ cần viết lại phần bắt từ-dưới-con-trỏ và định vị panel bằng API native. |
 | Điều chỉnh nhanh khi đang phát (tốc độ/giọng) | **Path 1 — tab 2/3 của panel** | Xem §6. |
-| RSVP đọc nhanh | **Path 1 — tích hợp native; view đọc GIỮ CẢ 2 PHƯƠNG ÁN (Manh chốt 17/11)** | Engine RSVP là logic thuần nhỏ, port sang Swift/C# dễ; capture text dùng pipeline selection sẵn có. Tab dãn hay panel riêng quyết ở lúc prototype (xem §5). |
+| RSVP đọc nhanh | **Path 1 — tích hợp native; view đọc = WINDOW RIÊNG (Manh chốt 09:52 + 10:46), UX copy y xì SwiftRead, chỉ đọc không TTS** | Engine RSVP là logic thuần nhỏ, port sang Swift/C# dễ; capture text dùng pipeline selection sẵn có. Tab panel chỉ là thử nghiệm sau (xem §5). |
 | Multi-tab panel (chấm tròn) | **Path 1 — tích hợp, tối đa 3 tab** | Pattern đơn giản, API cử chỉ công khai cả 2 nền tảng. |
 | Timer nhắc nghỉ mắt/Pomodoro | **Path 1 bản NHẸ trong tab panel, hoặc dùng app riêng** | Xem §5. Không tích hợp full break-app. |
 | **Model B: icon hiển thị sẵn trong mọi block text (không cần hover)** | **KHÔNG LÀM (Manh chốt 17/11)** | Quét liên tục cây Accessibility/UI Automation đắt, không có MutationObserver/scroll notification, icon không tự bám scroll; chỉ trong DOM web mới thực tế — và ngay cả Speechify cũng chỉ làm Model B ở site quen có selector viết tay, trang lạ dùng Model A. |
@@ -87,7 +91,7 @@ Lưu ý: ENVI không bundle dữ liệu từ điển — nghĩa tra qua API `en.
 
 - Engine RSVP là logic thuần nhỏ (parser của jetzt ~250 dòng, port sang Swift/C# dễ); render 1 từ/lần bằng Text native với ORP highlight; timing WPM bằng timer hệ thống; capture text dùng pipeline selection sẵn có; PDF qua PDFKit (mac) / Windows.Data.Pdf (Windows); ePub unzip+parse. Chỉ "auto-extract cả trang web" và Kindle/Libby là browser-only — ngoài scope v1.
 - **Flow 1 icon, 3 chức năng — giữ hover = dịch, click = nghe (TTS). RSVP vào theo thứ tự MANH CHỐT 17/11:** (1) Option-click Mac / Alt-click Windows → RSVP thẳng; (2) menu chuột phải trên float icon ("Đọc nhanh"); (3) nút "Đọc nhanh" trong panel dịch; (4) mục menubar/tray; (5) 1 global shortcut duy nhất chỉ là fallback. Cộng thêm Settings toggle đổi click → RSVP thẳng (cho người dùng RSVP là chính). **Loại:** middle-click (không có trên trackpad Mac và hầu hết touchpad laptop Windows), long-press (đụng thao tác kéo icon), chooser hiện mỗi lần click (thêm ma sát cho 2 flow chính).
-- **Vị trí reading view — GIỮ CẢ 2 PHƯƠNG ÁN, quyết ở lúc prototype (Manh 17/11).** Báo cáo khuyên panel riêng: panel dịch (~400px) quá nhỏ cho từ RSVP 50–110px; panel riêng tránh chuyển tab nhầm giữa lúc đọc và đủ chỗ cho điều khiển WPM/chunk/seek. Phương án tab chỉ được nếu panel dãn to mà đọc vẫn tập trung, không giật, không bị auto-hide phá — và khi đang đọc phải **ẩn HOÀN TOÀN chức năng panel dịch** (không chỉ ẩn giao diện mà vẫn bấm được), ẩn hết chrome dịch + hàng chấm, tắt swipe/lăn chuyển tab, tạm dừng auto-hide, cân nhắc căn giữa.
+- **Vị trí reading view — WINDOW RIÊNG là hướng chính (Manh chốt 09:52 + 10:46).** Báo cáo khuyên panel riêng: panel dịch (~400px) quá nhỏ cho từ RSVP 50–110px; panel riêng tránh chuyển tab nhầm giữa lúc đọc và đủ chỗ cho điều khiển WPM/chunk/seek. **Tab panel chỉ là thử nghiệm sau** — nếu làm thì phải **ẩn HOÀN TOÀN chức năng panel dịch** khi đang đọc (không chỉ ẩn giao diện mà vẫn bấm được), ẩn hết chrome dịch + hàng chấm, tắt swipe/lăn chuyển tab, tạm dừng auto-hide, cân nhắc căn giữa. **UX window copy y xì SwiftRead** (cửa sổ riêng, ORP pivot, context ±150 từ khi pause, điều khiển WPM/chunk/seek — xem `rsvp-report.md` §1/§6.1); **chỉ đọc, KHÔNG gồm TTS trong read** — nghe là việc của TTS (click icon), đọc là việc của RSVP, 2 luồng tách hẳn (SwiftRead có Listen nhưng TransPeek không copy phần đó).
 - **Shortcut budget: chỉ 1 global shortcut** (mở RSVP từ selection/clipboard); mọi phím trong lúc đọc (Space, ←/→, ↑/↓…) chỉ active khi panel đọc đang focus — 0 xung đột global. Không tách RSVP thành app/extension riêng.
 - **Mobile: KHÔNG làm bây giờ.** Thị trường app RSVP mobile đã đông và nặng subscription (Spreeder, Outread, Reedy, Spritz, SwiftRead); lợi thế cốt lõi của TransPeek (float icon trên text của app khác) không tồn tại trên mobile — capture chỉ qua share-sheet/clipboard, panel đọc thành full-screen. Xem lại chỉ sau khi RSVP desktop chứng minh có người dùng.
 
@@ -105,7 +109,7 @@ Lưu ý: ENVI không bundle dữ liệu từ điển — nghĩa tra qua API `en.
 
 ## 7. Multi-tab panel + break reminders
 
-**Chấm tròn: NÊN LÀM, tối đa 3 tab.** Chấm là chỉ báo vị trí, không phải điều hướng chính (Apple HIG) nên discoverability thấp — luôn có đường khác: icon "?" ở Tab 1 → Tab 2, nút quay lại, click chấm, phím ←/→. Chỉ tạo chấm khi tab đã có nội dung thật (không tạo chấm cho Tab 3 "chưa quyết định"). Footer đáy cố định 24–28px, chấm active dạng pill 16–20px, hit-target ≥24×24px, tooltip tên tab, chuyển tab giữ nguyên kích thước panel.
+**Chấm tròn: NÊN LÀM, tối đa 3 tab.** Chấm là chỉ báo vị trí, không phải điều hướng chính (Apple HIG) nên discoverability thấp — luôn có đường khác: icon "?" ở Tab 1 → Tab 2, nút quay lại, click chấm, phím ←/→. **Layout kiểu "hub" (Manh chốt 10:33): Dịch ở GIỮA làm mặc định (chấm 2), trái tab 1 shortcut (tạm thời, sau này thay được), phải tab 3 Fast Read (dự kiến).** **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46)** — thay quy tắc cũ "chỉ tạo chấm khi tab có nội dung thật": khung multi-tab lên main là hiện đủ 3 chấm luôn, tab 3 là placeholder cho tới khi Fast Read ship (ngoại lệ này chỉ áp cho tab 3 Fast Read đã có kế hoạch cụ thể). Footer đáy cố định 24–28px, chấm active dạng pill 16–20px, hit-target ≥24×24px, tooltip tên tab, chuyển tab giữ nguyên kích thước panel.
 
 - **Mac:** swipe ngang 2 ngón là chính (ngưỡng ~50px, |dx| > 2×|dy|, chỉ nhận khi bắt đầu ở header/footer để tránh nhảy tab khi cuộn dọc) + click chấm + phím mũi tên. API công khai (`NSPanGestureRecognizer`/`NSEvent`), không cần private framework.
 - **Windows:** click chấm là chính; hover + lăn bánh xe là phụ (1 nấc 120 delta → 1 tab, debounce 300 ms, có công tắc tắt trong Settings), dùng `PointerWheelChanged`; hàng chấm đặt ngoài `ScrollViewer` để event không bị nuốt. Nếu test thấy lăn nhầm nhiều thì tắt mặc định.
@@ -114,18 +118,18 @@ Lưu ý: ENVI không bundle dữ liệu từ điển — nghĩa tra qua API `en.
 
 **Timer — EITHER dùng app riêng, OR tích hợp với KHÔNG thêm icon.** Phương án A (2 menubar/tray icon song song) làm được kỹ thuật (nhiều `NSStatusItem`; nhiều `Shell_NotifyIcon`) nhưng UX tệ: menubar đã dài, icon thứ 2 dễ bị notch che (Mac) / rơi vào overflow (Windows), thứ tự không ổn định. Phương án B (1 icon đổi/gộp trạng thái) cũng làm được nhưng đếm ngược không đọc được ở icon 22px và dễ gây nhầm. **Khuyến nghị: mặc định dùng app riêng; nếu tích hợp thì chỉ bản NHẸ trong tab 2/3 của panel** — notification hệ thống tự tắt, có snooze, không khóa máy, không che màn hình; 2 chế độ 20-20-20 và Pomodoro 25/5; mặc định TẮT; chỉ đếm khi máy hoạt động. **Không thêm menubar/tray item nào.**
 
-Thứ tự làm: (1) 2 tab Dịch + Trợ giúp với chấm tròn; (2) tab timer bản nhẹ sau (nếu Manh vẫn muốn); (3) không làm: app nhắc nghỉ đầy đủ, icon menubar/tray thứ 2, icon gộp trạng thái thường trực.
+Thứ tự làm: (1) khung multi-tab 3 chấm kiểu hub trên main (Dịch giữa mặc định, trái shortcut, phải Fast Read placeholder); (2) tab timer bản nhẹ sau (nếu Manh vẫn muốn); (3) không làm: app nhắc nghỉ đầy đủ, icon menubar/tray thứ 2, icon gộp trạng thái thường trực.
 
 ---
 
-## 8. Thứ tự triển khai đề xuất (chỉ research, chưa code)
+## 8. Thứ tự triển khai (cập nhật 17/11 theo chốt của Manh — khung multi-tab trước, RSVP window sau, TTS lùi xuống)
 
-1. **TTS click-to-listen** (giọng hệ thống + highlight câu; mac word-highlight miễn phí qua AVSpeechSynthesizer; Windows spike highlight từ trước).
-2. **Quick panel** (Settings toggle; hover block → bubble nhỏ chỉ có bản dịch; ẩn khi cuộn).
-3. **Model A hover icon** (hit-test AX/UIA; debounce; fallback bôi chọn).
-4. **Tab chỉnh nhanh khi đang phát** (tab 2/3: preset tốc độ, chọn giọng, autoswitch 2 ngôn ngữ).
-5. **Multi-tab panel** (Tab 1 Dịch + Tab 2 Trợ giúp, chấm tròn; cử chỉ theo nền tảng).
-6. **RSVP** (thứ tự vào đã chốt 17/11: Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray → shortcut global fallback + toggle đổi click; view đọc giữ cả 2 phương án tab dãn/panel riêng, quyết ở prototype).
+1. **Khung multi-tab trên main** (layout hub 3 chấm: Dịch giữa mặc định, trái shortcut, phải Fast Read placeholder) — làm trước, để nhánh sync về.
+2. **RSVP window** (nhánh `feature/fast-read-rsvp` sync main rồi làm; UX copy y xì SwiftRead, chỉ đọc không TTS; luồng vào đã chốt 17/11: Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray → shortcut global fallback + toggle đổi click).
+3. **TTS click-to-listen** (giọng hệ thống + highlight câu; mac word-highlight miễn phí qua AVSpeechSynthesizer; Windows spike highlight từ trước).
+4. **Quick panel** (Settings toggle; hover block → bubble nhỏ chỉ có bản dịch; ẩn khi cuộn).
+5. **Model A hover icon** (hit-test AX/UIA; debounce; fallback bôi chọn).
+6. **Tab chỉnh nhanh khi đang phát** (tab 2/3: preset tốc độ, chọn giọng, autoswitch 2 ngôn ngữ).
 7. **Timer nhẹ** trong tab panel (mặc định TẮT) — hoặc bỏ qua, dùng Pandan/tadama/wnr riêng.
 8. **Sau cùng, nếu cần: extension Edge/Chrome riêng** chỉ để làm Model B (icon hiện sẵn trong trang web) — cân nhắc lại sau khi app native ổn định.
 

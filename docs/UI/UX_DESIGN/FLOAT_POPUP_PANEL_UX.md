@@ -183,9 +183,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   thì sang Fast Read phải qua 2 lần. Có tiền lệ: Snapchat (camera ở giữa,
   vuốt trái ra chat, phải ra stories). Khác thứ tự research cũ (Dịch là tab 1)
   nhưng lý do chính đáng nên đổi.
-- **Điều kiện — chấm 3 chỉ hiện khi tab Fast Read có nội dung thật.** Trước đó
-  panel chỉ có 2 chấm (1 shortcut, 2 dịch), **không hiện chấm trống**. Khi
-  Fast Read có nội dung (người dùng mở đọc) thì mới thêm chấm 3.
+- **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
+  Khung multi-tab lên main là hiện đủ 3 chấm luôn; **tab 3 là placeholder cho
+  tới khi Fast Read ship**. Ngoại lệ này chỉ áp cho tab 3 Fast Read (đã có kế
+  hoạch cụ thể), không áp chung cho mọi tab tương lai. Nội dung placeholder
+  tab 3 (vd text "Fast Read — sắp có") bên mac tự quyết cho gọn.
+- **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
+  hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
+  Read window.** Fast Read làm trước TTS (đã chốt 09:52).
+- **Fast Read window copy y xì UX SwiftRead; CHỈ ĐỌC, không gồm TTS trong
+  read (Manh 10:46).** SwiftRead có tính năng Listen nhưng TransPeek KHÔNG
+  copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc
+  của RSVP; 2 luồng tách hẳn. Chi tiết engine + UX window xem
+  `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
 - **Tab 1 là ô linh hoạt, không cố định là shortcut.** Hiện tại ghi tạm là
   shortcut; sau này thay được bằng nội dung khác (không khóa tab 1 = shortcut
   vĩnh viễn).
