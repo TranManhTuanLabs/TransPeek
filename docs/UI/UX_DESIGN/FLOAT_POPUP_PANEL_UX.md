@@ -38,7 +38,7 @@ Panel mac là một `VStack` (padding ngang 14), các hàng theo thứ tự từ
 | Hàng ngôn ngữ | **Source ⇄ Target + Capture OCR.** Pickers ngôn ngữ trái, nút Swap ⇄ giữa, nút "Capture OCR" (icon + chữ) phải | |
 | Divider | Đường kẻ ngang | |
 | Kết quả | **ScrollView chứa các ProviderResultCard** (1 card / provider). Mỗi card: header (tên provider + trạng thái) / text kết quả (chọn được, báo selection cho DictionaryBar) / hàng loa + Copy **ở trong card, dưới text** (xem §6) | Cap output 260; text dài cuộn trong ô |
-| Actions | **"?" + Pin + Settings.** Căn phải, Spacing 4. "?" (nút `questionmark.circle`) đứng ngay bên trái Pin; Pin trước, Settings sau (như Windows) | Xem §7 |
+| Actions | **"Fast Read" + "?" + Pin + Settings.** Căn phải, Spacing 4. "Fast Read" (icon `book.pages` + chữ, mở cửa sổ đọc RSVP với text đang dịch) ở đầu trái của hàng; "?" (nút `questionmark.circle`) đứng ngay bên trái Pin; Pin trước, Settings sau (như Windows) | Xem §7 |
 | DictionaryBar | **DictionaryBarView** — link tra từ điển theo text đang chọn (trong ô nhập hoặc trong kết quả) | |
 | Footer | **Link GitHub căn giữa + text version căn phải** ("Version 0.1.3 (Build CI #200)" — ẩn số build khi = 1) | |
 
@@ -92,18 +92,22 @@ cuộn — nên lúc nào cũng thấy, không cần kéo. Đó là mẫu "đưa
 nhắc tới lúc đầu; chỉ áp được cho ô nhập vì ô nhập chỉ có 1, không có bài
 toán nhiều provider.)
 
-## 7. Nút "?" bảng shortcut (Manh 17/11, build #200)
+## 7. Nút "?" bảng shortcut + nút "Fast Read" (Manh 17/11, build #200 / nhánh `feature/fast-read-rsvp`)
 
 - Nút `?` (`questionmark.circle`) đứng ngay bên trái nút Pin ở hàng Actions.
 - Bấm mở 1 **popover** neo vào nút (bấm ra ngoài hoặc bấm lại "?" là đóng),
-  liệt kê **9 shortcut** theo đúng thứ tự Settings → Keyboard Shortcuts:
+  liệt kê **10 shortcut** theo đúng thứ tự Settings → Keyboard Shortcuts:
   Smart Translation, Manual Translation, OCR Screen Translate, OCR to
   Clipboard, OCR to Clipboard - Translated, Translate Selection, Translate
-  Clipboard, Screenshot Copy, Scan Barcodes/QR Codes.
+  Clipboard, Screenshot Copy, Scan Barcodes/QR Codes, Fast Read (RSVP).
 - Mỗi dòng có tên + phím tắt hiện tại (chưa gán thì "Not set") + nút **Run** —
   bấm là chạy thẳng hành động đó, khỏi bấm phím vật lý. Nút Run gọi đúng code
   path như bấm phím tắt (`AppDelegate.performShortcut`), nên click và phím
   không bao giờ lệch nhau.
+
+- Nút **"Fast Read"** (`book.pages` + chữ) ở đầu trái hàng Actions: bấm mở
+  cửa sổ đọc RSVP riêng với đúng text đang dịch trong panel (không cần bôi
+  lại). Chi tiết engine + cửa sổ đọc xem `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
 
 ## 8. So sánh với Windows (đối chiếu §1–§7 với doc Windows)
 

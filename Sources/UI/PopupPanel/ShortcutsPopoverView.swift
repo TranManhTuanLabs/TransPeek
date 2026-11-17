@@ -6,8 +6,8 @@ import SwiftUI
 /// directly — so the user can run an action by clicking instead of
 /// pressing the physical keys.
 ///
-/// The list is the same 9 shortcuts as Settings → Keyboard Shortcuts, in
-/// the same tray order (Manh 2026-11-15). The key shown is the shortcut
+/// The list is the same 10 shortcuts as Settings → Keyboard Shortcuts, in
+/// the same tray order (Manh 2026-11-15; Fast Read added 2026-11-17). The key shown is the shortcut
 /// currently assigned (default or the user's own); "Not set" means the
 /// shortcut has no keys assigned yet — it can still be run from here.
 struct ShortcutsPopoverView: View {
@@ -29,6 +29,7 @@ struct ShortcutsPopoverView: View {
         ("Translate Clipboard", .clipboardTranslation),
         ("Screenshot Copy", .screenshotCopy),
         ("Scan Barcodes/QR Codes", .scanBarcodes),
+        ("Fast Read (RSVP)", .fastRead),
     ]
 
     var body: some View {

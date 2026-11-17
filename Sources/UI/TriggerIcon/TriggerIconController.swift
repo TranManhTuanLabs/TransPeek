@@ -8,12 +8,28 @@ import Defaults
 final class TriggerTrackingView: NSView {
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
-    var onMouseDown: (() -> Void)?
+    /// The mouse-down event, so the controller can tell a plain click from
+    /// an Option-click (which runs the *other* click action).
+    var onMouseDown: ((NSEvent) -> Void)?
+    /// A right-click (Control-click / two-finger tap) opens the icon menu.
+    var onRightMouseDown: ((NSEvent) -> Void)?
 
     /// When true the icon shows a speaker symbol (TTS playing) instead of the bubble.
     var isSpeaking = false {
         didSet {
             if isSpeaking != oldValue {
+                needsDisplay = true
+            }
+        }
+    }
+
+    /// What a plain click on this icon does — the glyph shows it, so the
+    /// user can tell at a glance: bubble = translate/speak, book = Fast
+    /// Read. Updated when the icon is shown (it follows the Settings
+    /// "Click icon" choice).
+    var clickAction: TriggerClickAction = .speak {
+        didSet {
+            if clickAction != oldValue {
                 needsDisplay = true
             }
         }
@@ -59,16 +75,29 @@ final class TriggerTrackingView: NSView {
         ctx.setLineWidth(0.5)
         ctx.strokeEllipse(in: rect)
 
-        // SF Symbol icon — speaker while TTS is playing, bubble otherwise.
-        // The bubble glyph is ocean blue (.systemBlue) so the icon stays easy
-        // to spot in both light and dark mode; the circle background keeps
-        // adapting to the system appearance — never a solid blue fill, which
-        // would hide the glyph.
-        let symbolName = isSpeaking ? "speaker.wave.2.fill" : "character.bubble"
-        let symbolColor: NSColor = isSpeaking ? .controlAccentColor : .systemBlue
+        // SF Symbol icon — speaker while TTS is playing, book pages when a
+        // plain click opens Fast Read, bubble otherwise. The glyph always
+        // shows what a plain click will do, so the user never clicks the
+        // wrong action (Manh 2026-11-17). The bubble/book glyph is ocean
+        // blue (.systemBlue) so the icon stays easy to spot in both light
+        // and dark mode; the circle background keeps adapting to the system
+        // appearance — never a solid blue fill, which would hide the glyph.
+        let symbolName: String
+        let symbolColor: NSColor
+        if isSpeaking {
+            symbolName = "speaker.wave.2.fill"
+            symbolColor = .controlAccentColor
+        } else if clickAction == .read {
+            symbolName = "book.pages"
+            symbolColor = .systemBlue
+        } else {
+            symbolName = "character.bubble"
+            symbolColor = .systemBlue
+        }
+        let accessibilityDescription = isSpeaking ? "Stop speaking" : (clickAction == .read ? "Fast Read" : "Translate")
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: isSpeaking ? "Stop speaking" : "Translate")?
+        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityDescription)?
             .withSymbolConfiguration(sizeConfig.applying(colorConfig))
         {
             let imageSize = image.size
@@ -91,15 +120,22 @@ final class TriggerTrackingView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
-        onMouseDown?()
+        onMouseDown?(event)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        onRightMouseDown?(event)
     }
 }
 
 // MARK: - TriggerIconController
 
 /// Manages the trigger icon lifecycle: show near cursor, hover/click to translate, auto-dismiss.
+///
+/// Inherits NSObject so the right-click menu items can target it with
+/// @objc actions.
 @MainActor
-final class TriggerIconController {
+final class TriggerIconController: NSObject {
     var onTranslateRequested: ((String) -> Void)?
     /// Click-to-speak (TransPeek Phase 1): invoked with the selected text when the
     /// user clicks the icon while `triggerClickAction` is `.speak`. The panel is
@@ -107,6 +143,13 @@ final class TriggerIconController {
     var onSpeakRequested: ((String) -> Void)?
     /// Second click while speaking: the app should stop playback.
     var onStopSpeakRequested: (() -> Void)?
+    /// Fast Read (RSVP, Manh 2026-11-17): invoked with the selected text when
+    /// the user clicks the icon while `triggerClickAction` is `.read`, or
+    /// Option-clicks it while the click action is `.speak` / `.translate`.
+    /// The panel is not opened for this path.
+    var onReadRequested: ((String) -> Void)?
+    /// The icon menu's "Settings..." item.
+    var onOpenSettingsRequested: (() -> Void)?
     var onDismissed: (() -> Void)?
 
     /// True while click-to-speak playback is in progress. The icon shows a
@@ -152,6 +195,7 @@ final class TriggerIconController {
 
         let panel = TriggerIconPanel()
         let trackingView = TriggerTrackingView(frame: NSRect(x: 0, y: 0, width: TriggerIconPanel.size, height: TriggerIconPanel.size))
+        trackingView.clickAction = Defaults[.triggerClickAction]
 
         let activationMode = Defaults[.triggerActivationMode]
         self.activationMode = activationMode
@@ -177,8 +221,11 @@ final class TriggerIconController {
                 self.startAutoDismissTimer()
             }
         }
-        trackingView.onMouseDown = { [weak self] in
-            self?.handleIconClick()
+        trackingView.onMouseDown = { [weak self] event in
+            self?.handleIconClick(event: event)
+        }
+        trackingView.onRightMouseDown = { [weak self] event in
+            self?.showContextMenu(for: event)
         }
 
         panel.contentView = trackingView
@@ -295,18 +342,28 @@ final class TriggerIconController {
         cancelAutoDismissTimer()
     }
 
-    /// Click handling (TransPeek Phase 1). In click-activation mode the click
-    /// always means translate — that mode's whole point is click-to-translate.
-    /// In hover mode the click action follows `triggerClickAction`: `.speak`
-    /// cancels both timers and speaks immediately without opening the panel
-    /// (a second click while speaking stops playback); `.translate` keeps the
-    /// old behaviour.
-    private func handleIconClick() {
+    /// Click handling (TransPeek Phase 1, extended with Fast Read 2026-11-17).
+    /// In click-activation mode the click always means translate — that mode's
+    /// whole point is click-to-translate.
+    /// In hover mode the click action follows `triggerClickAction`, and
+    /// Option+click runs the *other* action: when the plain click speaks,
+    /// Option+click opens Fast Read; when the plain click opens Fast Read,
+    /// Option+click speaks (the translate action is reachable from the
+    /// right-click menu instead).
+    private func handleIconClick(event: NSEvent) {
         guard activationMode != .click else {
             triggerTranslation()
             return
         }
-        switch Defaults[.triggerClickAction] {
+        let optionClicked = event.modifierFlags.contains(.option)
+        let action = Defaults[.triggerClickAction]
+        let effectiveAction: TriggerClickAction
+        if optionClicked {
+            effectiveAction = action == .read ? .speak : .read
+        } else {
+            effectiveAction = action
+        }
+        switch effectiveAction {
         case .speak:
             if isSpeaking {
                 onStopSpeakRequested?()
@@ -316,9 +373,64 @@ final class TriggerIconController {
                 setSpeaking(true)
                 onSpeakRequested?(currentText)
             }
+        case .read:
+            performRead()
         case .translate:
             triggerTranslation()
         }
+    }
+
+    /// Open Fast Read with the selected text: dismiss the icon (no panel)
+    /// and hand the text to the app.
+    private func performRead() {
+        let text = currentText
+        cancelAllTimers()
+        guard let panel else { return }
+        panel.contentView = nil
+        panel.close()
+        cleanup()
+        onReadRequested?(text)
+    }
+
+    /// Right-click (Control-click / two-finger tap) menu: Translate / Speak /
+    /// Fast Read / Settings — the discoverable way to reach the action the
+    /// plain click is not set to (Manh 2026-11-17).
+    private func showContextMenu(for event: NSEvent) {
+        cancelHoverTimer()
+        let menu = NSMenu()
+        let translateItem = NSMenuItem(title: "Translate", action: #selector(menuTranslate), keyEquivalent: "")
+        translateItem.target = self
+        menu.addItem(translateItem)
+        let speakItem = NSMenuItem(title: "Speak", action: #selector(menuSpeak), keyEquivalent: "")
+        speakItem.target = self
+        menu.addItem(speakItem)
+        let readItem = NSMenuItem(title: "Fast Read", action: #selector(menuRead), keyEquivalent: "")
+        readItem.target = self
+        menu.addItem(readItem)
+        menu.addItem(.separator())
+        let settingsItem = NSMenuItem(title: "Settings...", action: #selector(menuOpenSettings), keyEquivalent: "")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+        NSMenu.popUpContextMenu(menu, with: event, for: trackingView ?? NSView())
+    }
+
+    @objc private func menuTranslate() {
+        triggerTranslation()
+    }
+
+    @objc private func menuSpeak() {
+        cancelAllTimers()
+        setSpeaking(true)
+        onSpeakRequested?(currentText)
+    }
+
+    @objc private func menuRead() {
+        performRead()
+    }
+
+    @objc private func menuOpenSettings() {
+        dismiss()
+        onOpenSettingsRequested?()
     }
 
     private func triggerTranslation() {
