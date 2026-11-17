@@ -1,9 +1,10 @@
 name: Tests
 
 # When this workflow runs:
-# - On every push to main and every pull request to main (but NOT for docs-only
-#   changes or workflow-only changes — see paths-ignore below, so editing a
-#   .md file or a workflow file never starts a run).
+# - On every push to main and to feature/** branches, and every pull request
+#   to main (but NOT for docs-only changes or workflow-only changes — see
+#   paths-ignore below, so editing a .md file or a workflow file never
+#   starts a run).
 # - Manually, from the GitHub Actions tab ("Run workflow").
 on:
   pull_request:
@@ -13,7 +14,7 @@ on:
       - '**.md'
       - '.github/workflows/**'
   push:
-    branches: [main]
+    branches: [main, 'feature/**']
     paths-ignore:
       - 'docs/**'
       - '**.md'
@@ -194,7 +195,7 @@ jobs:
       # plain "TransPeek-macOS" name and the new "TransPeek-macOS-<run>"
       # name, so artifacts from before this change are still cleaned up.
       - name: Delete older app artifacts (keep only the newest)
-        if: contains(github.event.head_commit.message, '[build-app]')
+        if: contains(github.event.head_commit.message, '[build-app]') && github.ref == 'refs/heads/main'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -217,7 +218,7 @@ jobs:
       # NOTE: the "0.1.3" in the tag is the current MARKETING_VERSION —
       # update it here when the app version bumps.
       - name: Publish pre-release (direct download, keep only the newest)
-        if: contains(github.event.head_commit.message, '[build-app]')
+        if: contains(github.event.head_commit.message, '[build-app]') && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
