@@ -617,6 +617,11 @@ struct PopupView: View {
     /// Swipe lives here — not on the tab content — because a drag over the
     /// results/input is text selection, and a swipe gesture on the content
     /// would steal it.
+    /// The dots sit exactly in the middle of the gap between the tab
+    /// content above (dictionary bar / shortcuts table / placeholder) and
+    /// the GitHub icon below (Manh 2026-11-17 — "căn đều giữa"): 12pt
+    /// above the dots (top padding) and 12pt below (bottom bar's top
+    /// padding), so the row is 20pt tall (12 + 8 dot + 0).
     private var dotsRow: some View {
         HStack(spacing: 8) {
             ForEach(PanelTab.allCases, id: \.self) { tab in
@@ -633,7 +638,7 @@ struct PopupView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.vertical, 4)
+        .padding(.top, 12)
         .gesture(swipeGesture)
     }
 

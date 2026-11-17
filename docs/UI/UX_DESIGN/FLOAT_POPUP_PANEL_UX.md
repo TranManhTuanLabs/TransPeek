@@ -148,6 +148,11 @@ toán nhiều provider.)
   panel khi chụp đi kèm sẵn theo code path phím tắt (panel ẩn, chụp xong
   hiện lại với kết quả), không cần logic riêng. Bảng cũng đóng lại sau khi
   bấm Run (đã chọn hành động, kết quả cần được thấy, không phải bảng).
+  **Riêng các hành động chụp (OCR, Screenshot, Scan) thì Run ẩn panel
+  TRƯỚC khi chụp (Manh 17/11 13:00):** lúc bấm Run người dùng đang nhìn
+  panel nên panel sẽ che mất vùng cần chụp — giống hệt nút "Capture OCR"
+  (`performPanelOCR` ẩn panel rồi mới chụp). Các hành động không chụp thì
+  panel vẫn hiện để xem kết quả.
 - **Nút [×] và Run phải có `InteractiveMarker` (Manh 17/11 12:39, từ test
   build #207):** bản #207 bấm [×] và Run không có tác dụng — vì 2 nút này
   thiếu `InteractiveMarker` nên panel coi click là kéo cửa sổ, nút không
@@ -221,8 +226,12 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   đổi.
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46).** Hàng chấm nằm dưới
   nội dung tab, trên footer (GitHub + version): 3 chấm tròn 8pt, cách nhau
-  8pt, căn giữa, cao ~16pt (chấm + padding 4pt trên/dưới). Chấm đang chọn
-  màu accent, còn lại mờ. **Bấm chấm để đổi tab.**
+  8pt, căn giữa, cao ~20pt. Chấm đang chọn màu accent, còn lại mờ.
+  **Bấm chấm để đổi tab.**
+- **Hàng chấm căn đều giữa nội dung tab và icon GitHub (Manh 13:00):**
+  12pt trên chấm (padding trên của hàng chấm) và 12pt dưới chấm (padding
+  trên của footer) — chấm nằm chính giữa khoảng trống giữa link dictionary
+  / nội dung tab và icon GitHub, không lệch về bên nào.
 - **Vuốt đổi tab:** vuốt ngang trên **hàng chấm** thì đổi tab (vuốt trái →
   tab bên phải, vuốt phải → tab bên trái; chỉ tính vuốt ngang rõ ràng,
   >50pt và ngang hơn dọc). Vuốt KHÔNG đặt trên nội dung tab — vì kéo chuột
@@ -240,9 +249,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
   panel tự về panel dịch — người dùng mở panel là để xem bản dịch, không
   phải tab họ bỏ lại lần trước.
-- **Hàng chấm làm panel cao thêm ~16pt:** chiều cao fitted cho text ngắn
-  từ ~480 lên ~500 — test `dismissAndReopenDiscardsPendingResize` đổi
-  khoảng 450–480 thành 450–500 trong cùng commit.
+- **Hàng chấm làm panel cao thêm ~20pt:** chiều cao fitted cho text ngắn
+  từ ~480 lên ~510 — test `dismissAndReopenDiscardsPendingResize` đổi
+  khoảng 450–480 thành 450–510 trong cùng commit (16pt lúc đầu, 20pt sau
+  khi căn đều giữa theo Manh 13:00).
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
