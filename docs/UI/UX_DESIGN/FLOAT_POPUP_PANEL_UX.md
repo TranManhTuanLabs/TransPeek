@@ -168,6 +168,30 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 | Nút "?" | Có (#200), bên trái Pin | Đang làm (giao 17/11), vị trí tương tự | Cùng spec, mac làm trước |
 | Loa/Copy ô nhập | Hàng riêng dưới ô text | Overlay trong ô (góc dưới-phải) | mac tách ra ngoài cho đỡ cuộn; Windows giữ overlay |
 
+## 9. Layout 3 tab panel — hướng sau này (CHƯA LÀM, chỉ ghi quyết định)
+
+> **Quyết định đã chốt (Manh 17/11 ~10:33, từ chat TTS). Chưa triển khai tab
+> lúc này** — chỉ ghi lại để lúc làm multi-tab (mục 5 theo thứ tự research)
+> thì làm theo layout này, không làm theo thứ tự cũ (Dịch là tab 1).
+
+- **Layout kiểu "hub": Dịch ở GIỮA làm mặc định (chấm 2), trái là tab 1
+  shortcut, phải là tab 3 Fast Read.**
+  - Tab 2 (giữa, mặc định): Dịch — màn chính.
+  - Tab 1 (trái): trang shortcut đầy đủ.
+  - Tab 3 (phải, dự kiến): Fast Read (đọc RSVP).
+- **Lý do Manh:** Dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để Dịch ở tab 1
+  thì sang Fast Read phải qua 2 lần. Có tiền lệ: Snapchat (camera ở giữa,
+  vuốt trái ra chat, phải ra stories). Khác thứ tự research cũ (Dịch là tab 1)
+  nhưng lý do chính đáng nên đổi.
+- **Điều kiện — chấm 3 chỉ hiện khi tab Fast Read có nội dung thật.** Trước đó
+  panel chỉ có 2 chấm (1 shortcut, 2 dịch), **không hiện chấm trống**. Khi
+  Fast Read có nội dung (người dùng mở đọc) thì mới thêm chấm 3.
+- **Tab 1 là ô linh hoạt, không cố định là shortcut.** Hiện tại ghi tạm là
+  shortcut; sau này thay được bằng nội dung khác (không khóa tab 1 = shortcut
+  vĩnh viễn).
+- **Nút "?" popover shortcut (§7) giữ nguyên** — xem nhanh shortcut trong
+  panel Dịch; tab 1 là trang shortcut đầy đủ, không thay thế nút "?".
+
 ## Liên kết
 
 - [Icon float UX](FLOAT_ICON_UX_SPEC.md)
