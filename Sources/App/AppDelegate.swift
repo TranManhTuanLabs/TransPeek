@@ -44,6 +44,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController.onOCRCopyOnlySuccess = { [weak self] in
             self?.copyToastController.show(message: String(localized: "Copied"))
         }
+        // The "?" shortcuts panel (PopupView) runs actions through this:
+        // its Run buttons call performShortcut, the same dispatch the
+        // physical hotkeys use, so a click and a keypress do the same thing.
+        panelController.onRunShortcut = { [weak self] name in
+            self?.performShortcut(name)
+        }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()
         triggerIconController = TriggerIconController()
@@ -397,6 +403,83 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return String(payload.prefix(maxLength)) + "…"
     }
 
+    /// Translate Selection: translate the currently selected text; show the
+    /// panel at the cursor when there is something to show.
+    func performTranslateSelection() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            let outcome = await self.coordinator.translateSelection()
+            if outcome.shouldPresent {
+                self.panelController.showAtCursor()
+            }
+        }
+    }
+
+    /// OCR Screen Translate: OCR a screen region and translate it; show the
+    /// panel at the cursor when there is something to show.
+    func performOCRScreenTranslate() {
+        cancelSmartTranslation()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let outcome = await self.coordinator.ocrAndTranslate()
+            if outcome.shouldPresent {
+                self.panelController.showAtCursor()
+            }
+        }
+    }
+
+    /// Manual Translation: open the panel in input mode at the screen center.
+    func performInputTranslation() {
+        cancelSmartTranslation()
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.coordinator.prepareInputMode()
+            self.panelController.showAtScreenCenter()
+        }
+    }
+
+    /// Translate Clipboard: translate the clipboard text; show the panel at
+    /// the cursor.
+    func performClipboardTranslation() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            await self.coordinator.translateClipboard()
+            self.panelController.showAtCursor()
+        }
+    }
+
+    /// Run a shortcut by name — the single dispatch the "?" shortcuts panel
+    /// (PopupView) calls from its Run buttons (Manh 2026-11-17). It runs
+    /// exactly the same code as the physical hotkey, so the Run button and
+    /// the keyboard shortcut can never drift apart: each case below is the
+    /// same perform* method the hotkey registration calls.
+    func performShortcut(_ name: KeyboardShortcuts.Name) {
+        switch name {
+        case .smartTranslation:
+            performSmartTranslation()
+        case .inputTranslation:
+            performInputTranslation()
+        case .ocrScreenshot:
+            performOCRScreenTranslate()
+        case .silentOCR:
+            performSilentOCR()
+        case .silentOCRTranslated:
+            performSilentOCRTranslated()
+        case .translateSelection:
+            performTranslateSelection()
+        case .clipboardTranslation:
+            performClipboardTranslation()
+        case .screenshotCopy:
+            performScreenshotCopy()
+        case .scanBarcodes:
+            performScanBarcodes()
+        default:
+            break
+        }
+    }
+
     @discardableResult
     func cancelSmartTranslationAndWait() async -> Bool {
         await SmartTranslationTaskCleanup.cancelAndWait(smartTranslationTask)
@@ -408,25 +491,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         KeyboardShortcuts.onKeyUp(for: .translateSelection) { [weak self] in
-            guard let self else { return }
-            Task { @MainActor in
-                await self.cancelSmartTranslationAndWait()
-                let outcome = await self.coordinator.translateSelection()
-                if outcome.shouldPresent {
-                    self.panelController.showAtCursor()
-                }
-            }
+            self?.performTranslateSelection()
         }
 
         KeyboardShortcuts.onKeyUp(for: .ocrScreenshot) { [weak self] in
-            guard let self else { return }
-            self.cancelSmartTranslation()
-            Task { @MainActor in
-                let outcome = await self.coordinator.ocrAndTranslate()
-                if outcome.shouldPresent {
-                    self.panelController.showAtCursor()
-                }
-            }
+            self?.performOCRScreenTranslate()
         }
 
         KeyboardShortcuts.onKeyUp(for: .silentOCR) { [weak self] in
@@ -442,21 +511,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         KeyboardShortcuts.onKeyUp(for: .inputTranslation) { [weak self] in
-            guard let self else { return }
-            self.cancelSmartTranslation()
-            Task { @MainActor in
-                self.coordinator.prepareInputMode()
-                self.panelController.showAtScreenCenter()
-            }
+            self?.performInputTranslation()
         }
 
         KeyboardShortcuts.onKeyUp(for: .clipboardTranslation) { [weak self] in
-            guard let self else { return }
-            Task { @MainActor in
-                await self.cancelSmartTranslationAndWait()
-                await self.coordinator.translateClipboard()
-                self.panelController.showAtCursor()
-            }
+            self?.performClipboardTranslation()
         }
     }
 

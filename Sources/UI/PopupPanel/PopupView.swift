@@ -1,5 +1,6 @@
 import AppKit
 import Defaults
+import KeyboardShortcuts
 import SwiftUI
 
 /// The SwiftUI content displayed inside the popup translation panel.
@@ -8,6 +9,12 @@ struct PopupView: View {
     var onDismiss: (() -> Void)?
     var onOpenSettings: (() -> Void)?
     var onOCRRequested: (() -> Void)?
+    /// Called when a Run button in the "?" shortcuts panel is clicked:
+    /// runs the named shortcut through AppDelegate.performShortcut, the
+    /// same dispatch the physical hotkeys use (Manh 2026-11-17).
+    var onRunShortcut: ((KeyboardShortcuts.Name) -> Void)?
+    /// Whether the "?" shortcuts panel (popover) is open.
+    @State private var showingShortcuts = false
     @State private var editableText: String = ""
     /// Text the dictionary links look up (SPEC §3.2): the text selected
     /// inside the source editor or a translation result when there is one,
@@ -387,10 +394,28 @@ struct PopupView: View {
                 // Windows (TranslatePanelWindow.xaml, commit ab5ffbf).
                 // Order is Pin then Settings, like Windows (PinButton
                 // before SettingsButton in the Actions StackPanel).
+                // The "?" shortcuts button (Manh 2026-11-17) sits directly
+                // left of Pin: it opens a popover listing every shortcut
+                // with a Run button, so the user can trigger an action by
+                // clicking instead of pressing the physical keys.
                 // This row's height is asserted in PopupPanelLayoutTests
                 // (256 / 376) — update those numbers if this row changes.
                 HStack(spacing: 4) {
                     Spacer()
+
+                    Button {
+                        showingShortcuts.toggle()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: CGFloat(fontSize - 2)))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Keyboard shortcuts")
+                    .background { InteractiveMarker() }
+                    .popover(isPresented: $showingShortcuts) {
+                        ShortcutsPopoverView(onRunShortcut: onRunShortcut)
+                    }
 
                     pinButton
 

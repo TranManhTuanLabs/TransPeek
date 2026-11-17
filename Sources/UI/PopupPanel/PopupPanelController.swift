@@ -1,5 +1,6 @@
 import AppKit
 import Defaults
+import KeyboardShortcuts
 import SwiftUI
 
 /// Manages the lifecycle and positioning of the popup translation panel.
@@ -9,6 +10,10 @@ final class PopupPanelController {
     /// Called when a panel OCR run in copy-only mode actually copied text,
     /// so the app can show the "Copied" toast (set by AppDelegate).
     var onOCRCopyOnlySuccess: (() -> Void)?
+    /// Called when the "?" shortcuts panel's Run button is clicked (set by
+    /// AppDelegate): runs the named shortcut through the same dispatch the
+    /// physical hotkeys use (AppDelegate.performShortcut).
+    var onRunShortcut: ((KeyboardShortcuts.Name) -> Void)?
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
@@ -209,6 +214,13 @@ final class PopupPanelController {
                 },
                 onOCRRequested: { [weak self] in
                     self?.performPanelOCR()
+                },
+                // Forward at call time (not capture time): AppDelegate sets
+                // onRunShortcut once at startup, but the panel is built
+                // lazily, so reading the property here keeps the wiring
+                // working no matter which ran first.
+                onRunShortcut: { [weak self] name in
+                    self?.onRunShortcut?(name)
                 },
                 onResultLayoutChange: { [weak self] layout in
                     self?.resultLayout = layout
