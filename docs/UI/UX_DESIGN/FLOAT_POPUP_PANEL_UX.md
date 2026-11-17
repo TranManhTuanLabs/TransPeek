@@ -303,7 +303,16 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   read (Manh 10:46).** SwiftRead có tính năng Listen nhưng TransPeek KHÔNG
   copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc
   của RSVP; 2 luồng tách hẳn. Chi tiết engine + UX window xem
-  `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
+  `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`. **Thiết kế
+  lại window (Manh 17/11 21:40, sửa 22:35):** Focus mode (Space chạy → chỉ
+  line đang focus, dừng → đủ block text như trang sách, line đang đọc to
+  nổi bật), góc trái trên có Estimated reading time + 2 slider + picker
+  word num, góc phải trên có Settings (Color Scheme White on Black / Black
+  on White) + "?" hotkey, Rewind/Play/Fast-forward/Toggle maximize window
+  căn giữa đáy (KHÔNG dùng Fullscreen — window đã có 3 nút đỏ/vàng/xanh),
+  đọc xong hiện "Cool! You just read X words..." trên thanh progress — xem
+  `rsvp-report.md` §14. Làm sau khi tách module, trong thư mục `FastRead/`
+  mới.
 - **Panel shortcut (tạm thời, ở trái) là ô linh hoạt, không cố định là
   shortcut.** **Lộ trình panel ở trái (Manh 12:01): tạm thời panel này chỉ
   là bảng shortcut (decor/placeholder); SAU NÀY panel này dành cho
