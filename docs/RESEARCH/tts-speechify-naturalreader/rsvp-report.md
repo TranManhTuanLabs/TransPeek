@@ -523,6 +523,7 @@ Mô hình chung của mobile: **đọc trong app** (thư viện sách/bài trong
 5. **Khi đọc xong:** hiện câu **"Cool! You just read X words in Y minutes, Z seconds!"** (X = số từ đã đọc, Y phút, Z giây) — ghi phía trên thanh progress (thanh tiến trình) như hint mô tả.
 6. **Giữ nguyên từ slice 1:** window riêng, CHỈ ĐỌC (không TTS trong read), ORP pivot, context ±150 từ khi pause, điều khiển WPM/chunk/seek (xem §1/§6.1/§12).
 7. **Tiêu đề window:** **"Fast Read - RSVP"** (Manh 23:31, làm gộp phiên sau cùng redesign) — tên đủ + viết tắt; hiện tại code đang để `"Fast Read"` (`RSVPWindowController.swift`).
+8. **Nút "Fast Read" trên panel dịch phải ẨN panel dịch rồi mới mở window ngoài (Manh 23:41):** bấm nút "Fast Read" ở hàng Actions của panel dịch → ẩn panel dịch trước (dùng `hidePanelTemporarily()` như các shortcut capture), rồi mới mở cửa sổ đọc RSVP riêng. **Nếu đọc Fast Read ở panel 3 (dự kiến, đọc ngay trong panel) thì KHÔNG ẩn panel dịch** — vì đang đọc trong panel, không mở window ngoài.
 
 ## 13. Nguồn & giới hạn nghiên cứu
 
