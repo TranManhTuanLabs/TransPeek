@@ -43,6 +43,15 @@ struct PopupView: View {
     @State private var expandedProviders: Set<String> = []
     @State private var autoPlayedGeneration: Int = -1
     @Environment(\.ttsCoordinator) private var ttsCoordinator
+    @Environment(\.popupPanel) private var panel
+    /// Two-finger trackpad swipe → tab switch (Manh 2026-11-17). The dots
+    /// row's DragGesture only sees mouse drags; a 2-finger swipe arrives
+    /// as scroll-wheel events, so it needs this monitor (see
+    /// TrackpadSwipeMonitor.swift). The swipe works anywhere over the
+    /// panel — a trackpad swipe is a scroll event, not a mouse drag, so it
+    /// never steals text selection, and vertical swipes pass through to
+    /// the results ScrollView untouched.
+    @StateObject private var trackpadSwipeMonitor = TrackpadSwipeMonitor()
     @State private var sourceLang: String = Defaults[.sourceLanguage]
     @State private var targetLang: String = SupportedLanguages.resolvedTarget(
         Defaults[.targetLanguage],
@@ -156,12 +165,31 @@ struct PopupView: View {
             expandedProviders = Set(coordinator.activeSlots.map(\.id))
             clampInputHeightToAllowedRange()
 
+            // Two-finger trackpad swipe → tab switch (Manh 2026-11-17).
+            // The monitor is scoped to the panel window, so it is inert
+            // while the panel is hidden; start() is a no-op if it is
+            // already installed (onAppear can fire more than once).
+            if let panel {
+                trackpadSwipeMonitor.start(panel: panel)
+            }
+
             if Defaults[.ttsAutoPlaySource],
                !coordinator.sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                let tts = ttsCoordinator
             {
                 let lang = coordinator.detectedLanguage ?? Defaults[.sourceLanguage]
                 tts.speak(MarkdownSupport.speakableText(coordinator.sourceText), language: lang)
+            }
+        }
+        // A 2-finger trackpad swipe switches tabs (Manh 2026-11-17): next
+        // is the panel on the right, previous the one on the left — the
+        // same direction as the dots-row drag swipe.
+        .onReceive(trackpadSwipeMonitor.swipePublisher) { direction in
+            switch direction {
+            case .next:
+                selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+            case .previous:
+                selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
             }
         }
         .onChange(of: coordinator.translationGeneration) { _, _ in
