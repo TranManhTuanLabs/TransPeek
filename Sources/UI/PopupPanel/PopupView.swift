@@ -332,7 +332,6 @@ struct PopupView: View {
                                     isExpanded: expandedBinding(for: provider.id),
                                     isCopyFeedbackActive: coordinator.copiedProviderID == provider.id,
                                     copyFeedbackGeneration: coordinator.copyFeedbackGeneration,
-                                    textCap: resultTextCap,
                                     onCopy: {
                                         coordinator.copyResult(forProviderID: provider.id)
                                     },
@@ -345,7 +344,8 @@ struct PopupView: View {
                                     attachments: coordinator.sourceAttachments,
                                     onSelectionChange: { selected in
                                         lookupText = selected
-                                    }
+                                    },
+                                    textCap: resultTextCap
                                 )
                             }
                         }
