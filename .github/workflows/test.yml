@@ -168,25 +168,46 @@ jobs:
           codesign --verify --verbose build/Build/Products/Release/TransPeek.app
           rm -f /tmp/TransPeek-signing.crt /tmp/TransPeek-signing.key
 
+      # Decide the artifact name suffix: a build on a feature branch gets
+      # "-branch" (e.g. TransPeek-macOS-202-branch.zip) so a downloaded
+      # branch build can never be mistaken for a main build
+      # (TransPeek-macOS-202.zip). Main keeps the plain name — release.yml
+      # finds the artifact by that name to package releases, so renaming
+      # main would break the release flow. Only runs with "[build-app]" in
+      # the commit message reach this step.
+      - name: Set artifact name suffix
+        if: contains(github.event.head_commit.message, '[build-app]')
+        id: artifact-name
+        run: |
+          if [ "$GITHUB_REF" = 'refs/heads/main' ]; then
+            echo "suffix=" >> "$GITHUB_OUTPUT"
+          else
+            echo "suffix=-branch" >> "$GITHUB_OUTPUT"
+          fi
+
       # Zip the signed .app. The file name carries the Tests run number
       # (e.g. TransPeek-macOS-138.zip) so each downloaded build is distinct
-      # and the user never has to rename it to tell builds apart.
+      # and the user never has to rename it to tell builds apart. On a
+      # feature branch the name gets a "-branch" suffix
+      # (TransPeek-macOS-138-branch.zip) — see "Set artifact name suffix".
       - name: Zip app
         if: contains(github.event.head_commit.message, '[build-app]')
         run: |
-          ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app "TransPeek-macOS-${{ github.run_number }}.zip"
+          ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app "TransPeek-macOS-${{ github.run_number }}${{ steps.artifact-name.outputs.suffix }}.zip"
 
       # Upload the zip as the "TransPeek-macOS-<run number>" artifact (kept
       # 7 days). The run number in the name is what makes the downloaded
-      # file distinct per build. release.yml finds this artifact by the
+      # file distinct per build. On a feature branch the name gets a
+      # "-branch" suffix (TransPeek-macOS-<run>-branch) — see "Set artifact
+      # name suffix". release.yml finds this artifact by the
       # "TransPeek-macOS-" prefix (it also still accepts the old plain
       # "TransPeek-macOS" name from runs before this change).
       - name: Upload app
         if: contains(github.event.head_commit.message, '[build-app]')
         uses: actions/upload-artifact@v4
         with:
-          name: TransPeek-macOS-${{ github.run_number }}
-          path: TransPeek-macOS-${{ github.run_number }}.zip
+          name: TransPeek-macOS-${{ github.run_number }}${{ steps.artifact-name.outputs.suffix }}
+          path: TransPeek-macOS-${{ github.run_number }}${{ steps.artifact-name.outputs.suffix }}.zip
           retention-days: 7
 
       # Delete all older app artifacts, keeping only the newest one. That
@@ -194,13 +215,16 @@ jobs:
       # stops working once a newer build replaces it. Matches both the old
       # plain "TransPeek-macOS" name and the new "TransPeek-macOS-<run>"
       # name, so artifacts from before this change are still cleaned up.
+      # Branch artifacts ("TransPeek-macOS-<run>-branch") are excluded —
+      # a main run must never delete a branch build Manh may still be
+      # testing (branch artifacts expire on their own after 7 days).
       - name: Delete older app artifacts (keep only the newest)
         if: contains(github.event.head_commit.message, '[build-app]') && github.ref == 'refs/heads/main'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ids=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select(.name=="TransPeek-macOS" or (.name | startswith("TransPeek-macOS-")))) | sort_by(.created_at) | reverse | .[1:] | .[].id')
+          ids=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100" --jq '.artifacts | map(select((.name=="TransPeek-macOS" or (.name | startswith("TransPeek-macOS-"))) and (.name | endswith("-branch") | not))) | sort_by(.created_at) | reverse | .[1:] | .[].id')
           for id in $ids; do
             echo "Deleting old artifact $id"
             gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id"
