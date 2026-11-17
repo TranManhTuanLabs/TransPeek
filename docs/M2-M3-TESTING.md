@@ -126,5 +126,5 @@ Live checks (all need a Mac; none were possible on the VM):
 ## Liên kết
 
 - [Lộ trình](MASTER_PLAN.md)
-- [Việc đang làm / chờ](TASK_QUEUE.MD)
+- [Việc đang làm / chờ](TASK_QUEUE.md)
 - [Bản đồ docs](STRUCTURE_MAP.md)

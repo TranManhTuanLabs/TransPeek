@@ -204,5 +204,5 @@ lines, so it loads fast in the GitHub web viewer. The raw log archive and the
 ## Liên kết
 
 - [Setup + intervention log](GIT-CI-BUILD-SETUP.md)
-- [Quy tắc làm việc](../AGENTS.MD)
+- [Quy tắc làm việc](../AGENTS.md)
 - [Bản đồ docs](../STRUCTURE_MAP.md)

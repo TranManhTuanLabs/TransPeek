@@ -932,7 +932,7 @@ each recurring problem.
 - **2026-11-17 — Panel size + resize-cursor fix (Manh: "size nhỏ
   ngang dọc hết mức", "không thể kéo bé quá min height", values
   from the Windows repo).** Panel values aligned to Windows
-  (TranslatePanelWindow.xaml.cs / FLOAT_POPUP_PANEL_UX.MD, baseline
+  (TranslatePanelWindow.xaml.cs / FLOAT_POPUP_PANEL_UX.md, baseline
   #153): default width 440 → **420** (`Constants.popupDefaultWidth`),
   max width 800 → **600** (`PopupPanel.maximumSize`, new static;
   height stays 800), Settings width slider 400...800 → **400...600**.
@@ -1012,5 +1012,5 @@ each recurring problem.
 ## Liên kết
 
 - [CI detail](BUILD-TEST-WORKFLOW-GITHUB-CI.md)
-- [Quy tắc làm việc](../AGENTS.MD)
+- [Quy tắc làm việc](../AGENTS.md)
 - [Bản đồ docs](../STRUCTURE_MAP.md)

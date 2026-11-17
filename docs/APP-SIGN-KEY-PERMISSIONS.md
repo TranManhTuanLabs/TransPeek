@@ -261,5 +261,5 @@ re-add, and relaunch — do not just toggle the old entry.
 ## Liên kết
 
 - [Cert tự ký](SELF-SIGNED-CERTIFICATE-GUIDE.md)
-- [Kiến trúc](ARCHITECTURE.MD)
+- [Kiến trúc](ARCHITECTURE.md)
 - [Bản đồ docs](STRUCTURE_MAP.md)

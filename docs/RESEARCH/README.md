@@ -23,7 +23,7 @@
   thứ tự Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray →
   shortcut fallback + toggle; view đọc RSVP giữ cả 2 phương án (tab dãn / panel riêng),
   quyết ở prototype. SwiftRead đã đọc source thật (.crx 6.11.2 + 5.9.2).
-  Xem `FEATURES/SPEECH_PLAYER.MD`. (Thư mục `src/` chứa source extension + audio mẫu
+  Xem `FEATURES/SPEECH_PLAYER.md`. (Thư mục `src/` chứa source extension + audio mẫu
   ~92MB KHÔNG đưa vào repo — chỉ đưa 6 báo cáo .md; source gốc còn ở workspace.)
 - **`transpeek-windows-packaging-signing/`** (15–16/11/2026) — **Windows-specific:**
   đóng gói / ký / Store / update / TTS nhanh cho bản Windows. Kết luận: Velopack cho

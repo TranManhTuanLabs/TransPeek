@@ -193,6 +193,6 @@ Ghi chú: 2 repo riêng (mac Swift / Windows C#), chỉ chung spec — danh sác
 
 ## Liên kết
 
-- [Bối cảnh AI](AI_CONTEXT.MD)
-- [Kiến trúc](ARCHITECTURE.MD)
+- [Bối cảnh AI](AI_CONTEXT.md)
+- [Kiến trúc](ARCHITECTURE.md)
 - [Bản đồ docs](STRUCTURE_MAP.md)

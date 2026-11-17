@@ -17,7 +17,7 @@
 - Apple Developer $99/năm: **tạm hoãn** (1 membership dùng chung iOS + macOS);
   code notarize giữ làm dự phòng.
 
-## 3. Việc đang mở (xem chi tiết `TASK_QUEUE.MD`)
+## 3. Việc đang mở (xem chi tiết `TASK_QUEUE.md`)
 
 - Panel UX mac: **chưa chốt size → chưa viết doc**.
 - CI #197 (attempt 2): chờ kết luận.
@@ -25,7 +25,7 @@
 
 ## Liên kết
 
-- [Việc đang làm / chờ](TASK_QUEUE.MD)
-- [Trạng thái dự án](PROJECT_STATE.MD)
-- [Kiến trúc](ARCHITECTURE.MD)
-- [Chỉ mục UX](UI_DESIGN.MD)
+- [Việc đang làm / chờ](TASK_QUEUE.md)
+- [Trạng thái dự án](PROJECT_STATE.md)
+- [Kiến trúc](ARCHITECTURE.md)
+- [Chỉ mục UX](UI_DESIGN.md)

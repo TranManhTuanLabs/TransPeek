@@ -977,5 +977,5 @@ why the old flow was abandoned — do not apply them to the current
 ## Liên kết
 
 - [Quyền ký app](APP-SIGN-KEY-PERMISSIONS.md)
-- [Kiến trúc](ARCHITECTURE.MD)
+- [Kiến trúc](ARCHITECTURE.md)
 - [Bản đồ docs](STRUCTURE_MAP.md)
