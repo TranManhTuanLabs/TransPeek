@@ -63,6 +63,12 @@ struct ShortcutsTableView: View {
                 }
                 .buttonStyle(.plain)
                 .help("Close shortcuts")
+                // InteractiveMarker: without it PopupPanel treats a click
+                // here as a window drag, so the button never fires (Manh
+                // 2026-11-17: the × and Run buttons in build #207 did
+                // nothing). Every other clickable control in this panel
+                // carries one — see PopupView / ProviderResultCard.
+                .background { InteractiveMarker() }
             }
             .padding(.horizontal, 12)
             .padding(.top, 10)
@@ -86,6 +92,11 @@ struct ShortcutsTableView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
                     .help("Run \(entry.title)")
+                    // InteractiveMarker: without it PopupPanel treats a
+                    // click here as a window drag, so Run never fires
+                    // (Manh 2026-11-17, build #207). See the × button
+                    // above and ProviderResultCard for the same pattern.
+                    .background { InteractiveMarker() }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4)

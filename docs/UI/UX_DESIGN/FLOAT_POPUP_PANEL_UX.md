@@ -148,6 +148,12 @@ toán nhiều provider.)
   panel khi chụp đi kèm sẵn theo code path phím tắt (panel ẩn, chụp xong
   hiện lại với kết quả), không cần logic riêng. Bảng cũng đóng lại sau khi
   bấm Run (đã chọn hành động, kết quả cần được thấy, không phải bảng).
+- **Nút [×] và Run phải có `InteractiveMarker` (Manh 17/11 12:39, từ test
+  build #207):** bản #207 bấm [×] và Run không có tác dụng — vì 2 nút này
+  thiếu `InteractiveMarker` nên panel coi click là kéo cửa sổ, nút không
+  nhận được click. Mọi nút khác trong panel đều có marker này
+  (xem `PopupView` / `ProviderResultCard`); nút nào mới thêm vào panel cũng
+  phải có, không thì bấm không ăn.
 - **Bảng này KHÔNG phải card provider** (nó không dịch gì, chỉ liệt kê
   shortcut) và **nút "?" KHÔNG nhảy sang panel shortcut (tạm thời, ở
   trái)** (Manh 17/11 12:01): panel shortcut tạm là bảng shortcut
@@ -194,11 +200,52 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 | Nút "?" | Có (#200), bên trái Pin | Đang làm (giao 17/11), vị trí tương tự | Cùng spec, mac làm trước |
 | Loa/Copy ô nhập | Hàng riêng dưới ô text | Overlay trong ô (góc dưới-phải) | mac tách ra ngoài cho đỡ cuộn; Windows giữ overlay |
 
-## 9. Layout 3 tab panel — hướng sau này (CHƯA LÀM, chỉ ghi quyết định)
+## 9. Layout 3 tab panel — khung đã lên main (Manh 17/11, build #208)
 
-> **Quyết định đã chốt (Manh 17/11 ~10:33, từ chat TTS). Chưa triển khai tab
-> lúc này** — chỉ ghi lại để lúc làm multi-tab (mục 5 theo thứ tự research)
-> thì làm theo layout này, không làm theo thứ tự cũ (panel dịch ở trái).
+> **Khung multi-tab đã triển khai trên main (Manh 17/11 ~12:35 — "xong cả
+> khung multi-tab trên main rồi mới qua nhánh + Fast Read").** 3 tab đổi được
+> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read (tên tạm) vẫn là
+> placeholder cho tới khi Fast Read window xong (nhánh
+> `feature/fast-read-rsvp` sync main rồi mới làm tiếp, sau khi khung này
+> xanh).
+
+- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
+  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  - **panel dịch (ở giữa, mặc định)** — màn chính.
+  - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
+  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+- **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
+  panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
+  tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
+  Khác thứ tự research cũ (panel dịch ở trái) nhưng lý do chính đáng nên
+  đổi.
+- **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46).** Hàng chấm nằm dưới
+  nội dung tab, trên footer (GitHub + version): 3 chấm tròn 8pt, cách nhau
+  8pt, căn giữa, cao ~16pt (chấm + padding 4pt trên/dưới). Chấm đang chọn
+  màu accent, còn lại mờ. **Bấm chấm để đổi tab.**
+- **Vuốt đổi tab:** vuốt ngang trên **hàng chấm** thì đổi tab (vuốt trái →
+  tab bên phải, vuốt phải → tab bên trái; chỉ tính vuốt ngang rõ ràng,
+  >50pt và ngang hơn dọc). Vuốt KHÔNG đặt trên nội dung tab — vì kéo chuột
+  trên kết quả/input là bôi chọn text, đặt gesture vuốt lên đó sẽ cướp mất
+  bôi chọn.
+- **Panel shortcut (tạm thời, ở trái) dùng lại đúng `ShortcutsTableView`**
+  của nút "?" (§7) — không viết bảng mới. Bấm Run thì chạy đúng code path
+  phím tắt rồi **về lại panel dịch** (kết quả hiện ở panel dịch, không ở
+  tab shortcut); bấm [×] cũng về panel dịch. Bảng cuộn trong ScrollView
+  riêng và báo chiều cao qua cùng layout preference như kết quả dịch, nên
+  auto-fit vẫn vừa khung cho tab này.
+- **Panel Fast Read (tên tạm, ở phải) là placeholder:** icon sách + text
+  "Fast Read — coming soon" + 1 dòng giải thích, căn giữa. Panel giữ chiều
+  cao tối thiểu (450) ở tab này. Nội dung placeholder do bên mac tự quyết.
+- **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
+  panel tự về panel dịch — người dùng mở panel là để xem bản dịch, không
+  phải tab họ bỏ lại lần trước.
+- **Hàng chấm làm panel cao thêm ~16pt:** chiều cao fitted cho text ngắn
+  từ ~480 lên ~500 — test `dismissAndReopenDiscardsPendingResize` đổi
+  khoảng 450–480 thành 450–500 trong cùng commit.
+- **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
+  hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
+  Read window.** Fast Read làm trước TTS (đã chốt 09:52).
 
 - **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
   shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
