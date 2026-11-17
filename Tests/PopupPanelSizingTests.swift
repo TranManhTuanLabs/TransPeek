@@ -25,9 +25,11 @@ import Testing
 
     @Test func longResultGrowsOnlyToOutputCapAndKeepsTopEdge() {
         // Output cap (Manh 2026-11-16, Windows direction, design settled):
-        // 500pt of content grows the panel to chrome + cap (200 + 260),
-        // not to chrome + full content (200 + 500). Long text scrolls
-        // inside the results box past the cap.
+        // 500pt of content grows the panel to chrome + cap, not to chrome
+        // + full content (200 + 500). Long text scrolls inside the results
+        // box past the cap. The cap is the text cap (260) PLUS one card's
+        // non-text chrome (90) so the whole first card — including its
+        // speaker/Copy row — fits in the viewport (Manh 2026-11-17).
         let current = NSRect(x: 120, y: 300, width: 440, height: 450)
 
         let result = PopupPanelSizing.frameToFit(
@@ -40,7 +42,7 @@ import Testing
             visibleFrame: visibleFrame
         )
 
-        #expect(result.height == 460) // 200pt chrome + 260pt output cap
+        #expect(result.height == 550) // 200pt chrome + (260pt text cap + 90pt card chrome)
         #expect(result.maxY == current.maxY)
         #expect(result.origin.x == current.origin.x)
     }
@@ -107,7 +109,8 @@ import Testing
         )
 
         // Chrome comes from the MEASURED container (450 − 250 = 200), not
-        // from the already-grown 600pt frame; output is capped at 260.
-        #expect(result.height == 460)
+        // from the already-grown 600pt frame; output is capped at the text
+        // cap (260) plus one card's chrome (90).
+        #expect(result.height == 550)
     }
 }

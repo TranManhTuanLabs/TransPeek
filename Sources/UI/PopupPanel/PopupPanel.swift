@@ -47,10 +47,6 @@ final class PopupPanel: NSPanel {
     /// `SubmitAwareTextView.viewDidMoveToWindow` consumes this flag once the view attaches.
     private(set) var pendingSourceInputFocus = false
 
-    /// Number of upcoming `NSWindow.didMoveNotification` events that should be ignored by the
-    /// position-saving observer. The controller bumps this before each programmatic `setFrame`
-    /// so we don't overwrite the saved drag position with a freshly-computed show location.
-    var suppressNextMoveSave: Int = 0
     var isUserResizing = false
     var manualResizeGeneration: Int?
 

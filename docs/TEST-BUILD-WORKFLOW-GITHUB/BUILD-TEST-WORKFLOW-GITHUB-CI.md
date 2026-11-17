@@ -28,7 +28,12 @@ rediscover any of this.
   results (`macOS-test-results`). The artifact name carries the run number since
   2026-11-13 (commit `f617b7a`) so each download is distinct — before
   that every artifact was named the plain `TransPeek-macOS` and
-  downloads collided. The pre-release was added 2026-11-16 (commit
+  downloads collided. Since 2026-11-17 (commit `5f981c9`) a build on a
+  feature branch is named `TransPeek-macOS-<run number>-branch`, so a
+  branch build can never be mistaken for a main build; main keeps the
+  plain name because `release.yml` finds the artifact by that name to
+  package releases. The Delete step excludes `-branch` artifacts, so a
+  main run never deletes a branch build Manh may still be testing. The pre-release was added 2026-11-16 (commit
   `04e5727`) so the app can be downloaded from a direct link instead of
   digging into the Actions run for the artifact; the artifact itself is
   still kept because `release.yml` (direction B) promotes the tested
@@ -54,9 +59,13 @@ To avoid wasting CI runs (and other people's runners):
   `github.ref == 'refs/heads/main'` — they run ONLY on main, so a
   branch build never deletes main's newest artifact/pre-release. A
   branch `[build-app]` build is downloaded from the run's artifact
-  (no pre-release link). A plain code commit runs tests only; add
-  `[build-app]` to the message when a testable app build is actually
-  needed. (Same pattern as SeekZip.)
+  (no pre-release link) — the branch artifact is named
+  `TransPeek-macOS-<run number>-branch` (since 2026-11-17, commit
+  `5f981c9`), so it can never be mistaken for a main build. Main keeps
+  the plain `TransPeek-macOS-<run number>` name because `release.yml`
+  finds the artifact by that name to package releases. A plain code
+  commit runs tests only; add `[build-app]` to the message when a
+  testable app build is actually needed. (Same pattern as SeekZip.)
 
 ## The artifact is signed by CI — verified working since run #99
 

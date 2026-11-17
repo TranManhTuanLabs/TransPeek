@@ -97,9 +97,9 @@ struct PopupPanelLayoutTests {
         // sets the flag programmatically with no mouse press, so it
         // looks stale. A real drag always holds the button, so this
         // only affects the test. (The fitted height for this long
-        // content is 467 — chrome + 260 cap — above the 450 manual
-        // frame, so without the generation guard the panel would
-        // re-fit to 467; run #196.)
+        // content is ~557 — chrome + 260 text cap + 90 card chrome —
+        // above the 450 manual frame, so without the generation guard
+        // the panel would re-fit to ~557; run #196.)
         let manualFrame = NSRect(x: panel.frame.minX, y: panel.frame.maxY - 450, width: 440, height: 450)
         panel.setFrame(manualFrame, display: true)
         panel.manualResizeGeneration = coordinator.translationGeneration
@@ -147,7 +147,7 @@ struct PopupPanelLayoutTests {
         // the 450 minimum (LayoutTestPreferences height, = the new default
         // and minimum, Manh 2026-11-16) and the async resize lifts it to
         // the fitted height (at most ~480: chrome + short content, capped
-        // by the 260pt output cap). Reading the height right after the
+        // by the output cap — 260pt text + 90pt card chrome). Reading the height right after the
         // translation finishes can catch it before the resize runs, so it
         // may still be 450. So assert the range 450–480: any value in it
         // means the panel is at its short-content height, not grown for
@@ -190,7 +190,6 @@ private struct LayoutTestPreferences {
             "popupInputHeight": 48,
             "popupFontSize": fontSize,
             "popupFontName": "",
-            "popupRememberPosition": false,
             "ttsAutoPlaySource": false,
             "ttsAutoPlayTarget": false,
         ]) { _, new in new }, forName: UserDefaults.argumentDomain)

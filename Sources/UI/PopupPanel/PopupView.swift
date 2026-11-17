@@ -56,6 +56,22 @@ struct PopupView: View {
         return max(inputMinHeight, min(inputSixLineHeight, availableHeight))
     }
 
+    /// Cap for each result card's text area (Manh 2026-11-17): the text
+    /// scrolls inside the card past this height, so the card's speaker/Copy
+    /// row stays visible without scrolling the panel (Windows parity).
+    /// Normally the auto-fit cap (260); grows with the panel viewport when
+    /// the user drags taller, so the text area expands instead of leaving
+    /// empty space below the card (Windows raises its cap the same way).
+    /// The card's non-text chrome is subtracted so the whole card fits the
+    /// viewport; the frameToFit cap (260 + chrome) matches.
+    private var resultTextCap: CGFloat {
+        let viewport = resultLayout.viewportHeight ?? PopupPanelSizing.autoFitOutputCap
+        return max(
+            PopupPanelSizing.autoFitOutputCap,
+            viewport - PopupPanelSizing.resultCardChrome
+        )
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             switch coordinator.phase {
@@ -175,14 +191,15 @@ struct PopupView: View {
     private var activeContent: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Top bar: app name + slogan + float-icon hint, centered.
-            // App name uses the top bar font size; slogan is 2pt smaller.
+            // App name uses the top bar font size; slogan is 1pt smaller
+            // (Windows parity 17/16/13, Manh 2026-11-17).
             // The hint is 4pt smaller than the app name and dimmer — it
             // tells new users the float icon's two gestures (Manh 2026-11-15).
             VStack(spacing: 2) {
                 Text("TransPeek")
                     .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
                 Text("Translate anywhere, Peek instantly!")
-                    .font(.system(size: CGFloat(max(topBarFontSize - 2, 8))))
+                    .font(.system(size: CGFloat(max(topBarFontSize - 1, 8))))
                     .italic()
                     .foregroundStyle(.secondary)
                 Text("Hover icon to translate, Click to listen")
@@ -331,7 +348,8 @@ struct PopupView: View {
                                     attachments: coordinator.sourceAttachments,
                                     onSelectionChange: { selected in
                                         lookupText = selected
-                                    }
+                                    },
+                                    textCap: resultTextCap
                                 )
                             }
                         }

@@ -22,6 +22,15 @@ struct ProviderResultCard: View {
     /// Measured height of the selectable result text (an estimate until the
     /// text view reports its real height after layout).
     @State private var resultTextHeight: CGFloat = 48
+    /// Measured height of the rich Markdown view (same pattern as
+    /// resultTextHeight; only used in rich mode).
+    @State private var markdownHeight: CGFloat = 48
+    /// Cap for the text area: the text scrolls inside the card past this
+    /// height, so the speaker/Copy row below stays visible (Manh 2026-11-17).
+    /// Normally the auto-fit cap (260); PopupView raises it when the user
+    /// drags the panel taller, so the text area expands instead of leaving
+    /// empty space (Windows parity).
+    var textCap: CGFloat = PopupPanelSizing.autoFitOutputCap
     @Default(.popupFontSize) private var fontSize
     @Default(.popupFontName) private var fontName
     @Default(.ttsAccent) private var ttsAccent
@@ -199,14 +208,31 @@ struct ProviderResultCard: View {
         return VStack(alignment: .leading, spacing: 4) {
             if offersMarkdown && viewMode == .rich {
                 // Inline images need Textual's image rendering; selection
-                // tracking is not available in this mode.
-                MarkdownResultView(text: text, font: font, attachments: attachments, showsAttachments: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                // tracking is not available in this mode. The text scrolls
+                // inside the card past textCap (like the plain text below),
+                // so the speaker/Copy row stays visible.
+                ScrollView {
+                    MarkdownResultView(text: text, font: font, attachments: attachments, showsAttachments: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background {
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .preference(key: MarkdownHeightPreferenceKey.self, value: geometry.size.height)
+                            }
+                        }
+                }
+                .frame(height: min(markdownHeight, textCap), alignment: .top)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onPreferenceChange(MarkdownHeightPreferenceKey.self) { markdownHeight = $0 }
             } else {
                 // Selectable result text: a read-only NSTextView that reports
                 // the selection, so the dictionary links follow a selection
                 // made inside the translation (SPEC §3.2). SwiftUI Text and
                 // Textual's StructuredText cannot report their selection.
+                // The text view lives in a scroll view and is capped at
+                // textCap: long text scrolls inside the card, so the
+                // speaker/Copy row below is always visible without scrolling
+                // the panel (Manh 2026-11-17, Windows parity).
                 SelectableResultTextView(
                     text: text,
                     font: NSFont.popup(name: fontName, size: CGFloat(fontSize)),
@@ -214,7 +240,7 @@ struct ProviderResultCard: View {
                     onSelectionChange: onSelectionChange,
                     onContentHeightChange: { height in resultTextHeight = height }
                 )
-                .frame(height: resultTextHeight, alignment: .top)
+                .frame(height: min(resultTextHeight, textCap), alignment: .top)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
@@ -281,5 +307,15 @@ struct ProviderResultCard: View {
             }
         }
         .background { InteractiveMarker() }
+    }
+}
+
+/// Measures the rich Markdown view's full content height so the card can
+/// cap it at textCap (same pattern as the panel's contentHeight).
+private struct MarkdownHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 48
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
