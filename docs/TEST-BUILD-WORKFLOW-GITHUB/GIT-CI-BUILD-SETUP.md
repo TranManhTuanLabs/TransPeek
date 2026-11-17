@@ -71,7 +71,8 @@ Related docs:
 - Approval cards for connector pushes expire after 30 minutes. An
   expired/denied card only blocks that push — the code is not lost;
   re-push and a new card appears.
-- **Branch strategy:** feature work on a branch, `main` stays clean and
+- **Branch strategy (standard for every feature branch, Manh 11:29):**
+  feature work on a branch, `main` stays clean and
   green. Before merging a branch into `main`, sync `main` INTO the branch
   first (merge main → branch), resolve conflicts ON the branch, rework the
   feature to the new main structure, get CI green on the branch, THEN
@@ -82,7 +83,12 @@ Related docs:
   so "CI green on the branch" is checked by a real run, not by a PR
   into main. The branch artifact is named
   `TransPeek-macOS-<run number>-branch` (main keeps the plain name),
-  so a branch build can never be mistaken for a main build.
+  so a branch build can never be mistaken for a main build. **The
+  workflow runs from the file in the pushed branch — a branch only
+  builds with the new setup after main is synced INTO it.** This
+  standard applies to the current `feature/fast-read-rsvp` branch and
+  to every branch after it; a new branch just follows it, no need to
+  ask again.
 - **"Foundation first, branch second":** if CI is red on both `main` and
   a branch, fix `main` FIRST.
 - **Gate (milestone flow):** work locally → push one batch → CI green →
@@ -998,6 +1004,24 @@ each recurring problem.
   from the file in the pushed branch — a branch only builds with the
   new setup after main is synced INTO it (or the workflow is fixed on
   the branch directly).**
+- **2026-11-17 — Branch sync + "-branch" verified on
+  `feature/fast-read-rsvp` (Manh 11:29; run #205 GREEN).** Main was
+  synced into the branch in one commit (`c9fa593`, `[build-app]`):
+  the panel batch (slogan 16, fixed speaker/Copy, remember-position
+  removed), the new `test.yml` (trigger + main-only guards +
+  "-branch" suffix), and the current docs. The 5 files Fast Read
+  shares with the panel batch (Constants/AppDelegate/
+  PopupPanelController/PopupView/GeneralSettingsView) were merged by
+  hand — the branch keeps its Fast Read code, main's panel changes
+  apply on top; the panel UX doc was merged the same way (main's
+  §2/§3/§4/§6/§8/§9 + the branch's Fast Read button and 10th
+  shortcut). **Run #205 (branch, commit `c9fa593`) GREEN:**
+  artifact `TransPeek-macOS-205-branch` (downloadable from the run
+  page), no pre-release created, nothing of main's deleted — the
+  "-branch" suffix and the main-only guards work as designed. **Note
+  (Manh 11:34): after this verification, Fast Read work on the branch
+  PAUSES until main finishes the multi-tab frame; then main syncs
+  into the branch once more (frame only) and Fast Read continues.**
 
 ## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
 

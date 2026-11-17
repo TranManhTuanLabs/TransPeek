@@ -66,6 +66,13 @@ To avoid wasting CI runs (and other people's runners):
   finds the artifact by that name to package releases. A plain code
   commit runs tests only; add `[build-app]` to the message when a
   testable app build is actually needed. (Same pattern as SeekZip.)
+  **Branch standard (Manh 11:29): this setup applies to the current
+  `feature/fast-read-rsvp` branch and to every branch after it — a new
+  branch just follows it. The workflow runs from the file in the
+  pushed branch, so a branch only builds with the new setup after main
+  is synced INTO it. Verified on run #205 (branch, GREEN):
+  artifact `TransPeek-macOS-205-branch`, no pre-release, nothing of
+  main's deleted.**
 
 ## The artifact is signed by CI — verified working since run #99
 
