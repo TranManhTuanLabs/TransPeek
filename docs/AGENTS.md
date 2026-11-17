@@ -44,6 +44,10 @@
 
 ## 5. Quy tắc chung
 
+- **Tính năng mới viết riêng module** — xem quyết định kiến trúc
+  `ARCHITECTURE.md` §5.1 (Manh 17/11/2026): `FastRead/`, `BreakTimer/`,
+  `Shortcuts/` (1 view dùng chung), khung tab mỏng, chỉ nối mỏng vào code
+  chung. Không nhét tính năng mới vào file panel dịch.
 - **KHÔNG hardcode** — mọi thứ không nên fix cứng trừ khi thật sự cần; phải có tính
   mở rộng hoặc tự nhận diện (vd flip target theo favorite của user, không fix cặp ENG–VIE).
 - GitHub App/connector **không sửa được `.github/workflows/*` (403)**, không xoá được

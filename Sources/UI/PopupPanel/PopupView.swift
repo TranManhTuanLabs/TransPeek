@@ -26,6 +26,10 @@ struct PopupView: View {
     /// runs the named shortcut through AppDelegate.performShortcut, the
     /// same dispatch the physical hotkeys use (Manh 2026-11-17).
     var onRunShortcut: ((KeyboardShortcuts.Name) -> Void)?
+    /// Called when the "Fast Read" button in the Actions row is clicked:
+    /// opens the RSVP reading window with the text being translated
+    /// (Manh 2026-11-17).
+    var onFastRead: ((String) -> Void)?
     /// Whether the "?" shortcuts table (embedded at the top of the
     /// output box, Manh 2026-11-17) is shown. It is a plain section, not
     /// a popover and not a provider card.
@@ -532,6 +536,20 @@ struct PopupView: View {
                 // This row's height is asserted in PopupPanelLayoutTests
                 // (256 / 376) — update those numbers if this row changes.
                 HStack(spacing: 4) {
+                    // Fast Read (Manh 2026-11-17): opens the RSVP reading
+                    // window with the text being translated — no need to
+                    // re-select it. Sits at the left end of the Actions row.
+                    Button {
+                        onFastRead?(coordinator.sourceText)
+                    } label: {
+                        Label("Fast Read", systemImage: "book.pages")
+                            .font(.system(size: CGFloat(fontSize - 2)))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Fast Read (RSVP)")
+                    .background { InteractiveMarker() }
+
                     Spacer()
 
                     Button {

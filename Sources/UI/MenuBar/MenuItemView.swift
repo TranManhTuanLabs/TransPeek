@@ -125,6 +125,17 @@ struct MenuItemView: View {
 
         Divider()
 
+        sectionHeadline("Reading")
+
+        Button {
+            appDelegate.performFastRead()
+        } label: {
+            Label("Fast Read (RSVP)", systemImage: "book.pages")
+        }
+        .globalKeyboardShortcut(.fastRead)
+
+        Divider()
+
         sectionHeadline("Barcodes / QR Codes")
 
         Button {

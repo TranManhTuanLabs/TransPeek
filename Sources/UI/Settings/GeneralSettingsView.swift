@@ -29,6 +29,9 @@ struct GeneralSettingsView: View {
     @Default(.menuBarCustomSymbolName) private var menuBarCustomSymbolName
     @Default(.menuBarCustomIconIsTemplate) private var menuBarCustomIconIsTemplate
     @Default(.menuBarCustomIconRevision) private var menuBarCustomIconRevision
+    @Default(.rsvpWPM) private var rsvpWPM
+    @Default(.rsvpChunkSize) private var rsvpChunkSize
+    @Default(.rsvpFontSize) private var rsvpFontSize
 
     @State private var iconImportError: String?
     @State private var showingIconResetConfirm = false
@@ -65,6 +68,7 @@ struct GeneralSettingsView: View {
                 GlobalShortcutRecorder("Translate Clipboard:", name: .clipboardTranslation)
                 GlobalShortcutRecorder("Screenshot Copy:", name: .screenshotCopy)
                 GlobalShortcutRecorder("Scan Barcodes/QR Codes:", name: .scanBarcodes)
+                GlobalShortcutRecorder("Fast Read (RSVP):", name: .fastRead)
 
                 LocalShortcutRecorder()
             }
@@ -143,8 +147,12 @@ struct GeneralSettingsView: View {
 
                     Picker("Click icon:", selection: $triggerClickAction) {
                         Text("Speak").tag(TriggerClickAction.speak)
+                        Text("Read (Fast Read)").tag(TriggerClickAction.read)
                         Text("Translate (legacy)").tag(TriggerClickAction.translate)
                     }
+                    Text("Option+click does the other one: when Click is Speak, Option+click opens Fast Read; when Click is Read, Option+click speaks.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
 
                     LabeledContent("Hover delay: \(hoverDelayMs)ms (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms)") {
                         Slider(
@@ -188,6 +196,36 @@ struct GeneralSettingsView: View {
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.orange)
                 }
+            }
+
+            Section("Fast Read (RSVP)") {
+                LabeledContent("Reading speed: \(rsvpWPM) WPM (default: \(Defaults.Keys.rsvpWPM.defaultValue))") {
+                    Slider(
+                        value: Binding(
+                            get: { Double(rsvpWPM) },
+                            set: { rsvpWPM = Int($0) }
+                        ),
+                        in: 100...Double(RSVPEngine.maxWPM),
+                        step: 25
+                    )
+                }
+                LabeledContent("Words at once: \(rsvpChunkSize) (default: \(Defaults.Keys.rsvpChunkSize.defaultValue))") {
+                    Stepper("", value: $rsvpChunkSize, in: RSVPEngine.chunkRange)
+                        .labelsHidden()
+                }
+                LabeledContent("Reading text size: \(rsvpFontSize) (default: \(Defaults.Keys.rsvpFontSize.defaultValue))") {
+                    Slider(
+                        value: Binding(
+                            get: { Double(rsvpFontSize) },
+                            set: { rsvpFontSize = Int($0) }
+                        ),
+                        in: 40...110,
+                        step: 2
+                    )
+                }
+                Text("Fast Read shows one chunk of text at a time in its own window. Open it with Option+click on the float icon, the Fast Read button in the translate panel, the menubar, or its global shortcut.")
+                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .foregroundStyle(.secondary)
             }
 
             Section("Language Detection") {

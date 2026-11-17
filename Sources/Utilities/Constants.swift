@@ -149,8 +149,12 @@ enum TriggerActivationMode: String, CaseIterable, Defaults.Serializable {
 
 /// What a click on the floating trigger icon does (TransPeek Phase 1).
 /// Hover always opens the panel; click is a separate, faster action.
+/// Fast Read (RSVP) joined as a third click action in 2026-11-17: the
+/// Settings toggle picks which of Speak / Fast Read the plain click does,
+/// and Option+click does the other one.
 enum TriggerClickAction: String, CaseIterable, Defaults.Serializable {
     case speak     // Speak the selected text immediately (default)
+    case read      // Open Fast Read (RSVP) with the selected text
     case translate // Old behaviour: open the translation panel
 }
 
@@ -191,6 +195,10 @@ extension KeyboardShortcuts.Name {
     static let scanBarcodes = Self("scanBarcodes")
     static let inputTranslation = Self("inputTranslation", default: .init(.a, modifiers: .option))
     static let clipboardTranslation = Self("clipboardTranslation", default: .init(.v, modifiers: .option))
+    /// Fast Read (RSVP) from selection/clipboard — the global shortcut is
+    /// only a fallback entry point (Manh 2026-11-17), so it has no default
+    /// key; the user assigns one in Settings if they want it.
+    static let fastRead = Self("fastRead")
     static let swapLanguages: Self = {
         let name = Self("swapLanguages", default: .init(.t, modifiers: .option))
         // Clear legacy or default bindings that conflict with popup or global actions.
@@ -263,6 +271,7 @@ enum SwapLanguagesShortcut {
         .scanBarcodes,
         .inputTranslation,
         .clipboardTranslation,
+        .fastRead,
     ]
 
     static var current: KeyboardShortcuts.Shortcut? {
@@ -402,6 +411,11 @@ extension Defaults.Keys {
     static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .speak)
     static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 500)
     static let autoHideDelaySec = Key<Int>("transpeek_autoHideDelaySec", default: 5)
+
+    // Fast Read (RSVP) — reading speed, chunk size, text size (Manh 2026-11-17).
+    static let rsvpWPM = Key<Int>("transpeek_rsvpWPM", default: RSVPEngine.defaultWPM)
+    static let rsvpChunkSize = Key<Int>("transpeek_rsvpChunkSize", default: 1)
+    static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 64)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

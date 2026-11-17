@@ -14,6 +14,10 @@ final class PopupPanelController {
     /// AppDelegate): runs the named shortcut through the same dispatch the
     /// physical hotkeys use (AppDelegate.performShortcut).
     var onRunShortcut: ((KeyboardShortcuts.Name) -> Void)?
+    /// Called when the panel's "Fast Read" button is clicked (set by
+    /// AppDelegate): opens the RSVP reading window with the text being
+    /// translated (Manh 2026-11-17).
+    var onFastRead: ((String) -> Void)?
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
@@ -214,6 +218,10 @@ final class PopupPanelController {
                 // working no matter which ran first.
                 onRunShortcut: { [weak self] name in
                     self?.onRunShortcut?(name)
+                },
+                // Same call-time forwarding for Fast Read (Manh 2026-11-17).
+                onFastRead: { [weak self] text in
+                    self?.onFastRead?(text)
                 },
                 onResultLayoutChange: { [weak self] layout in
                     self?.resultLayout = layout
