@@ -149,10 +149,10 @@ toán nhiều provider.)
   hiện lại với kết quả), không cần logic riêng. Bảng cũng đóng lại sau khi
   bấm Run (đã chọn hành động, kết quả cần được thấy, không phải bảng).
 - **Bảng này KHÔNG phải card provider** (nó không dịch gì, chỉ liệt kê
-  shortcut) và **nút "?" KHÔNG nhảy sang tab 1** (Manh 17/11 12:01): tab 1
-  tạm là bảng shortcut (decor/placeholder), sau này thành timer
-  rest-eyes/focus/tomato; khi đó shortcut vẫn ở lại với nút "?" (nhúng
-  trong ô output). Xem §9.
+  shortcut) và **nút "?" KHÔNG nhảy sang panel shortcut (tạm thời, ở
+  trái)** (Manh 17/11 12:01): panel shortcut tạm là bảng shortcut
+  (decor/placeholder), sau này thành timer rest-eyes/focus/tomato; khi đó
+  shortcut vẫn ở lại với nút "?" (nhúng trong ô output). Xem §9.
 - **Hướng này đã CHỐT (Manh 17/11 12:19):** bảng nhúng ở ĐẦU ô output,
   provider không bị ẩn, bấm "?" lần nữa/[×] thì về lại chỉ có card
   provider, bấm Run thì ẩn panel để chụp — đúng như §7 này. Hướng này
@@ -198,22 +198,24 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 > **Quyết định đã chốt (Manh 17/11 ~10:33, từ chat TTS). Chưa triển khai tab
 > lúc này** — chỉ ghi lại để lúc làm multi-tab (mục 5 theo thứ tự research)
-> thì làm theo layout này, không làm theo thứ tự cũ (Dịch là tab 1).
+> thì làm theo layout này, không làm theo thứ tự cũ (panel dịch ở trái).
 
-- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định (chấm 2), trái là
-  tab 1 shortcut, phải là tab 3 Fast Read.**
-  - **panel dịch (chấm 2, ở giữa, mặc định)** — màn chính.
-  - Tab 1 (trái): trang shortcut đầy đủ.
-  - Tab 3 (phải, dự kiến): Fast Read (đọc RSVP).
+- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
+  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  - **panel dịch (ở giữa, mặc định)** — màn chính.
+  - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
+  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
 - **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
-  panel dịch ở tab 1 thì sang Fast Read phải qua 2 lần. Có tiền lệ:
-  Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories). Khác thứ
-  tự research cũ (Dịch là tab 1) nhưng lý do chính đáng nên đổi.
+  panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
+  tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
+  Khác thứ tự research cũ (panel dịch ở trái) nhưng lý do chính đáng nên
+  đổi.
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
-  Khung multi-tab lên main là hiện đủ 3 chấm luôn; **tab 3 là placeholder cho
-  tới khi Fast Read ship**. Ngoại lệ này chỉ áp cho tab 3 Fast Read (đã có kế
-  hoạch cụ thể), không áp chung cho mọi tab tương lai. Nội dung placeholder
-  tab 3 (vd text "Fast Read — sắp có") bên mac tự quyết cho gọn.
+  Khung multi-tab lên main là hiện đủ 3 chấm luôn; **panel Fast Read (tên
+  tạm) là placeholder cho tới khi tính năng này ship**. Ngoại lệ này chỉ áp
+  cho panel Fast Read (tên tạm, đã có kế hoạch cụ thể), không áp chung cho
+  mọi tab tương lai. Nội dung placeholder panel Fast Read (vd text
+  "Fast Read — sắp có") bên mac tự quyết cho gọn.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
@@ -222,17 +224,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc
   của RSVP; 2 luồng tách hẳn. Chi tiết engine + UX window xem
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
-- **Tab 1 là ô linh hoạt, không cố định là shortcut.** **Lộ trình tab 1
-  (Manh 12:01): tạm thời tab 1 chỉ là bảng shortcut (decor/placeholder);
-  SAU NÀY tab 1 dành cho rest-eyes/focus/tomato** — tab nhắc nghỉ nhẹ:
-  20-20-20 nghỉ mắt, focus, Pomodoro (theo research break reminders,
-  bản nhẹ trong tab panel, mặc định TẮT).
-- **Nút "?" KHÔNG nhảy sang tab 1 (Manh 12:01).** "?" chỉ nhúng bảng
-  shortcut trong ô output (theo hướng 11:50 — nhúng đổi nội dung ô output,
-  không tạo card mới). Lý do: bây giờ nhảy cũng vô nghĩa vì tab 1 đang là
-  shortcut (cùng nội dung với bảng nhúng); sau này tab 1 thành timer thì
-  nhảy tới đó để xem shortcut càng sai chỗ. Khi tab 1 đổi thành timer,
-  shortcut vẫn ở lại với nút "?" (nhúng trong ô output).
+- **Panel shortcut (tạm thời, ở trái) là ô linh hoạt, không cố định là
+  shortcut.** **Lộ trình panel ở trái (Manh 12:01): tạm thời panel này chỉ
+  là bảng shortcut (decor/placeholder); SAU NÀY panel này dành cho
+  rest-eyes/focus/tomato** — tab nhắc nghỉ nhẹ: 20-20-20 nghỉ mắt, focus,
+  Pomodoro (theo research break reminders, bản nhẹ trong tab panel, mặc
+  định TẮT).
+- **Nút "?" KHÔNG nhảy sang panel shortcut (tạm thời, ở trái) (Manh
+  12:01).** "?" chỉ nhúng bảng shortcut trong ô output (theo hướng 11:50 —
+  nhúng đổi nội dung ô output, không tạo card mới). Lý do: bây giờ nhảy
+  cũng vô nghĩa vì panel ở trái đang là bảng shortcut (cùng nội dung với
+  bảng nhúng); sau này panel ở trái thành timer thì nhảy tới đó để xem
+  shortcut càng sai chỗ. Khi panel ở trái đổi thành timer, shortcut vẫn ở
+  lại với nút "?" (nhúng trong ô output).
 
 ## Liên kết
 
