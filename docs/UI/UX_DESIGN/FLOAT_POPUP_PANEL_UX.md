@@ -196,11 +196,17 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   copy phần đó vào view đọc — nghe là việc của TTS (click icon), đọc là việc
   của RSVP; 2 luồng tách hẳn. Chi tiết engine + UX window xem
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
-- **Tab 1 là ô linh hoạt, không cố định là shortcut.** Hiện tại ghi tạm là
-  shortcut; sau này thay được bằng nội dung khác (không khóa tab 1 = shortcut
-  vĩnh viễn).
-- **Nút "?" popover shortcut (§7) giữ nguyên** — xem nhanh shortcut trong
-  panel Dịch; tab 1 là trang shortcut đầy đủ, không thay thế nút "?".
+- **Tab 1 là ô linh hoạt, không cố định là shortcut.** **Lộ trình tab 1
+  (Manh 12:01): tạm thời tab 1 chỉ là bảng shortcut (decor/placeholder);
+  SAU NÀY tab 1 dành cho rest-eyes/focus/tomato** — tab nhắc nghỉ nhẹ:
+  20-20-20 nghỉ mắt, focus, Pomodoro (theo research break reminders,
+  bản nhẹ trong tab panel, mặc định TẮT).
+- **Nút "?" KHÔNG nhảy sang tab 1 (Manh 12:01).** "?" chỉ nhúng bảng
+  shortcut trong ô output (theo hướng 11:50 — nhúng đổi nội dung ô output,
+  không tạo card mới). Lý do: bây giờ nhảy cũng vô nghĩa vì tab 1 đang là
+  shortcut (cùng nội dung với bảng nhúng); sau này tab 1 thành timer thì
+  nhảy tới đó để xem shortcut càng sai chỗ. Khi tab 1 đổi thành timer,
+  shortcut vẫn ở lại với nút "?" (nhúng trong ô output).
 
 ## Liên kết
 
