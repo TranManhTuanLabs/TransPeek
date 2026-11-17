@@ -10,6 +10,14 @@
   About hiện "Build CI #" dưới Version, ẩn khi = "1").
 - Menubar/tray là 1 trong các luồng vào RSVP ("Đọc nhanh") — xem
   `FEATURES/SPEECH_PLAYER.md`.
+- **Menubar mac dùng được submenu (Manh 12:06):** menubar chỉ có 1 hàng
+  nhưng mỗi mục chính mở được list con của chính nó — nên tích hợp thêm
+  menu Tomato/Focus/Fast Read là hoàn toàn khả thi, không sợ menu dài
+  (mục mới nằm trong submenu, không thêm mục top-level). Áp cho cả luồng
+  vào RSVP (mục menubar/tray) và tab timer sau này (Tomato/Focus có thể
+  điều khiển nhanh từ submenu menubar mà không cần mở panel). Lưu ý: tray
+  Windows cũng mở được submenu tương tự — khi làm Windows thì giữ cùng
+  pattern.
 
 ## 2. Cửa sổ Settings
 
