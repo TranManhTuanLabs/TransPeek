@@ -510,16 +510,18 @@ Mô hình chung của mobile: **đọc trong app** (thư viện sách/bài trong
 6. **Phím tắt:** 1 global duy nhất (mở RSVP) + toàn bộ phím điều khiển chỉ active khi panel đọc focus.
 7. **Mobile: chưa làm.** Chứng minh RSVP trên desktop trước.
 
-## 14. Thiết kế lại window Fast Read (Manh chốt 17/11 21:40)
+## 14. Thiết kế lại window Fast Read (Manh chốt 17/11 21:40, sửa 22:35)
 
-> **Spec chốt, chưa triển khai.** Port window **y như SwiftRead, đặc biệt home window reading** (cửa sổ đọc chính của SwiftRead). Làm **sau khi tách module** — dời 3 file RSVP sang thư mục `Sources/FastRead/` mới rồi mới sửa, để sửa thẳng ở đường dẫn mới, không sửa 2 lần. Trạng thái: đang chờ CI #214 (main) + #215 (nhánh `feature/fast-read-rsvp`) xanh.
+> **Spec chốt, chưa triển khai.** Port window **y như SwiftRead, đặc biệt home window reading** (cửa sổ đọc chính của SwiftRead). Làm **sau khi tách module** — dời 3 file RSVP sang thư mục `Sources/FastRead/` mới rồi mới sửa, để sửa thẳng ở đường dẫn mới, không sửa 2 lần. Trạng thái: nhánh đã xanh (#215, 22:05); đang tách module rồi làm redesign.
 
 1. **Focus mode (chế độ tập trung):**
    - Khi bấm **Space để chạy read** → **ẩn hết block text, chỉ để lại line đang focus** (dòng đang đọc) — mắt chỉ nhìn 1 dòng.
    - Khi **dừng/pause** → **hiện đủ block text như trang sách**, line đang đọc vẫn **focus, to và nổi bật** hơn các dòng còn lại.
-2. **Nút điều khiển căn giữa ở đáy window:** **Play, Replay, Fullscreen** — 3 nút nằm giữa đáy cửa sổ.
-3. **Nút Settings ở góc phải trên:** bên trong có **Color Scheme** với 2 lựa chọn — **White on Black / Black on White**. Các tuỳ chỉnh khác trong Settings làm sau.
-4. **Giữ nguyên từ slice 1:** window riêng, CHỈ ĐỌC (không TTS trong read), ORP pivot, context ±150 từ khi pause, điều khiển WPM/chunk/seek (xem §1/§6.1/§12).
+2. **Góc trái trên:** **Estimated reading time** (thời gian đọc ước tính) cùng **2 slider** (WPM, cỡ chữ) + **picker word num** (số từ hiện mỗi lần = chunk size).
+3. **Góc phải trên:** nút **Settings** (bên trong có **Color Scheme**: **White on Black / Black on White**; các tuỳ chỉnh khác làm sau) + nút **"?"** chứa **hotkey** (như SwiftRead).
+4. **Nút điều khiển căn giữa ở đáy window:** **Rewind, Play, Fast-forward, Toggle maximize window** — 4 nút nằm giữa đáy cửa sổ. **KHÔNG dùng nút Fullscreen** (Manh sửa 22:35: window đã có sẵn 3 nút đỏ/vàng/xanh của macOS để fullscreen; dùng Toggle maximize window thay cho fullscreen).
+5. **Khi đọc xong:** hiện câu **"Cool! You just read X words in Y minutes, Z seconds!"** (X = số từ đã đọc, Y phút, Z giây) — ghi phía trên thanh progress (thanh tiến trình) như hint mô tả.
+6. **Giữ nguyên từ slice 1:** window riêng, CHỈ ĐỌC (không TTS trong read), ORP pivot, context ±150 từ khi pause, điều khiển WPM/chunk/seek (xem §1/§6.1/§12).
 
 ## 13. Nguồn & giới hạn nghiên cứu
 
