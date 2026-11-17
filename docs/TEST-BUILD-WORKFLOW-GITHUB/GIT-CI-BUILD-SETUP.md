@@ -76,7 +76,11 @@ Related docs:
   first (merge main → branch), resolve conflicts ON the branch, rework the
   feature to the new main structure, get CI green on the branch, THEN
   merge via PR. Never merge a stale branch straight into main — it can
-  downgrade or lose main's newer code.
+  downgrade or lose main's newer code. Since 2026-11-17, pushing to a
+  `feature/**` branch runs Tests on that branch (tests + `[build-app]`
+  artifact upload; pre-release and old-artifact deletion are main-only),
+  so "CI green on the branch" is checked by a real run, not by a PR
+  into main.
 - **"Foundation first, branch second":** if CI is red on both `main` and
   a branch, fix `main` FIRST.
 - **Gate (milestone flow):** work locally → push one batch → CI green →
@@ -955,6 +959,20 @@ each recurring problem.
   layout); the missing first-hover cursor and the late-engaging drag
   (jerk) share this root cause. Test pref updated
   (`LayoutTestPreferences` popupDefaultWidth 440 → 420).
+- **2026-11-17 — Feature branches build the app (Manh 09:40, so the
+  TTS/Fast Read branches get a testable build before merging).**
+  `test.yml` push trigger `branches: [main]` → `[main, 'feature/**']`
+  (PR trigger unchanged — a PR still runs tests only). The "Delete
+  older app artifacts" and "Publish pre-release" steps now also require
+  `github.ref == 'refs/heads/main'` on top of `[build-app]`, so a
+  branch build never deletes main's newest artifact/pre-release. A
+  branch `[build-app]` push still runs Build app / Sign app / Zip app
+  / Upload app — the branch build is downloaded from the run's
+  artifact, with no pre-release link. Header comment updated to match
+  the new trigger. Edited via the browser web editor (connector
+  returns 403 for workflow files); verified by reading the file back.
+  A workflow-only push does not start a CI run (paths-ignore), so this
+  change is verified on the first `feature/**` `[build-app]` push.
 
 ## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
 

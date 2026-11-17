@@ -43,12 +43,20 @@ To avoid wasting CI runs (and other people's runners):
   `*.md` and `.github/workflows/**`. Renaming a doc, editing docs, or
   editing a workflow file costs zero CI runs. (Workflows added 2026-11-11:
   editing `release.yml` used to start a pointless Tests run, e.g. #127/#128.)
-- **Tests run on every code commit**, but the app artifact is only built
-  when the commit message contains `[build-app]`. The Build app / Zip app
-  / Upload app / Delete older artifacts / Publish pre-release steps have
-  `if: contains(github.event.head_commit.message, '[build-app]')`.
-  A plain code commit runs tests only; add `[build-app]` to the message
-  when a testable app build is actually needed. (Same pattern as SeekZip.)
+- **Tests run on every code commit** — on `main` AND on `feature/**`
+  branches (push trigger `branches: [main, 'feature/**']`, since
+  2026-11-17, so a feature branch gets a testable app build before
+  merging). The app artifact is only built when the commit message
+  contains `[build-app]`. The Build app / Sign app / Zip app / Upload
+  app steps have `if: contains(github.event.head_commit.message,
+  '[build-app]')` on every branch. The Delete older artifacts /
+  Publish pre-release steps have the same `[build-app]` gate PLUS
+  `github.ref == 'refs/heads/main'` — they run ONLY on main, so a
+  branch build never deletes main's newest artifact/pre-release. A
+  branch `[build-app]` build is downloaded from the run's artifact
+  (no pre-release link). A plain code commit runs tests only; add
+  `[build-app]` to the message when a testable app build is actually
+  needed. (Same pattern as SeekZip.)
 
 ## The artifact is signed by CI — verified working since run #99
 
