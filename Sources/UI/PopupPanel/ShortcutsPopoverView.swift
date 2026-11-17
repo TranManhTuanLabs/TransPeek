@@ -41,7 +41,7 @@ struct ShortcutsPopoverView: View {
 
             Divider()
 
-            ForEach(entries, id: \.name) { entry in
+            ForEach(Self.entries, id: \.name) { entry in
                 HStack(spacing: 8) {
                     Text(entry.title)
                         .frame(maxWidth: .infinity, alignment: .leading)
