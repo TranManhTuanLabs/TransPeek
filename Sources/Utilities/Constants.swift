@@ -400,7 +400,8 @@ extension Defaults.Keys {
 
     // TransPeek Phase 1 — trigger icon click + hover delay
     static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .speak)
-    static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 300)
+    static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 500)
+    static let autoHideDelaySec = Key<Int>("transpeek_autoHideDelaySec", default: 5)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

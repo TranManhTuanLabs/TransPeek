@@ -278,10 +278,11 @@ final class TriggerIconController {
         // again to stop playback.
         guard !isSpeaking else { return }
         cancelAutoDismissTimer()
-        // 5.0s (was 3.0s — raised 2026-11-17 ~20:38, Manh: the icon hid
-        // before he could move the mouse over to click it). Long enough to
-        // reach the icon, short enough not to linger.
-        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
+        // Auto-hide delay from Settings (default 5s, range 3–10s; was a
+        // hardcoded 3.0s, raised to 5.0s 2026-11-17 ~20:38, then made
+        // adjustable 2026-11-17 ~21:01). Long enough to reach the icon,
+        // short enough not to linger.
+        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: Double(Defaults[.autoHideDelaySec]), repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.dismiss()
             }

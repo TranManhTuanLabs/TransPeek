@@ -11,6 +11,7 @@ struct GeneralSettingsView: View {
     @Default(.triggerActivationMode) private var triggerActivationMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
+    @Default(.autoHideDelaySec) private var autoHideDelaySec
     @Default(.showInDock) private var showInDock
     @Default(.popupDefaultWidth) private var popupDefaultWidth
     @Default(.popupDefaultHeight) private var popupDefaultHeight
@@ -145,9 +146,26 @@ struct GeneralSettingsView: View {
                         Text("Translate (legacy)").tag(TriggerClickAction.translate)
                     }
 
-                    Picker("Hover delay:", selection: $hoverDelayMs) {
-                        Text("300ms").tag(300)
-                        Text("500ms").tag(500)
+                    LabeledContent("Hover delay: \(hoverDelayMs)ms (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms)") {
+                        Slider(
+                            value: Binding(
+                                get: { Double(hoverDelayMs) },
+                                set: { hoverDelayMs = Int($0) }
+                            ),
+                            in: 300...800,
+                            step: 100
+                        )
+                    }
+
+                    LabeledContent("Auto-hide icon: \(autoHideDelaySec)s (default: \(Defaults.Keys.autoHideDelaySec.defaultValue)s)") {
+                        Slider(
+                            value: Binding(
+                                get: { Double(autoHideDelaySec) },
+                                set: { autoHideDelaySec = Int($0) }
+                            ),
+                            in: 3...10,
+                            step: 1
+                        )
                     }
 
                     Picker("Text Detection Mode:", selection: $textDetectionMode) {
