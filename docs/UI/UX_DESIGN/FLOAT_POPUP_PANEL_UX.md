@@ -268,6 +268,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   momentum), vuốt dọc thì cho qua để ScrollView kết quả cuộn bình thường.
   Vuốt trackpad là scroll event, không phải chuột kéo, nên không bao giờ
   cướp bôi chọn text.
+- **Chuyển tab có animation (Manh 20:38):** đổi tab mượt bằng fade
+  (`.transition(.opacity)` + `.animation(.easeInOut(0.25s), value:
+  selectedTab)`) — trước đó đổi tab tức thì nên cảm giác đột ngột.
+  Tốc độ nhận vuốt không đổi (50pt, 1 vuốt = 1 tab); chỉ thêm chuyển động
+  lúc đổi tab.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).

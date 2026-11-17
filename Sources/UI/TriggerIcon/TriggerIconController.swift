@@ -116,7 +116,7 @@ final class TriggerIconController {
     }
 
     /// Set the speaking state and redraw the icon. While speaking the icon does
-    /// not auto-dismiss; when speaking stops the 3s auto-dismiss timer restarts
+    /// not auto-dismiss; when speaking stops the 5s auto-dismiss timer restarts
     /// (only if the icon is still visible).
     func setSpeaking(_ speaking: Bool) {
         guard isSpeaking != speaking else { return }
@@ -278,7 +278,10 @@ final class TriggerIconController {
         // again to stop playback.
         guard !isSpeaking else { return }
         cancelAutoDismissTimer()
-        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+        // 5.0s (was 3.0s — raised 2026-11-17 ~20:38, Manh: the icon hid
+        // before he could move the mouse over to click it). Long enough to
+        // reach the icon, short enough not to linger.
+        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.dismiss()
             }
