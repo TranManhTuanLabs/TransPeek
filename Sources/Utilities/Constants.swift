@@ -325,6 +325,22 @@ enum SwapLanguagesShortcut {
 
 // MARK: - User Defaults Keys
 
+/// Fast Read (RSVP) window color scheme (Manh 2026-11-17, spec §14.3):
+/// picked in the window's Settings button; persists across opens.
+enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
+    /// Black text on a white page.
+    case light
+    /// White text on a black page.
+    case dark
+
+    var displayName: String {
+        switch self {
+        case .light: return "Black on White"
+        case .dark: return "White on Black"
+        }
+    }
+}
+
 extension Defaults.Keys {
     // Optional HTTP CONNECT proxy for Google Translate.
     static let googleProxyEnabled = Key<Bool>("provider_google_proxyEnabled", default: false)
@@ -416,6 +432,7 @@ extension Defaults.Keys {
     static let rsvpWPM = Key<Int>("transpeek_rsvpWPM", default: RSVPEngine.defaultWPM)
     static let rsvpChunkSize = Key<Int>("transpeek_rsvpChunkSize", default: 1)
     static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 64)
+    static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

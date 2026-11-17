@@ -268,10 +268,11 @@ struct PopupView: View {
             dotsRow
             bottomBar
         }
-        // Smooth tab switch (Manh 2026-11-17 ~20:38): swiping changed tabs
-        // instantly, which felt abrupt — fade between tabs (0.25s ease-in-out).
+        // Smooth tab switch (Manh 2026-11-17 ~20:38, faster 23:55): swiping changed tabs
+        // instantly, which felt abrupt — fade between tabs (0.15s ease-out;
+        // was 0.25s ease-in-out, Manh said it felt a bit slow).
         // The swipe detection itself is unchanged (50pt, 1 swipe = 1 tab).
-        .animation(.easeInOut(duration: 0.25), value: selectedTab)
+        .animation(.easeOut(duration: 0.15), value: selectedTab)
         .padding(.bottom, 12)
     }
 

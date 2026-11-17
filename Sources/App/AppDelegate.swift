@@ -53,8 +53,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.performShortcut(name)
         }
         // The panel's "Fast Read" button opens the RSVP reading window
-        // with the text being translated (Manh 2026-11-17).
+        // with the text being translated (Manh 2026-11-17). The reading
+        // window is separate, so hide the translate panel first
+        // (Manh 2026-11-17, spec §14.8) — otherwise the panel would
+        // cover the screen while reading. (Reading inside panel 3,
+        // when it ships, does NOT hide the panel.)
         panelController.onFastRead = { [weak self] text in
+            self?.panelController.hidePanelTemporarily()
             self?.performFastRead(text: text)
         }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)

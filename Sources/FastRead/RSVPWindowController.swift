@@ -37,11 +37,15 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             text: trimmed,
             wpm: Defaults[.rsvpWPM],
             chunkSize: Defaults[.rsvpChunkSize],
-            fontSize: Double(Defaults[.rsvpFontSize])
+            fontSize: Double(Defaults[.rsvpFontSize]),
+            colorScheme: Defaults[.rsvpColorScheme]
         )
         self.viewModel = viewModel
 
-        let contentView = RSVPView(viewModel: viewModel) { [weak self] in
+        let contentView = RSVPView(
+            viewModel: viewModel,
+            onToggleMaximize: { [weak self] in self?.window?.zoom(nil) }
+        ) { [weak self] in
             self?.close()
         }
         let hostingView = NSHostingView(rootView: contentView)
@@ -63,7 +67,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Fast Read"
+        window.title = "Fast Read - RSVP"
         window.contentView = hostingView
         window.minSize = NSSize(width: 880, height: 550)
         window.setFrameAutosaveName("TransPeekRSVPWindow")

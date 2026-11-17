@@ -19,6 +19,10 @@
   chạy, xong là dừng). **Đọc log CI qua API bị chặn (403) — dùng thẳng trình duyệt.**
 - Khi CI bị huỷ do push mới đè lên (concurrency cancel) thì **không cần báo**;
   chỉ báo CI xanh (kèm link tải) hoặc CI đỏ thật.
+- **CI đang chờ/chưa chạy thì đừng chờ xong mới đẩy (Manh 23:56):** sửa code xong
+  đẩy luôn cho gộp vào run mới nhất — đằng nào cũng mất công chờ, cứ để CI chạy
+  là test luôn code mới nhất. Run cũ bị push mới đè lên mà huỷ là bình thường,
+  không cần báo.
 - **Báo nhanh khi run kết luận**, đừng để Manh phải hỏi "sao build lâu thế".
 - Đỏ do tải dependency/GitHub API 502 thì retry, đừng sửa code theo.
 - Main khóa qua PR phải xanh mới merge; test nhanh (lint + unit) mỗi push,
