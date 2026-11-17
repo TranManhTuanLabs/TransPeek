@@ -80,7 +80,9 @@ Related docs:
   `feature/**` branch runs Tests on that branch (tests + `[build-app]`
   artifact upload; pre-release and old-artifact deletion are main-only),
   so "CI green on the branch" is checked by a real run, not by a PR
-  into main.
+  into main. The branch artifact is named
+  `TransPeek-macOS-<run number>-branch` (main keeps the plain name),
+  so a branch build can never be mistaken for a main build.
 - **"Foundation first, branch second":** if CI is red on both `main` and
   a branch, fix `main` FIRST.
 - **Gate (milestone flow):** work locally → push one batch → CI green →
@@ -212,9 +214,12 @@ Related docs:
 - **Zip app:** `ditto -c -k --keepParent` (keeps the `.app` bundle;
   `upload-artifact` with a directory path would lose the directory
   itself).
-- **Upload app:** artifact `TransPeek-macOS`, 7-day retention.
-- **Delete older app artifacts:** keeps only the newest `TransPeek-macOS`
-  artifact (older links die). `continue-on-error: true`.
+- **Upload app:** artifact `TransPeek-macOS-<run number>` (on a feature
+  branch `TransPeek-macOS-<run number>-branch`, since 2026-11-17),
+  7-day retention.
+- **Delete older app artifacts:** keeps only the newest `TransPeek-macOS-<run number>`
+  artifact (older links die); branch (`-branch`) artifacts are excluded,
+  so a main run never deletes a branch build. `continue-on-error: true`.
 - **Publish pre-release:** tag `v0.1.3.<run number>`, prerelease, uploads
   the same zip as a release asset so the app has a direct download link
   (Releases page) instead of only the Actions artifact; deletes all older
@@ -973,6 +978,26 @@ each recurring problem.
   returns 403 for workflow files); verified by reading the file back.
   A workflow-only push does not start a CI run (paths-ignore), so this
   change is verified on the first `feature/**` `[build-app]` push.
+- **2026-11-17 — Branch builds get a "-branch" artifact suffix (Manh
+  11:25, so a branch build can never be mistaken for a main build).**
+  New "Set artifact name suffix" step in `test.yml` (before Zip app,
+  gated on `[build-app]`): empty suffix on `refs/heads/main`,
+  `-branch` otherwise. Zip app and Upload app use
+  `TransPeek-macOS-<run number>${{ steps.artifact-name.outputs.suffix }}`
+  (zip file and artifact name). Main keeps the plain name because
+  `release.yml` finds the artifact by that name to package releases.
+  The "Delete older app artifacts" jq filter now excludes names ending
+  in `-branch`, so a main run never deletes a branch build Manh may
+  still be testing (branch artifacts expire on their own after 7 days).
+  Edited via the browser web editor (connector returns 403 for
+  workflow files); verified by reading the file back (YAML parses,
+  15 steps, suffix step right before Zip app, pre-release still
+  main-only with the plain zip name). A workflow-only push does not
+  start a CI run (paths-ignore), so this change is verified on the
+  first `feature/**` `[build-app]` push. **Note: the workflow runs
+  from the file in the pushed branch — a branch only builds with the
+  new setup after main is synced INTO it (or the workflow is fixed on
+  the branch directly).**
 
 ## 5. Branch note — `m2-m3-tts-ocr` (DELETED 2026-11-17)
 
