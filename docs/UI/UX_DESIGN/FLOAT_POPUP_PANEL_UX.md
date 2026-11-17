@@ -121,18 +121,38 @@ cuộn — nên lúc nào cũng thấy, không cần kéo. Đó là mẫu "đưa
 nhắc tới lúc đầu; chỉ áp được cho ô nhập vì ô nhập chỉ có 1, không có bài
 toán nhiều provider.)
 
-## 7. Nút "?" bảng shortcut (Manh 17/11, build #200)
+## 7. Nút "?" bảng shortcut — nhúng trong ô output (Manh 17/11, build #204 → đổi ở bản sau #204)
 
 - Nút `?` (`questionmark.circle`) đứng ngay bên trái nút Pin ở hàng Actions.
-- Bấm mở 1 **popover** neo vào nút (bấm ra ngoài hoặc bấm lại "?" là đóng),
-  liệt kê **9 shortcut** theo đúng thứ tự Settings → Keyboard Shortcuts:
-  Smart Translation, Manual Translation, OCR Screen Translate, OCR to
-  Clipboard, OCR to Clipboard - Translated, Translate Selection, Translate
-  Clipboard, Screenshot Copy, Scan Barcodes/QR Codes.
+- **Đổi từ popover sang NHÚNG (Manh 17/11 ~11:50, từ test build #204):**
+  bấm "?" thì panel tự ẩn nên không bấm được bảng; pin panel cũng không ổn
+  vì chụp OCR sẽ bị panel che mất nội dung chụp. Popover là cửa sổ riêng —
+  vừa mở là panel mất focus rồi tự ẩn (click-outside auto-hide). Nhúng bảng
+  vào trong ô output thì bảng là nội dung của chính panel, không còn cửa sổ
+  riêng để đấu nữa.
+- Bấm "?" → bảng hiện **nhúng ở ĐẦU ô output** (trong ScrollView kết quả,
+  ngay trên các card provider), là 1 khối riêng có tiêu đề "Keyboard
+  Shortcuts" + nút đóng [×]. Provider vẫn nằm dưới bảng, **không bị ẩn**
+  (ưa nhúng hơn phương án tạm ẩn provider). Bảng cuộn chung với nội dung;
+  panel tự vừa khung khi bảng hiện, cao quá thì cuộn trong ô.
+- Bấm "?" lần nữa hoặc bấm [×] → bảng biến mất, về lại chỉ có các card
+  provider. Nút "?" đổi màu (accent, icon đầy) khi bảng đang hiện.
+- Bảng liệt kê **9 shortcut** theo đúng thứ tự Settings → Keyboard
+  Shortcuts: Smart Translation, Manual Translation, OCR Screen Translate,
+  OCR to Clipboard, OCR to Clipboard - Translated, Translate Selection,
+  Translate Clipboard, Screenshot Copy, Scan Barcodes/QR Codes.
 - Mỗi dòng có tên + phím tắt hiện tại (chưa gán thì "Not set") + nút **Run** —
   bấm là chạy thẳng hành động đó, khỏi bấm phím vật lý. Nút Run gọi đúng code
   path như bấm phím tắt (`AppDelegate.performShortcut`), nên click và phím
-  không bao giờ lệch nhau.
+  không bao giờ lệch nhau. **Bấm Run thì ẩn panel để chụp** — hành vi ẩn
+  panel khi chụp đi kèm sẵn theo code path phím tắt (panel ẩn, chụp xong
+  hiện lại với kết quả), không cần logic riêng. Bảng cũng đóng lại sau khi
+  bấm Run (đã chọn hành động, kết quả cần được thấy, không phải bảng).
+- **Bảng này KHÔNG phải card provider** (nó không dịch gì, chỉ liệt kê
+  shortcut) và **nút "?" KHÔNG nhảy sang tab 1** (Manh 17/11 12:01): tab 1
+  tạm là bảng shortcut (decor/placeholder), sau này thành timer
+  rest-eyes/focus/tomato; khi đó shortcut vẫn ở lại với nút "?" (nhúng
+  trong ô output). Xem §9.
 
 ## 8. So sánh với Windows (đối chiếu §1–§7 với doc Windows)
 

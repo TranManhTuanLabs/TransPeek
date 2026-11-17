@@ -13,7 +13,9 @@ struct PopupView: View {
     /// runs the named shortcut through AppDelegate.performShortcut, the
     /// same dispatch the physical hotkeys use (Manh 2026-11-17).
     var onRunShortcut: ((KeyboardShortcuts.Name) -> Void)?
-    /// Whether the "?" shortcuts panel (popover) is open.
+    /// Whether the "?" shortcuts table (embedded at the top of the
+    /// output box, Manh 2026-11-17) is shown. It is a plain section, not
+    /// a popover and not a provider card.
     @State private var showingShortcuts = false
     @State private var editableText: String = ""
     /// Text the dictionary links look up (SPEC §3.2): the text selected
@@ -323,6 +325,21 @@ struct PopupView: View {
                 // Provider results
                 ScrollView {
                     VStack(spacing: 6) {
+                        // "?" shortcuts table (Manh 2026-11-17): embedded
+                        // at the top of the output box, above the provider
+                        // cards — a plain section, not a provider card and
+                        // not a popover (a popover lost focus to the
+                        // panel's click-outside auto-hide, so it could not
+                        // be clicked). The providers stay below it; the
+                        // table scrolls with the content, and the panel
+                        // auto-fits up to the output cap.
+                        if showingShortcuts {
+                            ShortcutsTableView(
+                                onRunShortcut: onRunShortcut,
+                                onClose: { showingShortcuts = false }
+                            )
+                        }
+
                         ForEach(coordinator.activeSlots, id: \.id) { provider in
                             if let state = coordinator.providerStates[provider.id] {
                                 ProviderResultCard(
@@ -413,9 +430,12 @@ struct PopupView: View {
                 // Order is Pin then Settings, like Windows (PinButton
                 // before SettingsButton in the Actions StackPanel).
                 // The "?" shortcuts button (Manh 2026-11-17) sits directly
-                // left of Pin: it opens a popover listing every shortcut
-                // with a Run button, so the user can trigger an action by
-                // clicking instead of pressing the physical keys.
+                // left of Pin: it toggles the shortcuts table embedded at
+                // the top of the output box (not a popover — a popover
+                // lost focus to the panel's click-outside auto-hide, so
+                // the table could not be clicked). The button shows a
+                // filled accent icon while the table is open. Tapping "?"
+                // again (or the table's close button) hides the table.
                 // This row's height is asserted in PopupPanelLayoutTests
                 // (256 / 376) — update those numbers if this row changes.
                 HStack(spacing: 4) {
@@ -424,16 +444,13 @@ struct PopupView: View {
                     Button {
                         showingShortcuts.toggle()
                     } label: {
-                        Image(systemName: "questionmark.circle")
+                        Image(systemName: showingShortcuts ? "questionmark.circle.fill" : "questionmark.circle")
                             .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(showingShortcuts ? .accentColor : .secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Keyboard shortcuts")
                     .background { InteractiveMarker() }
-                    .popover(isPresented: $showingShortcuts) {
-                        ShortcutsPopoverView(onRunShortcut: onRunShortcut)
-                    }
 
                     pinButton
 
