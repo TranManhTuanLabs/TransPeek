@@ -409,7 +409,8 @@ extension Defaults.Keys {
 
     // TransPeek Phase 1 — trigger icon click + hover delay
     static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .speak)
-    static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 300)
+    static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 500)
+    static let autoHideDelaySec = Key<Int>("transpeek_autoHideDelaySec", default: 5)
 
     // Fast Read (RSVP) — reading speed, chunk size, text size (Manh 2026-11-17).
     static let rsvpWPM = Key<Int>("transpeek_rsvpWPM", default: RSVPEngine.defaultWPM)

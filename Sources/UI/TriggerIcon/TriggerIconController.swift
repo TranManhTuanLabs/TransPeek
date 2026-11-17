@@ -159,7 +159,7 @@ final class TriggerIconController: NSObject {
     }
 
     /// Set the speaking state and redraw the icon. While speaking the icon does
-    /// not auto-dismiss; when speaking stops the 3s auto-dismiss timer restarts
+    /// not auto-dismiss; when speaking stops the 5s auto-dismiss timer restarts
     /// (only if the icon is still visible).
     func setSpeaking(_ speaking: Bool) {
         guard isSpeaking != speaking else { return }
@@ -325,7 +325,11 @@ final class TriggerIconController: NSObject {
         // again to stop playback.
         guard !isSpeaking else { return }
         cancelAutoDismissTimer()
-        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+        // Auto-hide delay from Settings (default 5s, range 3–10s; was a
+        // hardcoded 3.0s, raised to 5.0s 2026-11-17 ~20:38, then made
+        // adjustable 2026-11-17 ~21:01). Long enough to reach the icon,
+        // short enough not to linger.
+        autoDismissTimer = Timer.scheduledTimer(withTimeInterval: Double(Defaults[.autoHideDelaySec]), repeats: false) { [weak self] _ in
             Task { @MainActor in
                 self?.dismiss()
             }

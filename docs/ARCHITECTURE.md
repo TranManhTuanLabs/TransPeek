@@ -50,7 +50,20 @@ docs/
   hành = đúng bản đã test.
 - Main khóa qua PR phải xanh mới merge.
 
-## 5. Quyết định kiến trúc (Decision Log)
+## 5. Nguyên tắc kiến trúc
+
+> Nguyên tắc chung cho MỌI dự án, MỌI repo (Manh 17/11/2026). Mục đích:
+> code dễ bảo trì, dễ nâng cấp, linh động — ai mới vào cũng tìm được file
+> cần sửa.
+
+- **Dễ bảo trì, dễ nâng cấp, linh động (flexible):** viết sao cho sửa 1 chỗ
+  không vỡ chỗ khác, thêm tính năng mới không phải đập đi viết lại.
+- **Tách code / tách folder khi cần:** 1 tính năng = 1 module/thư mục riêng
+  (xem §5.1).
+- **Dùng chung hàm/component:** cái gì dùng nhiều chỗ thì viết 1 lần, không
+  copy-paste — sửa 1 lần là hết mọi chỗ.
+- **Cấu trúc rõ ràng như dự án lớn:** tên file/thư mục nói rõ nó là cái gì,
+  ai mới vào cũng tìm được file cần sửa mà không cần hỏi.
 
 ### 5.1. Tính năng mới viết riêng module, không nhét vào code dịch (Manh 17/11/2026)
 

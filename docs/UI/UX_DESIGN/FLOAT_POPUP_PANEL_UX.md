@@ -212,16 +212,16 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 > **Khung multi-tab đã triển khai trên main (Manh 17/11 ~12:35 — "xong cả
 > khung multi-tab trên main rồi mới qua nhánh + Fast Read").** 3 tab đổi được
-> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read (tên tạm) vẫn là
+> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read vẫn là
 > placeholder cho tới khi Fast Read window xong (nhánh
 > `feature/fast-read-rsvp` sync main rồi mới làm tiếp, sau khi khung này
 > xanh).
 
 - **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
-  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  shortcut (tạm thời), phải là panel Fast Read.**
   - **panel dịch (ở giữa, mặc định)** — màn chính.
   - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
-  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+  - **panel Fast Read (ở phải)**: đọc RSVP (dự kiến).
 - **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
   panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
   tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
@@ -246,7 +246,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   tab shortcut); bấm [×] cũng về panel dịch. Bảng cuộn trong ScrollView
   riêng và báo chiều cao qua cùng layout preference như kết quả dịch, nên
   auto-fit vẫn vừa khung cho tab này.
-- **Panel Fast Read (tên tạm, ở phải) là placeholder:** icon sách + text
+- **Panel Fast Read (ở phải) là placeholder:** icon sách + text
   "Fast Read — coming soon" + 1 dòng giải thích, căn giữa. Panel giữ chiều
   cao tối thiểu (450) ở tab này. Nội dung placeholder do bên mac tự quyết.
 - **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
@@ -256,15 +256,35 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   từ ~480 lên ~510 — test `dismissAndReopenDiscardsPendingResize` đổi
   khoảng 450–480 thành 450–510 trong cùng commit (16pt lúc đầu, 20pt sau
   khi căn đều giữa theo Manh 13:00).
+- **Vuốt 2 ngón trackpad đổi tab (Manh 13:00, làm sau #209):** vuốt ngang
+  2 ngón trên trackpad (trái/phải) đổi tab. **ĐÃ ĐẢO CHIỀU 20:28 (Manh
+  test thấy chiều đầu ngược):** vuốt 2 ngón sang trái → tab bên trái,
+  sang phải → tab bên phải — tức là NGƯỢC chiều vuốt chuột trên hàng
+  chấm (chuột kéo trái → tab phải, giữ nguyên). **DragGesture trên hàng
+  chấm chỉ nhận chuột kéo, KHÔNG nhận vuốt trackpad:** vuốt 2 ngón đi
+  thành event `.scrollWheel` (deltas `scrollingDeltaX/Y`), không phải
+  `swipeWithEvent:` (cái đó chỉ cho vuốt 3 ngón, tuỳ System Preferences).
+  Nên panel dùng 1 local monitor `NSEvent` cho `.scrollWheel`
+  (`TrackpadSwipeMonitor.swift`): chỉ nhận event có gesture phase
+  (trackpad, `phase != []`), tích luỹ `scrollingDeltaX` ngang trội
+  (|X| > |Y| × 1.5), đủ 50pt thì đổi 1 tab (1 lần vuốt = 1 tab, bỏ qua
+  momentum), vuốt dọc thì cho qua để ScrollView kết quả cuộn bình thường.
+  Vuốt trackpad là scroll event, không phải chuột kéo, nên không bao giờ
+  cướp bôi chọn text.
+- **Chuyển tab có animation (Manh 20:38):** đổi tab mượt bằng fade
+  (`.transition(.opacity)` + `.animation(.easeInOut(0.25s), value:
+  selectedTab)`) — trước đó đổi tab tức thì nên cảm giác đột ngột.
+  Tốc độ nhận vuốt không đổi (50pt, 1 vuốt = 1 tab); chỉ thêm chuyển động
+  lúc đổi tab.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
 
 - **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
-  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  shortcut (tạm thời), phải là panel Fast Read.**
   - **panel dịch (ở giữa, mặc định)** — màn chính.
   - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
-  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+  - **panel Fast Read (ở phải)**: đọc RSVP (dự kiến).
 - **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
   panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
   tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
@@ -273,7 +293,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
   Khung multi-tab lên main là hiện đủ 3 chấm luôn; **panel Fast Read (tên
   tạm) là placeholder cho tới khi tính năng này ship**. Ngoại lệ này chỉ áp
-  cho panel Fast Read (tên tạm, đã có kế hoạch cụ thể), không áp chung cho
+  cho panel Fast Read (đã có kế hoạch cụ thể), không áp chung cho
   mọi tab tương lai. Nội dung placeholder panel Fast Read (vd text
   "Fast Read — sắp có") bên mac tự quyết cho gọn.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
