@@ -20,7 +20,6 @@ struct GeneralSettingsView: View {
     @Default(.popupFontName) private var popupFontName
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.captureRichText) private var captureRichText
-    @Default(.popupRememberPosition) private var popupRememberPosition
     @Default(.sourceLanguage) private var sourceLanguage
     @Default(.detectionConfidenceThreshold) private var confidenceThreshold
     @Default(.appLanguage) private var appLanguage
@@ -208,8 +207,6 @@ struct GeneralSettingsView: View {
             }
 
             Section("Popup Panel") {
-                Toggle("Remember Last Popup Position", isOn: $popupRememberPosition)
-
                 LabeledContent("Default Width: \(popupDefaultWidth) (default: \(Defaults.Keys.popupDefaultWidth.defaultValue))") {
                     Slider(
                         value: Binding(

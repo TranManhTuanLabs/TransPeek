@@ -376,7 +376,8 @@ extension Defaults.Keys {
     // default Dynamic Type size (.large), so there is no visible change
     // at the default. Smaller values shrink, larger values grow.
     static let appTextSize = Key<Int>("appTextSize", default: 14)
-    // Top bar of the popup panel: app name uses this size, slogan uses size - 2.
+    // Top bar of the popup panel: app name uses this size, slogan uses size - 1
+    // (Windows parity 17/16/13, Manh 2026-11-17).
     static let popupTopBarFontSize = Key<Int>("popupTopBarFontSize", default: 17)
     static let popupFontName = Key<String>("popupFontName", default: "")
 
@@ -387,15 +388,6 @@ extension Defaults.Keys {
 
     // Rich text capture (⌘C simulation keeps formatting and images)
     static let captureRichText = Key<Bool>("captureRichText", default: false)
-
-    // Popup panel last dragged position (used when popupRememberPosition is enabled).
-    // We persist the top-left corner so the visual position stays anchored even when the
-    // panel size differs between sessions (default size can change via Settings sliders or
-    // the in-panel resize grip).
-    static let popupRememberPosition = Key<Bool>("popupRememberPosition", default: true)
-    static let popupHasSavedPosition = Key<Bool>("popupHasSavedPosition", default: false)
-    static let popupLastTopLeftX = Key<Double>("popupLastTopLeftX", default: 0)
-    static let popupLastTopLeftY = Key<Double>("popupLastTopLeftY", default: 0)
 
     // Settings tab selection
     static let selectedSettingsTab = Key<SettingsTab>("selectedSettingsTab", default: .general)

@@ -25,7 +25,7 @@ struct SelectableResultTextView: NSViewRepresentable {
         Coordinator()
     }
 
-    func makeNSView(context: Context) -> NSTextView {
+    func makeNSView(context: Context) -> NSScrollView {
         let textView = NSTextView()
         textView.isEditable = false
         textView.isSelectable = true
@@ -61,10 +61,24 @@ struct SelectableResultTextView: NSViewRepresentable {
         Task { @MainActor in
             context.coordinator.reportContentHeight()
         }
-        return textView
+        // The text view lives in a scroll view (Manh 2026-11-17): the card
+        // caps the text area and the text scrolls inside it, so the card's
+        // speaker/Copy row — a fixed row below the text — is always visible
+        // without scrolling the panel (Windows parity: the Windows TextBox
+        // caps at 260 and its overlay buttons sit inside the visible box).
+        let scrollView = NSScrollView()
+        scrollView.drawsBackground = false
+        scrollView.backgroundColor = .clear
+        scrollView.borderType = .noBorder
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = textView
+        return scrollView
     }
 
-    func updateNSView(_ textView: NSTextView, context: Context) {
+    func updateNSView(_ scrollView: NSScrollView, context: Context) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
         let coordinator = context.coordinator
         coordinator.onSelectionChange = onSelectionChange
         coordinator.onContentHeightChange = onContentHeightChange
