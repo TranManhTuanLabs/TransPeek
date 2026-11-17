@@ -18,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var triggerIconController: TriggerIconController!
     lazy var copyToastController = CopyToastController()
     lazy var updaterController = UpdaterController()
+    /// Fast Read (RSVP) window controller (Manh 2026-11-17).
+    lazy var rsvpWindowController = RSVPWindowController()
     var settingsController: SettingsWindowController!
     private var smartTranslationTask: Task<Void, Never>?
     private var smartTranslationTaskID: UUID?
@@ -49,6 +51,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // physical hotkeys use, so a click and a keypress do the same thing.
         panelController.onRunShortcut = { [weak self] name in
             self?.performShortcut(name)
+        }
+        // The panel's "Fast Read" button opens the RSVP reading window
+        // with the text being translated (Manh 2026-11-17). The reading
+        // window is separate, so hide the translate panel first
+        // (Manh 2026-11-17, spec §14.8) — otherwise the panel would
+        // cover the screen while reading. (Reading inside panel 3,
+        // when it ships, does NOT hide the panel.)
+        panelController.onFastRead = { [weak self] text in
+            self?.panelController.hidePanelTemporarily()
+            self?.performFastRead(text: text)
         }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()
@@ -372,6 +384,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return String(payload.prefix(maxLength)) + "…"
     }
 
+    /// Fast Read (RSVP, Manh 2026-11-17): open the reading window with the
+    /// selected text, falling back to the clipboard. When `text` is given
+    /// (the panel's "Fast Read" button passes the text being translated)
+    /// it is used directly, without re-grabbing the selection. Used by the
+    /// global shortcut, the menubar item, and the panel button.
+    func performFastRead(text: String? = nil) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.cancelSmartTranslationAndWait()
+            let sourceText: String?
+            if let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                sourceText = text
+            } else if let selected = await TextSelectionManager.grabSelectedText(),
+                      !selected.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                sourceText = selected
+            } else {
+                sourceText = NSPasteboard.general.string(forType: .string)
+            }
+            guard let sourceText,
+                  !sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            self.rsvpWindowController.show(text: sourceText)
+        }
+    }
+
     /// Translate Selection: translate the currently selected text; show the
     /// panel at the cursor when there is something to show.
     func performTranslateSelection() {
@@ -455,6 +491,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             performScreenshotCopy()
         case .scanBarcodes:
             performScanBarcodes()
+        case .fastRead:
+            performFastRead()
         default:
             break
         }
@@ -488,6 +526,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         KeyboardShortcuts.onKeyUp(for: .scanBarcodes) { [weak self] in
             self?.performScanBarcodes()
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .fastRead) { [weak self] in
+            self?.performFastRead()
         }
 
         KeyboardShortcuts.onKeyUp(for: .inputTranslation) { [weak self] in
@@ -538,6 +580,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             self.ttsCoordinator.stop()
             self.triggerIconController.setSpeaking(false)
+        }
+
+        // Fast Read (RSVP, Manh 2026-11-17): open the reading window with
+        // the selected text; no panel, no translation.
+        triggerIconController.onReadRequested = { [weak self] text in
+            guard let self else { return }
+            self.rsvpWindowController.show(text: text)
+        }
+
+        triggerIconController.onOpenSettingsRequested = { [weak self] in
+            guard let self else { return }
+            self.settingsController.showWindow()
         }
 
         // Natural end of playback (finished or failed) clears the icon state.

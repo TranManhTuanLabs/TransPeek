@@ -43,7 +43,7 @@ Panel mac là một `VStack` (padding ngang 14), các hàng theo thứ tự từ
 | Hàng ngôn ngữ | **Source ⇄ Target + Capture OCR.** Pickers ngôn ngữ trái, nút Swap ⇄ giữa, nút "Capture OCR" (icon + chữ) phải | |
 | Divider | Đường kẻ ngang | |
 | Kết quả | **ScrollView chứa các ProviderResultCard** (1 card / provider). Mỗi card: header (tên provider + trạng thái) / text kết quả (chọn được, báo selection cho DictionaryBar) — text **cuộn trong card** (cap 260, xem §6) / hàng loa + Copy **cố định ở đáy card**, dưới ô text cuộn (xem §6) | Cap text 260; text dài cuộn trong card, nút luôn thấy |
-| Actions | **"?" + Pin + Settings.** Căn phải, Spacing 4. "?" (nút `questionmark.circle`) đứng ngay bên trái Pin; Pin trước, Settings sau (như Windows) | Xem §7 |
+| Actions | **"Fast Read" + "?" + Pin + Settings.** Căn phải, Spacing 4. "Fast Read" (icon `book.pages` + chữ, mở cửa sổ đọc RSVP với text đang dịch) ở đầu trái của hàng; "?" (nút `questionmark.circle`) đứng ngay bên trái Pin; Pin trước, Settings sau (như Windows) | Xem §7 |
 | DictionaryBar | **DictionaryBarView** — link tra từ điển theo text đang chọn (trong ô nhập hoặc trong kết quả) | |
 | Footer | **Link GitHub căn giữa + text version căn phải** ("Version 0.1.3 (Build CI #200)" — ẩn số build khi = 1) | |
 
@@ -121,7 +121,7 @@ cuộn — nên lúc nào cũng thấy, không cần kéo. Đó là mẫu "đưa
 nhắc tới lúc đầu; chỉ áp được cho ô nhập vì ô nhập chỉ có 1, không có bài
 toán nhiều provider.)
 
-## 7. Nút "?" bảng shortcut — nhúng trong ô output (Manh 17/11, build #204 → đổi ở bản sau #204)
+## 7. Nút "?" bảng shortcut + nút "Fast Read" (Manh 17/11, build #204 → đổi ở bản sau #204 / nhánh `feature/fast-read-rsvp`)
 
 - Nút `?` (`questionmark.circle`) đứng ngay bên trái nút Pin ở hàng Actions.
 - **Đổi từ popover sang NHÚNG (Manh 17/11 ~11:50, từ test build #204):**
@@ -137,10 +137,10 @@ toán nhiều provider.)
   panel tự vừa khung khi bảng hiện, cao quá thì cuộn trong ô.
 - Bấm "?" lần nữa hoặc bấm [×] → bảng biến mất, về lại chỉ có các card
   provider. Nút "?" đổi màu (accent, icon đầy) khi bảng đang hiện.
-- Bảng liệt kê **9 shortcut** theo đúng thứ tự Settings → Keyboard
+- Bảng liệt kê **10 shortcut** theo đúng thứ tự Settings → Keyboard
   Shortcuts: Smart Translation, Manual Translation, OCR Screen Translate,
   OCR to Clipboard, OCR to Clipboard - Translated, Translate Selection,
-  Translate Clipboard, Screenshot Copy, Scan Barcodes/QR Codes.
+  Translate Clipboard, Screenshot Copy, Scan Barcodes/QR Codes, Fast Read (RSVP).
 - Mỗi dòng có tên + phím tắt hiện tại (chưa gán thì "Not set") + nút **Run** —
   bấm là chạy thẳng hành động đó, khỏi bấm phím vật lý. Nút Run gọi đúng code
   path như bấm phím tắt (`AppDelegate.performShortcut`), nên click và phím
@@ -170,6 +170,9 @@ toán nhiều provider.)
   KHÁC đề xuất đổi nội dung ô output của chat TTS lúc 11:56 (đề xuất đó
   chỉ là ý kiến, Manh chốt theo khung bên mac). Về sau đừng ai sửa ngược
   lại thành đổi nội dung ô output khi chưa hỏi anh.
+- Nút **"Fast Read"** (`book.pages` + chữ) ở đầu trái hàng Actions: bấm mở
+  cửa sổ đọc RSVP riêng với đúng text đang dịch trong panel (không cần bôi
+  lại). Chi tiết engine + cửa sổ đọc xem `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
 
 ## 8. So sánh với Windows (đối chiếu §1–§7 với doc Windows)
 
@@ -209,16 +212,16 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 > **Khung multi-tab đã triển khai trên main (Manh 17/11 ~12:35 — "xong cả
 > khung multi-tab trên main rồi mới qua nhánh + Fast Read").** 3 tab đổi được
-> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read (tên tạm) vẫn là
+> bằng chấm + vuốt; panel dịch là mặc định; panel Fast Read vẫn là
 > placeholder cho tới khi Fast Read window xong (nhánh
 > `feature/fast-read-rsvp` sync main rồi mới làm tiếp, sau khi khung này
 > xanh).
 
 - **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
-  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  shortcut (tạm thời), phải là panel Fast Read.**
   - **panel dịch (ở giữa, mặc định)** — màn chính.
   - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
-  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+  - **panel Fast Read (ở phải)**: đọc RSVP (dự kiến).
 - **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
   panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
   tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
@@ -243,7 +246,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   tab shortcut); bấm [×] cũng về panel dịch. Bảng cuộn trong ScrollView
   riêng và báo chiều cao qua cùng layout preference như kết quả dịch, nên
   auto-fit vẫn vừa khung cho tab này.
-- **Panel Fast Read (tên tạm, ở phải) là placeholder:** icon sách + text
+- **Panel Fast Read (ở phải) là placeholder:** icon sách + text
   "Fast Read — coming soon" + 1 dòng giải thích, căn giữa. Panel giữ chiều
   cao tối thiểu (450) ở tab này. Nội dung placeholder do bên mac tự quyết.
 - **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
@@ -268,20 +271,21 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   momentum), vuốt dọc thì cho qua để ScrollView kết quả cuộn bình thường.
   Vuốt trackpad là scroll event, không phải chuột kéo, nên không bao giờ
   cướp bôi chọn text.
-- **Chuyển tab có animation (Manh 20:38):** đổi tab mượt bằng fade
-  (`.transition(.opacity)` + `.animation(.easeInOut(0.25s), value:
+- **Chuyển tab có animation (Manh 20:38, nhanh hơn 23:55):** đổi tab mượt bằng fade
+  (`.transition(.opacity)` + `.animation(.easeOut(0.15s), value:
   selectedTab)`) — trước đó đổi tab tức thì nên cảm giác đột ngột.
-  Tốc độ nhận vuốt không đổi (50pt, 1 vuốt = 1 tab); chỉ thêm chuyển động
-  lúc đổi tab.
+  0.25s ease-in-out ban đầu hơi chậm (Manh 23:55) nên rút xuống 0.15s
+  ease-out cho nhanh mượt hơn. Tốc độ nhận vuốt không đổi (50pt,
+  1 vuốt = 1 tab); chỉ thêm chuyển động lúc đổi tab.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
   hub 3 chấm); **nhánh `feature/fast-read-rsvp` sync main rồi mới làm Fast
   Read window.** Fast Read làm trước TTS (đã chốt 09:52).
 
 - **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định, trái là panel
-  shortcut (tạm thời), phải là panel Fast Read (tên tạm).**
+  shortcut (tạm thời), phải là panel Fast Read.**
   - **panel dịch (ở giữa, mặc định)** — màn chính.
   - **panel shortcut (tạm thời, ở trái)**: trang shortcut đầy đủ.
-  - **panel Fast Read (tên tạm, ở phải)**: đọc RSVP (dự kiến).
+  - **panel Fast Read (ở phải)**: đọc RSVP (dự kiến).
 - **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
   panel dịch ở trái thì sang panel Fast Read (phải) phải qua 2 lần. Có
   tiền lệ: Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories).
@@ -290,7 +294,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
   Khung multi-tab lên main là hiện đủ 3 chấm luôn; **panel Fast Read (tên
   tạm) là placeholder cho tới khi tính năng này ship**. Ngoại lệ này chỉ áp
-  cho panel Fast Read (tên tạm, đã có kế hoạch cụ thể), không áp chung cho
+  cho panel Fast Read (đã có kế hoạch cụ thể), không áp chung cho
   mọi tab tương lai. Nội dung placeholder panel Fast Read (vd text
   "Fast Read — sắp có") bên mac tự quyết cho gọn.
 - **Thứ tự làm (Manh 10:46): khung multi-tab làm trên main TRƯỚC** (layout
