@@ -153,6 +153,12 @@ toán nhiều provider.)
   tạm là bảng shortcut (decor/placeholder), sau này thành timer
   rest-eyes/focus/tomato; khi đó shortcut vẫn ở lại với nút "?" (nhúng
   trong ô output). Xem §9.
+- **Hướng này đã CHỐT (Manh 17/11 12:19):** bảng nhúng ở ĐẦU ô output,
+  provider không bị ẩn, bấm "?" lần nữa/[×] thì về lại chỉ có card
+  provider, bấm Run thì ẩn panel để chụp — đúng như §7 này. Hướng này
+  KHÁC đề xuất đổi nội dung ô output của chat TTS lúc 11:56 (đề xuất đó
+  chỉ là ý kiến, Manh chốt theo khung bên mac). Về sau đừng ai sửa ngược
+  lại thành đổi nội dung ô output khi chưa hỏi anh.
 
 ## 8. So sánh với Windows (đối chiếu §1–§7 với doc Windows)
 
@@ -194,15 +200,15 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 > lúc này** — chỉ ghi lại để lúc làm multi-tab (mục 5 theo thứ tự research)
 > thì làm theo layout này, không làm theo thứ tự cũ (Dịch là tab 1).
 
-- **Layout kiểu "hub": Dịch ở GIỮA làm mặc định (chấm 2), trái là tab 1
-  shortcut, phải là tab 3 Fast Read.**
-  - Tab 2 (giữa, mặc định): Dịch — màn chính.
+- **Layout kiểu "hub": panel dịch ở GIỮA làm mặc định (chấm 2), trái là
+  tab 1 shortcut, phải là tab 3 Fast Read.**
+  - **panel dịch (chấm 2, ở giữa, mặc định)** — màn chính.
   - Tab 1 (trái): trang shortcut đầy đủ.
   - Tab 3 (phải, dự kiến): Fast Read (đọc RSVP).
-- **Lý do Manh:** Dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để Dịch ở tab 1
-  thì sang Fast Read phải qua 2 lần. Có tiền lệ: Snapchat (camera ở giữa,
-  vuốt trái ra chat, phải ra stories). Khác thứ tự research cũ (Dịch là tab 1)
-  nhưng lý do chính đáng nên đổi.
+- **Lý do Manh:** panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần; để
+  panel dịch ở tab 1 thì sang Fast Read phải qua 2 lần. Có tiền lệ:
+  Snapchat (camera ở giữa, vuốt trái ra chat, phải ra stories). Khác thứ
+  tự research cũ (Dịch là tab 1) nhưng lý do chính đáng nên đổi.
 - **3 chấm hiện từ đầu để trải nghiệm (Manh 10:46 — thay điều kiện cũ).**
   Khung multi-tab lên main là hiện đủ 3 chấm luôn; **tab 3 là placeholder cho
   tới khi Fast Read ship**. Ngoại lệ này chỉ áp cho tab 3 Fast Read (đã có kế
