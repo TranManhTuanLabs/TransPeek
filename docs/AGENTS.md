@@ -23,6 +23,11 @@
   đẩy luôn cho gộp vào run mới nhất — đằng nào cũng mất công chờ, cứ để CI chạy
   là test luôn code mới nhất. Run cũ bị push mới đè lên mà huỷ là bình thường,
   không cần báo.
+- **Repo mac hay phải chờ máy — tranh thủ làm luôn (Manh 18/11):** khi CI đang
+  chờ máy (queued) mà có yêu cầu mới thì làm ngay, đẩy gộp vào run đang chờ để
+  CI chạy một thể rồi Manh test một lượt, đừng để máy chạy xong mới làm rồi lại
+  chờ lượt mới. Ví dụ 18/11: trong lúc #230 chờ máy, làm luôn setting "Show
+  context around focus word" + sửa nút chìm nền đen, đẩy gộp thành #231.
 - **Báo nhanh khi run kết luận**, đừng để Manh phải hỏi "sao build lâu thế".
 - Đỏ do tải dependency/GitHub API 502 thì retry, đừng sửa code theo.
 - Main khóa qua PR phải xanh mới merge; test nhanh (lint + unit) mỗi push,
@@ -48,6 +53,7 @@
 
 ## 5. Quy tắc chung
 
+- **Ngắn, hiểu rõ thì làm luôn; dài, chưa rõ, việc nhiều thì hỏi lại** (Manh 18/11/2026, áp dụng mọi repo): (1) trình khung cho anh duyệt trước khi làm; (2) xong rồi thì tóm tắt những gì đã làm.
 - **Tính năng mới viết riêng module** — xem quyết định kiến trúc
   `ARCHITECTURE.md` §5.1 (Manh 17/11/2026): `FastRead/`, `BreakTimer/`,
   `Shortcuts/` (1 view dùng chung), khung tab mỏng, chỉ nối mỏng vào code
