@@ -109,7 +109,7 @@ final class TriggerTrackingView: NSView {
             // Fast Read → turmeric "A+" (bold A + small + badge at its
             // top-right, Manh 2026-11-18). A custom-drawn glyph, not an
             // SF Symbol — there is no A+ symbol.
-            drawFastReadGlyph(in: ctx, bounds: bounds)
+            drawFastReadGlyph(in: bounds)
             return
         }
 
@@ -151,8 +151,9 @@ final class TriggerTrackingView: NSView {
 
     /// Draw the Fast Read glyph: a bold "A" with a small "+" badge at its
     /// top-right corner (Manh 2026-11-18: "chữ A+ có dấu + góc trên phải").
-    /// Drawn as text — there is no A+ SF Symbol.
-    private func drawFastReadGlyph(in ctx: CGContext, bounds: NSRect) {
+    /// Drawn as text into the current graphics context — there is no A+
+    /// SF Symbol.
+    private func drawFastReadGlyph(in bounds: NSRect) {
         let turmeric = Self.fastReadTurmeric
         let aFont = NSFont.boldSystemFont(ofSize: 15)
         let aAttrs: [NSAttributedString.Key: Any] = [

@@ -113,13 +113,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
           | xcbeautify
 
-      # Build the Release app — ONLY when the commit message contains
-      # "[build-app]". Plain test runs skip this step, so most pushes are fast.
+      # Build the Release app on every code push (always build — Manh 2026-11-18,
+      # no more "[build-app]" gate: the repo is public so Actions minutes are
+# free, and forgetting the tag used to cost a whole second run).
       # CURRENT_PROJECT_VERSION is set to the GitHub run number, so the app's
       # build number (shown in About as "Build CI #<run>" and in the menubar
       # header) always matches the run that built it.
       - name: Build app
-        if: contains(github.event.head_commit.message, '[build-app]')
         run: |
           xcodebuild build \
             -workspace TransPeek.xcworkspace \
@@ -144,10 +144,8 @@ jobs:
       # .p12) got past the MAC check but died on the RC2-40 cert bag
       # ("Unknown format in import"). The two SHA-256 checks below prove the
       # secrets arrived intact: if a hash mismatches, the secret — not the
-      # format — is the problem, and the step stops there. Only runs with
-      # "[build-app]" in the commit message reach this step.
+      # format — is the problem, and the step stops there.
       - name: Sign app with self-signed certificate
-        if: contains(github.event.head_commit.message, '[build-app]')
         env:
           MACOS_CODESIGN_CERT_PEM: ${{ secrets.MACOS_CODESIGN_CERT_PEM }}
           MACOS_CODESIGN_KEY_PEM: ${{ secrets.MACOS_CODESIGN_KEY_PEM }}
@@ -173,10 +171,8 @@ jobs:
       # branch build can never be mistaken for a main build
       # (TransPeek-macOS-202.zip). Main keeps the plain name — release.yml
       # finds the artifact by that name to package releases, so renaming
-      # main would break the release flow. Only runs with "[build-app]" in
-      # the commit message reach this step.
+      # main would break the release flow.
       - name: Set artifact name suffix
-        if: contains(github.event.head_commit.message, '[build-app]')
         id: artifact-name
         run: |
           if [ "$GITHUB_REF" = 'refs/heads/main' ]; then
@@ -191,7 +187,6 @@ jobs:
       # feature branch the name gets a "-branch" suffix
       # (TransPeek-macOS-138-branch.zip) — see "Set artifact name suffix".
       - name: Zip app
-        if: contains(github.event.head_commit.message, '[build-app]')
         run: |
           ditto -c -k --keepParent build/Build/Products/Release/TransPeek.app "TransPeek-macOS-${{ github.run_number }}${{ steps.artifact-name.outputs.suffix }}.zip"
 
@@ -203,7 +198,6 @@ jobs:
       # "TransPeek-macOS-" prefix (it also still accepts the old plain
       # "TransPeek-macOS" name from runs before this change).
       - name: Upload app
-        if: contains(github.event.head_commit.message, '[build-app]')
         uses: actions/upload-artifact@v4
         with:
           name: TransPeek-macOS-${{ github.run_number }}${{ steps.artifact-name.outputs.suffix }}
@@ -219,7 +213,7 @@ jobs:
       # a main run must never delete a branch build Manh may still be
       # testing (branch artifacts expire on their own after 7 days).
       - name: Delete older app artifacts (keep only the newest)
-        if: contains(github.event.head_commit.message, '[build-app]') && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -236,13 +230,12 @@ jobs:
       # "v0.1.3.<run number>", prerelease, keep only the newest one.
       # The artifact upload above is still kept — release.yml (direction B)
       # promotes the tested artifact, and this pre-release is only a
-      # convenience download for testing. Only runs with "[build-app]" in
-      # the commit message reach this step. Needs contents: write (see
+      # convenience download for testing. Needs contents: write (see
       # permissions above) to create/delete releases.
       # NOTE: the "0.1.3" in the tag is the current MARKETING_VERSION —
       # update it here when the app version bumps.
       - name: Publish pre-release (direct download, keep only the newest)
-        if: contains(github.event.head_commit.message, '[build-app]') && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
