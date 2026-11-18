@@ -48,6 +48,7 @@
 
 ## 5. Quy tắc chung
 
+- **Ngắn, hiểu rõ thì làm luôn; dài, chưa rõ, việc nhiều thì hỏi lại** (Manh 18/11/2026, áp dụng mọi repo): (1) trình khung cho anh duyệt trước khi làm; (2) xong rồi thì tóm tắt những gì đã làm.
 - **Tính năng mới viết riêng module** — xem quyết định kiến trúc
   `ARCHITECTURE.md` §5.1 (Manh 17/11/2026): `FastRead/`, `BreakTimer/`,
   `Shortcuts/` (1 view dùng chung), khung tab mỏng, chỉ nối mỏng vào code
