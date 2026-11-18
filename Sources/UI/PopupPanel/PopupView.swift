@@ -34,6 +34,11 @@ struct PopupView: View {
     /// output box, Manh 2026-11-17) is shown. It is a plain section, not
     /// a popover and not a provider card.
     @State private var showingShortcuts = false
+    /// Whether the "How the icon works" intro card (above the shortcuts
+    /// table, Manh 2026-11-18) is collapsed. Remembered in Defaults, so
+    /// once the reader knows the flow they can keep it collapsed and the
+    /// shortcuts table is the main thing on show.
+    @State private var isFlowIntroCollapsed: Bool = Defaults[.flowIntroCollapsed]
     /// Which panel of the multi-tab frame is showing (Manh 2026-11-17).
     /// Panel dịch (middle) is the default; a new translation always
     /// returns here (see the sourceText onChange below).
@@ -423,6 +428,17 @@ struct PopupView: View {
                 // Provider results
                 ScrollView {
                     VStack(spacing: 6) {
+                        // "How the icon works" intro card (Manh 2026-11-18):
+                        // above the "?" shortcuts table, so a new reader
+                        // learns the icon flow first; it collapses to a
+                        // header and remembers the state, so once the reader
+                        // knows the flow the shortcuts table is the main
+                        // thing on show.
+                        FlowIntroCard(isCollapsed: $isFlowIntroCollapsed)
+                            .onChange(of: isFlowIntroCollapsed) { _, newValue in
+                                Defaults[.flowIntroCollapsed] = newValue
+                            }
+
                         // "?" shortcuts table (Manh 2026-11-17): embedded
                         // at the top of the output box, above the provider
                         // cards — a plain section, not a provider card and

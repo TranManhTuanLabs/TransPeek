@@ -416,6 +416,11 @@ extension Defaults.Keys {
     static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 420)
     static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 450)
     static let popupInputHeight = Key<Int>("popupInputHeight", default: 48)
+    /// Translate panel — whether the "How the icon works" intro card is
+    /// collapsed (Manh 2026-11-18). Remembered, so once the reader knows
+    /// the flow they can keep it collapsed and the shortcuts table is the
+    /// main thing on show. Default false = expanded, so new readers see it.
+    static let flowIntroCollapsed = Key<Bool>("transpeek_flowIntroCollapsed", default: false)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
     // App interface text size (Settings window): 14 maps to the system
     // default Dynamic Type size (.large), so there is no visible change
