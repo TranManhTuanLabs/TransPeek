@@ -19,9 +19,9 @@
 - **Hover (default activation mode) → translate.** After the hover delay,
   the translate panel opens.
 - **Click → the configured click action.** Settings → "Click icon" chooses
-  what a plain click does: **Speak** (default — hear it read aloud) or
-  **Fast Read** (open the reading window). A third action, Translate, is
-  available in code.
+  what a plain click does: **Fast Read** (default — open the reading
+  window) or **Speak** (hear it read aloud). A third action, Translate,
+  is available in code.
 - **Option + Click (Mac) / Alt + Click (Windows) → the OTHER action.**
   When plain click speaks, Option+Click opens Fast Read; when plain click
   opens Fast Read, Option+Click speaks. (The translate action is reachable
@@ -36,9 +36,21 @@ The icon's glyph shows what the next click will do, not what the icon "is":
 
 | Click setting | No Option held | Option held | While speaking |
 | --- | --- | --- | --- |
-| Speak (default) | speech bubble (`character.bubble`, blue) | **A+** (turmeric, Fast Read preview) | speaker (`speaker.wave.2.fill`, accent) |
-| Fast Read | **A+** (turmeric) | speech bubble (Speak preview) | speaker |
+| Fast Read (default) | **A+** (turmeric) | speech bubble (Speak preview) | speaker (`speaker.wave.2.fill`, accent) |
+| Speak | speech bubble (`character.bubble`, blue) | **A+** (turmeric, Fast Read preview) | speaker |
 | Translate | speech bubble | A+ | speaker |
+
+- **The default icon is A+** (Manh 2026-11-18, round 7): because the
+  default click is Fast Read, the icon shows A+ by default — the user
+  can tell at a glance that a plain click reads, without opening
+  Settings. Holding Option flips it to the bubble (Speak preview).
+- **Speaking always wins the glyph** (Manh 2026-11-18, round 7): while
+  TTS is playing the icon shows the speaker, so the user can click
+  again to stop it — even when the click action is Read. Before this
+  fix, an Option+click to Speak (with Click = Read) left the icon on
+  A+ once Option was released, because the Read-preview branch returned
+  before the speaking check; the user had no way to tell speech was
+  playing.
 
 - **The A+ glyph** is custom-drawn (not an SF Symbol): a bold "A" (15pt)
   with a small bold "+" (8pt) centered on the A's top-right corner, in
@@ -124,7 +136,8 @@ re-reads the key state directly (see below).
 
 ## 7. Settings (Defaults keys)
 
-- `triggerClickAction`: `.speak` (default) / `.read` / `.translate`.
+- `triggerClickAction`: `.read` (default, Manh 2026-11-18, round 7 — was
+  `.speak`) / `.speak` / `.translate`.
 - `triggerActivationMode`: `.hover` (default) / `.click`.
 - `hoverDelayMs`: default 500 (Slider 300–800).
 - `autoHideDelaySec`: default 5 (Slider 3–10).

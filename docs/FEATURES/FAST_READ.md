@@ -26,13 +26,15 @@
 Top to bottom:
 
 - **Top bar** (compact: padding top 8, bottom 6; label-to-picker spacing 1):
-  - **Left:** Speed picker, Text size picker, Words-at-once picker (each a
-    label above a menu Picker).
+  - **Left:** Speed picker, **Focus size** picker, **Context size** picker,
+    Words-at-once picker (each a label above a menu Picker). "Text size"
+    was renamed "Focus size" (Manh 2026-11-18, round 7) to distinguish it
+    from the new Context size picker, which sits right next to it.
   - **Center:** "Rapid Serial Visual Presentation" — **truly centered** on
     the window via an overlay (it used to sit between two Spacers, so the
     wide left cluster pushed it right of center).
-  - **Right:** Settings gear (Color Scheme + context display) and "?"
-    (hotkeys popover).
+  - **Right:** Settings gear (Color Scheme + context display + Reset to
+    default) and "?" (hotkeys popover).
 - **Reading area** (fills the middle): the focus line while playing; the
   book page while paused (§3).
 - **Completion line + share row** (above the progress bar, shown together
@@ -65,10 +67,16 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   line drifted down off-center.)
 - **Playing (focus mode):** only the focus line, same size, centered.
 - **Paused (book page):** the focus line keeps its size on its own
-  centered row; the context words above/below are **half the focus size**
-  (default focus 64pt → context 32pt) and scale with the chosen size.
-  Stepping ←/→ (or swiping trackpad ←/→) while paused moves the focus
-  line to the new slide and the context re-renders around it.
+  centered row; the context words above/below are the **"Context size"
+  percent of the focus size** (default **40%** — Manh 2026-11-18, round 7;
+  was a fixed half) and scale with the chosen size. Stepping ←/→ (or
+  swiping trackpad ←/→) while paused moves the focus line to the new slide
+  and the context re-renders around it.
+- **The block text is selectable** (Manh 2026-11-18, round 7): the reader
+  can select a word in the context to translate it on the spot (the float
+  icon appears on the selection), instead of only reading it. The focus
+  line itself is not selectable — it is a single chunk rendered with a
+  custom ORP layout.
 - **Context display setting** ("Show context around focus word",
   SwiftRead's `contextDisplayStyle`, in Settings under Color Scheme):
   **Always** (book page even while playing) / **Only show when paused**
@@ -79,7 +87,8 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
 ## 4. Engine logic (`Sources/FastRead/RSVPEngine.swift`)
 
 - **Tokenize** (paragraph-aware). **Chunk** 1–6 words at once (default 1).
-  **WPM** default 275, max 2000.
+  **WPM** default **500** (Manh 2026-11-18, round 7 — was 275), min 50,
+  max 2000.
 - **Delay per slide:** `60000 / WPM × words × (1 + extras) − 30ms`, floored
   at 50ms. Micro-pause extras: digit +0.5, `,;:` +0.9, `.!?` +1.1, long
   word +0.5, paragraph end +1.1. Extras are off when chunk × WPM ≤ 100.
@@ -94,21 +103,29 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
 - **Buttons (bottom, centered):** Rewind (←), Play/Pause (Space,
   prominent), Fast-forward (→), Maximize (zoom).
 - **Keyboard (window focused):** Space = play/pause; ←/→ = step one slide
-  (Shift+←/→ = step one sentence); ↑/↓ = speed ±10 WPM; Esc = close.
+  (Shift+←/→ = step one sentence); ↑/↓ = speed ±50 WPM (Manh 2026-11-18,
+  round 7 — was ±10, matching the picker's 50-step); Esc = close.
   (The blue focus ring is hidden with `.focusEffectDisabled()` — the view
   stays focusable so the keys work, just without the ring.)
 - **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
   scroll event** (page-turn convention, SwiftRead-style; a longer swipe
-  moves more words); vertical swipe = **font ±2pt** per 50pt of accumulated
-  vertical movement (remainder carries); momentum-phase events are
-  ignored; mouse-wheel events pass through. **While paused, a vertical
+  moves more words); vertical swipe = **font ±8pt** per 50pt of accumulated
+  vertical movement (Manh 2026-11-18, round 7 — was ±2pt, which felt too
+  slow; 8pt matches the font picker step); remainder carries;
+  momentum-phase events are ignored; mouse-wheel events pass through. **While paused, a vertical
   swipe ONLY changes the text size and NEVER scrolls the block text** (all
   dominant-vertical `.changed` events are consumed).
-- **Pickers (menu style, show the nearest option):** Speed
-  `[100,150,200,250,275,300,350,400,450,500,600,700,800,1000,1200,1500,2000]`;
-  Text size `[40,48,56,64,72,80,88,96,104,110]` (default 64).
+- **Pickers (menu style, show the nearest option):** Speed **50–2000 in
+  steps of 50** (Manh 2026-11-18, round 7 — was 17 uneven values);
+  **Focus size 40–450** (default 80; was 40–110, default 64; steps grow
+  past 110 so the menu stays short); **Context size 25%–100%** of the
+  focus size (default 40%; options 25, 30, 35, 40, 50, 60, 75, 100).
   Keyboard/trackpad can set in-between values; the label shows the true
   value.
+- **Settings → "Reset to default" button** (Manh 2026-11-18, round 7):
+  restores speed 500, focus size 80, context size 40%, context display
+  "Only show when paused". Color scheme is a theme preference and is NOT
+  reset.
 - **Hint (bottom-right of the controls row, temporary):** "Space
   play/pause • ←/→ step • ↑/↓ speed • Swipe ↑/↓ font size". (It used to
   say "Esc close" — replaced 2026-11-18 because the swipe is the gesture
@@ -132,8 +149,9 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
 - "Fast Read" button in the translate panel (hides the panel first).
 - Menubar → "Reading" section; global shortcut `.fastRead` (no default
   key, fallback).
-- Settings toggle swaps Click between Speak and Fast Read (default Speak);
-  the icon glyph shows what the click will do (see the icon spec).
+- Settings toggle swaps Click between Speak and Fast Read (default **Fast
+  Read** — Manh 2026-11-18, round 7, was Speak); the icon glyph shows what
+  the click will do (see the icon spec).
 
 ## 8. Color schemes
 
