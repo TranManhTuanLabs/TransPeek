@@ -47,12 +47,14 @@ struct RSVPEngine {
     let wpm: Int
     let chunkSize: Int
 
-    /// Default reading speed (SwiftRead legacy default).
-    static let defaultWPM = 275
+    /// Default reading speed (Manh 2026-11-18, round 7: 500, was the
+    /// SwiftRead legacy default 275).
+    static let defaultWPM = 500
     /// Hard maximum (SwiftRead legacy hard cap).
     static let maxWPM = 2000
-    /// WPM step used by the stepper / arrow keys.
-    static let wpmStep = 25
+    /// WPM step used by the stepper / arrow keys (Manh 2026-11-18,
+    /// round 7: 50, was 25 — the speed picker moves in 50s too).
+    static let wpmStep = 50
     /// Chunk size range: 1–6 words per slide.
     static let chunkRange = 1...6
     /// Words shown around the current slide in the pause context.

@@ -153,8 +153,8 @@ enum TriggerActivationMode: String, CaseIterable, Defaults.Serializable {
 /// Settings toggle picks which of Speak / Fast Read the plain click does,
 /// and Option+click does the other one.
 enum TriggerClickAction: String, CaseIterable, Defaults.Serializable {
-    case speak     // Speak the selected text immediately (default)
-    case read      // Open Fast Read (RSVP) with the selected text
+    case speak     // Speak the selected text immediately
+    case read      // Open Fast Read (RSVP) with the selected text (default, Manh 2026-11-18)
     case translate // Old behaviour: open the translation panel
 }
 
@@ -449,14 +449,23 @@ extension Defaults.Keys {
     static let appLanguage = Key<AppLanguage>("appLanguage", default: .system)
 
     // TransPeek Phase 1 — trigger icon click + hover delay
-    static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .speak)
+    // Default click is Fast Read (Manh 2026-11-18): the icon shows A+
+    // by default, so the user can tell at a glance that a plain click
+    // reads; Option+click speaks instead.
+    static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .read)
     static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 500)
     static let autoHideDelaySec = Key<Int>("transpeek_autoHideDelaySec", default: 5)
 
     // Fast Read (RSVP) — reading speed, chunk size, text size (Manh 2026-11-17).
+    // Defaults updated 2026-11-18 (round 7): WPM 500, focus font 80.
     static let rsvpWPM = Key<Int>("transpeek_rsvpWPM", default: RSVPEngine.defaultWPM)
     static let rsvpChunkSize = Key<Int>("transpeek_rsvpChunkSize", default: 1)
-    static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 64)
+    static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 80)
+    /// Context (around) text size as a fraction of the focus font size
+    /// (Manh 2026-11-18, round 7): the top bar's "Context size" picker
+    /// sets this as a percent. Default 0.40 (smaller than the old fixed
+    /// 0.50), range 0.25–1.00.
+    static let rsvpContextSizeRatio = Key<Double>("transpeek_rsvpContextSizeRatio", default: 0.40)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
     static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
 

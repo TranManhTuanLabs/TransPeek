@@ -10,16 +10,30 @@ final class RSVPViewModel: ObservableObject {
     @Published var text: String {
         didSet { rebuildEngine(keepingWordAt: currentWordIndex) }
     }
-    /// Reading speed in words per minute (default 275, max 2000).
+    /// Reading speed in words per minute (default 500, range 50–2000,
+    /// step 50 — Manh 2026-11-18, round 7).
     @Published var wpm: Int {
-        didSet { rebuildEngine(keepingWordAt: currentWordIndex) }
+        didSet {
+            Defaults[.rsvpWPM] = wpm
+            rebuildEngine(keepingWordAt: currentWordIndex)
+        }
     }
     /// Words shown per slide (1–6, default 1).
     @Published var chunkSize: Int {
         didSet { rebuildEngine(keepingWordAt: currentWordIndex) }
     }
-    /// Font size of the reading word (40–110, default 64).
-    @Published var fontSize: Double
+    /// Font size of the focus word (40–450, default 80 — Manh
+    /// 2026-11-18, round 7: was 40–110, default 64).
+    @Published var fontSize: Double {
+        didSet { Defaults[.rsvpFontSize] = Int(fontSize) }
+    }
+    /// Context (around) text size as a fraction of the focus font size
+    /// (Manh 2026-11-18, round 7): the top bar's "Context size" picker
+    /// sets this as a percent. Default 0.40 (smaller than the old fixed
+    /// 0.50), range 0.25–1.00.
+    @Published var contextSizeRatio: Double {
+        didSet { Defaults[.rsvpContextSizeRatio] = contextSizeRatio }
+    }
     /// Window color scheme (Black on White / White on Black), picked in
     /// the window's Settings button; persisted, so the reader picks it
     /// once (Manh 2026-11-17, spec §14.3).
@@ -54,7 +68,8 @@ final class RSVPViewModel: ObservableObject {
         text: String,
         wpm: Int = RSVPEngine.defaultWPM,
         chunkSize: Int = 1,
-        fontSize: Double = 64,
+        fontSize: Double = 80,
+        contextSizeRatio: Double = 0.40,
         colorScheme: RSVPColorScheme = .light,
         contextDisplayStyle: RSVPContextDisplayStyle = .onPause
     ) {
@@ -62,9 +77,22 @@ final class RSVPViewModel: ObservableObject {
         self.wpm = wpm
         self.chunkSize = chunkSize
         self.fontSize = fontSize
+        self.contextSizeRatio = contextSizeRatio
         self.colorScheme = colorScheme
         self.contextDisplayStyle = contextDisplayStyle
         self.engine = RSVPEngine(text: text, wpm: wpm, chunkSize: chunkSize)
+    }
+
+    /// Reset the reading settings to their defaults (Manh 2026-11-18,
+    /// round 7 — the Settings popover's "Reset to default" button):
+    /// speed 500, focus font 80, context size 40%, context display
+    /// "Only show when paused". Color scheme is a theme preference, so
+    /// it is NOT reset here.
+    func resetToDefaults() {
+        wpm = RSVPEngine.defaultWPM
+        fontSize = 80
+        contextSizeRatio = 0.40
+        contextDisplayStyle = .onPause
     }
 
     var slideCount: Int { engine.slides.count }
@@ -300,20 +328,25 @@ struct RSVPView: View {
         viewModel.colorScheme == .dark ? .black : .white
     }
 
-    /// Speed (WPM) picker options (Manh 2026-11-18: Picker, not
-    /// Slider, for now). Includes the default 275; dense at the low
-    /// end where people actually read, sparse at speed-reading speeds.
-    private static let wpmOptions = [
-        100, 150, 200, 250, 275, 300, 350, 400, 450, 500,
-        600, 700, 800, 1000, 1200, 1500, 2000,
-    ]
-    /// Text-size picker options (Manh 2026-11-18: Picker, not Slider,
-    /// for now). Includes the default 64 and the max 110.
+    /// Speed (WPM) picker options (Manh 2026-11-18, round 7: 50–2000
+    /// in steps of 50 — was 17 uneven values [100, 150, 200, 250, 275,
+    /// ...]). Uniform steps are easier to remember, and 50 covers the
+    /// slowest readers; the default is 500.
+    private static let wpmOptions = Array(stride(from: 50, through: 2000, by: 50))
+    /// Focus font-size picker options (Manh 2026-11-18, round 7:
+    /// 40–450 — was 40–110). Steps grow past 110 so the menu stays
+    /// short; includes the default 80.
     private static let fontSizeOptions = [
         40, 48, 56, 64, 72, 80, 88, 96, 104, 110,
+        120, 140, 160, 200, 250, 300, 350, 400, 450,
     ]
+    /// Context (around) text size options, as a percent of the focus
+    /// font size (Manh 2026-11-18, round 7 — the top bar's "Context
+    /// size" picker). Default 40% (smaller than the old fixed 50%),
+    /// min 25% (SwiftRead-small), max 100% (same as the focus).
+    private static let contextSizeOptions = [25, 30, 35, 40, 50, 60, 75, 100]
     /// The picker option nearest to a value. The keyboard ↑/↓ moves
-    /// speed by 10 and the trackpad moves text size by 2pt, so the
+    /// speed by 50 and the trackpad moves text size by 8pt, so the
     /// value is not always one of the options — the picker shows the
     /// nearest one instead of going blank.
     private static func nearestWPMOption(to wpm: Int) -> Int {
@@ -322,7 +355,11 @@ struct RSVPView: View {
     }
     private static func nearestFontOption(to size: Double) -> Int {
         fontSizeOptions.min(by: { abs(Double($0) - size) < abs(Double($1) - size) })
-            ?? 64
+            ?? 80
+    }
+    private static func nearestContextOption(to ratio: Double) -> Int {
+        let percent = Int((ratio * 100).rounded())
+        return contextSizeOptions.min(by: { abs($0 - percent) < abs($1 - percent) }) ?? 40
     }
 
     var body: some View {
@@ -417,10 +454,10 @@ struct RSVPView: View {
                 }
                 return .handled
             case .upArrow:
-                viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + 10)
+                viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + RSVPEngine.wpmStep)
                 return .handled
             case .downArrow:
-                viewModel.wpm = max(50, viewModel.wpm - 10)
+                viewModel.wpm = max(50, viewModel.wpm - RSVPEngine.wpmStep)
                 return .handled
             case .escape:
                 onClose?()
@@ -433,16 +470,17 @@ struct RSVPView: View {
 
     // MARK: - Top bar
 
-    /// Left: WPM picker + font picker + word picker. Center: what RSVP
-    /// stands for, TRULY centered on the window (Manh 2026-11-18 — it
-    /// used to sit between two Spacers, so the wide left cluster pushed
-    /// it right of center). Right: Settings (Color Scheme) + "?"
-    /// (hotkeys). "Reading time" used to be here at the left — it moved
-    /// to the bottom-left corner (Manh 2026-11-18). The subtitle is
-    /// overlaid on the full width so its center is the window's center;
-    /// the side clusters sit in an HStack underneath. At the default
-    /// window size there is room for all three; at the 880pt minimum
-    /// the subtitle may sit close to the pickers.
+    /// Left: WPM picker + Focus size picker + Context size picker +
+    /// word picker. Center: what RSVP stands for, TRULY centered on
+    /// the window (Manh 2026-11-18 — it used to sit between two Spacers,
+    /// so the wide left cluster pushed it right of center). Right:
+    /// Settings (Color Scheme) + "?" (hotkeys). "Reading time" used to
+    /// be here at the left — it moved to the bottom-left corner (Manh
+    /// 2026-11-18). The subtitle is overlaid on the full width so its
+    /// center is the window's center; the side clusters sit in an
+    /// HStack underneath. At the default window size there is room for
+    /// all three; at the 880pt minimum the subtitle may sit close to
+    /// the pickers.
     /// Compact (Manh 2026-11-18 — the top bar was too tall): tight
     /// vertical padding and 1pt label-to-picker spacing.
     private var topBar: some View {
@@ -464,10 +502,10 @@ struct RSVPView: View {
                     .labelsHidden()
                     .frame(width: 80)
                 }
-                .help("↑ / ↓ changes speed by 10 WPM")
+                .help("↑ / ↓ changes speed by 50 WPM")
 
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("Text size: \(Int(viewModel.fontSize))")
+                    Text("Focus size: \(Int(viewModel.fontSize))")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
                     Picker("", selection: Binding(
@@ -482,6 +520,28 @@ struct RSVPView: View {
                     .labelsHidden()
                     .frame(width: 70)
                 }
+
+                // Context (around) text size, as a percent of the focus
+                // size (Manh 2026-11-18, round 7 — "Context size", right
+                // next to "Focus size" in the top bar, not buried in
+                // Settings). Default 40%, min 25%, max 100%.
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Context size: \(Int((viewModel.contextSizeRatio * 100).rounded()))%")
+                        .font(.caption)
+                        .foregroundStyle(readingSecondary)
+                    Picker("", selection: Binding(
+                        get: { Self.nearestContextOption(to: viewModel.contextSizeRatio) },
+                        set: { viewModel.contextSizeRatio = Double($0) / 100 }
+                    )) {
+                        ForEach(Self.contextSizeOptions, id: \.self) { p in
+                            Text("\(p)%").tag(p)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 70)
+                }
+                .help("Context text size, as a percent of the focus size")
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Words at once")
@@ -530,7 +590,8 @@ struct RSVPView: View {
 
     /// Color Scheme picker (White on Black / Black on White) + when
     /// the context around the focus word shows (spec §14.3 + Manh
-    /// 2026-11-18, SwiftRead's `contextDisplayStyle`).
+    /// 2026-11-18, SwiftRead's `contextDisplayStyle`) + Reset to
+    /// default (Manh 2026-11-18, round 7).
     private var settingsPopover: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Color Scheme")
@@ -552,6 +613,16 @@ struct RSVPView: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
+            // Reset the reading settings to their defaults (Manh
+            // 2026-11-18, round 7): speed 500, focus font 80, context
+            // size 40%, context display "Only show when paused". The
+            // color scheme is a theme preference, so it is NOT reset.
+            Button("Reset to default") {
+                viewModel.resetToDefaults()
+            }
+            .buttonStyle(.bordered)
+            .padding(.top, 4)
+            .help("Reset speed, focus size, context size and context display to their defaults")
         }
         .padding(12)
         .frame(width: 260)
@@ -565,7 +636,7 @@ struct RSVPView: View {
             hotkeyRow("Space", "Play / Pause")
             hotkeyRow("← / →", "Step one word")
             hotkeyRow("Shift + ← / →", "Step one sentence")
-            hotkeyRow("↑ / ↓", "Speed ±10 WPM")
+            hotkeyRow("↑ / ↓", "Speed ±50 WPM")
             hotkeyRow("Esc", "Close window")
         }
         .padding(12)
@@ -640,11 +711,19 @@ struct RSVPView: View {
     /// SwiftRead-style (Manh 2026-11-18, from the SwiftRead source):
     /// the focus line keeps its size and its own row, centered — the
     /// words before it show above, the words after it below. The
-    /// context lines scale with the focus size (half of it), so they
-    /// stay readable instead of staying tiny at body size when the
-    /// focus grows (Manh 2026-11-18: size follows SwiftRead). Stepping
-    /// ←/→ (or swiping trackpad ←/→) while paused moves the focus line
-    /// to the new slide and the context re-renders around it.
+    /// context lines scale with the focus size (the top bar's "Context
+    /// size" percent, default 40% — Manh 2026-11-18, round 7; was a
+    /// fixed half), so they stay readable instead of staying tiny at
+    /// body size when the focus grows (Manh 2026-11-18: size follows
+    /// SwiftRead). Stepping ←/→ (or swiping trackpad ←/→) while paused
+    /// moves the focus line to the new slide and the context re-renders
+    /// around it.
+    ///
+    /// The block text is SELECTABLE (Manh 2026-11-18, round 7): the
+    /// reader can select a word in the context to translate it on the
+    /// spot (the float icon appears on the selection), instead of only
+    /// reading it. The focus line itself is not selectable — it is a
+    /// single chunk rendered with a custom ORP layout.
     ///
     /// The focus line is PINNED at the vertical center (Manh
     /// 2026-11-18 — SwiftRead never lets it drift): the before/after
@@ -667,8 +746,9 @@ struct RSVPView: View {
                 Group {
                     if !beforeText.isEmpty {
                         Text(beforeText)
-                            .font(.system(size: viewModel.fontSize * 0.5))
+                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
+                            .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     } else {
                         Color.clear
@@ -689,8 +769,9 @@ struct RSVPView: View {
                 Group {
                     if !afterText.isEmpty {
                         Text(afterText)
-                            .font(.system(size: viewModel.fontSize * 0.5))
+                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
+                            .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     } else {
                         Color.clear

@@ -45,6 +45,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             wpm: Defaults[.rsvpWPM],
             chunkSize: Defaults[.rsvpChunkSize],
             fontSize: Double(Defaults[.rsvpFontSize]),
+            contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
             contextDisplayStyle: Defaults[.rsvpContextDisplayStyle]
         )
@@ -84,8 +85,9 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
         self.window = window
 
         // Trackpad swipes over this window: horizontal steps a slide
-        // (like ←/→), vertical changes the font size by 2pt per swipe
-        // (the same step as the font slider, clamped to 40...110).
+        // (like ←/→), vertical changes the font size by 8pt per swipe
+        // (Manh 2026-11-18, round 7: 4x the old 2pt — the old step felt
+        // too slow), clamped to 40...450.
         let monitor = RSVPTrackpadMonitor()
         self.trackpadMonitor = monitor
         trackpadCancellable = monitor.actionPublisher.sink { [weak self] action in
@@ -93,8 +95,8 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             switch action {
             case .stepForward: viewModel.stepForward()
             case .stepBack: viewModel.stepBack()
-            case .fontBigger: viewModel.fontSize = min(110, viewModel.fontSize + 2)
-            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 2)
+            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 8)
+            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 8)
             }
         }
         monitor.start(window: window)

@@ -33,8 +33,9 @@ enum RSVPTrackpadAction {
 ///   backwards, flip it.
 /// - Vertical: fingers up (negative deltaY) = font BIGGER; fingers
 ///   down (positive deltaY) = font SMALLER. One step changes the size
-///   by 2pt (the same step as the font picker). A vertical swipe only
-///   changes the text size — it never scrolls the block text (Manh
+///   by 8pt (Manh 2026-11-18, round 7: 4x the old 2pt — the old step
+///   felt too slow; 8pt matches the font picker step). A vertical swipe
+///   only changes the text size — it never scrolls the block text (Manh
 ///   2026-11-18: when paused, up/down must not scroll the page).
 ///
 /// Speed (Manh 2026-11-18, SwiftRead-style): horizontal steps ONE
@@ -42,8 +43,9 @@ enum RSVPTrackpadAction {
 /// `wordIndex` by 1 on every event, with no threshold, so the word
 /// keeps up with the fingers. The old "one step per gesture after
 /// 50pt" felt very slow (a long swipe still moved only one word).
-/// Vertical accumulates: every 50pt changes the font by 2pt, and a
-/// long swipe keeps stepping (the remainder carries over).
+/// Vertical accumulates: every 50pt changes the font by 8pt (Manh
+/// 2026-11-18, round 7: 4x the old 2pt), and a long swipe keeps
+/// stepping (the remainder carries over).
 ///
 /// Only gesture-phased trackpad events count (`event.phase != []`);
 /// mouse-wheel events (empty phase) and momentum coasting

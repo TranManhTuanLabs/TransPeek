@@ -98,11 +98,40 @@ final class TriggerTrackingView: NSView {
         // Option flips to the other action, so the user sees the preview
         // before clicking; in click mode the click always translates, so
         // there is nothing to preview.
+        //
+        // Speaking comes FIRST (Manh 2026-11-18, round 7): while TTS is
+        // playing the icon must show the speaker, so the user can click
+        // again to stop it — even when the click action is Read. Before
+        // this fix the `.read` branch below returned early, so after an
+        // Option+click to Speak (with Click = Read) the icon stayed on
+        // A+ once Option was released, instead of switching to the
+        // speaker, and the user had no way to tell speech was playing.
         let effectiveAction: TriggerClickAction
         if activationMode == .hover && isOptionHeld {
             effectiveAction = clickAction == .read ? .speak : .read
         } else {
             effectiveAction = clickAction
+        }
+
+        if isSpeaking {
+            // TTS playing — speaker glyph (click again to stop).
+            let symbolName = "speaker.wave.2.fill"
+            let symbolColor = NSColor.controlAccentColor
+            let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+            let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
+            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Stop speaking")?
+                .withSymbolConfiguration(sizeConfig.applying(colorConfig))
+            {
+                let imageSize = image.size
+                let imageRect = NSRect(
+                    x: (bounds.width - imageSize.width) / 2,
+                    y: (bounds.height - imageSize.height) / 2,
+                    width: imageSize.width,
+                    height: imageSize.height
+                )
+                image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+            }
+            return
         }
 
         if effectiveAction == .read {
@@ -113,21 +142,15 @@ final class TriggerTrackingView: NSView {
             return
         }
 
-        // SF Symbol icon — speaker while TTS is playing, bubble otherwise
-        // (bubble = translate/speak). The bubble glyph is ocean blue
-        // (.systemBlue) so the icon stays easy to spot in both light
-        // and dark mode; the circle background keeps adapting to the system
-        // appearance — never a solid blue fill, which would hide the glyph.
-        let symbolName: String
-        let symbolColor: NSColor
-        if isSpeaking {
-            symbolName = "speaker.wave.2.fill"
-            symbolColor = .controlAccentColor
-        } else {
-            symbolName = "character.bubble"
-            symbolColor = .systemBlue
-        }
-        let accessibilityDescription = isSpeaking ? "Stop speaking" : "Translate"
+        // Speech bubble (translate/speak preview). The bubble glyph is
+        // ocean blue (.systemBlue) so the icon stays easy to spot in both
+        // light and dark mode; the circle background keeps adapting to
+        // the system appearance — never a solid blue fill, which would
+        // hide the glyph. (Speaking is handled above and returns early,
+        // so this branch only runs when not speaking.)
+        let symbolName = "character.bubble"
+        let symbolColor = NSColor.systemBlue
+        let accessibilityDescription = "Translate"
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityDescription)?
