@@ -805,76 +805,19 @@ struct RSVPView: View {
     // MARK: - Share
 
     /// One button per platform, shown with the completion line (Manh
-    /// 2026-11-18). Each opens its share URL in the browser (Mail opens
-    /// the mail app). The link shared is the TransPeek repo; the text
-    /// is option A (the real stats of the finished read).
+    /// 2026-11-18). Now the shared ShareRowView
+    /// (Sources/UI/ShareRowView.swift), with the reading color scheme
+    /// so the adaptive icons follow White on Black / Black on White.
+    /// Each opens its share URL in the browser (Mail opens the mail
+    /// app). The link shared is the TransPeek repo; the text is
+    /// option A (the real stats of the finished read).
     private var shareRow: some View {
-        HStack(spacing: 10) {
-            ForEach(RSVPSharePlatform.allCases, id: \.self) { platform in
-                Button {
-                    if let url = platform.shareURL(text: viewModel.shareText) {
-                        NSWorkspace.shared.open(url)
-                    }
-                } label: {
-                    shareIcon(for: platform)
-                }
-                .buttonStyle(.plain)
-                .help("Share on \(platform.displayName)")
-            }
-        }
-    }
-
-    /// A circular badge with the platform's letter (SF Symbols has no
-    /// brand icons). Brand colors where they read on both schemes;
-    /// Threads and X use the adaptive primary color because a black
-    /// circle would vanish on the dark scheme.
-    private func shareIcon(for platform: RSVPSharePlatform) -> some View {
-        Group {
-            switch platform {
-            case .facebook:
-                Text("f")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 28, height: 28)
-                    .background(Color(red: 0.09, green: 0.47, blue: 0.95))
-                    .clipShape(Circle())
-            case .threads:
-                Text("@")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(pageBackground)
-                    .frame(width: 28, height: 28)
-                    .background(readingForeground)
-                    .clipShape(Circle())
-            case .x:
-                Text("X")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(pageBackground)
-                    .frame(width: 28, height: 28)
-                    .background(readingForeground)
-                    .clipShape(Circle())
-            case .reddit:
-                Text("R")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 28, height: 28)
-                    .background(Color(red: 1.0, green: 0.27, blue: 0.0))
-                    .clipShape(Circle())
-            case .linkedIn:
-                Text("in")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 28, height: 28)
-                    .background(Color(red: 0.04, green: 0.4, blue: 0.76))
-                    .clipShape(Circle())
-            case .mail:
-                Image(systemName: "envelope.fill")
-                    .font(.system(size: 13))
-                    .foregroundStyle(readingForeground)
-                    .frame(width: 28, height: 28)
-                    .background(readingSecondary.opacity(0.2))
-                    .clipShape(Circle())
-            }
-        }
+        ShareRowView(
+            text: viewModel.shareText,
+            textColor: readingForeground,
+            pageColor: pageBackground,
+            secondaryColor: readingSecondary
+        )
     }
 
     // MARK: - Progress

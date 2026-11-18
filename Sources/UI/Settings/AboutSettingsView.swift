@@ -201,6 +201,15 @@ struct AboutSettingsView: View {
                 }
             }
 
+            // Share TransPeek — the same share row as the Fast Read
+            // completion window (Manh 2026-11-19): one icon per
+            // platform, sharing the app (repo link + tagline).
+            Text("Share TransPeek")
+                .font(.headline)
+                .padding(.top, 4)
+
+            ShareRowView(text: "TransPeek — Translate anywhere, Peek instantly!")
+
             Spacer()
 
             HStack(spacing: 16) {
