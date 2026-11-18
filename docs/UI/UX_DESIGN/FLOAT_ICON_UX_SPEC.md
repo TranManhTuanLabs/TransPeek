@@ -1,32 +1,141 @@
-# Float Icon — UX Spec (bản nháp)
+# Float Icon — UX Spec
 
-> Trạng thái: **bản nháp** — ghi lại những gì đã chốt, chờ Manh duyệt rồi mới thành spec chốt
-> như panel Windows.
+> Status: **settled design** (as-built, 2026-11-18) — the icon's shape, gestures,
+> glyph states, and the Option-key preview. Windows: implement the same
+> behavior; see §6 for the Windows notes (Alt instead of Option, and the
+> global key-state read).
 
-## 1. Hình dạng
+## 1. Shape
 
-- Cửa sổ **32×32**, trong suốt thật, không có bubble.
-- Icon theo dark/light system: chưa chốt.
+- A **32×32** window, truly transparent, no bubble. A circle (fill
+  `controlBackgroundColor`, border `separatorColor`) with one glyph centered
+  at 14pt, weight medium.
+- The icon appears near the selected text (offset 8pt right and below the
+  cursor, clamped to the visible screen frame) and fades in over 0.15s.
 
-## 2. Hành vi (đã chốt)
+## 2. Gestures and flow (settled)
 
-- **Mặc định: bôi chọn → icon → hover → float panel; click icon = TTS.**
-- **Hover icon → luồng dịch; Click icon → luồng TTS nghe.**
-- **Option-click (Mac) / Alt-click (Windows) → đọc nhanh (RSVP) thẳng** — đã chốt
-  luồng vào RSVP 17/11, xem `FEATURES/SPEECH_PLAYER.md`.
-- Chuột phải icon → menu có "Đọc nhanh".
-- **Hover delay (Settings → General): Slider 300...800ms, bước 100ms, mặc định 500ms** (commit `0bdf99f`, Manh 17/11). Trước đây là Picker với mặc định 300ms — 300ms kích hoạt gần như ngay khi di chuột qua nên user không kịp click icon để nghe; tăng mặc định lên 500ms cho kịp click. Giá trị đã lưu của user được giữ nguyên khi đổi UI.
-- **Auto-hide icon (Settings → General, ngay dưới Hover delay): Slider 3...10s, bước 1s, mặc định 5s** (commit `0bdf99f`, Manh 17/11). Defaults key mới `autoHideDelaySec`; `TriggerIconController.startAutoDismissTimer()` đọc giá trị này (trước đây fix cứng 5s). Icon tự ẩn sau khoảng này nếu không tương tác.
+- **Select text → icon appears.**
+- **Hover (default activation mode) → translate.** After the hover delay,
+  the translate panel opens.
+- **Click → the configured click action.** Settings → "Click icon" chooses
+  what a plain click does: **Speak** (default — hear it read aloud) or
+  **Fast Read** (open the reading window). A third action, Translate, is
+  available in code.
+- **Option + Click (Mac) / Alt + Click (Windows) → the OTHER action.**
+  When plain click speaks, Option+Click opens Fast Read; when plain click
+  opens Fast Read, Option+Click speaks. (The translate action is reachable
+  from the right-click menu instead.)
+- **In click-activation mode, a click ALWAYS translates** (Option is
+  ignored); that mode's whole point is click-to-translate.
+- **Right-click → context menu**, including "Fast Read".
 
-## 3. Tham chiếu
+## 3. Glyph states — the icon always previews the NEXT click (Style B, Manh 2026-11-18)
 
-- Thiết kế chung mac + Windows: `SPEC-v0.1.md`, `AI_CONTEXT.md`.
-- Bản Windows (đã chốt panel): `TranManhTuanLabs/TransPeek-Windows`,
-  `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md`.
+The icon's glyph shows what the next click will do, not what the icon "is":
 
-## Liên kết
+| Click setting | No Option held | Option held | While speaking |
+| --- | --- | --- | --- |
+| Speak (default) | speech bubble (`character.bubble`, blue) | **A+** (turmeric, Fast Read preview) | speaker (`speaker.wave.2.fill`, accent) |
+| Fast Read | **A+** (turmeric) | speech bubble (Speak preview) | speaker |
+| Translate | speech bubble | A+ | speaker |
 
-- [Panel UX (chưa viết — chưa chốt size)](FLOAT_POPUP_PANEL_UX.md)
-- [Tổng quan UX](APP_UX_OVERVIEW.md)
-- [Tính năng Float Icon](../../FEATURES/FLOAT_ICON.md)
-- [Điều hướng chính](MAIN_NAVIGATION_UX.md)
+- **The A+ glyph** is custom-drawn (not an SF Symbol): a bold "A" (15pt)
+  with a small bold "+" (8pt) centered on the A's top-right corner, in
+  turmeric — a deep golden amber (`NSColor` red 0.78, green 0.50, blue
+  0.05) chosen to read on both light and dark backgrounds. It replaces
+  the old `book.pages` glyph for Fast Read.
+- **The 2.5s A+ linger:** after any Fast Read click (plain click,
+  Option+Click, or right-click menu), the icon shows A+ for 2.5 seconds
+  while the Read window opens, then hides — a confirmation so the user
+  knows Fast Read was triggered even before the window appears. During
+  those 2.5s further clicks are ignored (no double window, no speaking
+  over the Read window). The 2.5s applies to ALL Read triggers, not just
+  plain clicks.
+
+## 4. Auto-hide
+
+- The icon hides by itself after the auto-hide delay (Settings → General,
+  Slider 3–10s, default **5s**, Defaults key `autoHideDelaySec`;
+  `TriggerIconController.startAutoDismissTimer()` reads it).
+- The auto-hide is **PAUSED** while: the cursor is over the icon; the icon
+  is speaking; **Option is held** (so the A+ preview doesn't vanish before
+  the user can click it); a Read open is pending (the 2.5s linger has its
+  own timer). On Option release, the auto-hide restarts (fresh 5s).
+
+## 5. How Option is detected — the correct mechanism (and the bug it replaces)
+
+This is the part another implementation (and Windows) must get right.
+
+### The bug (found by Manh testing build #235, 2026-11-18)
+
+The first implementation used a **local** flags monitor:
+`NSEvent.addLocalMonitorForEvents(matching: .flagsChanged)`. It did not
+work: holding Option while the icon was visible changed nothing; the glyph
+only flipped to A+ when the mouse hovered the icon. Cause: the user selects
+text in **another app**, so the Option key press is delivered to **that
+app**, not to TransPeek — a local monitor only sees events for its own app,
+so it never fires. The hover worked only because the mouse-enter handler
+re-reads the key state directly (see below).
+
+### The correct mechanism (fix, round 6, 2026-11-18)
+
+**Poll the global modifier state** while the icon is visible:
+
+- Every **0.1s**, read `NSEvent.modifierFlags.contains(.option)`.
+  `NSEvent.modifierFlags` returns the **global hardware modifier state**,
+  so it works no matter which app is frontmost.
+- Only act when the state **actually changed** (keep a `lastOptionHeld`;
+  compare each poll). A no-change poll must never restart the auto-hide
+  timer — otherwise the icon would never auto-hide (the 5s timer would
+  keep resetting).
+- Start the poll timer in `show()`; stop it in `cleanup()`. Set the
+  initial state from `NSEvent.modifierFlags` at show time (the user may
+  already be holding Option when the icon appears), and if Option is
+  already held, pause the auto-hide immediately.
+- Safety nets: re-check the Option state on mouse-enter (in case a poll
+  was missed), and update the glyph through `updateOptionPreview(optionHeld:)`
+  which both flips the glyph and pauses/resumes the auto-hide.
+- The poll only runs while the icon is visible, so the cost is negligible.
+
+### What NOT to do
+
+- Do **not** use a local-only key/flags monitor to detect Option/Alt held
+  in another app — it will silently never fire (the bug above).
+- Do **not** restart the auto-hide timer on every poll — only on a real
+  state change.
+- Do **not** use a global event monitor that requires Accessibility unless
+  the app is guaranteed to have it; polling `NSEvent.modifierFlags` needs
+  no special permission.
+
+## 6. Windows notes (for TransPeek-Windows)
+
+- **Alt replaces Option** everywhere (Alt+Click = the other action, Alt
+  held = preview flip).
+- The same bug applies on Windows: a key handler that only fires when the
+  TransPeek window is focused will **not** see Alt held while the user is
+  in another app. Read the **global** Alt state instead (e.g.
+  `GetAsyncKeyState(VK_MENU)` / the keyboard-state API, polled on a short
+  timer while the icon is visible), and only act on a real state change.
+- The A+ glyph, the 2.5s linger, the auto-hide pause while Alt is held,
+  and the glyph table in §3 are identical on Windows.
+- Hover delay and auto-hide defaults match mac: hover 500ms, auto-hide
+  **5s** (Windows changed 3s → 5s, 2026-11-18).
+
+## 7. Settings (Defaults keys)
+
+- `triggerClickAction`: `.speak` (default) / `.read` / `.translate`.
+- `triggerActivationMode`: `.hover` (default) / `.click`.
+- `hoverDelayMs`: default 500 (Slider 300–800).
+- `autoHideDelaySec`: default 5 (Slider 3–10).
+
+## References
+
+- Implementation (mac):
+  `Sources/UI/TriggerIcon/TriggerIconController.swift`
+  (`TriggerTrackingView` draws the glyph; `updateOptionPreview` +
+  `startOptionPollTimer` are the Option mechanism).
+- Feature doc: `docs/FEATURES/FLOAT_ICON.md`.
+- Window Read: `docs/FEATURES/FAST_READ.md`.
+- Original flow decisions:
+  `docs/RESEARCH/tts-speechify-naturalreader/recommendation.md`.
