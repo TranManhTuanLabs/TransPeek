@@ -191,6 +191,19 @@ final class RSVPViewModel: ObservableObject {
         playbackTask = nil
     }
 
+    /// Restart reading from the beginning (Manh 2026-11-19, round 10):
+    /// jump to slide 0, reset the timer, and start playing — a new
+    /// reading session, like pressing Play on the last slide. Wired to
+    /// the Restart button left of Rewind in the control row.
+    func restart() {
+        guard slideCount > 0 else { return }
+        pause()
+        currentSlideIndex = 0
+        accumulatedSeconds = 0
+        isFinished = false
+        play()
+    }
+
     func stepForward() {
         pause()
         isFinished = false
@@ -581,8 +594,13 @@ struct RSVPView: View {
             }
         }
         .overlay(alignment: .center) {
+            // Subtitle (Manh 2026-11-19, round 10): bigger for beauty —
+            // 15pt semibold instead of the 12pt caption, so it reads as
+            // the window's title, not a footnote. Still fits at the 880pt
+            // minimum (the text is ~250pt wide, centered between the
+            // picker cluster and the right buttons).
             Text("Rapid Serial Visual Presentation")
-                .font(.caption)
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(readingSecondary)
                 .lineLimit(1)
         }
@@ -901,6 +919,20 @@ struct RSVPView: View {
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
+                // Restart (Manh 2026-11-19, round 10): read from the
+                // beginning — jump to slide 0, reset the timer, and
+                // start playing. First button in the row, left of
+                // Rewind, like the Windows Window Read. The row is
+                // still ~260pt wide, so it fits at the 880pt minimum
+                // with the side texts.
+                Button {
+                    viewModel.restart()
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.bordered)
+                .help("Restart (read from the beginning)")
+
                 Button {
                     viewModel.stepBack()
                 } label: {
