@@ -1,3 +1,4 @@
+import Defaults
 import SwiftUI
 
 /// Intro card for panel left (Manh 2026-11-18): a short, friendly
@@ -8,13 +9,41 @@ import SwiftUI
 /// `flowIntroCollapsed`), so once the reader knows the flow they can
 /// keep it collapsed and the shortcuts table is the main thing on show.
 ///
-/// Content (Manh 2026-11-18, phrased for clarity): the icon is more than
-/// a translator — Hover translates, Click listens, Option+Click Fast Reads.
-/// Click and Option+Click can be swapped in Settings, so the card says so.
+/// Content (Manh 2026-11-18, round 8): the icon is more than a
+/// translator — Hover translates, Click does the Settings click action,
+/// Option+Click does the other one. The rows are DYNAMIC: they read the
+/// Settings "Click icon" choice (`triggerClickAction`) and show what a
+/// plain click and an Option+click actually do right now — never a
+/// hardcoded mapping that can go stale when the default changes (the
+/// card used to say "Click → Listen" even after the default became
+/// Read, Manh 2026-11-18). The card re-renders when the setting
+/// changes (via `@Default`), so it is always correct.
 struct FlowIntroCard: View {
     /// Whether the card is collapsed (header only). Owned by PopupView,
     /// persisted to Defaults.
     @Binding var isCollapsed: Bool
+    /// The click action from Settings, so the rows match what a click
+    /// actually does (Manh 2026-11-18, round 8). `@Default` re-renders
+    /// the card when the setting changes.
+    @Default(.triggerClickAction) private var clickAction: TriggerClickAction
+
+    /// What a plain click does (the Settings click action), as the row's
+    /// action text.
+    private var clickActionText: String {
+        switch clickAction {
+        case .read: return "Fast Read — read it faster"
+        case .speak: return "Listen — hear it read aloud"
+        case .translate: return "Translate — open the translation panel"
+        }
+    }
+
+    /// What Option+click does (the other action), as the row's action text.
+    private var optionClickActionText: String {
+        switch clickAction {
+        case .read: return "Listen — hear it read aloud"
+        case .speak, .translate: return "Fast Read — read it faster"
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -58,9 +87,9 @@ struct FlowIntroCard: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
 
-                flowRow(gesture: "Hover", action: "Translate the selected text")
-                flowRow(gesture: "Click", action: "Listen — hear it read aloud")
-                flowRow(gesture: "Option + Click", action: "Fast Read — read it faster")
+                flowRow(gesture: "Hover icon", action: "Translate the selected text")
+                flowRow(gesture: "Click icon", action: clickActionText)
+                flowRow(gesture: "Option + Click", action: optionClickActionText)
 
                 Text("Tip: swap Click and Option + Click in Settings.")
                     .font(.caption)

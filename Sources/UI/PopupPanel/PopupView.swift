@@ -559,12 +559,20 @@ struct PopupView: View {
                     // Fast Read (Manh 2026-11-17): opens the RSVP reading
                     // window with the text being translated — no need to
                     // re-select it. Sits at the left end of the Actions row.
+                    // The icon and the "Fast Read" text sit tight together
+                    // (Manh 2026-11-18, round 8): a plain `Label` leaves a
+                    // gap between icon and text, so this is an HStack
+                    // with spacing 0 instead — no space or padding
+                    // between the icon and the name.
                     Button {
                         onFastRead?(coordinator.sourceText)
                     } label: {
-                        Label("Fast Read", systemImage: "book.pages")
-                            .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 0) {
+                            Image(systemName: "book.pages")
+                            Text("Fast Read")
+                        }
+                        .font(.system(size: CGFloat(fontSize - 2)))
+                        .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Fast Read (RSVP)")
@@ -714,8 +722,26 @@ struct PopupView: View {
     /// moved up from below the tab content so Manh can try it. The row
     /// is compact here (2pt top padding) so it reads as part of the
     /// top bar, not as a gap before the content.
+    /// The `<` / `>` arrows beside the dots (Manh 2026-11-18, round 8)
+    /// are a visible affordance that the row is clickable — the dots
+    /// alone did not look tappable. Both arrows are the same width, so
+    /// the dots stay centered; an arrow is dimmed at its end (no
+    /// previous / no next panel). The dots' position is UNCHANGED
+    /// (Manh 2026-11-18: keep it as-is on both repos for comparison).
     private var dotsRow: some View {
         HStack(spacing: 8) {
+            Button {
+                selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.caption)
+                    .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedTab == .shortcut)
+            .help("Previous panel")
+            .background { InteractiveMarker() }
+
             ForEach(PanelTab.allCases, id: \.self) { tab in
                 Button {
                     selectedTab = tab
@@ -728,6 +754,18 @@ struct PopupView: View {
                 .help(dotHelp(tab))
                 .background { InteractiveMarker() }
             }
+
+            Button {
+                selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedTab == .fastRead)
+            .help("Next panel")
+            .background { InteractiveMarker() }
         }
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 2)

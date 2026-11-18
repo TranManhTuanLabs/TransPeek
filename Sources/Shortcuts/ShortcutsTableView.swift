@@ -64,7 +64,13 @@ struct ShortcutsTableView: View {
             Button {
                 onClose?()
             } label: {
-                HStack {
+                HStack(spacing: 6) {
+                    // Keyboard icon at the left of the title (Manh
+                    // 2026-11-18, round 8): the card looks bare without
+                    // one, like the "How the icon works" card's cursor
+                    // icon above it.
+                    Image(systemName: "keyboard")
+                        .foregroundStyle(.secondary)
                     Text("Keyboard Shortcuts")
                         .font(.headline)
                     Spacer()
