@@ -23,6 +23,11 @@
   đẩy luôn cho gộp vào run mới nhất — đằng nào cũng mất công chờ, cứ để CI chạy
   là test luôn code mới nhất. Run cũ bị push mới đè lên mà huỷ là bình thường,
   không cần báo.
+- **Repo mac hay phải chờ máy — tranh thủ làm luôn (Manh 18/11):** khi CI đang
+  chờ máy (queued) mà có yêu cầu mới thì làm ngay, đẩy gộp vào run đang chờ để
+  CI chạy một thể rồi Manh test một lượt, đừng để máy chạy xong mới làm rồi lại
+  chờ lượt mới. Ví dụ 18/11: trong lúc #230 chờ máy, làm luôn setting "Show
+  context around focus word" + sửa nút chìm nền đen, đẩy gộp thành #231.
 - **Báo nhanh khi run kết luận**, đừng để Manh phải hỏi "sao build lâu thế".
 - Đỏ do tải dependency/GitHub API 502 thì retry, đừng sửa code theo.
 - Main khóa qua PR phải xanh mới merge; test nhanh (lint + unit) mỗi push,
