@@ -329,8 +329,8 @@ struct RSVPView: View {
         VStack(spacing: 0) {
             topBar
                 .padding(.horizontal, 32)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
 
             // Focus mode (§14.1) + "Show context around focus word"
             // setting (Manh 2026-11-18, SwiftRead's contextDisplayStyle):
@@ -373,20 +373,12 @@ struct RSVPView: View {
                 .padding(.horizontal, 32)
                 .padding(.bottom, 8)
 
-            // Bottom-center controls (§14.4).
+            // Bottom controls (§14.4) + shortcut hints at the right end
+            // of the same row (Manh 2026-11-18, temporary — the hints
+            // used to sit on their own row at the bottom-right).
             controlRow
                 .padding(.horizontal, 32)
-                .padding(.bottom, 8)
-
-            // Shortcut hints, bottom-right (Manh 2026-11-18, temporary):
-            // Space play/pause • ←/→ step • ↑/↓ speed • Esc close.
-            Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
-                .font(.caption)
-                .foregroundStyle(readingSecondary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 20)
+                .padding(.bottom, 16)
         }
         .frame(minWidth: 880, minHeight: 550)
         .background(pageBackground)
@@ -399,6 +391,11 @@ struct RSVPView: View {
         .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
         .focusable()
         .focused($isFocused)
+        // Hide the blue focus ring (Manh 2026-11-18): the focusable root
+        // view drew a blue border framing the whole window, most visible
+        // at full width. The view stays focusable — Space / arrows / Esc
+        // still work — just without the ring.
+        .focusEffectDisabled()
         .onAppear { isFocused = true }
         .onKeyPress { press in
             switch press.key {
@@ -437,9 +434,16 @@ struct RSVPView: View {
     // MARK: - Top bar
 
     /// Left: reading time (short label) + WPM picker + font picker +
-    /// word picker. Center: what RSVP stands for. Right: Settings
-    /// (Color Scheme) + "?" (hotkeys). The shortcut hints live at the
-    /// bottom-right, not here (Manh 2026-11-18, temporary).
+    /// word picker. Center: what RSVP stands for, TRULY centered on the
+    /// window (Manh 2026-11-18 — it used to sit between two Spacers, so
+    /// the wide left cluster pushed it right of center). Right: Settings
+    /// (Color Scheme) + "?" (hotkeys). The subtitle is overlaid on the
+    /// full width so its center is the window's center; the side
+    /// clusters sit in an HStack underneath. At the default window size
+    /// there is room for all three; at the 880pt minimum the subtitle
+    /// may sit close to the pickers.
+    /// Compact (Manh 2026-11-18 — the top bar was too tall): tight
+    /// vertical padding and 1pt label-to-picker spacing.
     private var topBar: some View {
         HStack(spacing: 16) {
             HStack(spacing: 16) {
@@ -450,7 +454,7 @@ struct RSVPView: View {
                     .lineLimit(1)
                     .help("Estimated reading time")
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Speed: \(viewModel.wpm) WPM")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
@@ -468,7 +472,7 @@ struct RSVPView: View {
                 }
                 .help("↑ / ↓ changes speed by 10 WPM")
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Text size: \(Int(viewModel.fontSize))")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
@@ -485,7 +489,7 @@ struct RSVPView: View {
                     .frame(width: 70)
                 }
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("Words at once")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
@@ -499,13 +503,6 @@ struct RSVPView: View {
                     .frame(width: 60)
                 }
             }
-
-            Spacer()
-
-            Text("Rapid Serial Visual Presentation")
-                .font(.caption)
-                .foregroundStyle(readingSecondary)
-                .lineLimit(1)
 
             Spacer()
 
@@ -528,6 +525,12 @@ struct RSVPView: View {
                     hotkeysPopover
                 }
             }
+        }
+        .overlay(alignment: .center) {
+            Text("Rapid Serial Visual Presentation")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+                .lineLimit(1)
         }
     }
 
@@ -786,46 +789,56 @@ struct RSVPView: View {
 
     // MARK: - Controls
 
-    /// Four buttons centered at the bottom: Rewind, Play/Pause,
-    /// Fast-forward, Toggle maximize window (§14.4).
+    /// Four buttons centered at the bottom, with the shortcut hints at
+    /// the right end of the same row (§14.4 + Manh 2026-11-18,
+    /// temporary). The buttons stay truly centered (their own HStack,
+    /// centered on the full width) and the hints overlay at the trailing
+    /// edge, so the hints don't push the buttons off-center. At the
+    /// 880pt minimum width the hints (~250pt) and the centered buttons
+    /// (~200pt) don't overlap.
     private var controlRow: some View {
-        HStack(spacing: 20) {
-            Spacer()
+        ZStack {
+            HStack(spacing: 20) {
+                Button {
+                    viewModel.stepBack()
+                } label: {
+                    Image(systemName: "backward.fill")
+                }
+                .buttonStyle(.bordered)
+                .help("Rewind (←)")
 
-            Button {
-                viewModel.stepBack()
-            } label: {
-                Image(systemName: "backward.fill")
+                Button {
+                    viewModel.togglePlayPause()
+                } label: {
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Play / Pause (Space)")
+
+                Button {
+                    viewModel.stepForward()
+                } label: {
+                    Image(systemName: "forward.fill")
+                }
+                .buttonStyle(.bordered)
+                .help("Fast-forward (→)")
+
+                Button {
+                    onToggleMaximize?()
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                }
+                .buttonStyle(.bordered)
+                .help("Toggle maximize window")
             }
-            .buttonStyle(.bordered)
-            .help("Rewind (←)")
+            .frame(maxWidth: .infinity, alignment: .center)
 
-            Button {
-                viewModel.togglePlayPause()
-            } label: {
-                Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title2)
-            }
-            .buttonStyle(.borderedProminent)
-            .help("Play / Pause (Space)")
-
-            Button {
-                viewModel.stepForward()
-            } label: {
-                Image(systemName: "forward.fill")
-            }
-            .buttonStyle(.bordered)
-            .help("Fast-forward (→)")
-
-            Button {
-                onToggleMaximize?()
-            } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-            }
-            .buttonStyle(.bordered)
-            .help("Toggle maximize window")
-
-            Spacer()
+            Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 }

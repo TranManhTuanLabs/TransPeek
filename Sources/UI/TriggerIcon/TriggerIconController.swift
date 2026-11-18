@@ -290,6 +290,9 @@ final class TriggerIconController: NSObject {
 
         trackingView.onMouseEntered = { [weak self] in
             guard let self else { return }
+            // Re-check Option in case a flags-changed event was missed, so
+            // the glyph preview is correct the moment the cursor arrives.
+            self.trackingView?.isOptionHeld = NSEvent.modifierFlags.contains(.option)
             switch activationMode {
             case .hover:
                 self.startHoverTimer()
@@ -349,15 +352,26 @@ final class TriggerIconController: NSObject {
         // Option-key preview (Manh 2026-11-18, style B): while the icon is
         // visible, track the Option key so the glyph flips to the other
         // action the moment Option is held/released. Removed in cleanup().
+        // updateOptionPreview also pauses the auto-hide while Option is
+        // held, so the A+ preview doesn't vanish before the user can
+        // click it (Manh 2026-11-18: A+ rarely seen — with Click = Speak
+        // the A+ only shows while Option is held, and the 5s auto-hide
+        // used to steal it).
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             Task { @MainActor in
-                guard let self, let trackingView = self.trackingView else { return }
-                trackingView.isOptionHeld = event.modifierFlags.contains(.option)
+                guard let self else { return }
+                self.updateOptionPreview(optionHeld: event.modifierFlags.contains(.option))
             }
             return event
         }
 
         startAutoDismissTimer()
+        // If Option is already held when the icon appears, the preview is
+        // already showing — pause the auto-hide so it doesn't steal it
+        // (no flags event will fire until Option changes).
+        if activationMode == .hover && trackingView.isOptionHeld {
+            cancelAutoDismissTimer()
+        }
     }
 
     /// Dismiss the icon with fade-out and notify via onDismissed.
@@ -445,6 +459,25 @@ final class TriggerIconController: NSObject {
     private func cancelAutoDismissTimer() {
         autoDismissTimer?.invalidate()
         autoDismissTimer = nil
+    }
+
+    /// Update the Option preview: flip the glyph to the other action and,
+    /// in hover mode, pause the auto-hide while Option is held so the
+    /// preview (A+) stays visible long enough to see and click (Manh
+    /// 2026-11-18: with Click = Speak the A+ only shows while Option is
+    /// held, and the 5s auto-hide used to steal it — A+ was rarely seen).
+    /// On release, restart the auto-hide so the icon still goes away.
+    /// Only in hover mode (in click mode Option doesn't flip the glyph);
+    /// skipped while a Read open is pending (the 2.5s A+ confirmation
+    /// has its own hide timer).
+    private func updateOptionPreview(optionHeld: Bool) {
+        trackingView?.isOptionHeld = optionHeld
+        guard activationMode == .hover, !isReadPending else { return }
+        if optionHeld {
+            cancelAutoDismissTimer()
+        } else {
+            startAutoDismissTimer()
+        }
     }
 
     private func cancelAllTimers() {

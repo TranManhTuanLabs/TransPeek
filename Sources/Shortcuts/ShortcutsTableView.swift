@@ -52,25 +52,32 @@ struct ShortcutsTableView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Keyboard Shortcuts")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    onClose?()
-                } label: {
+            // Header — the WHOLE title row is the close button (Manh
+            // 2026-11-18): tapping anywhere on it — the title text or
+            // the empty middle — closes the table, not just the × on the
+            // right. The HStack fills the row (Spacer), so the button's
+            // hit area is the full width. (Same pattern as FlowIntroCard,
+            // whose whole title row toggles collapse.)
+            Button {
+                onClose?()
+            } label: {
+                HStack {
+                    Text("Keyboard Shortcuts")
+                        .font(.headline)
+                    Spacer()
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
-                .help("Close shortcuts")
-                // InteractiveMarker: without it PopupPanel treats a click
-                // here as a window drag, so the button never fires (Manh
-                // 2026-11-17: the × and Run buttons in build #207 did
-                // nothing). Every other clickable control in this panel
-                // carries one — see PopupView / ProviderResultCard.
-                .background { InteractiveMarker() }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .buttonStyle(.plain)
+            .help("Close shortcuts — tap the title to close")
+            // InteractiveMarker: without it PopupPanel treats a click
+            // here as a window drag, so the button never fires (Manh
+            // 2026-11-17: the × and Run buttons in build #207 did
+            // nothing). Every other clickable control in this panel
+            // carries one — see PopupView / ProviderResultCard.
+            .background { InteractiveMarker() }
             .padding(.horizontal, 12)
             .padding(.top, 10)
             .padding(.bottom, 6)

@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Intro card for the translate panel (Manh 2026-11-18): a short, friendly
-/// introduction to the floating icon's flow, above the "?" keyboard
-/// shortcuts table. Tapping the header expands/collapses it; the state is
-/// remembered (Defaults `flowIntroCollapsed`), so once the reader knows the
-/// flow they can keep it collapsed and the shortcuts table is the main
-/// thing on show.
+/// Intro card for panel left (Manh 2026-11-18): a short, friendly
+/// introduction to the floating icon's flow, above the keyboard
+/// shortcuts table in panel left (it was first put in panel center by
+/// mistake; panel center goes back to how it was). Tapping the whole
+/// title row expands/collapses it; the state is remembered (Defaults
+/// `flowIntroCollapsed`), so once the reader knows the flow they can
+/// keep it collapsed and the shortcuts table is the main thing on show.
 ///
 /// Content (Manh 2026-11-18, phrased for clarity): the icon is more than
 /// a translator — Hover translates, Click listens, Option+Click Fast Reads.
@@ -17,7 +18,11 @@ struct FlowIntroCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header — tap to expand/collapse.
+            // Header — the WHOLE title row is the toggle (Manh
+            // 2026-11-18): tapping anywhere on it — the title text, the
+            // icon, or the empty middle — expands/collapses the card, not
+            // just the chevron on the right. The HStack fills the row
+            // (Spacer), so the button's hit area is the full width.
             Button {
                 isCollapsed.toggle()
             } label: {
@@ -30,6 +35,7 @@ struct FlowIntroCard: View {
                     Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                         .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .buttonStyle(.plain)
             .help(isCollapsed ? "Show how the icon works" : "Hide how the icon works")
