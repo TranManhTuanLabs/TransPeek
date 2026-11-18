@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Defaults
 import SwiftUI
 
@@ -17,6 +18,11 @@ import SwiftUI
 final class RSVPWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var viewModel: RSVPViewModel?
+    /// Trackpad swipe monitor (Manh 2026-11-18): horizontal swipe
+    /// steps one slide (like ←/→), vertical swipe changes the font
+    /// size. Created with the window, stopped when it closes.
+    private var trackpadMonitor: RSVPTrackpadMonitor?
+    private var trackpadCancellable: AnyCancellable?
 
     /// Open the reading window with `text`. If the window is already open,
     /// replace its text (and restart from the first slide).
@@ -30,6 +36,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             viewModel.currentSlideIndex = 0
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
+            trackpadMonitor?.start(window: window)
             return
         }
 
@@ -75,6 +82,22 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         self.window = window
 
+        // Trackpad swipes over this window: horizontal steps a slide
+        // (like ←/→), vertical changes the font size by 2pt per swipe
+        // (the same step as the font slider, clamped to 40...110).
+        let monitor = RSVPTrackpadMonitor()
+        self.trackpadMonitor = monitor
+        trackpadCancellable = monitor.actionPublisher.sink { [weak self] action in
+            guard let self, let viewModel = self.viewModel else { return }
+            switch action {
+            case .stepForward: viewModel.stepForward()
+            case .stepBack: viewModel.stepBack()
+            case .fontBigger: viewModel.fontSize = min(110, viewModel.fontSize + 2)
+            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 2)
+            }
+        }
+        monitor.start(window: window)
+
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -82,6 +105,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
     /// Close the window (and stop playback).
     func close() {
         viewModel?.pause()
+        trackpadMonitor?.stop()
         window?.close()
         window = nil
         viewModel = nil
@@ -98,5 +122,6 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
     /// (isReleasedWhenClosed = false) so the next `show` reopens it.
     func windowWillClose(_ notification: Notification) {
         viewModel?.pause()
+        trackpadMonitor?.stop()
     }
 }

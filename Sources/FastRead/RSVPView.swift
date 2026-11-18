@@ -1,3 +1,4 @@
+import AppKit
 import Defaults
 import SwiftUI
 
@@ -81,19 +82,43 @@ final class RSVPViewModel: ObservableObject {
         engine.context(for: currentSlideIndex)
     }
 
-    /// Total reading time at the current settings.
+    /// Total reading time at the current settings, compact minutes
+    /// ("0min", "1min", "2mins") — the short display label. The full
+    /// "Estimated reading time" is the tooltip (Manh 2026-11-18: the
+    /// long label wrapped and broke the top-bar layout, so the display
+    /// is short and the long phrase is the hint).
     var totalTimeText: String {
-        let seconds = Int(engine.totalSeconds)
-        if seconds < 60 { return "\(seconds)s" }
-        return "\(seconds / 60)m \(seconds % 60)s"
+        let minutes = Int(engine.totalSeconds) / 60
+        return minutes <= 1 ? "\(minutes)min" : "\(minutes)mins"
     }
 
-    /// "Cool! You just read X words in Y minutes, Z seconds!" — shown
-    /// above the progress bar once a full read finishes (spec §14.5).
+    /// Elapsed time of the finished read, in natural words ("2 seconds",
+    /// "1 minute", "2 minutes, 30 seconds") — for the share text.
+    private var elapsedNaturalText: String {
+        guard let elapsed = elapsedSeconds else { return "" }
+        let total = Int(elapsed)
+        if total < 60 { return "\(total) seconds" }
+        let minutes = total / 60
+        let seconds = total % 60
+        if seconds == 0 { return minutes == 1 ? "1 minute" : "\(minutes) minutes" }
+        return "\(minutes) minutes, \(seconds) seconds"
+    }
+
+    /// "Congratulations! You just read X words in Y minutes, Z seconds!"
+    /// — shown above the progress bar once a full read finishes
+    /// (spec §14.5). "Congratulations!" (Manh 2026-11-18, picked over
+    /// "Cool!" — warmer, fits sharing, and matches SwiftRead).
     var completionText: String? {
         guard isFinished, let elapsed = elapsedSeconds else { return nil }
         let total = Int(elapsed)
-        return "Cool! You just read \(engine.words.count) words in \(total / 60) minutes, \(total % 60) seconds!"
+        return "Congratulations! You just read \(engine.words.count) words in \(total / 60) minutes, \(total % 60) seconds!"
+    }
+
+    /// Share text (option A, Manh 2026-11-18): the real stats of the
+    /// finished read, so the share is personal.
+    var shareText: String {
+        guard isFinished, elapsedSeconds != nil else { return "" }
+        return "I just read \(engine.words.count) words in \(elapsedNaturalText) with TransPeek Fast Read — read 2–3x faster and improve your learning experience!"
     }
 
     // MARK: - Playback
@@ -282,13 +307,17 @@ struct RSVPView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
 
-            // Completion line, above the progress bar (§14.5).
+            // Completion line + share row, above the progress bar
+            // (§14.5 + Manh 2026-11-18: the share icons show at the
+            // same time as the completion message).
             if let completion = viewModel.completionText {
                 Text(completion)
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
+                    .padding(.bottom, 4)
+                shareRow
                     .padding(.bottom, 8)
             }
 
@@ -343,16 +372,18 @@ struct RSVPView: View {
 
     // MARK: - Top bar
 
-    /// Left: estimated reading time + WPM slider + font slider + word
-    /// picker. Center: what RSVP stands for. Right: Settings (Color
-    /// Scheme) + "?" (hotkeys).
+    /// Left: reading time (short label) + WPM slider + font slider +
+    /// word picker. Center: what RSVP stands for. Right: shortcut
+    /// hints + Settings (Color Scheme) + "?" (hotkeys).
     private var topBar: some View {
         HStack(spacing: 16) {
             HStack(spacing: 16) {
-                Text("Estimated reading time: \(viewModel.totalTimeText)")
+                Text("Reading time: \(viewModel.totalTimeText)")
                     .font(.caption)
                     .foregroundStyle(readingSecondary)
                     .monospacedDigit()
+                    .lineLimit(1)
+                    .help("Estimated reading time")
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Speed: \(viewModel.wpm) WPM")
@@ -403,6 +434,14 @@ struct RSVPView: View {
             Spacer()
 
             HStack(spacing: 8) {
+                // Shortcut hints, always visible (Manh 2026-11-18, like
+                // the version before the redesign): Space play/pause •
+                // ←/→ step • ↑/↓ speed • Esc close.
+                Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
+                    .font(.caption)
+                    .foregroundStyle(readingSecondary)
+                    .lineLimit(1)
+
                 Button { showingSettings.toggle() } label: {
                     Image(systemName: "gearshape")
                 }
@@ -474,16 +513,18 @@ struct RSVPView: View {
 
     // MARK: - Reading area
 
-    /// The current chunk with the ORP pivot character in orange, pinned
-    /// at 35% of the window width. The text before the pivot is
+    /// One line of reading text with the ORP pivot character in orange,
+    /// pinned at 35% of the width. The text before the pivot is
     /// right-aligned into the left part, the text after it left-aligned
-    /// into the right part, so the pivot never moves.
-    private var readingArea: some View {
+    /// into the right part, so the pivot never moves. Shared by the
+    /// playing view and the paused book page's focus line (same size,
+    /// same position — SwiftRead-style, Manh 2026-11-18).
+    private func orpLine(slide: RSVPEngine.Slide, fontSize: Double) -> some View {
         GeometryReader { geo in
             let pivotX = geo.size.width * 0.35
-            let font = Font.system(size: viewModel.fontSize, weight: .medium)
-            let joined = slide?.joinedText ?? ""
-            let pivotOffset = slide?.pivotOffset ?? 0
+            let font = Font.system(size: fontSize, weight: .medium)
+            let joined = slide.joinedText
+            let pivotOffset = slide.pivotOffset
             let before = String(joined.prefix(pivotOffset))
             let pivotChar = pivotOffset < joined.count
                 ? String(joined[joined.index(joined.startIndex, offsetBy: pivotOffset)])
@@ -508,40 +549,132 @@ struct RSVPView: View {
         }
     }
 
+    /// The current chunk with the ORP pivot character in orange, pinned
+    /// at 35% of the window width.
+    private var readingArea: some View {
+        Group {
+            if let slide {
+                orpLine(slide: slide, fontSize: viewModel.fontSize)
+            } else {
+                Color.clear
+            }
+        }
+    }
+
     // MARK: - Book page (paused)
 
-    /// The full ±150-word context as a book page, shown while paused:
-    /// the surrounding words at body size, the line being read big and
-    /// prominent so the eye finds it at once.
+    /// The full ±150-word context as a book page, shown while paused,
+    /// SwiftRead-style (Manh 2026-11-18, from the SwiftRead source):
+    /// the focus line keeps its size and its own row, centered — the
+    /// words before it show above, the words after it below (both at
+    /// body size, secondary). Stepping ←/→ (or swiping trackpad ←/→)
+    /// while paused moves the focus line to the new slide and the
+    /// context re-renders around it; the line never moves.
     private var bookPage: some View {
         ScrollView {
-            Group {
+            VStack(spacing: 16) {
                 if let context = viewModel.pauseContext {
                     let beforeText = context.before.joined(separator: " ")
-                    let currentText = context.current.joined(separator: " ")
                     let afterText = context.after.joined(separator: " ")
-                    let currentFont = Font.system(
-                        size: max(28, viewModel.fontSize * 0.5),
-                        weight: .bold
-                    )
-                    Text("\(beforeText) ")
-                        .font(.body)
-                        .foregroundStyle(readingSecondary)
-                    + Text(currentText)
-                        .font(currentFont)
-                        .foregroundStyle(readingForeground)
-                    + Text(" \(afterText)")
-                        .font(.body)
-                        .foregroundStyle(readingSecondary)
-                } else {
-                    Text("")
-                        .font(.body)
+                    // Words before the current chunk (above the focus line).
+                    if !beforeText.isEmpty {
+                        Text(beforeText)
+                            .font(.body)
+                            .foregroundStyle(readingSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    // The focus line: its own row, same size as when
+                    // playing, centered.
+                    if let slide {
+                        orpLine(slide: slide, fontSize: viewModel.fontSize)
+                            .frame(height: viewModel.fontSize * 1.3)
+                    }
+                    // Words after the current chunk (below the focus line).
+                    if !afterText.isEmpty {
+                        Text(afterText)
+                            .font(.body)
+                            .foregroundStyle(readingSecondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
             }
-            .multilineTextAlignment(.leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 32)
             .padding(.vertical, 16)
+        }
+    }
+
+    // MARK: - Share
+
+    /// One button per platform, shown with the completion line (Manh
+    /// 2026-11-18). Each opens its share URL in the browser (Mail opens
+    /// the mail app). The link shared is the TransPeek repo; the text
+    /// is option A (the real stats of the finished read).
+    private var shareRow: some View {
+        HStack(spacing: 10) {
+            ForEach(RSVPSharePlatform.allCases, id: \.self) { platform in
+                Button {
+                    if let url = platform.shareURL(text: viewModel.shareText) {
+                        NSWorkspace.shared.open(url)
+                    }
+                } label: {
+                    shareIcon(for: platform)
+                }
+                .buttonStyle(.plain)
+                .help("Share on \(platform.displayName)")
+            }
+        }
+    }
+
+    /// A circular badge with the platform's letter (SF Symbols has no
+    /// brand icons). Brand colors where they read on both schemes;
+    /// Threads and X use the adaptive primary color because a black
+    /// circle would vanish on the dark scheme.
+    private func shareIcon(for platform: RSVPSharePlatform) -> some View {
+        Group {
+            switch platform {
+            case .facebook:
+                Text("f")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color(red: 0.09, green: 0.47, blue: 0.95))
+                    .clipShape(Circle())
+            case .threads:
+                Text("@")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(pageBackground)
+                    .frame(width: 28, height: 28)
+                    .background(readingForeground)
+                    .clipShape(Circle())
+            case .x:
+                Text("X")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(pageBackground)
+                    .frame(width: 28, height: 28)
+                    .background(readingForeground)
+                    .clipShape(Circle())
+            case .reddit:
+                Text("R")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color(red: 1.0, green: 0.27, blue: 0.0))
+                    .clipShape(Circle())
+            case .linkedIn:
+                Text("in")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 28, height: 28)
+                    .background(Color(red: 0.04, green: 0.4, blue: 0.76))
+                    .clipShape(Circle())
+            case .mail:
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(readingForeground)
+                    .frame(width: 28, height: 28)
+                    .background(readingSecondary.opacity(0.2))
+                    .clipShape(Circle())
+            }
         }
     }
 
