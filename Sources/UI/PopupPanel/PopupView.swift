@@ -639,6 +639,9 @@ struct PopupView: View {
     /// own ScrollView so it still fits when the panel is short, and it
     /// reports its height through the same layout preference as the
     /// provider results so auto-fit sizes the panel for this tab too.
+    /// At the very bottom, the Share TransPeek row (Manh 2026-11-19):
+    /// the same share icons as the Fast Read completion window and the
+    /// About tab, no card — just a small label + the icons.
     private var shortcutContent: some View {
         ScrollView {
             VStack(spacing: 6) {
@@ -670,6 +673,22 @@ struct PopupView: View {
                 .onChange(of: isShortcutsCollapsed) { _, newValue in
                     Defaults[.shortcutsCollapsed] = newValue
                 }
+
+                // Share TransPeek — at the bottom of panel left
+                // (Manh 2026-11-19): the same share row as the Fast
+                // Read completion window and the About tab. No card —
+                // just a small label + the icons, so it stays light
+                // in a panel that is already dense. It scrolls with
+                // the shortcuts table (inside this ScrollView) so
+                // auto-fit still sizes the panel from the content.
+                Text("Share TransPeek")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+
+                ShareRowView(text: "TransPeek — Translate anywhere, Peek instantly!")
+                    .frame(maxWidth: .infinity, alignment: .center)
             }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.vertical, 6)
