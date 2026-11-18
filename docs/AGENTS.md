@@ -43,15 +43,43 @@
   rồi mới sửa.**
 - Panel UX mac chưa chốt size → chưa có spec chốt; khi chốt thì viết doc đầy đủ
   như bản Windows rồi mới sửa theo doc.
-- **Native trước, tự chế sau:** tính năng nào control native không có thì **báo Manh
-  1 câu trước** rồi mới làm custom.
+- **Native trước, tự chế sau:** khi cần 1 tính năng/control, **check native
+  trước** — native có sẵn và hỗ trợ ngon (đủ dùng, đúng chuẩn hệ thống) thì dùng
+  native; chỉ tự chế khi native **không có** hoặc **không hỗ trợ đủ tốt**. Tự chế
+  thì **báo Manh 1 câu trước** rồi mới làm. Ví dụ: dropdown tìm kiếm 249 ngôn ngữ
+  — SwiftUI có Popover + List + `.searchable` ráp lại được thì dùng native, không
+  tự vẽ dropdown từ đầu.
 
-## 4. Tra tên API / enum
+## 4. Tra tên API / enum / mã code / cú pháp
 
 - **Mở thẳng tài liệu chính chủ Apple Developer TRƯỚC khi viết code.**
   Không dùng tên nhớ từ framework khác, không tin trang thứ ba.
+- **Tra mã code / cú pháp cũng lấy từ nguồn chính thống trước** — vd Google Cloud
+  Translation docs cho mã ngôn ngữ, Apple Developer docs cho SwiftUI/AppKit.
+  Không lấy từ kết quả tìm web nhanh hay trang thứ ba (Wikipedia, blog, list tổng
+  hợp) làm đáp án — chỉ dùng để tham khảo hoặc cross-check sau khi đã có nguồn
+  chính thống.
 
-## 5. Quy tắc chung
+## 5. Chọn phương án triển khai — đọc mã nguồn thật trước
+
+- **Trước khi làm gì, đọc mã nguồn THẬT của dự án rồi mới chọn phương án triển khai
+  tốt nhất.** Phương án phải dựa trên code đang chạy trong repo (cách code hiện tại
+  viết, control/API nào đang dùng, hành vi thật của nó), không dựa trên trí nhớ
+  về "thường thì làm thế này".
+- **Không phụ thuộc hoàn toàn vào trí nhớ.** Trí nhớ chỉ là gợi ý. **Tra lại nhanh
+  cho chắc** (mở file code, mở tài liệu chính chủ) với mọi thứ sẽ đưa vào code;
+  **tra kỹ khi cần** (logic phức tạp, tên API/enum, hành vi quyết định chọn phương án
+  nào, thứ đã từng sai).
+- **Đây là dạng tổng quát của §4 (tra tên API/mã/cú pháp):** tên API, mã code, cú pháp,
+  hành vi control — tất cả đều phải đối chiếu nguồn thật trước khi dùng.
+- **"Native trước, tự chế sau" là 1 phần của việc chọn phương án** (xem §3).
+- Bài học (Windows CI #189, 19/11): chọn ComboBox editable + `TextChanged` để lọc
+  live 249 ngôn ngữ — từ trí nhớ kiểu WPF, không tra WinUI trước. WinUI ComboBox
+  KHÔNG có `TextChanged` (chỉ có `TextSubmitted` khi Enter/mất focus), build đỏ.
+  Tra mã nguồn/API thật trước thì đã chọn AutoSuggestBox ngay từ đầu — control native
+  sinh ra để gõ-tìm.
+
+## 6. Quy tắc chung
 
 - **Ngắn, hiểu rõ thì làm luôn; dài, chưa rõ, việc nhiều thì hỏi lại** (Manh 18/11/2026, áp dụng mọi repo): (1) trình khung cho anh duyệt trước khi làm; (2) xong rồi thì tóm tắt những gì đã làm.
 - **Tính năng mới viết riêng module** — xem quyết định kiến trúc
@@ -74,7 +102,7 @@
 - Mỗi lần cải tiến workflow thì **tự ghi nhớ** (vào `docs/TEST-BUILD-WORKFLOW-GITHUB/GIT-CI-BUILD-SETUP.md` và
   `docs/TEST-BUILD-WORKFLOW-GITHUB/BUILD-TEST-WORKFLOW-GITHUB-CI.md`), đừng để Manh nhắc lại.
 
-## 6. Về Manh
+## 7. Về Manh
 
 - Manh **không phải dân IT gốc, đang học, làm theo kiểu vibecode**. Giải thích bằng
   tiếng Việt đơn giản, ví dụ từ chính dự án, không dạy dồn dập. Vừa làm vừa dạy dần.
