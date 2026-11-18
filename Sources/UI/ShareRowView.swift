@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A row of share buttons — one per platform (Facebook, Threads, X,
@@ -12,7 +13,7 @@ import SwiftUI
 /// / "secondary text" colors, so the Threads / X / Mail icons adapt to
 /// the surrounding color scheme: in the Fast Read window they follow
 /// the reading color scheme (White on Black / Black on White); in a
-/// normal view the defaults (.primary / .background / .secondary)
+/// normal view the defaults (.primary / window background / .secondary)
 /// follow the system appearance.
 struct ShareRowView: View {
     let text: String
@@ -23,12 +24,13 @@ struct ShareRowView: View {
     init(
         text: String,
         textColor: Color = .primary,
-        // NOTE: must write Color.background in full — a bare
-        // `.background` default is ambiguous with the View.background
-        // modifier and the compiler rejects it ("member
-        // 'background(ignoresSafeAreaEdges:)' expects argument of
-        // type 'Color'", Tests #246).
-        pageColor: Color = Color.background,
+        // NOTE: SwiftUI has NO `Color.background` — that name resolves
+        // to the View.background modifier (type `(Color) -> (Edge.Set)
+        // -> some View`), not a Color, so neither `.background` nor
+        // `Color.background` compiles here (Tests #246 and #247). Use
+        // the AppKit window background color, which is the real color
+        // behind this row in a normal view (About / panel).
+        pageColor: Color = Color(nsColor: .windowBackgroundColor),
         secondaryColor: Color = .secondary
     ) {
         self.text = text
