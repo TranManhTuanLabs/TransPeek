@@ -65,6 +65,24 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   over the Read window). The 2.5s applies to ALL Read triggers, not just
   plain clicks.
 
+### Future idea — translate-first icon (NOT implemented, Manh 2026-11-19)
+
+The current A+ default above has a real advantage: the user can tell at a
+glance that Click is set to Fast Read, without opening Settings. A possible
+future change — **not to be done now** — is to follow the translate-first
+concept instead. When the Click setting is Fast Read:
+
+- the icon shows the plain translate **A** as normal (hover = translate
+  is the icon's primary job);
+- a plain click shows **A+** (Fast Read);
+- Option+Click shows the **speaker** (Speak).
+
+So the icon's idle state stays "translate", and A+ / speaker appear as the
+feedback for the action that was just triggered — instead of Style B's
+preview of the *next* click. Recorded here so the idea is not lost;
+implement only when Manh asks. The same note applies to Windows (Alt
+instead of Option).
+
 ## 4. Auto-hide
 
 - The icon hides by itself after the auto-hide delay (Settings → General,
