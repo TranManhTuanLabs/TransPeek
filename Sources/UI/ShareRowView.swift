@@ -23,7 +23,12 @@ struct ShareRowView: View {
     init(
         text: String,
         textColor: Color = .primary,
-        pageColor: Color = .background,
+        // NOTE: must write Color.background in full — a bare
+        // `.background` default is ambiguous with the View.background
+        // modifier and the compiler rejects it ("member
+        // 'background(ignoresSafeAreaEdges:)' expects argument of
+        // type 'Color'", Tests #246).
+        pageColor: Color = Color.background,
         secondaryColor: Color = .secondary
     ) {
         self.text = text
