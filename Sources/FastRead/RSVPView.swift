@@ -290,6 +290,31 @@ struct RSVPView: View {
         viewModel.colorScheme == .dark ? .black : .white
     }
 
+    /// Speed (WPM) picker options (Manh 2026-11-18: Picker, not
+    /// Slider, for now). Includes the default 275; dense at the low
+    /// end where people actually read, sparse at speed-reading speeds.
+    private static let wpmOptions = [
+        100, 150, 200, 250, 275, 300, 350, 400, 450, 500,
+        600, 700, 800, 1000, 1200, 1500, 2000,
+    ]
+    /// Text-size picker options (Manh 2026-11-18: Picker, not Slider,
+    /// for now). Includes the default 64 and the max 110.
+    private static let fontSizeOptions = [
+        40, 48, 56, 64, 72, 80, 88, 96, 104, 110,
+    ]
+    /// The picker option nearest to a value. The keyboard ↑/↓ moves
+    /// speed by 10 and the trackpad moves text size by 2pt, so the
+    /// value is not always one of the options — the picker shows the
+    /// nearest one instead of going blank.
+    private static func nearestWPMOption(to wpm: Int) -> Int {
+        wpmOptions.min(by: { abs($0 - wpm) < abs($1 - wpm) })
+            ?? RSVPEngine.defaultWPM
+    }
+    private static func nearestFontOption(to size: Double) -> Int {
+        fontSizeOptions.min(by: { abs(Double($0) - size) < abs(Double($1) - size) })
+            ?? 64
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -329,6 +354,16 @@ struct RSVPView: View {
 
             // Bottom-center controls (§14.4).
             controlRow
+                .padding(.horizontal, 32)
+                .padding(.bottom, 8)
+
+            // Shortcut hints, bottom-right (Manh 2026-11-18, temporary):
+            // Space play/pause • ←/→ step • ↑/↓ speed • Esc close.
+            Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 20)
         }
@@ -373,9 +408,10 @@ struct RSVPView: View {
 
     // MARK: - Top bar
 
-    /// Left: reading time (short label) + WPM slider + font slider +
-    /// word picker. Center: what RSVP stands for. Right: shortcut
-    /// hints + Settings (Color Scheme) + "?" (hotkeys).
+    /// Left: reading time (short label) + WPM picker + font picker +
+    /// word picker. Center: what RSVP stands for. Right: Settings
+    /// (Color Scheme) + "?" (hotkeys). The shortcut hints live at the
+    /// bottom-right, not here (Manh 2026-11-18, temporary).
     private var topBar: some View {
         HStack(spacing: 16) {
             HStack(spacing: 16) {
@@ -390,15 +426,17 @@ struct RSVPView: View {
                     Text("Speed: \(viewModel.wpm) WPM")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
-                    Slider(
-                        value: Binding(
-                            get: { Double(viewModel.wpm) },
-                            set: { viewModel.wpm = Int($0) }
-                        ),
-                        in: 100...Double(RSVPEngine.maxWPM),
-                        step: 25
-                    )
-                    .frame(width: 120)
+                    Picker("", selection: Binding(
+                        get: { Self.nearestWPMOption(to: viewModel.wpm) },
+                        set: { viewModel.wpm = $0 }
+                    )) {
+                        ForEach(Self.wpmOptions, id: \.self) { w in
+                            Text("\(w)").tag(w)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 80)
                 }
                 .help("↑ / ↓ changes speed by 10 WPM")
 
@@ -406,8 +444,17 @@ struct RSVPView: View {
                     Text("Text size: \(Int(viewModel.fontSize))")
                         .font(.caption)
                         .foregroundStyle(readingSecondary)
-                    Slider(value: $viewModel.fontSize, in: 40...110, step: 2)
-                        .frame(width: 80)
+                    Picker("", selection: Binding(
+                        get: { Self.nearestFontOption(to: viewModel.fontSize) },
+                        set: { viewModel.fontSize = Double($0) }
+                    )) {
+                        ForEach(Self.fontSizeOptions, id: \.self) { s in
+                            Text("\(s)").tag(s)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(width: 70)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -435,14 +482,6 @@ struct RSVPView: View {
             Spacer()
 
             HStack(spacing: 8) {
-                // Shortcut hints, always visible (Manh 2026-11-18, like
-                // the version before the redesign): Space play/pause •
-                // ←/→ step • ↑/↓ speed • Esc close.
-                Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
-                    .font(.caption)
-                    .foregroundStyle(readingSecondary)
-                    .lineLimit(1)
-
                 Button { showingSettings.toggle() } label: {
                     Image(systemName: "gearshape")
                 }
@@ -567,10 +606,13 @@ struct RSVPView: View {
     /// The full ±150-word context as a book page, shown while paused,
     /// SwiftRead-style (Manh 2026-11-18, from the SwiftRead source):
     /// the focus line keeps its size and its own row, centered — the
-    /// words before it show above, the words after it below (both at
-    /// body size, secondary). Stepping ←/→ (or swiping trackpad ←/→)
-    /// while paused moves the focus line to the new slide and the
-    /// context re-renders around it; the line never moves.
+    /// words before it show above, the words after it below. The
+    /// context lines scale with the focus size (half of it), so they
+    /// stay readable instead of staying tiny at body size when the
+    /// focus grows (Manh 2026-11-18: size follows SwiftRead). Stepping
+    /// ←/→ (or swiping trackpad ←/→) while paused moves the focus line
+    /// to the new slide and the context re-renders around it; the line
+    /// never moves.
     private var bookPage: some View {
         ScrollView {
             VStack(spacing: 16) {
@@ -580,7 +622,7 @@ struct RSVPView: View {
                     // Words before the current chunk (above the focus line).
                     if !beforeText.isEmpty {
                         Text(beforeText)
-                            .font(.body)
+                            .font(.system(size: viewModel.fontSize * 0.5))
                             .foregroundStyle(readingSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -593,7 +635,7 @@ struct RSVPView: View {
                     // Words after the current chunk (below the focus line).
                     if !afterText.isEmpty {
                         Text(afterText)
-                            .font(.body)
+                            .font(.system(size: viewModel.fontSize * 0.5))
                             .foregroundStyle(readingSecondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }

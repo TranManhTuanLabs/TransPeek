@@ -15,8 +15,8 @@ enum RSVPTrackpadAction {
 }
 
 /// Turns two-finger trackpad swipes over the Fast Read window into
-/// reading actions (Manh 2026-11-18): a horizontal swipe steps one
-/// slide (like the ←/→ keys), a vertical swipe changes the font size.
+/// reading actions (Manh 2026-11-18): a horizontal swipe steps slides
+/// (like the ←/→ keys), a vertical swipe changes the font size.
 ///
 /// Same API behavior as the panel's TrackpadSwipeMonitor (researched
 /// 2026-11-17): a 2-finger swipe arrives as a stream of `.scrollWheel`
@@ -32,26 +32,31 @@ enum RSVPTrackpadAction {
 ///   tab mapping (there, fingers left = previous tab) — if it feels
 ///   backwards, flip it.
 /// - Vertical: fingers up (negative deltaY) = font BIGGER; fingers
-///   down (positive deltaY) = font SMALLER. One swipe changes the size
-///   by 2pt (the same step as the font slider).
+///   down (positive deltaY) = font SMALLER. One step changes the size
+///   by 2pt (the same step as the font picker).
+///
+/// Speed (Manh 2026-11-18, SwiftRead-style): horizontal steps ONE
+/// slide per scroll event — SwiftRead's mousewheel handler moves
+/// `wordIndex` by 1 on every event, with no threshold, so the word
+/// keeps up with the fingers. The old "one step per gesture after
+/// 50pt" felt very slow (a long swipe still moved only one word).
+/// Vertical accumulates: every 50pt changes the font by 2pt, and a
+/// long swipe keeps stepping (the remainder carries over).
 ///
 /// Only gesture-phased trackpad events count (`event.phase != []`);
 /// mouse-wheel events (empty phase) and momentum coasting
-/// (`momentumPhase != []`) never trigger an action. One swipe = one
-/// action: the accumulated delta must pass 50pt, it fires once per
-/// gesture, and momentum events are drained until the gesture fully
-/// ends. Only a dominant axis counts (|deltaX| > |deltaY| × 1.5 for
-/// horizontal, |deltaY| > |deltaX| × 1.5 for vertical); a diagonal
-/// swipe passes through untouched.
+/// (`momentumPhase != []`) never trigger an action. Only a dominant
+/// axis counts (|deltaX| > |deltaY| × 1.5 for horizontal, |deltaY| >
+/// |deltaX| × 1.5 for vertical); a diagonal swipe passes through
+/// untouched.
 final class RSVPTrackpadMonitor: ObservableObject {
-    /// Emitted once per swipe that passes the threshold.
+    /// Emitted when a swipe should act (once per horizontal event,
+    /// once per 50pt of vertical movement).
     let actionPublisher = PassthroughSubject<RSVPTrackpadAction, Never>()
 
-    /// Accumulated deltas for the current gesture (points).
-    private var accumulatedX: CGFloat = 0
+    /// Accumulated vertical delta for the current gesture (points).
+    /// Horizontal needs no accumulator — it steps once per event.
     private var accumulatedY: CGFloat = 0
-    /// Whether this gesture already fired an action (one swipe = one).
-    private var firedForGesture = false
     /// The local monitor token (nil when not installed).
     private var monitor: Any?
 
@@ -78,9 +83,7 @@ final class RSVPTrackpadMonitor: ObservableObject {
             self.monitor = nil
         }
         window = nil
-        accumulatedX = 0
         accumulatedY = 0
-        firedForGesture = false
     }
 
     deinit {
@@ -104,37 +107,35 @@ final class RSVPTrackpadMonitor: ObservableObject {
 
         switch event.phase {
         case .began:
-            accumulatedX = 0
             accumulatedY = 0
-            firedForGesture = false
         case .changed:
             // Only a dominant axis counts; a diagonal swipe passes
             // through untouched.
             let horizontalDominant = abs(deltaX) > abs(deltaY) * 1.5
             let verticalDominant = abs(deltaY) > abs(deltaX) * 1.5
             guard horizontalDominant || verticalDominant else { return event }
-            accumulatedX += deltaX
+            if horizontalDominant {
+                // SwiftRead-style: one slide per scroll event, so the
+                // word keeps up with the fingers as long as they move.
+                // Page-turn convention: fingers left (positive deltaX)
+                // = next slide; fingers right = previous.
+                actionPublisher.send(deltaX > 0 ? .stepForward : .stepBack)
+                return nil
+            }
+            // Vertical: accumulate; every 50pt changes the font by
+            // 2pt, and a long swipe keeps stepping (the remainder
+            // carries over to the next event).
+            // Fingers up (negative deltaY) = bigger; fingers down
+            // (positive deltaY) = smaller.
             accumulatedY += deltaY
-            if !firedForGesture {
-                if horizontalDominant, abs(accumulatedX) >= 50 {
-                    firedForGesture = true
-                    // Page-turn convention: fingers left (positive
-                    // deltaX) = next slide; fingers right = previous.
-                    actionPublisher.send(accumulatedX > 0 ? .stepForward : .stepBack)
-                    return nil
-                }
-                if verticalDominant, abs(accumulatedY) >= 50 {
-                    firedForGesture = true
-                    // Fingers up (negative deltaY) = bigger; fingers
-                    // down (positive deltaY) = smaller.
-                    actionPublisher.send(accumulatedY < 0 ? .fontBigger : .fontSmaller)
-                    return nil
-                }
+            if abs(accumulatedY) >= 50 {
+                let bigger = accumulatedY < 0
+                accumulatedY -= 50 * (bigger ? -1 : 1)
+                actionPublisher.send(bigger ? .fontBigger : .fontSmaller)
+                return nil
             }
         case .ended, .cancelled:
-            accumulatedX = 0
             accumulatedY = 0
-            firedForGesture = false
         default:
             break
         }

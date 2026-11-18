@@ -9,6 +9,13 @@ import Foundation
 /// shared is option A (Manh's pick): the real stats of the finished
 /// read — "I just read X words in Y with TransPeek Fast Read — read
 /// 2–3x faster and improve your learning experience!"
+///
+/// Pre-fill differs by platform: X / Threads / Reddit / Mail take the
+/// text; Facebook and LinkedIn take only the link. Facebook removed
+/// the `quote` parameter from sharer.php (it is silently ignored —
+/// the preview comes from the page's Open Graph tags and the user
+/// types their own caption), so there is no `quote` here on purpose
+/// (Manh 2026-11-18).
 enum RSVPSharePlatform: String, CaseIterable {
     case facebook
     case threads
@@ -38,10 +45,12 @@ enum RSVPSharePlatform: String, CaseIterable {
     func shareURL(text: String) -> URL? {
         switch self {
         case .facebook:
+            // Link only: sharer.php takes `u` and ignores `quote`
+            // (removed by Facebook — the preview comes from the repo
+            // page's Open Graph tags, the user types their own text).
             var components = URLComponents(string: "https://www.facebook.com/sharer/sharer.php")
             components?.queryItems = [
                 URLQueryItem(name: "u", value: Self.sharedURL),
-                URLQueryItem(name: "quote", value: text),
             ]
             return components?.url
         case .threads:
