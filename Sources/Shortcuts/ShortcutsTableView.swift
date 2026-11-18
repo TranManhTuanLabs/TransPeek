@@ -52,12 +52,15 @@ struct ShortcutsTableView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header — the WHOLE title row is the close button (Manh
-            // 2026-11-18): tapping anywhere on it — the title text or
-            // the empty middle — closes the table, not just the × on the
-            // right. The HStack fills the row (Spacer), so the button's
-            // hit area is the full width. (Same pattern as FlowIntroCard,
-            // whose whole title row toggles collapse.)
+            // Header — the WHOLE top bar of the card is the close button
+            // (Manh 2026-11-18): tapping anywhere on it — the title
+            // text, the empty middle, or the padding at the edges —
+            // closes the table, like the provider card's header. The
+            // padding lives INSIDE the button label (and
+            // `.contentShape(Rectangle())` fills the gaps), so the
+            // button's hit area is the full bar, edge to edge — not
+            // just the title text. (Same pattern as FlowIntroCard,
+            // whose whole top bar toggles collapse.)
             Button {
                 onClose?()
             } label: {
@@ -69,6 +72,10 @@ struct ShortcutsTableView: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help("Close shortcuts — tap the title to close")
@@ -78,9 +85,6 @@ struct ShortcutsTableView: View {
             // nothing). Every other clickable control in this panel
             // carries one — see PopupView / ProviderResultCard.
             .background { InteractiveMarker() }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
 
             Divider()
 

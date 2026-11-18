@@ -433,27 +433,21 @@ struct RSVPView: View {
 
     // MARK: - Top bar
 
-    /// Left: reading time (short label) + WPM picker + font picker +
-    /// word picker. Center: what RSVP stands for, TRULY centered on the
-    /// window (Manh 2026-11-18 — it used to sit between two Spacers, so
-    /// the wide left cluster pushed it right of center). Right: Settings
-    /// (Color Scheme) + "?" (hotkeys). The subtitle is overlaid on the
-    /// full width so its center is the window's center; the side
-    /// clusters sit in an HStack underneath. At the default window size
-    /// there is room for all three; at the 880pt minimum the subtitle
-    /// may sit close to the pickers.
+    /// Left: WPM picker + font picker + word picker. Center: what RSVP
+    /// stands for, TRULY centered on the window (Manh 2026-11-18 — it
+    /// used to sit between two Spacers, so the wide left cluster pushed
+    /// it right of center). Right: Settings (Color Scheme) + "?"
+    /// (hotkeys). "Reading time" used to be here at the left — it moved
+    /// to the bottom-left corner (Manh 2026-11-18). The subtitle is
+    /// overlaid on the full width so its center is the window's center;
+    /// the side clusters sit in an HStack underneath. At the default
+    /// window size there is room for all three; at the 880pt minimum
+    /// the subtitle may sit close to the pickers.
     /// Compact (Manh 2026-11-18 — the top bar was too tall): tight
     /// vertical padding and 1pt label-to-picker spacing.
     private var topBar: some View {
         HStack(spacing: 16) {
             HStack(spacing: 16) {
-                Text("Reading time: \(viewModel.totalTimeText)")
-                    .font(.caption)
-                    .foregroundStyle(readingSecondary)
-                    .monospacedDigit()
-                    .lineLimit(1)
-                    .help("Estimated reading time")
-
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Speed: \(viewModel.wpm) WPM")
                         .font(.caption)
@@ -650,39 +644,63 @@ struct RSVPView: View {
     /// stay readable instead of staying tiny at body size when the
     /// focus grows (Manh 2026-11-18: size follows SwiftRead). Stepping
     /// ←/→ (or swiping trackpad ←/→) while paused moves the focus line
-    /// to the new slide and the context re-renders around it; the line
-    /// never moves.
+    /// to the new slide and the context re-renders around it.
+    ///
+    /// The focus line is PINNED at the vertical center (Manh
+    /// 2026-11-18 — SwiftRead never lets it drift): the before/after
+    /// texts each fill one half of the reading area and are anchored
+    /// to the focus line (before = bottom-aligned, after =
+    /// top-aligned), with overflow clipped — NOT scrolled. So as the
+    /// read progresses, only the number of visible context lines
+    /// changes; the focus line never moves. (Before this fix the page
+    /// was a ScrollView, so as the before-text grew the focus line
+    /// drifted down off-center.)
     private var bookPage: some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                if let context = viewModel.pauseContext {
-                    let beforeText = context.before.joined(separator: " ")
-                    let afterText = context.after.joined(separator: " ")
-                    // Words before the current chunk (above the focus line).
+        VStack(spacing: 0) {
+            if let context = viewModel.pauseContext {
+                let beforeText = context.before.joined(separator: " ")
+                let afterText = context.after.joined(separator: " ")
+                // Words before the current chunk: top half, anchored to
+                // the bottom so the words nearest the focus line sit
+                // just above it; earlier words clip off the top when
+                // they don't fit (no scroll).
+                Group {
                     if !beforeText.isEmpty {
                         Text(beforeText)
                             .font(.system(size: viewModel.fontSize * 0.5))
                             .foregroundStyle(readingSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    } else {
+                        Color.clear
                     }
-                    // The focus line: its own row, same size as when
-                    // playing, centered.
-                    if let slide {
-                        orpLine(slide: slide, fontSize: viewModel.fontSize)
-                            .frame(height: viewModel.fontSize * 1.3)
-                    }
-                    // Words after the current chunk (below the focus line).
+                }
+                .frame(maxHeight: .infinity)
+                .clipped()
+                // The focus line: fixed height, always at the vertical
+                // center (the two halves above/below share the rest).
+                if let slide {
+                    orpLine(slide: slide, fontSize: viewModel.fontSize)
+                        .frame(height: viewModel.fontSize * 1.3)
+                }
+                // Words after the current chunk: bottom half, anchored
+                // to the top so the words nearest the focus line sit
+                // just below it; later words clip off the bottom when
+                // they don't fit (no scroll).
+                Group {
                     if !afterText.isEmpty {
                         Text(afterText)
                             .font(.system(size: viewModel.fontSize * 0.5))
                             .foregroundStyle(readingSecondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    } else {
+                        Color.clear
                     }
                 }
+                .frame(maxHeight: .infinity)
+                .clipped()
             }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 16)
         }
+        .padding(.horizontal, 32)
     }
 
     // MARK: - Share
@@ -789,13 +807,16 @@ struct RSVPView: View {
 
     // MARK: - Controls
 
-    /// Four buttons centered at the bottom, with the shortcut hints at
-    /// the right end of the same row (§14.4 + Manh 2026-11-18,
-    /// temporary). The buttons stay truly centered (their own HStack,
-    /// centered on the full width) and the hints overlay at the trailing
-    /// edge, so the hints don't push the buttons off-center. At the
-    /// 880pt minimum width the hints (~250pt) and the centered buttons
-    /// (~200pt) don't overlap.
+    /// Four buttons centered at the bottom, with "Reading time" at the
+    /// left end and the shortcut hints at the right end of the same row
+    /// (§14.4 + Manh 2026-11-18, temporary — the hints used to sit on
+    /// their own row at the bottom-right, and "Reading time" used to
+    /// sit in the top bar). The buttons stay truly centered (their own
+    /// HStack, centered on the full width) and the two side texts
+    /// overlay at the leading / trailing edges, so they don't push the
+    /// buttons off-center. At the 880pt minimum width the side texts
+    /// (~110pt left, ~360pt right) and the centered buttons (~200pt)
+    /// just fit; at the default size there is room to spare.
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
@@ -834,7 +855,22 @@ struct RSVPView: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
 
-            Text("Space play/pause • ←/→ step • ↑/↓ speed • Esc close")
+            // "Reading time" at the bottom-left (Manh 2026-11-18).
+            Text("Reading time: \(viewModel.totalTimeText)")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+                .monospacedDigit()
+                .lineLimit(1)
+                .help("Estimated reading time")
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Hint at the right end of the controls row (Manh 2026-11-18,
+            // temporary): the keyboard shortcuts + the trackpad swipe for
+            // font size. "Esc close" was here before — replaced by the
+            // swipe hint (Manh 2026-11-18 20:04) because the swipe is
+            // the gesture a reader wouldn't discover on their own; Esc
+            // still closes the window, it just isn't listed here.
+            Text("Space play/pause • ←/→ step • ↑/↓ speed • Swipe ↑/↓ font size")
                 .font(.caption)
                 .foregroundStyle(readingSecondary)
                 .lineLimit(1)

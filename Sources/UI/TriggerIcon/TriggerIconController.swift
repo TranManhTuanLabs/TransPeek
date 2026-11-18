@@ -255,10 +255,21 @@ final class TriggerIconController: NSObject {
     private var activationMode: TriggerActivationMode = .hover
     private var hoverTimer: Timer?
     private var autoDismissTimer: Timer?
-    /// Local monitor for Option-key changes while the icon is visible
-    /// (Manh 2026-11-18, style B): flips the glyph to the other action
-    /// the moment Option is held/released.
-    private var flagsMonitor: Any?
+    /// Poll timer for the Option key while the icon is visible (Manh
+    /// 2026-11-18, style B): flips the glyph to the other action the
+    /// moment Option is held/released. A LOCAL flags monitor does NOT
+    /// work here — the user selects text in ANOTHER app, so the Option
+    /// press is delivered to that app, not to TransPeek, and the local
+    /// monitor never fires (Manh 2026-11-18: holding Opt changed
+    /// nothing until the mouse hovered the icon, because only the
+    /// mouse-enter re-check reads the key state). Polling
+    /// `NSEvent.modifierFlags` reads the global hardware state
+    /// directly, so it works no matter which app is frontmost. Fires
+    /// every 0.1s; only acts when the state actually changed, so the
+    /// auto-hide timer is never reset by a no-change poll.
+    private var optionPollTimer: Timer?
+    /// Last Option state seen by the poll timer (change detection).
+    private var lastOptionHeld = false
     /// Delayed-hide timer after a Fast Read click (Manh 2026-11-18): the
     /// icon stays showing the turmeric "A+" for 2.5s as a confirmation
     /// while the Read window opens, then hides.
@@ -350,25 +361,23 @@ final class TriggerIconController: NSObject {
         self.trackingView = trackingView
 
         // Option-key preview (Manh 2026-11-18, style B): while the icon is
-        // visible, track the Option key so the glyph flips to the other
-        // action the moment Option is held/released. Removed in cleanup().
-        // updateOptionPreview also pauses the auto-hide while Option is
-        // held, so the A+ preview doesn't vanish before the user can
-        // click it (Manh 2026-11-18: A+ rarely seen — with Click = Speak
-        // the A+ only shows while Option is held, and the 5s auto-hide
-        // used to steal it).
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            Task { @MainActor in
-                guard let self else { return }
-                self.updateOptionPreview(optionHeld: event.modifierFlags.contains(.option))
-            }
-            return event
-        }
+        // visible, poll the Option key so the glyph flips to the other
+        // action the moment Option is held/released. updateOptionPreview
+        // also pauses the auto-hide while Option is held, so the A+
+        // preview doesn't vanish before the user can click it (Manh
+        // 2026-11-18: A+ rarely seen — with Click = Speak the A+ only
+        // shows while Option is held, and the 5s auto-hide used to steal
+        // it). See optionPollTimer: a local flags monitor can't see the
+        // key (it goes to the app where the text was selected), so the
+        // preview is polled instead. Stopped in cleanup().
+        startOptionPollTimer()
 
         startAutoDismissTimer()
         // If Option is already held when the icon appears, the preview is
-        // already showing — pause the auto-hide so it doesn't steal it
-        // (no flags event will fire until Option changes).
+        // already showing — pause the auto-hide so it doesn't steal it.
+        // (The poll timer's first fire would do this too, but the pause
+        // belongs here so the icon never gets a 5s timer it doesn't need.)
+        lastOptionHeld = trackingView.isOptionHeld
         if activationMode == .hover && trackingView.isOptionHeld {
             cancelAutoDismissTimer()
         }
@@ -406,10 +415,8 @@ final class TriggerIconController: NSObject {
         isReadPending = false
         readHideTimer?.invalidate()
         readHideTimer = nil
-        if let flagsMonitor {
-            NSEvent.removeMonitor(flagsMonitor)
-            self.flagsMonitor = nil
-        }
+        optionPollTimer?.invalidate()
+        optionPollTimer = nil
         panel = nil
         trackingView = nil
         currentText = ""
@@ -459,6 +466,26 @@ final class TriggerIconController: NSObject {
     private func cancelAutoDismissTimer() {
         autoDismissTimer?.invalidate()
         autoDismissTimer = nil
+    }
+
+    /// Start polling the Option key (0.1s) while the icon is visible.
+    /// Reads `NSEvent.modifierFlags` — the global hardware state, so it
+    /// works even when another app is frontmost (where the text was
+    /// selected). Only acts when the state actually changed, so a
+    /// no-change poll never resets the auto-hide timer. Stopped in
+    /// cleanup(). See optionPollTimer for why a local flags monitor
+    /// can't do this job.
+    private func startOptionPollTimer() {
+        optionPollTimer?.invalidate()
+        optionPollTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.trackingView != nil else { return }
+                let optionHeld = NSEvent.modifierFlags.contains(.option)
+                guard optionHeld != self.lastOptionHeld else { return }
+                self.lastOptionHeld = optionHeld
+                self.updateOptionPreview(optionHeld: optionHeld)
+            }
+        }
     }
 
     /// Update the Option preview: flip the glyph to the other action and,

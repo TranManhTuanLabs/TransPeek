@@ -18,11 +18,14 @@ struct FlowIntroCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header — the WHOLE title row is the toggle (Manh
+            // Header — the WHOLE top bar of the card is the toggle (Manh
             // 2026-11-18): tapping anywhere on it — the title text, the
-            // icon, or the empty middle — expands/collapses the card, not
-            // just the chevron on the right. The HStack fills the row
-            // (Spacer), so the button's hit area is the full width.
+            // icon, the empty middle, or the padding at the edges —
+            // expands/collapses the card, like the provider card's
+            // header. The padding lives INSIDE the button label (and
+            // `.contentShape(Rectangle())` fills the gaps), so the
+            // button's hit area is the full bar, edge to edge — not
+            // just the title text.
             Button {
                 isCollapsed.toggle()
             } label: {
@@ -36,6 +39,10 @@ struct FlowIntroCard: View {
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.top, 10)
+                .padding(.bottom, isCollapsed ? 10 : 6)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(isCollapsed ? "Show how the icon works" : "Hide how the icon works")
@@ -44,9 +51,6 @@ struct FlowIntroCard: View {
             // build #207). Every other clickable control in this panel
             // carries one — see ShortcutsTableView / ProviderResultCard.
             .background { InteractiveMarker() }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, isCollapsed ? 10 : 6)
 
             if !isCollapsed {
                 Text("Not just a translator — it improves your learning experience.")
