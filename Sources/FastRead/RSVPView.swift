@@ -115,7 +115,8 @@ final class RSVPViewModel: ObservableObject {
     }
 
     /// Share text (option A, Manh 2026-11-18): the real stats of the
-    /// finished read, so the share is personal.
+    /// finished read, so the share is personal. Built with the feedback
+    /// batch (trackpad + SwiftRead paused view + share row).
     var shareText: String {
         guard isFinished, elapsedSeconds != nil else { return "" }
         return "I just read \(engine.words.count) words in \(elapsedNaturalText) with TransPeek Fast Read — read 2–3x faster and improve your learning experience!"
