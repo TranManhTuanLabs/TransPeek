@@ -153,8 +153,8 @@ enum TriggerActivationMode: String, CaseIterable, Defaults.Serializable {
 /// Settings toggle picks which of Speak / Fast Read the plain click does,
 /// and Option+click does the other one.
 enum TriggerClickAction: String, CaseIterable, Defaults.Serializable {
-    case speak     // Speak the selected text immediately (default)
-    case read      // Open Fast Read (RSVP) with the selected text
+    case speak     // Speak the selected text immediately
+    case read      // Open Fast Read (RSVP) with the selected text (default, Manh 2026-11-18)
     case translate // Old behaviour: open the translation panel
 }
 
@@ -341,6 +341,26 @@ enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
     }
 }
 
+/// Fast Read (RSVP) — when the context around the focus word shows
+/// (Manh 2026-11-18, from SwiftRead's `contextDisplayStyle`):
+/// picked in the window's Settings button; persists across opens.
+enum RSVPContextDisplayStyle: String, CaseIterable, Defaults.Serializable {
+    /// Context shows even while playing.
+    case always
+    /// Context shows only while paused (the original behavior).
+    case onPause
+    /// Context never shows — focus line only, even when paused.
+    case never
+
+    var displayName: String {
+        switch self {
+        case .always: return "Always"
+        case .onPause: return "Only show when paused"
+        case .never: return "Never"
+        }
+    }
+}
+
 extension Defaults.Keys {
     // Optional HTTP CONNECT proxy for Google Translate.
     static let googleProxyEnabled = Key<Bool>("provider_google_proxyEnabled", default: false)
@@ -396,6 +416,18 @@ extension Defaults.Keys {
     static let popupDefaultWidth = Key<Int>("popupDefaultWidth", default: 420)
     static let popupDefaultHeight = Key<Int>("popupDefaultHeight", default: 450)
     static let popupInputHeight = Key<Int>("popupInputHeight", default: 48)
+    /// Translate panel — whether the "How the icon works" intro card is
+    /// collapsed (Manh 2026-11-18). Remembered, so once the reader knows
+    /// the flow they can keep it collapsed and the shortcuts table is the
+    /// main thing on show. Default false = expanded, so new readers see it.
+    static let flowIntroCollapsed = Key<Bool>("transpeek_flowIntroCollapsed", default: false)
+    /// Translate panel — whether the "Keyboard Shortcuts" card in panel
+    /// left is collapsed (Manh 2026-11-18, round 9). Same pattern as
+    /// `flowIntroCollapsed`: remembered, so both cards can stay collapsed
+    /// and leave room for the future focus/tomato timer in panel left.
+    /// Default false = expanded. Only panel left uses this — the "?"
+    /// table in panel center is NOT collapsible (its header hides it).
+    static let shortcutsCollapsed = Key<Bool>("transpeek_shortcutsCollapsed", default: false)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
     // App interface text size (Settings window): 14 maps to the system
     // default Dynamic Type size (.large), so there is no visible change
@@ -424,15 +456,25 @@ extension Defaults.Keys {
     static let appLanguage = Key<AppLanguage>("appLanguage", default: .system)
 
     // TransPeek Phase 1 — trigger icon click + hover delay
-    static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .speak)
+    // Default click is Fast Read (Manh 2026-11-18): the icon shows A+
+    // by default, so the user can tell at a glance that a plain click
+    // reads; Option+click speaks instead.
+    static let triggerClickAction = Key<TriggerClickAction>("transpeek_triggerClickAction", default: .read)
     static let hoverDelayMs = Key<Int>("transpeek_hoverDelayMs", default: 500)
     static let autoHideDelaySec = Key<Int>("transpeek_autoHideDelaySec", default: 5)
 
     // Fast Read (RSVP) — reading speed, chunk size, text size (Manh 2026-11-17).
+    // Defaults updated 2026-11-18 (round 7): WPM 500, focus font 80.
     static let rsvpWPM = Key<Int>("transpeek_rsvpWPM", default: RSVPEngine.defaultWPM)
     static let rsvpChunkSize = Key<Int>("transpeek_rsvpChunkSize", default: 1)
-    static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 64)
+    static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 80)
+    /// Context (around) text size as a fraction of the focus font size
+    /// (Manh 2026-11-18, round 7): the top bar's "Context size" picker
+    /// sets this as a percent. Default 0.40 (smaller than the old fixed
+    /// 0.50), range 0.25–1.00.
+    static let rsvpContextSizeRatio = Key<Double>("transpeek_rsvpContextSizeRatio", default: 0.40)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
+    static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

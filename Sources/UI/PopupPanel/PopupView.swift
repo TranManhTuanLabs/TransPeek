@@ -4,12 +4,14 @@ import KeyboardShortcuts
 import SwiftUI
 
 /// The three panels of the multi-tab frame (Manh 2026-11-17, hub layout).
-/// Panel dịch is in the middle (default); panel shortcut is on the left
-/// (temporarily the shortcuts table); panel Fast Read (temporary name) is
-/// on the right (placeholder until Fast Read ships). The enum order is
-/// left → right, so rawValue is the dot index — the cases are named by
-/// feature, not by number, because the numbers may map to different
-/// features later (Manh 2026-11-17 12:24).
+/// Official names (Manh 2026-11-18 — use these, not numbers, to avoid
+/// confusion): panel left = shortcuts (temporary), panel center = dịch
+/// (SETTLED, the default), panel right = Fast Read (temporary,
+/// placeholder until Fast Read ships). In casual speech the panels may
+/// be called panel 1/2/3 (left/center/right). The enum order is left →
+/// right, so rawValue is the dot index — the cases are named by feature,
+/// not by number, because the numbers may map to different features
+/// later (Manh 2026-11-17 12:24).
 private enum PanelTab: Int, CaseIterable {
     case shortcut = 0
     case translate = 1
@@ -34,6 +36,16 @@ struct PopupView: View {
     /// output box, Manh 2026-11-17) is shown. It is a plain section, not
     /// a popover and not a provider card.
     @State private var showingShortcuts = false
+    /// Whether the "How the icon works" intro card (above the shortcuts
+    /// table, Manh 2026-11-18) is collapsed. Remembered in Defaults, so
+    /// once the reader knows the flow they can keep it collapsed and the
+    /// shortcuts table is the main thing on show.
+    @State private var isFlowIntroCollapsed: Bool = Defaults[.flowIntroCollapsed]
+    /// Whether the "Keyboard Shortcuts" card in panel left is collapsed
+    /// (Manh 2026-11-18, round 9). Same pattern as the flow card above:
+    /// remembered in Defaults, so both cards can stay collapsed and
+    /// leave room for the future focus/tomato timer in panel left.
+    @State private var isShortcutsCollapsed: Bool = Defaults[.shortcutsCollapsed]
     /// Which panel of the multi-tab frame is showing (Manh 2026-11-17).
     /// Panel dịch (middle) is the default; a new translation always
     /// returns here (see the sourceText onChange below).
@@ -253,6 +265,14 @@ struct PopupView: View {
         VStack(alignment: .leading, spacing: 0) {
             topBar
 
+            // Dots row — TEMPORARY position (Manh 2026-11-18): moved up
+            // from below the tab content to right under the top bar
+            // (app name / slogan / hint), into the empty line there, so
+            // Manh can try it. The dots still switch panels (tap or
+            // swipe); the swipe gesture lives on the dots row, not the
+            // content, because a drag over the results is text selection.
+            dotsRow
+
             switch selectedTab {
             case .translate:
                 translateContent
@@ -265,7 +285,6 @@ struct PopupView: View {
                     .transition(.opacity)
             }
 
-            dotsRow
             bottomBar
         }
         // Smooth tab switch (Manh 2026-11-17 ~20:38, faster 23:55): swiping changed tabs
@@ -285,8 +304,14 @@ struct PopupView: View {
             // (Windows parity 17/16/13, Manh 2026-11-17).
             // The hint is 4pt smaller than the app name and dimmer — it
             // tells new users the float icon's two gestures (Manh 2026-11-15).
+            // The app name is the accent color (Manh 2026-11-18, round 9):
+            // sea blue, for beauty — the app has no custom accent color
+            // (AccentColor.colorset is empty), so this is the system
+            // accent blue, the same blue as the selected dot and the
+            // active icons in the panel.
             Text("TransPeek")
                 .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
+                .foregroundStyle(Color.accentColor)
             Text("Translate anywhere, Peek instantly!")
                 .font(.system(size: CGFloat(max(topBarFontSize - 1, 8))))
                 .italic()
@@ -431,6 +456,11 @@ struct PopupView: View {
                         // be clicked). The providers stay below it; the
                         // table scrolls with the content, and the panel
                         // auto-fits up to the output cap.
+                        // NOTE (Manh 2026-11-18): the "How the icon works"
+                        // card used to sit here, above this table — it was
+                        // moved to panel left (shortcutContent), above the
+                        // shortcuts table there. Panel center is back to
+                        // how it was before the card was added.
                         if showingShortcuts {
                             ShortcutsTableView(
                                 onRunShortcut: onRunShortcut,
@@ -540,12 +570,20 @@ struct PopupView: View {
                     // Fast Read (Manh 2026-11-17): opens the RSVP reading
                     // window with the text being translated — no need to
                     // re-select it. Sits at the left end of the Actions row.
+                    // The icon and the "Fast Read" text sit tight together
+                    // (Manh 2026-11-18, round 8): a plain `Label` leaves a
+                    // gap between icon and text, so this is an HStack
+                    // with spacing 0 instead — no space or padding
+                    // between the icon and the name.
                     Button {
                         onFastRead?(coordinator.sourceText)
                     } label: {
-                        Label("Fast Read", systemImage: "book.pages")
-                            .font(.system(size: CGFloat(fontSize - 2)))
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 0) {
+                            Image(systemName: "book.pages")
+                            Text("Fast Read")
+                        }
+                        .font(.system(size: CGFloat(fontSize - 2)))
+                        .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                     .help("Fast Read (RSVP)")
@@ -590,20 +628,49 @@ struct PopupView: View {
         }
     }
 
-    /// Panel shortcut (left tab, temporary content): the full shortcuts
-    /// table as a page — the same ShortcutsTableView that the "?" button
-    /// embeds in panel dịch, reused here (Manh 2026-11-17). Run calls the
-    /// same code path as the hotkey; closing the table (×) returns to
-    /// panel dịch. The table scrolls inside its own ScrollView so it
-    /// still fits when the panel is short, and it reports its height
-    /// through the same layout preference as the provider results so
-    /// auto-fit sizes the panel for this tab too.
+    /// Panel left (panel 1, shortcuts — temporary content): the "How the
+    /// icon works" intro card on top, then the full shortcuts table as a
+    /// page — the same ShortcutsTableView that the "?" button embeds in
+    /// panel center, reused here (Manh 2026-11-17). The flow card moved
+    /// here from panel center (Manh 2026-11-18 — it was put in panel
+    /// center by mistake; panel center goes back to how it was). Run
+    /// calls the same code path as the hotkey; closing the table (×, or
+    /// the title) returns to panel center. The table scrolls inside its
+    /// own ScrollView so it still fits when the panel is short, and it
+    /// reports its height through the same layout preference as the
+    /// provider results so auto-fit sizes the panel for this tab too.
     private var shortcutContent: some View {
         ScrollView {
-            ShortcutsTableView(
-                onRunShortcut: onRunShortcut,
-                onClose: { selectedTab = .translate }
-            )
+            VStack(spacing: 6) {
+                // "How the icon works" intro card (Manh 2026-11-18):
+                // above the shortcuts table, so a new reader learns the
+                // icon flow first; it collapses to a header and remembers
+                // the state, so once the reader knows the flow the
+                // shortcuts table is the main thing on show.
+                FlowIntroCard(isCollapsed: $isFlowIntroCollapsed)
+                    .onChange(of: isFlowIntroCollapsed) { _, newValue in
+                        Defaults[.flowIntroCollapsed] = newValue
+                    }
+
+                // "Keyboard Shortcuts" card (Manh 2026-11-18, round 9):
+                // collapsible in panel left — the header toggles collapse
+                // (chevron) instead of closing the card, like the flow
+                // card above it, so both cards can stay collapsed and
+                // leave room for the future focus/tomato timer. The
+                // `onClose` still switches to the translate tab after a
+                // Run button, so the result is visible — only the header
+                // changed from close to collapse. (Panel center's "?"
+                // table does NOT pass isCollapsed: its header still
+                // hides the table, as before.)
+                ShortcutsTableView(
+                    onRunShortcut: onRunShortcut,
+                    onClose: { selectedTab = .translate },
+                    isCollapsed: $isShortcutsCollapsed
+                )
+                .onChange(of: isShortcutsCollapsed) { _, newValue in
+                    Defaults[.shortcutsCollapsed] = newValue
+                }
+            }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.vertical, 6)
             .background {
@@ -668,20 +735,38 @@ struct PopupView: View {
         }
     }
 
-    /// Dots row (Manh 2026-11-17): 3 dots, one per panel, centered below
-    /// the tab content. The selected dot is accent-colored, the others
-    /// dimmed. Tap a dot to switch panels. A horizontal swipe on the dots
-    /// row also switches (left → next panel, right → previous panel).
-    /// Swipe lives here — not on the tab content — because a drag over the
-    /// results/input is text selection, and a swipe gesture on the content
-    /// would steal it.
-    /// The dots sit exactly in the middle of the gap between the tab
-    /// content above (dictionary bar / shortcuts table / placeholder) and
-    /// the GitHub icon below (Manh 2026-11-17 — "căn đều giữa"): 12pt
-    /// above the dots (top padding) and 12pt below (bottom bar's top
-    /// padding), so the row is 20pt tall (12 + 8 dot + 0).
+    /// Dots row (Manh 2026-11-17): 3 dots, one per panel, centered.
+    /// The selected dot is accent-colored, the others dimmed. Tap a dot
+    /// to switch panels. A horizontal swipe on the dots row also
+    /// switches (left → next panel, right → previous panel). Swipe lives
+    /// here — not on the tab content — because a drag over the
+    /// results/input is text selection, and a swipe gesture on the
+    /// content would steal it.
+    /// TEMPORARY position (Manh 2026-11-18): the row sits right under the
+    /// top bar (app name / slogan / hint), in the empty line there —
+    /// moved up from below the tab content so Manh can try it. The row
+    /// is compact here (2pt top padding) so it reads as part of the
+    /// top bar, not as a gap before the content.
+    /// The `<` / `>` arrows beside the dots (Manh 2026-11-18, round 8)
+    /// are a visible affordance that the row is clickable — the dots
+    /// alone did not look tappable. Both arrows are the same width, so
+    /// the dots stay centered; an arrow is dimmed at its end (no
+    /// previous / no next panel). The dots' position is UNCHANGED
+    /// (Manh 2026-11-18: keep it as-is on both repos for comparison).
     private var dotsRow: some View {
         HStack(spacing: 8) {
+            Button {
+                selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.caption)
+                    .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedTab == .shortcut)
+            .help("Previous panel")
+            .background { InteractiveMarker() }
+
             ForEach(PanelTab.allCases, id: \.self) { tab in
                 Button {
                     selectedTab = tab
@@ -694,9 +779,22 @@ struct PopupView: View {
                 .help(dotHelp(tab))
                 .background { InteractiveMarker() }
             }
+
+            Button {
+                selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedTab == .fastRead)
+            .help("Next panel")
+            .background { InteractiveMarker() }
         }
         .frame(maxWidth: .infinity, alignment: .center)
-        .padding(.top, 12)
+        .padding(.top, 2)
+        .padding(.bottom, 4)
         .gesture(swipeGesture)
     }
 

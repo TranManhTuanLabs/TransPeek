@@ -24,12 +24,30 @@ final class TriggerTrackingView: NSView {
     }
 
     /// What a plain click on this icon does — the glyph shows it, so the
-    /// user can tell at a glance: bubble = translate/speak, book = Fast
-    /// Read. Updated when the icon is shown (it follows the Settings
-    /// "Click icon" choice).
+    /// user can tell at a glance: bubble = translate/speak, A+ = Fast
+    /// Read (Manh 2026-11-18). Updated when the icon is shown (it follows
+    /// the Settings "Click icon" choice).
     var clickAction: TriggerClickAction = .speak {
         didSet {
             if clickAction != oldValue {
+                needsDisplay = true
+            }
+        }
+    }
+
+    /// How the icon is triggered (hover = click does the Settings action;
+    /// click = click always translates). The Option preview only flips the
+    /// glyph in hover mode, matching `handleIconClick` in the controller.
+    var activationMode: TriggerActivationMode = .hover
+
+    /// Whether the Option key is currently held. While held, the glyph
+    /// shows the *other* click action (the one Option+click will run), so
+    /// the user sees what the next click will do before clicking (Manh
+    /// 2026-11-18, style B). Updated by the controller's flags-changed
+    /// monitor while the icon is visible.
+    var isOptionHeld = false {
+        didSet {
+            if isOptionHeld != oldValue {
                 needsDisplay = true
             }
         }
@@ -75,26 +93,64 @@ final class TriggerTrackingView: NSView {
         ctx.setLineWidth(0.5)
         ctx.strokeEllipse(in: rect)
 
-        // SF Symbol icon — speaker while TTS is playing, book pages when a
-        // plain click opens Fast Read, bubble otherwise. The glyph always
-        // shows what a plain click will do, so the user never clicks the
-        // wrong action (Manh 2026-11-17). The bubble/book glyph is ocean
-        // blue (.systemBlue) so the icon stays easy to spot in both light
-        // and dark mode; the circle background keeps adapting to the system
-        // appearance — never a solid blue fill, which would hide the glyph.
-        let symbolName: String
-        let symbolColor: NSColor
-        if isSpeaking {
-            symbolName = "speaker.wave.2.fill"
-            symbolColor = .controlAccentColor
-        } else if clickAction == .read {
-            symbolName = "book.pages"
-            symbolColor = .systemBlue
+        // Glyph — always shows what the *next* click will do (Manh
+        // 2026-11-17, extended 2026-11-18 style B). In hover mode, holding
+        // Option flips to the other action, so the user sees the preview
+        // before clicking; in click mode the click always translates, so
+        // there is nothing to preview.
+        //
+        // Speaking comes FIRST (Manh 2026-11-18, round 7): while TTS is
+        // playing the icon must show the speaker, so the user can click
+        // again to stop it — even when the click action is Read. Before
+        // this fix the `.read` branch below returned early, so after an
+        // Option+click to Speak (with Click = Read) the icon stayed on
+        // A+ once Option was released, instead of switching to the
+        // speaker, and the user had no way to tell speech was playing.
+        let effectiveAction: TriggerClickAction
+        if activationMode == .hover && isOptionHeld {
+            effectiveAction = clickAction == .read ? .speak : .read
         } else {
-            symbolName = "character.bubble"
-            symbolColor = .systemBlue
+            effectiveAction = clickAction
         }
-        let accessibilityDescription = isSpeaking ? "Stop speaking" : (clickAction == .read ? "Fast Read" : "Translate")
+
+        if isSpeaking {
+            // TTS playing — speaker glyph (click again to stop).
+            let symbolName = "speaker.wave.2.fill"
+            let symbolColor = NSColor.controlAccentColor
+            let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+            let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
+            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Stop speaking")?
+                .withSymbolConfiguration(sizeConfig.applying(colorConfig))
+            {
+                let imageSize = image.size
+                let imageRect = NSRect(
+                    x: (bounds.width - imageSize.width) / 2,
+                    y: (bounds.height - imageSize.height) / 2,
+                    width: imageSize.width,
+                    height: imageSize.height
+                )
+                image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
+            }
+            return
+        }
+
+        if effectiveAction == .read {
+            // Fast Read → turmeric "A+" (bold A + small + badge at its
+            // top-right, Manh 2026-11-18). A custom-drawn glyph, not an
+            // SF Symbol — there is no A+ symbol.
+            drawFastReadGlyph(in: bounds)
+            return
+        }
+
+        // Speech bubble (translate/speak preview). The bubble glyph is
+        // ocean blue (.systemBlue) so the icon stays easy to spot in both
+        // light and dark mode; the circle background keeps adapting to
+        // the system appearance — never a solid blue fill, which would
+        // hide the glyph. (Speaking is handled above and returns early,
+        // so this branch only runs when not speaking.)
+        let symbolName = "character.bubble"
+        let symbolColor = NSColor.systemBlue
+        let accessibilityDescription = "Translate"
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityDescription)?
@@ -109,6 +165,45 @@ final class TriggerTrackingView: NSView {
             )
             image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
         }
+    }
+
+    /// Turmeric (màu nghệ) — the Fast Read "A+" glyph color (Manh
+    /// 2026-11-18). A deep golden amber, readable on both the light and
+    /// dark circle backgrounds (a bright turmeric would wash out on light).
+    private static let fastReadTurmeric = NSColor(red: 0.78, green: 0.50, blue: 0.05, alpha: 1.0)
+
+    /// Draw the Fast Read glyph: a bold "A" with a small "+" badge at its
+    /// top-right corner (Manh 2026-11-18: "chữ A+ có dấu + góc trên phải").
+    /// Drawn as text into the current graphics context — there is no A+
+    /// SF Symbol.
+    private func drawFastReadGlyph(in bounds: NSRect) {
+        let turmeric = Self.fastReadTurmeric
+        let aFont = NSFont.boldSystemFont(ofSize: 15)
+        let aAttrs: [NSAttributedString.Key: Any] = [
+            .font: aFont,
+            .foregroundColor: turmeric
+        ]
+        let aString = NSAttributedString(string: "A", attributes: aAttrs)
+        let aSize = aString.size()
+        let aOrigin = NSPoint(
+            x: bounds.midX - aSize.width / 2,
+            y: bounds.midY - aSize.height / 2
+        )
+        aString.draw(at: aOrigin)
+
+        // Small "+" badge, centred on the A’s top-right corner.
+        let plusFont = NSFont.boldSystemFont(ofSize: 8)
+        let plusAttrs: [NSAttributedString.Key: Any] = [
+            .font: plusFont,
+            .foregroundColor: turmeric
+        ]
+        let plusString = NSAttributedString(string: "+", attributes: plusAttrs)
+        let plusSize = plusString.size()
+        let plusOrigin = NSPoint(
+            x: aOrigin.x + aSize.width - plusSize.width / 2,
+            y: aOrigin.y + aSize.height - plusSize.height / 2
+        )
+        plusString.draw(at: plusOrigin)
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -183,6 +278,29 @@ final class TriggerIconController: NSObject {
     private var activationMode: TriggerActivationMode = .hover
     private var hoverTimer: Timer?
     private var autoDismissTimer: Timer?
+    /// Poll timer for the Option key while the icon is visible (Manh
+    /// 2026-11-18, style B): flips the glyph to the other action the
+    /// moment Option is held/released. A LOCAL flags monitor does NOT
+    /// work here — the user selects text in ANOTHER app, so the Option
+    /// press is delivered to that app, not to TransPeek, and the local
+    /// monitor never fires (Manh 2026-11-18: holding Opt changed
+    /// nothing until the mouse hovered the icon, because only the
+    /// mouse-enter re-check reads the key state). Polling
+    /// `NSEvent.modifierFlags` reads the global hardware state
+    /// directly, so it works no matter which app is frontmost. Fires
+    /// every 0.1s; only acts when the state actually changed, so the
+    /// auto-hide timer is never reset by a no-change poll.
+    private var optionPollTimer: Timer?
+    /// Last Option state seen by the poll timer (change detection).
+    private var lastOptionHeld = false
+    /// Delayed-hide timer after a Fast Read click (Manh 2026-11-18): the
+    /// icon stays showing the turmeric "A+" for 2.5s as a confirmation
+    /// while the Read window opens, then hides.
+    private var readHideTimer: Timer?
+    /// True while a Fast Read open is pending (the 2.5s A+ confirmation):
+    /// further clicks are ignored so a double-click cannot open two Read
+    /// windows or start speaking over the Read window.
+    private var isReadPending = false
 
     /// Show the trigger icon near the given screen point.
     /// If already visible, silently replace without triggering suppress.
@@ -199,9 +317,16 @@ final class TriggerIconController: NSObject {
 
         let activationMode = Defaults[.triggerActivationMode]
         self.activationMode = activationMode
+        trackingView.activationMode = activationMode
+        // If Option is already held when the icon appears, show the other
+        // action's glyph right away (Manh 2026-11-18, style B).
+        trackingView.isOptionHeld = NSEvent.modifierFlags.contains(.option)
 
         trackingView.onMouseEntered = { [weak self] in
             guard let self else { return }
+            // Re-check Option in case a flags-changed event was missed, so
+            // the glyph preview is correct the moment the cursor arrives.
+            self.trackingView?.isOptionHeld = NSEvent.modifierFlags.contains(.option)
             switch activationMode {
             case .hover:
                 self.startHoverTimer()
@@ -258,7 +383,27 @@ final class TriggerIconController: NSObject {
         self.panel = panel
         self.trackingView = trackingView
 
+        // Option-key preview (Manh 2026-11-18, style B): while the icon is
+        // visible, poll the Option key so the glyph flips to the other
+        // action the moment Option is held/released. updateOptionPreview
+        // also pauses the auto-hide while Option is held, so the A+
+        // preview doesn't vanish before the user can click it (Manh
+        // 2026-11-18: A+ rarely seen — with Click = Speak the A+ only
+        // shows while Option is held, and the 5s auto-hide used to steal
+        // it). See optionPollTimer: a local flags monitor can't see the
+        // key (it goes to the app where the text was selected), so the
+        // preview is polled instead. Stopped in cleanup().
+        startOptionPollTimer()
+
         startAutoDismissTimer()
+        // If Option is already held when the icon appears, the preview is
+        // already showing — pause the auto-hide so it doesn't steal it.
+        // (The poll timer's first fire would do this too, but the pause
+        // belongs here so the icon never gets a 5s timer it doesn't need.)
+        lastOptionHeld = trackingView.isOptionHeld
+        if activationMode == .hover && trackingView.isOptionHeld {
+            cancelAutoDismissTimer()
+        }
     }
 
     /// Dismiss the icon with fade-out and notify via onDismissed.
@@ -290,6 +435,11 @@ final class TriggerIconController: NSObject {
 
     private func cleanup() {
         isSpeaking = false
+        isReadPending = false
+        readHideTimer?.invalidate()
+        readHideTimer = nil
+        optionPollTimer?.invalidate()
+        optionPollTimer = nil
         panel = nil
         trackingView = nil
         currentText = ""
@@ -341,6 +491,45 @@ final class TriggerIconController: NSObject {
         autoDismissTimer = nil
     }
 
+    /// Start polling the Option key (0.1s) while the icon is visible.
+    /// Reads `NSEvent.modifierFlags` — the global hardware state, so it
+    /// works even when another app is frontmost (where the text was
+    /// selected). Only acts when the state actually changed, so a
+    /// no-change poll never resets the auto-hide timer. Stopped in
+    /// cleanup(). See optionPollTimer for why a local flags monitor
+    /// can't do this job.
+    private func startOptionPollTimer() {
+        optionPollTimer?.invalidate()
+        optionPollTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.trackingView != nil else { return }
+                let optionHeld = NSEvent.modifierFlags.contains(.option)
+                guard optionHeld != self.lastOptionHeld else { return }
+                self.lastOptionHeld = optionHeld
+                self.updateOptionPreview(optionHeld: optionHeld)
+            }
+        }
+    }
+
+    /// Update the Option preview: flip the glyph to the other action and,
+    /// in hover mode, pause the auto-hide while Option is held so the
+    /// preview (A+) stays visible long enough to see and click (Manh
+    /// 2026-11-18: with Click = Speak the A+ only shows while Option is
+    /// held, and the 5s auto-hide used to steal it — A+ was rarely seen).
+    /// On release, restart the auto-hide so the icon still goes away.
+    /// Only in hover mode (in click mode Option doesn't flip the glyph);
+    /// skipped while a Read open is pending (the 2.5s A+ confirmation
+    /// has its own hide timer).
+    private func updateOptionPreview(optionHeld: Bool) {
+        trackingView?.isOptionHeld = optionHeld
+        guard activationMode == .hover, !isReadPending else { return }
+        if optionHeld {
+            cancelAutoDismissTimer()
+        } else {
+            startAutoDismissTimer()
+        }
+    }
+
     private func cancelAllTimers() {
         cancelHoverTimer()
         cancelAutoDismissTimer()
@@ -355,6 +544,10 @@ final class TriggerIconController: NSObject {
     /// Option+click speaks (the translate action is reachable from the
     /// right-click menu instead).
     private func handleIconClick(event: NSEvent) {
+        // While a Fast Read open is pending (the 2.5s A+ confirmation),
+        // ignore further clicks so a double-click cannot open two Read
+        // windows or start speaking over the Read window (Manh 2026-11-18).
+        guard !isReadPending else { return }
         guard activationMode != .click else {
             triggerTranslation()
             return
@@ -384,16 +577,31 @@ final class TriggerIconController: NSObject {
         }
     }
 
-    /// Open Fast Read with the selected text: dismiss the icon (no panel)
-    /// and hand the text to the app.
+    /// Open Fast Read with the selected text. The Read window opens
+    /// immediately, but the icon stays visible showing the turmeric "A+"
+    /// for 2.5s (Manh 2026-11-18: 2–3s) as a confirmation while the window
+    /// is still opening, then it hides — so the user knows the click
+    /// landed even before the window appears.
     private func performRead() {
+        // Ignore a second Read (menu or double-click) while the delayed
+        // hide is pending, so two Read windows cannot open.
+        guard !isReadPending else { return }
         let text = currentText
         cancelAllTimers()
-        guard let panel else { return }
-        panel.contentView = nil
-        panel.close()
-        cleanup()
+        guard panel != nil else { return }
+        isReadPending = true
         onReadRequested?(text)
+        readHideTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.readHideTimer = nil
+                self.isReadPending = false
+                guard let panel = self.panel else { return }
+                panel.contentView = nil
+                panel.close()
+                self.cleanup()
+            }
+        }
     }
 
     /// Right-click (Control-click / two-finger tap) menu: Translate / Speak /
