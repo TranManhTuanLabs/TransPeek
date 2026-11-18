@@ -341,6 +341,26 @@ enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
     }
 }
 
+/// Fast Read (RSVP) — when the context around the focus word shows
+/// (Manh 2026-11-18, from SwiftRead's `contextDisplayStyle`):
+/// picked in the window's Settings button; persists across opens.
+enum RSVPContextDisplayStyle: String, CaseIterable, Defaults.Serializable {
+    /// Context shows even while playing.
+    case always
+    /// Context shows only while paused (the original behavior).
+    case onPause
+    /// Context never shows — focus line only, even when paused.
+    case never
+
+    var displayName: String {
+        switch self {
+        case .always: return "Always"
+        case .onPause: return "Only show when paused"
+        case .never: return "Never"
+        }
+    }
+}
+
 extension Defaults.Keys {
     // Optional HTTP CONNECT proxy for Google Translate.
     static let googleProxyEnabled = Key<Bool>("provider_google_proxyEnabled", default: false)
@@ -433,6 +453,7 @@ extension Defaults.Keys {
     static let rsvpChunkSize = Key<Int>("transpeek_rsvpChunkSize", default: 1)
     static let rsvpFontSize = Key<Int>("transpeek_rsvpFontSize", default: 64)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
+    static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

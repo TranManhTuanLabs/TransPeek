@@ -45,7 +45,8 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             wpm: Defaults[.rsvpWPM],
             chunkSize: Defaults[.rsvpChunkSize],
             fontSize: Double(Defaults[.rsvpFontSize]),
-            colorScheme: Defaults[.rsvpColorScheme]
+            colorScheme: Defaults[.rsvpColorScheme],
+            contextDisplayStyle: Defaults[.rsvpContextDisplayStyle]
         )
         self.viewModel = viewModel
 

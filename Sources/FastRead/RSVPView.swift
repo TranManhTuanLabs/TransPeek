@@ -26,6 +26,13 @@ final class RSVPViewModel: ObservableObject {
     @Published var colorScheme: RSVPColorScheme {
         didSet { Defaults[.rsvpColorScheme] = colorScheme }
     }
+    /// When the context around the focus word shows (Manh 2026-11-18,
+    /// SwiftRead's `contextDisplayStyle`): Always / Only show when
+    /// paused / Never. Picked in the window's Settings button;
+    /// persisted, so the reader picks it once.
+    @Published var contextDisplayStyle: RSVPContextDisplayStyle {
+        didSet { Defaults[.rsvpContextDisplayStyle] = contextDisplayStyle }
+    }
     /// Index of the slide currently on screen.
     @Published var currentSlideIndex: Int = 0
     /// True while slides advance automatically.
@@ -48,13 +55,15 @@ final class RSVPViewModel: ObservableObject {
         wpm: Int = RSVPEngine.defaultWPM,
         chunkSize: Int = 1,
         fontSize: Double = 64,
-        colorScheme: RSVPColorScheme = .light
+        colorScheme: RSVPColorScheme = .light,
+        contextDisplayStyle: RSVPContextDisplayStyle = .onPause
     ) {
         self.text = text
         self.wpm = wpm
         self.chunkSize = chunkSize
         self.fontSize = fontSize
         self.colorScheme = colorScheme
+        self.contextDisplayStyle = contextDisplayStyle
         self.engine = RSVPEngine(text: text, wpm: wpm, chunkSize: chunkSize)
     }
 
@@ -77,7 +86,8 @@ final class RSVPViewModel: ObservableObject {
         return Double(currentSlideIndex) / Double(slideCount - 1)
     }
 
-    /// Words around the current slide, shown when paused.
+    /// Words around the current slide (the book-page context). Shown
+    /// when paused, and while playing when the context style is Always.
     var pauseContext: (before: [String], current: [String], after: [String])? {
         engine.context(for: currentSlideIndex)
     }
@@ -322,15 +332,26 @@ struct RSVPView: View {
                 .padding(.top, 12)
                 .padding(.bottom, 8)
 
-            // Focus mode (§14.1): while playing, only the focused line;
-            // while paused, the full block text as a book page, the line
-            // being read big and prominent.
-            if viewModel.isPlaying {
-                readingArea
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+            // Focus mode (§14.1) + "Show context around focus word"
+            // setting (Manh 2026-11-18, SwiftRead's contextDisplayStyle):
+            // Always = book page even while playing; Only show when
+            // paused = focus line while playing, book page when paused;
+            // Never = focus line only, even when paused.
+            switch viewModel.contextDisplayStyle {
+            case .always:
                 bookPage
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .never:
+                readingArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .onPause:
+                if viewModel.isPlaying {
+                    readingArea
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    bookPage
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
 
             // Completion line + share row, above the progress bar
@@ -369,6 +390,13 @@ struct RSVPView: View {
         }
         .frame(minWidth: 880, minHeight: 550)
         .background(pageBackground)
+        // Match the control colors to the chosen theme (Manh 2026-11-18):
+        // without this, the bordered buttons (Rewind / Fast-forward /
+        // Settings / "?" / Maximize) and the pickers render with the
+        // system's light-mode colors — dark icons on the black "White
+        // on Black" page, invisible. Setting the color scheme makes
+        // them render light-on-dark instead.
+        .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
         .focusable()
         .focused($isFocused)
         .onAppear { isFocused = true }
@@ -503,8 +531,9 @@ struct RSVPView: View {
         }
     }
 
-    /// Color Scheme picker (White on Black / Black on White); other
-    /// customizations come later (spec §14.3).
+    /// Color Scheme picker (White on Black / Black on White) + when
+    /// the context around the focus word shows (spec §14.3 + Manh
+    /// 2026-11-18, SwiftRead's `contextDisplayStyle`).
     private var settingsPopover: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Color Scheme")
@@ -516,9 +545,16 @@ struct RSVPView: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            Text("More customizations coming later.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Text("Show context around focus word")
+                .font(.headline)
+                .padding(.top, 4)
+            Picker("Show context around focus word", selection: $viewModel.contextDisplayStyle) {
+                ForEach(RSVPContextDisplayStyle.allCases, id: \.self) { style in
+                    Text(style.displayName).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
         .padding(12)
         .frame(width: 260)
