@@ -421,6 +421,13 @@ extension Defaults.Keys {
     /// the flow they can keep it collapsed and the shortcuts table is the
     /// main thing on show. Default false = expanded, so new readers see it.
     static let flowIntroCollapsed = Key<Bool>("transpeek_flowIntroCollapsed", default: false)
+    /// Translate panel — whether the "Keyboard Shortcuts" card in panel
+    /// left is collapsed (Manh 2026-11-18, round 9). Same pattern as
+    /// `flowIntroCollapsed`: remembered, so both cards can stay collapsed
+    /// and leave room for the future focus/tomato timer in panel left.
+    /// Default false = expanded. Only panel left uses this — the "?"
+    /// table in panel center is NOT collapsible (its header hides it).
+    static let shortcutsCollapsed = Key<Bool>("transpeek_shortcutsCollapsed", default: false)
     static let popupFontSize = Key<Int>("popupFontSize", default: 14)
     // App interface text size (Settings window): 14 maps to the system
     // default Dynamic Type size (.large), so there is no visible change

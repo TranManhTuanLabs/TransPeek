@@ -41,6 +41,11 @@ struct PopupView: View {
     /// once the reader knows the flow they can keep it collapsed and the
     /// shortcuts table is the main thing on show.
     @State private var isFlowIntroCollapsed: Bool = Defaults[.flowIntroCollapsed]
+    /// Whether the "Keyboard Shortcuts" card in panel left is collapsed
+    /// (Manh 2026-11-18, round 9). Same pattern as the flow card above:
+    /// remembered in Defaults, so both cards can stay collapsed and
+    /// leave room for the future focus/tomato timer in panel left.
+    @State private var isShortcutsCollapsed: Bool = Defaults[.shortcutsCollapsed]
     /// Which panel of the multi-tab frame is showing (Manh 2026-11-17).
     /// Panel dịch (middle) is the default; a new translation always
     /// returns here (see the sourceText onChange below).
@@ -299,8 +304,14 @@ struct PopupView: View {
             // (Windows parity 17/16/13, Manh 2026-11-17).
             // The hint is 4pt smaller than the app name and dimmer — it
             // tells new users the float icon's two gestures (Manh 2026-11-15).
+            // The app name is the accent color (Manh 2026-11-18, round 9):
+            // sea blue, for beauty — the app has no custom accent color
+            // (AccentColor.colorset is empty), so this is the system
+            // accent blue, the same blue as the selected dot and the
+            // active icons in the panel.
             Text("TransPeek")
                 .font(.system(size: CGFloat(topBarFontSize), weight: .bold))
+                .foregroundStyle(Color.accentColor)
             Text("Translate anywhere, Peek instantly!")
                 .font(.system(size: CGFloat(max(topBarFontSize - 1, 8))))
                 .italic()
@@ -641,10 +652,24 @@ struct PopupView: View {
                         Defaults[.flowIntroCollapsed] = newValue
                     }
 
+                // "Keyboard Shortcuts" card (Manh 2026-11-18, round 9):
+                // collapsible in panel left — the header toggles collapse
+                // (chevron) instead of closing the card, like the flow
+                // card above it, so both cards can stay collapsed and
+                // leave room for the future focus/tomato timer. The
+                // `onClose` still switches to the translate tab after a
+                // Run button, so the result is visible — only the header
+                // changed from close to collapse. (Panel center's "?"
+                // table does NOT pass isCollapsed: its header still
+                // hides the table, as before.)
                 ShortcutsTableView(
                     onRunShortcut: onRunShortcut,
-                    onClose: { selectedTab = .translate }
+                    onClose: { selectedTab = .translate },
+                    isCollapsed: $isShortcutsCollapsed
                 )
+                .onChange(of: isShortcutsCollapsed) { _, newValue in
+                    Defaults[.shortcutsCollapsed] = newValue
+                }
             }
             .padding(.horizontal, contentHorizontalPadding)
             .padding(.vertical, 6)
