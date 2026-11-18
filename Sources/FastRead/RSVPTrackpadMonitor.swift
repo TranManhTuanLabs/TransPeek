@@ -33,7 +33,9 @@ enum RSVPTrackpadAction {
 ///   backwards, flip it.
 /// - Vertical: fingers up (negative deltaY) = font BIGGER; fingers
 ///   down (positive deltaY) = font SMALLER. One step changes the size
-///   by 2pt (the same step as the font picker).
+///   by 2pt (the same step as the font picker). A vertical swipe only
+///   changes the text size — it never scrolls the block text (Manh
+///   2026-11-18: when paused, up/down must not scroll the page).
 ///
 /// Speed (Manh 2026-11-18, SwiftRead-style): horizontal steps ONE
 /// slide per scroll event — SwiftRead's mousewheel handler moves
@@ -132,8 +134,11 @@ final class RSVPTrackpadMonitor: ObservableObject {
                 let bigger = accumulatedY < 0
                 accumulatedY -= 50 * (bigger ? -1 : 1)
                 actionPublisher.send(bigger ? .fontBigger : .fontSmaller)
-                return nil
             }
+            // A vertical swipe over the window only changes the text
+            // size — it never scrolls the block text (Manh 2026-11-18,
+            // when paused the up/down swipe must not scroll the page).
+            return nil
         case .ended, .cancelled:
             accumulatedY = 0
         default:
