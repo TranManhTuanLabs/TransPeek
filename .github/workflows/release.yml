@@ -26,7 +26,12 @@ name: Release
 # commit; if there is none, it fails loudly instead of shipping an
 # untested build. Permissions include actions: read so the workflow can
 # list runs and download the artifact of test.yml.
-
+# Release naming (2026-11-19): title is "TransPeek macOS Release
+# v<version> — Build CI #<Tests run number>" (matches the pre-release
+# title "TransPeek macOS preview — Build CI #<n>"); the body always
+# starts with the "Download" section (DMG for first install, ZIP is for
+# Sparkle updates) — action-gh-release pre-pends `body` to the
+# auto-generated notes.
 on:
   push:
     tags:
@@ -275,8 +280,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
+          name: TransPeek macOS Release v${{ steps.version.outputs.version }} — Build CI #${{ steps.tested.outputs.run_number }}
           draft: ${{ github.event_name == 'workflow_dispatch' }}
+          body: |
+            ## Download
+
+            - **First time?** Download the **DMG** — open it and drag TransPeek into your Applications folder.
+                      - The ZIP is for automatic updates (Sparkle downloads it). If you run TransPeek from your Downloads folder, move it to Applications first — otherwise updates will fail with "can't be updated if it's running from  the location it was downloaded to".
           generate_release_notes: true
           files: |
             TransPeek-v${{ steps.version.outputs.version }}-macOS.zip
