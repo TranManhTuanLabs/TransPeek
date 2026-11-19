@@ -115,22 +115,7 @@ final class TriggerTrackingView: NSView {
 
         if isSpeaking {
             // TTS playing — speaker glyph (click again to stop).
-            let symbolName = "speaker.wave.2.fill"
-            let symbolColor = NSColor.controlAccentColor
-            let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Stop speaking")?
-                .withSymbolConfiguration(sizeConfig.applying(colorConfig))
-            {
-                let imageSize = image.size
-                let imageRect = NSRect(
-                    x: (bounds.width - imageSize.width) / 2,
-                    y: (bounds.height - imageSize.height) / 2,
-                    width: imageSize.width,
-                    height: imageSize.height
-                )
-                image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
-            }
+            drawSpeakerGlyph(in: bounds)
             return
         }
 
@@ -142,18 +127,32 @@ final class TriggerTrackingView: NSView {
             return
         }
 
-        // Speech bubble (translate/speak preview). The bubble glyph is
-        // ocean blue (.systemBlue) so the icon stays easy to spot in both
-        // light and dark mode; the circle background keeps adapting to
-        // the system appearance — never a solid blue fill, which would
-        // hide the glyph. (Speaking is handled above and returns early,
-        // so this branch only runs when not speaking.)
-        let symbolName = "character.bubble"
-        let symbolColor = NSColor.systemBlue
-        let accessibilityDescription = "Translate"
+        if effectiveAction == .speak {
+            // Speak preview — speaker glyph (Manh 2026-11-19, 0.1.5:
+            // holding Option with Click = Read must preview the speaker,
+            // not the chat bubble — Manh testing v0.1.4 found the bubble
+            // here instead of the speaker). Same glyph as while speaking.
+            drawSpeakerGlyph(in: bounds)
+            return
+        }
+
+        // Translate → plain blue "A" (Style 1, Manh 2026-11-19, 0.1.5).
+        // The chat bubble (`character.bubble`, Style 2) is NOT the
+        // translate icon — it was the temporary stand-in here and is now
+        // only a backup style, documented in
+        // docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md §3.
+        drawPlainAGlyph(in: bounds)
+    }
+
+    /// Draw the speaker glyph (`speaker.wave.2.fill`, accent color) —
+    /// used both while TTS is playing (click again to stop) and as the
+    /// Speak preview (Manh 2026-11-19, 0.1.5).
+    private func drawSpeakerGlyph(in bounds: NSRect) {
+        let symbolName = "speaker.wave.2.fill"
+        let symbolColor = NSColor.controlAccentColor
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityDescription)?
+        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Speak")?
             .withSymbolConfiguration(sizeConfig.applying(colorConfig))
         {
             let imageSize = image.size
@@ -165,6 +164,25 @@ final class TriggerTrackingView: NSView {
             )
             image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
         }
+    }
+
+    /// Draw the translate glyph: a plain "A", regular weight (NOT bold),
+    /// blue (Style 1, Manh 2026-11-19, 0.1.5). Drawn as text into the
+    /// current graphics context — there is no plain-A SF Symbol.
+    /// The blue is the color of the letter A itself.
+    private func drawPlainAGlyph(in bounds: NSRect) {
+        let aFont = NSFont.systemFont(ofSize: 15)
+        let aAttrs: [NSAttributedString.Key: Any] = [
+            .font: aFont,
+            .foregroundColor: NSColor.systemBlue,
+        ]
+        let aString = NSAttributedString(string: "A", attributes: aAttrs)
+        let aSize = aString.size()
+        let aOrigin = NSPoint(
+            x: bounds.midX - aSize.width / 2,
+            y: bounds.midY - aSize.height / 2
+        )
+        aString.draw(at: aOrigin)
     }
 
     /// Turmeric (màu nghệ) — the Fast Read "A+" glyph color (Manh

@@ -33,18 +33,19 @@ enum RSVPTrackpadAction {
 ///   backwards, flip it.
 /// - Vertical: fingers up (negative deltaY) = font BIGGER; fingers
 ///   down (positive deltaY) = font SMALLER. One step changes the size
-///   by 8pt (Manh 2026-11-18, round 7: 4x the old 2pt — the old step
-///   felt too slow; 8pt matches the font picker step). A vertical swipe
-///   only changes the text size — it never scrolls the block text (Manh
-///   2026-11-18: when paused, up/down must not scroll the page).
+///   by 16pt (Manh 2026-11-19, 0.1.5: 2x the old 8pt — Manh testing
+///   v0.1.4 still needed 2–3 swipes to reach the size he wanted; 16pt
+///   is one clear step per swipe). A vertical swipe only changes the
+///   text size — it never scrolls the block text (Manh 2026-11-18:
+///   when paused, up/down must not scroll the page).
 ///
 /// Speed (Manh 2026-11-18, SwiftRead-style): horizontal steps ONE
 /// slide per scroll event — SwiftRead's mousewheel handler moves
 /// `wordIndex` by 1 on every event, with no threshold, so the word
 /// keeps up with the fingers. The old "one step per gesture after
 /// 50pt" felt very slow (a long swipe still moved only one word).
-/// Vertical accumulates: every 50pt changes the font by 8pt (Manh
-/// 2026-11-18, round 7: 4x the old 2pt), and a long swipe keeps
+/// Vertical accumulates: every 50pt changes the font by 16pt (Manh
+/// 2026-11-19, 0.1.5: 2x the old 8pt), and a long swipe keeps
 /// stepping (the remainder carries over).
 ///
 /// Only gesture-phased trackpad events count (`event.phase != []`);
@@ -127,8 +128,8 @@ final class RSVPTrackpadMonitor: ObservableObject {
                 return nil
             }
             // Vertical: accumulate; every 50pt changes the font by
-            // 2pt, and a long swipe keeps stepping (the remainder
-            // carries over to the next event).
+            // 16pt (Manh 2026-11-19, 0.1.5), and a long swipe keeps
+            // stepping (the remainder carries over to the next event).
             // Fingers up (negative deltaY) = bigger; fingers down
             // (positive deltaY) = smaller.
             accumulatedY += deltaY

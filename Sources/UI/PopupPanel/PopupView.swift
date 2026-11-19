@@ -21,6 +21,10 @@ private enum PanelTab: Int, CaseIterable {
 /// The SwiftUI content displayed inside the popup translation panel.
 struct PopupView: View {
     let coordinator: TranslationCoordinator
+    /// Tracks the language picker's popover window so the dismiss monitor
+    /// treats clicks in it as clicks inside the panel (Manh 2026-11-19,
+    /// 0.1.5). Created by the PopupPanelController, shared with the monitor.
+    let languagePopoverTracker: LanguagePopoverTracker
     var onDismiss: (() -> Void)?
     var onOpenSettings: (() -> Void)?
     var onOCRRequested: (() -> Void)?
@@ -400,7 +404,8 @@ struct PopupView: View {
                         targetLanguage: $targetLang,
                         onSwap: {
                             swapLanguages()
-                        }
+                        },
+                        popoverTracker: languagePopoverTracker
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -570,15 +575,15 @@ struct PopupView: View {
                     // Fast Read (Manh 2026-11-17): opens the RSVP reading
                     // window with the text being translated — no need to
                     // re-select it. Sits at the left end of the Actions row.
-                    // The icon and the "Fast Read" text sit tight together
+                    // The icon and the "Fast Read" text sit close together
                     // (Manh 2026-11-18, round 8): a plain `Label` leaves a
-                    // gap between icon and text, so this is an HStack
-                    // with spacing 0 instead — no space or padding
-                    // between the icon and the name.
+                    // gap between icon and text, so this is an HStack with
+                    // a small spacing instead — 4pt (Manh 2026-11-19,
+                    // 0.1.5: spacing 0 was still too tight, double it).
                     Button {
                         onFastRead?(coordinator.sourceText)
                     } label: {
-                        HStack(spacing: 0) {
+                        HStack(spacing: 4) {
                             Image(systemName: "book.pages")
                             Text("Fast Read")
                         }

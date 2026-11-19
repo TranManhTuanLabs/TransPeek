@@ -5,8 +5,11 @@ import Foundation
 enum LanguageCodeMapping {
     // MARK: - Google Translate
 
+    // Google: variant codes stay whole — `pt-BR` is Brazilian Portuguese,
+    // NOT generic `pt` (Manh 2026-11-19, 0.1.5: cutting at "-" turned Dari
+    // `fa-AF` into Persian `fa`). Only map the Chinese variants.
     static let google: [String: String] = [
-        "zh-Hans": "zh-CN", "zh-Hant": "zh-TW", "pt-BR": "pt",
+        "zh-Hans": "zh-CN", "zh-Hant": "zh-TW",
     ]
 
     // MARK: - DeepL

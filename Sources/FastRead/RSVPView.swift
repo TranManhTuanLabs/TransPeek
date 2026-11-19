@@ -594,12 +594,14 @@ struct RSVPView: View {
             }
         }
         .overlay(alignment: .center) {
-            // Subtitle (Manh 2026-11-19, round 10): bigger for beauty —
+            // Subtitle (Manh 2026-11-19, round 10 + 0.1.5): bigger for beauty —
             // 15pt semibold instead of the 12pt caption, so it reads as
             // the window's title, not a footnote. Still fits at the 880pt
             // minimum (the text is ~250pt wide, centered between the
-            // picker cluster and the right buttons).
-            Text("Rapid Serial Visual Presentation")
+            // picker cluster and the right buttons). The "— RSVP" suffix
+            // was added in 0.1.5 so the subtitle names the method, not
+            // just the expansion.
+            Text("Rapid Serial Visual Presentation — RSVP")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(readingSecondary)
                 .lineLimit(1)

@@ -73,6 +73,11 @@ struct AboutSettingsView: View {
             // both are inside the same Link so the whole row is
             // clickable — the colors are independent, they do not have
             // to be all blue or all black.
+            // Every Link in this tab shows the pointing-hand cursor on
+            // hover (Manh 2026-11-19, 0.1.5) — the macOS link
+            // convention, so it is clear what is clickable. Standard
+            // push buttons (Check for Updates, the donate buttons) keep
+            // the arrow cursor, which is the macOS button convention.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
@@ -84,6 +89,7 @@ struct AboutSettingsView: View {
                 }
             }
             .buttonStyle(.link)
+            .pointingHandCursor()
             .help("View TranManhTuanLabs on GitHub")
 
             // Release line: version + CI build in one line, linked to the
@@ -102,6 +108,7 @@ struct AboutSettingsView: View {
                     .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
+            .pointingHandCursor()
             .help("View all TransPeek releases on GitHub")
 
             Text("Copyright © 2025-2026 TransPeek Licensed under AGPL-3.0")
@@ -217,16 +224,19 @@ struct AboutSettingsView: View {
                     Label("Issue Feedback", systemImage: "ladybug")
                 }
                 .buttonStyle(.link)
+                .pointingHandCursor()
 
                 Link(destination: URL(string: "https://github.com/TranManhTuanLabs/TransPeek/discussions")!) {
                     Label("Community Discussions", systemImage: "bubble.left.and.bubble.right")
                 }
                 .buttonStyle(.link)
+                .pointingHandCursor()
 
                 Link(destination: URL(string: "mailto:tuanmanhtran.vn@gmail.com")!) {
                     Label("Email", systemImage: "envelope")
                 }
                 .buttonStyle(.link)
+                .pointingHandCursor()
             }
             .padding(.bottom, 16)
         }

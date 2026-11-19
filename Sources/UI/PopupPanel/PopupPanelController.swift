@@ -21,6 +21,11 @@ final class PopupPanelController {
 
     private var panel: PopupPanel?
     private var dismissMonitor: PopupDismissMonitor?
+    /// Tracks the language picker's popover window so the dismiss monitor
+    /// treats clicks in it as clicks inside the panel (Manh 2026-11-19,
+    /// 0.1.5). One tracker for the panel's lifetime; the picker sets its
+    /// window when the popover opens and clears it when it closes.
+    private let languagePopoverTracker = LanguagePopoverTracker()
     private var copyShortcutDismissTask: Task<Void, Never>?
     private var resultLayout = PopupResultLayout()
     private var resizeTask: Task<Void, Never>?
@@ -202,6 +207,7 @@ final class PopupPanelController {
             }
             let contentView = PopupView(
                 coordinator: coordinator,
+                languagePopoverTracker: languagePopoverTracker,
                 onDismiss: { [weak self] in
                     self?.dismiss()
                 },
@@ -325,6 +331,7 @@ final class PopupPanelController {
         dismissMonitor?.stop()
         dismissMonitor = PopupDismissMonitor(
             panel: panel,
+            popoverTracker: languagePopoverTracker,
             isPinned: { [weak self] in self?.coordinator.isPinned ?? false }
         ) { [weak self] in
             self?.dismiss()

@@ -76,7 +76,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Fast Read - RSVP"
+        window.title = "TransPeek — Fast Read RSVP"
         window.contentView = hostingView
         window.minSize = NSSize(width: 880, height: 550)
         window.setFrameAutosaveName("TransPeekRSVPWindow")
@@ -95,8 +95,8 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             switch action {
             case .stepForward: viewModel.stepForward()
             case .stepBack: viewModel.stepBack()
-            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 8)
-            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 8)
+            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
+            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
         }
         monitor.start(window: window)

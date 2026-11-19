@@ -16,10 +16,277 @@ enum SupportedLanguages {
         "fr", "de", "es", "pt-BR", "ru", "ar", "it", "th",
     ]
 
-    /// Complete catalog used by source selection and language detection.
-    static let codes: [String] = defaultTargetCodes + [
-        "pl", "nl", "tr", "uk", "id", "sv",
+    /// The 20 popular target languages, in the exact order Manh set
+    /// (2026-11-19, 0.1.5) — shown first in the language dropdown.
+    /// `pt` is the generic-Portuguese alias (not in Google's 249 list,
+    /// which has `pt-BR` and `pt-PT`); it maps to `pt` for Google.
+    static let popularTargetCodes: [String] = [
+        "en", "vi", "zh-Hans", "zh-Hant", "ja", "ko", "fr", "de", "es", "pt",
+        "ru", "it", "th", "ar", "hi", "id", "tr", "nl", "pl", "uk",
     ]
+
+    /// Full catalog: all 249 Google Translate languages + the `pt` alias,
+    /// sorted by English name A-Z. Each entry: (code, native name, English name).
+    /// Source: verified against Wikipedia (249), Google Cloud NMT table,
+    /// google-translate-api-x languages.cjs — see docs (Manh 2026-11-19, 0.1.5).
+    static let allLanguages: [(code: String, nativeName: String, englishName: String)] = [
+        ("ab", "Аԥсшәа", "Abkhaz"),
+        ("ace", "Bahsa Acèh", "Acehnese"),
+        ("ach", "Acholi", "Acholi"),
+        ("aa", "Qafaraf", "Afar"),
+        ("af", "Afrikaans", "Afrikaans"),
+        ("sq", "Shqip", "Albanian"),
+        ("alz", "Lur", "Alur"),
+        ("am", "አማርኛ", "Amharic"),
+        ("ar", "العربية", "Arabic"),
+        ("hy", "հայերեն", "Armenian"),
+        ("as", "অসমীয়া", "Assamese"),
+        ("av", "МагӀарул мацӀ", "Avar"),
+        ("awa", "अवधी", "Awadhi"),
+        ("ay", "Aymar aru", "Aymara"),
+        ("az", "Azərbaycan dili", "Azerbaijani"),
+        ("ban", "ᬩᬲᬩᬮᬶ", "Balinese"),
+        ("bal", "Balóchí", "Baluchi"),
+        ("bm", "Bamanankan", "Bambara"),
+        ("bci", "Wawle", "Baoulé"),
+        ("ba", "Башҡортса", "Bashkir"),
+        ("eu", "Euskara", "Basque"),
+        ("btx", "Batak Karo", "Batak Karo"),
+        ("bts", "Bahasa Simalungun", "Batak Simalungun"),
+        ("bbc", "Hata Batak", "Batak Toba"),
+        ("be", "Беларуская", "Belarusian"),
+        ("bem", "Ichibemba", "Bemba"),
+        ("bn", "বাংলা", "Bengali"),
+        ("bew", "Basa Betawi", "Betawi"),
+        ("bho", "भोजपुरी", "Bhojpuri"),
+        ("bik", "Sentral Bikol", "Bikol"),
+        ("bs", "Bosanski", "Bosnian"),
+        ("br", "Brezhoneg", "Breton"),
+        ("bg", "Български", "Bulgarian"),
+        ("bua", "Буряад хэлэн", "Buryat"),
+        ("yue", "粵語", "Cantonese"),
+        ("ca", "Català", "Catalan"),
+        ("ceb", "Bisaya", "Cebuano"),
+        ("ch", "Chamorru", "Chamorro"),
+        ("ce", "Нохчийн мотт", "Chechen"),
+        ("ny", "Chichewa", "Chichewa"),
+        ("zh-Hans", "中文 (简体)", "Chinese (Simplified)"),
+        ("zh-Hant", "中文 (繁體)", "Chinese (Traditional)"),
+        ("chk", "Fóósun Chuuk", "Chuukese"),
+        ("cv", "Чăваш чĕлхи", "Chuvash"),
+        ("co", "Corsu", "Corsican"),
+        ("crh", "Къырымтатар тили", "Crimean Tatar (Cyrillic)"),
+        ("crh-Latn", "Qırımtatar tili", "Crimean Tatar (Latin)"),
+        ("hr", "Hrvatski", "Croatian"),
+        ("cs", "Čeština", "Czech"),
+        ("da", "Dansk", "Danish"),
+        ("fa-AF", "دری", "Dari"),
+        ("dv", "ދިވެހިބަސް", "Dhivehi"),
+        ("din", "Thuɔŋjäŋ", "Dinka"),
+        ("doi", "डोगरी", "Dogri"),
+        ("dov", "ChiDombe", "Dombe"),
+        ("nl", "Nederlands", "Dutch"),
+        ("dyu", "Julakan", "Dyula"),
+        ("dz", "རྫོང་ཁ་", "Dzongkha"),
+        ("en", "English", "English"),
+        ("eo", "Esperanto", "Esperanto"),
+        ("et", "Eesti keel", "Estonian"),
+        ("ee", "Eʋegbe", "Ewe"),
+        ("fo", "Føroyskt mál", "Faroese"),
+        ("fj", "Vosa Vakaviti", "Fijian"),
+        ("tl", "Filipino", "Filipino"),
+        ("fi", "Suomi", "Finnish"),
+        ("fon", "Fɔ̀ngbè", "Fon"),
+        ("fr", "Français", "French"),
+        ("fr-CA", "Français (Canada)", "French (Canada)"),
+        ("fy", "West-Frysk", "Frisian"),
+        ("fur", "Furlan", "Friulian"),
+        ("ff", "Fulfulde", "Fulani"),
+        ("gaa", "Gã", "Ga"),
+        ("gl", "Galego", "Galician"),
+        ("ka", "ქართული", "Georgian"),
+        ("de", "Deutsch", "German"),
+        ("el", "Ελληνικά", "Greek"),
+        ("gn", "Avañe'ẽ", "Guarani"),
+        ("gu", "ગુજરાતી", "Gujarati"),
+        ("ht", "Kreyòl ayisyen", "Haitian Creole"),
+        ("cnh", "Laica", "Hakha Chin"),
+        ("ha", "Hausa", "Hausa"),
+        ("haw", "‘Ōlelo Hawai‘i", "Hawaiian"),
+        ("iw", "עברית", "Hebrew"),
+        ("hil", "Hiligaynon", "Hiligaynon"),
+        ("hi", "हिन्दी", "Hindi"),
+        ("hmn", "Hmoob", "Hmong"),
+        ("hu", "Magyar", "Hungarian"),
+        ("hrx", "Hunsrickisch", "Hunsrik"),
+        ("iba", "Jaku Iban", "Iban"),
+        ("is", "Íslenska", "Icelandic"),
+        ("ig", "Igbo", "Igbo"),
+        ("ilo", "Ilokano", "Ilocano"),
+        ("id", "Bahasa Indonesia", "Indonesian"),
+        ("iu-Latn", "Inuktitut", "Inuktut (Latin)"),
+        ("iu", "ᐃᓄᒃᑎᑐᑦ", "Inuktut (Syllabics)"),
+        ("ga", "Gaeilge", "Irish"),
+        ("it", "Italiano", "Italian"),
+        ("jam", "Patwa", "Jamaican Patois"),
+        ("ja", "日本語", "Japanese"),
+        ("jw", "Basa Jawa", "Javanese"),
+        ("kac", "Jinghpaw", "Jingpo"),
+        ("kl", "Kalaallisut", "Kalaallisut"),
+        ("kn", "ಕನ್ನಡ", "Kannada"),
+        ("kr", "Kanuri", "Kanuri"),
+        ("pam", "Kapampángan", "Kapampangan"),
+        ("kk", "Qazaq tılı", "Kazakh"),
+        ("kha", "Khasi", "Khasi"),
+        ("km", "ខ្មែរ", "Khmer"),
+        ("cgg", "Kiga", "Kiga"),
+        ("kg", "Kikongo", "Kikongo"),
+        ("rw", "Ikinyarwanda", "Kinyarwanda"),
+        ("ktu", "Kituba", "Kituba"),
+        ("trp", "Kok Borok", "Kokborok"),
+        ("kv", "Коми кыв", "Komi"),
+        ("gom", "गोंयची कोंकणी", "Konkani"),
+        ("ko", "한국어", "Korean"),
+        ("kri", "Krio", "Krio"),
+        ("ku", "Kurdî", "Kurdish (Kurmanji)"),
+        ("ckb", "کوردیی ناوەندی", "Kurdish (Sorani)"),
+        ("ky", "Кыргыз тили", "Kyrgyz"),
+        ("lo", "ລາວ", "Lao"),
+        ("ltg", "Latgaļu volūda", "Latgalian"),
+        ("la", "Latina", "Latin"),
+        ("lv", "Latviešu valoda", "Latvian"),
+        ("lij", "Lìgure", "Ligurian"),
+        ("li", "Limburgs", "Limburgish"),
+        ("ln", "Lingála", "Lingala"),
+        ("lt", "Lietuvių kalba", "Lithuanian"),
+        ("lmo", "Lombard", "Lombard"),
+        ("lg", "Luganda", "Luganda"),
+        ("luo", "Dholuo", "Luo"),
+        ("lb", "Lëtzebuergesch", "Luxembourgish"),
+        ("mk", "Македонски", "Macedonian"),
+        ("mad", "Basa Madura", "Madurese"),
+        ("mai", "मैथिली", "Maithili"),
+        ("mak", "Basa Mangkasara'", "Makassar"),
+        ("mg", "Malagasy", "Malagasy"),
+        ("ms", "Bahasa Melayu", "Malay"),
+        ("ms-Arab", "بهاس ملايو", "Malay (Jawi)"),
+        ("ml", "മലയാളം", "Malayalam"),
+        ("mt", "Malti", "Maltese"),
+        ("mam", "Ta yol Mam", "Mam"),
+        ("gv", "Gaelg", "Manx"),
+        ("mi", "Te reo Māori", "Maori"),
+        ("mr", "मराठी", "Marathi"),
+        ("mh", "Kajin Ṃajōḷ", "Marshallese"),
+        ("mwr", "मारवाड़ी", "Marwadi"),
+        ("mfe", "Morisien", "Mauritian Creole"),
+        ("chm", "Олык марий", "Meadow Mari"),
+        ("mni-Mtei", "ꯃꯤꯇꯩ ꯂꯣꯟ", "Meiteilon (Manipuri)"),
+        ("min", "Bahaso Minangkabau", "Minang"),
+        ("lus", "Mizo ṭawng", "Mizo"),
+        ("mn", "Монгол хэл", "Mongolian"),
+        ("my", "မြန်မာ", "Myanmar (Burmese)"),
+        ("nhe", "Nahuatl", "Nahuatl (Eastern Huasteca)"),
+        ("ndc-ZW", "Cindawu", "Ndau"),
+        ("nr", "IsiNdebele", "Ndebele (South)"),
+        ("new", "नेवाः भाय्", "Nepalbhasa (Newari)"),
+        ("ne", "नेपाली", "Nepali"),
+        ("bm-Nkoo", "ߓߡߊߣߊ߲ߞߊ߲", "NKo"),
+        ("no", "Norsk", "Norwegian (Bokmål)"),
+        ("nus", "Thok Naath", "Nuer"),
+        ("oc", "Occitan", "Occitan"),
+        ("or", "ଓଡ଼ିଆ", "Odia (Oriya)"),
+        ("om", "Afaan Oromoo", "Oromo"),
+        ("os", "Ирон æвзаг", "Ossetian"),
+        ("pag", "Pangasinan", "Pangasinan"),
+        ("pap", "Papiamento", "Papiamento"),
+        ("ps", "پښتو", "Pashto"),
+        ("fa", "فارسی", "Persian"),
+        ("pl", "Polski", "Polish"),
+        ("pt", "Português", "Portuguese"),
+        ("pt-BR", "Português (Brasil)", "Portuguese (Brazil)"),
+        ("pt-PT", "Português (Portugal)", "Portuguese (Portugal)"),
+        ("pa", "ਪੰਜਾਬੀ", "Punjabi (Gurmukhi)"),
+        ("pa-Arab", "پنجابی", "Punjabi (Shahmukhi)"),
+        ("qu", "Runasimi", "Quechua"),
+        ("kek", "Q'eqchi'", "Qʼeqchiʼ"),
+        ("rom", "Romani chib", "Romani"),
+        ("ro", "Română", "Romanian"),
+        ("rn", "Ikirundi", "Rundi"),
+        ("ru", "Русский", "Russian"),
+        ("se", "Sámegiella", "Sami (North)"),
+        ("sm", "Gagana Samoa", "Samoan"),
+        ("sg", "Sängö", "Sango"),
+        ("sa", "संस्कृतम्", "Sanskrit"),
+        ("sat-Latn", "Sāntāṛī", "Santali (Latin)"),
+        ("sat", "ᱥᱟᱱᱛᱟᱲᱤ", "Santali (Ol Chiki)"),
+        ("gd", "Gàidhlig na h-Alba", "Scots Gaelic"),
+        ("nso", "Sesotho sa Leboa", "Sepedi"),
+        ("sr", "Српски", "Serbian"),
+        ("st", "Sesotho", "Sesotho"),
+        ("crs", "Kreol seselwa", "Seychellois Creole"),
+        ("shn", "လိၵ်ႈတႆး", "Shan"),
+        ("sn", "ChiShona", "Shona"),
+        ("scn", "Sicilianu", "Sicilian"),
+        ("szl", "Ślōnskŏ gŏdka", "Silesian"),
+        ("sd", "سنڌي", "Sindhi"),
+        ("si", "සිංහල", "Sinhala"),
+        ("sk", "Slovenčina", "Slovak"),
+        ("sl", "Slovenščina", "Slovenian"),
+        ("so", "Soomaali", "Somali"),
+        ("es", "Español", "Spanish"),
+        ("su", "Basa Sunda", "Sundanese"),
+        ("sus", "Sosoxui", "Susu"),
+        ("sw", "Kiswahili", "Swahili"),
+        ("ss", "Siswati", "Swati"),
+        ("sv", "Svenska", "Swedish"),
+        ("ty", "Reo tahiti", "Tahitian"),
+        ("tg", "Забони тоҷикӣ", "Tajik"),
+        ("ber-Latn", "Tamaziɣt", "Tamazight"),
+        ("ber", "ⵜⴰⵎⴰⵣⵉⵖⵜ", "Tamazight (Tifinagh)"),
+        ("ta", "தமிழ்", "Tamil"),
+        ("tt", "Татар теле", "Tatar"),
+        ("te", "తెలుగు", "Telugu"),
+        ("tet", "Tetun", "Tetum"),
+        ("th", "ภาษาไทย", "Thai"),
+        ("bo", "བོད་ཡིག", "Tibetan"),
+        ("ti", "ትግርኛ", "Tigrinya"),
+        ("tiv", "Tiv", "Tiv"),
+        ("tpi", "Tok Pisin", "Tok Pisin"),
+        ("to", "Lea fakatonga", "Tongan"),
+        ("lua", "Tshiluba", "Tshiluba"),
+        ("ts", "Xitsonga", "Tsonga"),
+        ("tn", "Setswana", "Tswana"),
+        ("tcy", "ತುಳು", "Tulu"),
+        ("tum", "chiTumbuka", "Tumbuka"),
+        ("tr", "Türkçe", "Turkish"),
+        ("tk", "Türkmençe", "Turkmen"),
+        ("tyv", "Тыва дыл", "Tuvan"),
+        ("ak", "Akan", "Twi"),
+        ("udm", "Удмурт кыл", "Udmurt"),
+        ("uk", "Українська", "Ukrainian"),
+        ("ur", "اردو", "Urdu"),
+        ("ug", "ئۇيغۇرچە", "Uyghur"),
+        ("uz", "Ўзбек тили", "Uzbek"),
+        ("ve", "Tshivenḓa", "Venda"),
+        ("vec", "Vèneto", "Venetian"),
+        ("vi", "Tiếng Việt", "Vietnamese"),
+        ("war", "Waray-Waray", "Waray"),
+        ("cy", "Cymraeg", "Welsh"),
+        ("wo", "Wolof", "Wolof"),
+        ("xh", "IsiXhosa", "Xhosa"),
+        ("sah", "Саха тыла", "Yakut"),
+        ("yi", "יידיש", "Yiddish"),
+        ("yo", "Èdè Yorùbá", "Yoruba"),
+        ("yua", "Màaya t'àan", "Yucatec Maya"),
+        ("zap", "Diidxazá", "Zapotec"),
+        ("zu", "IsiZulu", "Zulu"),
+    ]
+
+    /// Complete catalog used by source selection and language detection:
+    /// all 250 codes (249 + the `pt` alias), in A-Z English order.
+    static var codes: [String] {
+        allLanguages.map(\.code)
+    }
 
     /// All supported language codes and their localized display names.
     static var all: [(code: String, name: String)] {
@@ -29,7 +296,20 @@ enum SupportedLanguages {
     }
 
     /// Set of all supported language codes.
-    static let codeSet: Set<String> = Set(codes)
+    static var codeSet: Set<String> {
+        Set(codes)
+    }
+
+    /// Native name for a language code (e.g. `ja` → `日本語`).
+    /// Falls back to the code itself for unknown identifiers.
+    static func nativeName(for code: String) -> String {
+        nativeNames[code] ?? code
+    }
+
+    /// Native names by code, derived from `allLanguages`.
+    static let nativeNames: [String: String] = Dictionary(
+        uniqueKeysWithValues: allLanguages.map { ($0.code, $0.nativeName) }
+    )
 
     /// English full names for language codes, used when interpolating into LLM prompts.
     ///
@@ -37,33 +317,28 @@ enum SupportedLanguages {
     /// so we expand to a stable English name. We hardcode the mapping rather than
     /// using `Locale.localizedString(forIdentifier:)` to avoid locale-dependent
     /// variations like "Chinese, Simplified" vs "Simplified Chinese".
-    private static let englishNames: [String: String] = [
-        "en": "English",
-        "zh-Hans": "Simplified Chinese",
-        "zh-Hant": "Traditional Chinese",
-        "ja": "Japanese",
-        "ko": "Korean",
-        "fr": "French",
-        "de": "German",
-        "es": "Spanish",
-        "pt-BR": "Brazilian Portuguese",
-        "ru": "Russian",
-        "ar": "Arabic",
-        "it": "Italian",
-        "th": "Thai",
-        "vi": "Vietnamese",
-        "pl": "Polish",
-        "nl": "Dutch",
-        "tr": "Turkish",
-        "uk": "Ukrainian",
-        "id": "Indonesian",
-        "sv": "Swedish",
-    ]
+    /// Derived from `allLanguages` (Manh 2026-11-19, 0.1.5: 20 → 250).
+    static let englishNames: [String: String] = Dictionary(
+        uniqueKeysWithValues: allLanguages.map { ($0.code, $0.englishName) }
+    )
 
     /// Returns the English full name for a language code (e.g. `zh-Hans` → `Simplified Chinese`).
     /// Falls back to the code itself for unknown identifiers.
     static func englishName(for code: String) -> String {
         englishNames[code] ?? code
+    }
+
+    /// The popular languages as full entries, in `popularTargetCodes` order.
+    static var popularLanguages: [(code: String, nativeName: String, englishName: String)] {
+        let byCode = Dictionary(uniqueKeysWithValues: allLanguages.map { ($0.code, $0) })
+        return popularTargetCodes.compactMap { byCode[$0] }
+    }
+
+    /// Every language EXCEPT the popular ones, still A-Z by English name —
+    /// the "All languages" section of the dropdown (no duplicates).
+    static var otherLanguages: [(code: String, nativeName: String, englishName: String)] {
+        let popular = Set(popularTargetCodes)
+        return allLanguages.filter { !popular.contains($0.code) }
     }
 
 }
