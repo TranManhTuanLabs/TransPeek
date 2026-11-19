@@ -197,8 +197,10 @@ re-reads the key state directly (see below).
 - `triggerClickAction`: `.read` (default, Manh 2026-11-18, round 7 — was
   `.speak`) / `.speak` / `.translate`.
 - `triggerActivationMode`: `.hover` (default) / `.click`.
-- `hoverDelayMs`: default 500 (Slider 300–800).
-- `autoHideDelaySec`: default 5 (Slider 3–10).
+- `hoverDelayMs`: default 500 (Picker: 300 / 400 / 500 / 600 / 700 / 800 ms —
+  changed from Slider 2026-11-20, Manh).
+- `autoHideDelaySec`: default 5 (Picker: 3–10 s — changed from Slider
+  2026-11-20, Manh).
 
 ## References
 

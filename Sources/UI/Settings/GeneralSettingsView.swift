@@ -150,27 +150,31 @@ struct GeneralSettingsView: View {
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
-                    LabeledContent("Hover delay: \(hoverDelayMs)ms (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms)") {
-                        Slider(
-                            value: Binding(
-                                get: { Double(hoverDelayMs) },
-                                set: { hoverDelayMs = Int($0) }
-                            ),
-                            in: 300...800,
-                            step: 100
-                        )
+                    // Picker, not Slider (Manh 2026-11-20): same style as
+                    // "Click icon for:" — a dropdown of preset values,
+                    // easier to read than a slider. The slider only ever
+                    // produced these values (300–800 ms, step 100), so no
+                    // saved value is lost.
+                    Picker("Hover delay:", selection: $hoverDelayMs) {
+                        ForEach([300, 400, 500, 600, 700, 800], id: \.self) { ms in
+                            Text("\(ms) ms").tag(ms)
+                        }
                     }
+                    Text("How long to wait before the panel opens when you hover the icon. Default: 500 ms.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
 
-                    LabeledContent("Auto-hide icon: \(autoHideDelaySec)s (default: \(Defaults.Keys.autoHideDelaySec.defaultValue)s)") {
-                        Slider(
-                            value: Binding(
-                                get: { Double(autoHideDelaySec) },
-                                set: { autoHideDelaySec = Int($0) }
-                            ),
-                            in: 3...10,
-                            step: 1
-                        )
+                    // Picker, not Slider (Manh 2026-11-20): same style as
+                    // "Click icon for:". The slider only ever produced
+                    // whole seconds 3–10, so no saved value is lost.
+                    Picker("Auto-hide icon:", selection: $autoHideDelaySec) {
+                        ForEach([3, 4, 5, 6, 7, 8, 9, 10], id: \.self) { sec in
+                            Text("\(sec) s").tag(sec)
+                        }
                     }
+                    Text("How long the icon stays before it hides by itself. Default: 5 s.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
 
                     Picker("Text Detection Mode:", selection: $textDetectionMode) {
                         Text("Conservative").tag(TextDetectionMode.conservative)
