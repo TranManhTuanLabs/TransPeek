@@ -62,10 +62,6 @@ struct DictionaryBarView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .help(link.name)
-        // Hand cursor (Manh 2026-11-20): this button opens a website
-        // in the browser, so it is a link — it shows the pointing hand
-        // on hover, like the About links and the share buttons.
-        .pointingHandCursor()
         .background { InteractiveMarker() }
     }
 

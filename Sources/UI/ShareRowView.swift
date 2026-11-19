@@ -50,9 +50,6 @@ struct ShareRowView: View {
                     shareIcon(for: platform)
                 }
                 .buttonStyle(.plain)
-                // Link-like buttons that open a URL — show the pointing-hand
-                // cursor on hover, the macOS link convention (Manh 2026-11-19, 0.1.5).
-                .pointingHandCursor()
                 .help("Share on \(platform.displayName)")
             }
         }
