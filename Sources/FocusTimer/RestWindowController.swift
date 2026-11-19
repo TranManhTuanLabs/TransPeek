@@ -6,11 +6,13 @@ import SwiftUI
 /// focus timer + panel decor). It opens when a work or eye-rest interval
 /// ends and the "Run reminder in:" setting is "New Fast Read Window".
 ///
-/// It RSVP-reads the reminder text with the SAME engine, view model and
-/// view as the Fast Read window (`RSVPView` in `.panel` presentation —
-/// no copied reading code), then shows the rest countdown and closes
-/// itself when the countdown ends. It never touches an open Fast Read
-/// window: this is its own window with its own view model.
+/// It RSVP-reads the reminder text with the SAME engine and view model
+/// as the Fast Read window, rendered by the panel's own lite view
+/// (`CompactReadingView` in `PanelFastReadView.swift` — the window file
+/// `RSVPView.swift` stays untouched, Manh 2026-11-20, 05:36), then shows
+/// the rest countdown and closes itself when the countdown ends. It
+/// never touches an open Fast Read window: this is its own window with
+/// its own view model.
 @MainActor
 final class RestWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
@@ -149,18 +151,16 @@ private struct RestWindowView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(pageBackground)
             } else {
-                RSVPView(
+                CompactReadingView(
                     viewModel: viewModel,
-                    presentation: .panel,
-                    onToggleMaximize: onToggleMaximize,
-                    onClose: onClose
+                    onToggleMaximize: onToggleMaximize
                 )
             }
         }
         .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
-        // The panel presentation ignores Esc (so it never swallows the
-        // popup panel's dismiss key); this window has no panel, so Esc
-        // closes it — the ignored key press propagates up here.
+        // The compact reading view ignores Esc (so it never swallows
+        // the popup panel's dismiss key); this window has no panel, so
+        // Esc closes it — the ignored key press propagates up here.
         .onKeyPress(.escape) {
             onClose?()
             return .handled

@@ -163,9 +163,12 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
 
 ## 9. In-panel reading + Rest window (focus timer, Manh 2026-11-20)
 
-Same engine, view model and view as the window — `RSVPView` in
-`.panel` presentation — embedded in panel right and in the separate
-Rest window. No second reading implementation.
+Same engine and view model as the window, rendered by the panel's
+own lite view (`CompactReadingView` in `Sources/FocusTimer/
+PanelFastReadView.swift`) — embedded in panel right and in the
+separate Rest window. No second reading implementation, and the
+window file `RSVPView.swift` is never edited for panel work (Manh
+2026-11-20, 05:36).
 
 - **Panel right** (`Sources/FocusTimer/PanelFastReadView.swift`):
   idle = "Fast Read — coming soon" + focus demo ("reading", the "a"
@@ -211,11 +214,14 @@ Rest window. No second reading implementation.
 
 ## References
 
-- Implementation (mac): `Sources/FastRead/RSVPView.swift` (layout, book
-  page, controls; `.panel` presentation for in-panel / Rest-window
-  reading), `RSVPViewModel` (state), `RSVPEngine.swift`
-  (tokenize/chunk/timing/ORP), `ORPReadingLine.swift` (shared focus
-  line), `RSVPWindowController.swift` (window),
+- Implementation (mac): `Sources/FastRead/RSVPView.swift` (window
+  layout, book page, controls — window-only, never edited for panel
+  work, Manh 2026-11-20, 05:36), `Sources/FocusTimer/
+  PanelFastReadView.swift` (`CompactReadingView`, the panel-right /
+  Rest-window lite reading view — shares only `RSVPViewModel` +
+  `RSVPEngine` with the window), `RSVPViewModel` (state),
+  `RSVPEngine.swift` (tokenize/chunk/timing/ORP), `ORPReadingLine.swift`
+  (shared focus line), `RSVPWindowController.swift` (window),
   `RSVPTrackpadMonitor.swift` (swipes), `RSVPShare.swift` (share URLs),
   `Sources/FocusTimer/` (store, Rest window, panel-right view).
 - Original design spec:

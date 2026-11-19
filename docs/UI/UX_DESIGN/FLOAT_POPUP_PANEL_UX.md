@@ -494,8 +494,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   nhắc ("You have read, worked, and sat for X minutes continuously.
   Rest your eyes and brain. Stand up and walk around. Be more
   physically active." / "Rest your eyes. Look at something 20 feet
-  away for 20 seconds.") bằng ĐÚNG engine + view model + view của
-  Window Read (`.panel` presentation, không copy code). Đọc xong →
+  away for 20 seconds.") bằng ĐÚNG engine + view model của Window
+  Read, hiện bằng view đọc gọn riêng (`CompactReadingView` trong
+  `PanelFastReadView.swift` — file Window Read `RSVPView.swift` để
+  nguyên không sửa, Manh 2026-11-20, 05:36; chỉ dùng chung logic đọc,
+  không copy code). Đọc xong →
   hiện countdown nghỉ (5 phút / 20 giây) rồi tự đóng; nút Done đóng
   sớm. Không đụng tới cửa sổ Read đang mở.
 - **Nhắc nghỉ lúc đang đọc** (Manh 2026-11-20, 05:33): timer tới giờ
@@ -526,8 +529,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   setting chỉ kiểm tra ở 1 chỗ. Riêng với "Run reminder in:" ở panel
   trái (§10.6): 2 setting độc lập, không ảnh hưởng nhau.
 - Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
-  đọc (cùng `RSVPView`, `.panel` presentation — engine + view model +
-  view dùng chung với Window Read, KHÔNG copy 2 bộ). Cỡ chữ focus bị
+  đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
+  — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
+  Read, KHÔNG copy 2 bộ; file Window Read `RSVPView.swift` để nguyên
+  không sửa, Manh 2026-11-20, 05:36). Cỡ chữ focus bị
   chặn lại cho vừa panel (48pt ở cỡ mặc định, 64pt gần max) — setting
   cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
 - **Hiển thị theo size (Manh 2026-11-20, 04:44):**
