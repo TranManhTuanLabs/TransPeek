@@ -49,7 +49,9 @@ final class PopupPanelController {
         coordinator: TranslationCoordinator,
         ttsCoordinator: TTSCoordinator? = nil,
         settingsController: SettingsWindowController? = nil,
-        focusTimerStore: FocusTimerStore
+        // Default is a fresh store (tests construct the controller
+        // without one); the app passes its shared store.
+        focusTimerStore: FocusTimerStore = FocusTimerStore()
     ) {
         self.coordinator = coordinator
         self.ttsCoordinator = ttsCoordinator

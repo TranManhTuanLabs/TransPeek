@@ -45,9 +45,14 @@ final class ReminderNotifier: NSObject, UNUserNotificationCenterDelegate, @unche
     func notify(kind: FocusReminderKind) {
         registerCategoriesIfNeeded()
         center.getNotificationSettings { settings in
+            // Read the status here (this closure is nonisolated) —
+            // `settings` itself is non-Sendable and must not cross
+            // into the MainActor Task below (Swift 6). The status
+            // enum is Sendable, so it can.
+            let status = settings.authorizationStatus
             Task { @MainActor [weak self] in
                 guard let self else { return }
-                switch settings.authorizationStatus {
+                switch status {
                 case .notDetermined:
                     let granted = (try? await self.center.requestAuthorization(options: [.alert, .sound])) ?? false
                     guard granted else { return }
