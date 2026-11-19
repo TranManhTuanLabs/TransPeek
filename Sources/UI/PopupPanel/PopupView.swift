@@ -901,11 +901,16 @@ struct PopupView: View {
                         .frame(width: 16, height: 16)
                 }
                 .buttonStyle(.plain)
+                // Hand cursor (Manh 2026-11-20): a link to GitHub —
+                // shows the pointing hand on hover, like the About
+                // links and the dictionary links.
+                .pointingHandCursor()
                 .help("View TransPeek on GitHub")
 
                 Link("GitHub", destination: Self.repoURL)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .pointingHandCursor()
             }
             .background { InteractiveMarker() }
         }
