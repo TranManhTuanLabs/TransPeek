@@ -87,7 +87,10 @@ If you need a more robust solution, these apps are excellent:
 
 ## Installation
 
-Download the latest `.dmg` or `.zip` from [GitHub Releases](https://github.com/TranManhTuanLabs/TransPeek/releases) and drag `TransPeek.app` into `/Applications`.
+Download the latest release from [GitHub Releases](https://github.com/TranManhTuanLabs/TransPeek/releases):
+
+- **First time?** Get the **`.dmg`** — open it and drag `TransPeek.app` into `/Applications`.
+- The **`.zip`** is for automatic updates (Sparkle downloads it). If you run TransPeek from your Downloads folder, move it to `/Applications` first — otherwise updates will fail with "can't be updated if it's running from the location it was downloaded to".
 
 ## Usage
 
