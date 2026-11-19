@@ -415,22 +415,17 @@ enum MenuBarIconCatalog {
     ]
 }
 
-// MARK: - Trigger Icon Activation Mode
-
-enum TriggerActivationMode: String, CaseIterable, Defaults.Serializable {
-    case hover  // Hover over the trigger icon (default behavior)
-    case click  // Click the trigger icon
-}
-
 /// What a click on the floating trigger icon does (TransPeek Phase 1).
 /// Hover always opens the panel; click is a separate, faster action.
-/// Fast Read (RSVP) joined as a third click action in 2026-11-17: the
-/// Settings toggle picks which of Speak / Fast Read the plain click does,
-/// and Option+click does the other one.
+/// The Settings toggle ("Click icon for:") picks which of Speak / Fast
+/// Read the plain click does, and Option+click does the other one.
+/// There is NO Translate click action (removed 2026-11-20, Manh) —
+/// Translate is hover-only. The old upstream `TriggerActivationMode`
+/// (hover / click) was also removed 2026-11-20 — the icon is always
+/// hover, and the upstream activation logic confused the flow.
 enum TriggerClickAction: String, CaseIterable, Defaults.Serializable {
     case speak     // Speak the selected text immediately
     case read      // Open Fast Read (RSVP) with the selected text (default, Manh 2026-11-18)
-    case translate // Old behaviour: open the translation panel
 }
 
 /// How dictionary links are shown at the bottom of the float panel.
@@ -668,7 +663,6 @@ extension Defaults.Keys {
     // Auto-detect text selection
     static let isAutoDetectEnabled = Key<Bool>("isAutoDetectEnabled", default: true)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
-    static let triggerActivationMode = Key<TriggerActivationMode>("triggerActivationMode", default: .hover)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
 
     // Appearance

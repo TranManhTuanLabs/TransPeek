@@ -438,14 +438,23 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Ngôn ngữ: mở rộng 20 → 249 + alias `pt` (Popular 20 đầu đúng thứ tự
   Manh chốt, rồi toàn bộ A–Z); 2 ô chọn ngôn ngữ thành dropdown tìm kiếm
   (Popover + List + `.searchable`, native — không NSComboBox, không tự
-  chế); map Google bỏ `pt-BR → pt` (mã biến thể giữ nguyên, không cắt ở
-  "-"); dismiss monitor coi popover ngôn ngữ là 1 phần của panel.
-- Icon float: giữ Option với Click = Read hiện loa (preview Speak) thay
-  vì ô chat; Translate hiện A thường xanh (Style 1) thay vì ô chat.
-- Panel chính: nút **Capture OCR** có viền xanh dương (`Color.blue`),
-  nút **Fast Read** có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ
-  "A+" của Fast Read); chỉ viền lining bao ngoài nút, không tô nền,
-  không đổi màu chữ/icon (Manh 2026-11-19 23:56).
+  chế); List phải bọc trong `NavigationStack` thì ô tìm mới hiện ở đầu
+  list (Manh test CI258 thấy thiếu ô tìm, sửa 2026-11-20); map Google bỏ
+  `pt-BR → pt` (mã biến thể giữ nguyên, không cắt ở "-"); dismiss
+  monitor coi popover ngôn ngữ là 1 phần của panel.
+- Icon float (Manh 2026-11-20, duyệt 02:41): icon lúc thường LUÔN là A
+  thường xanh (Style 1) cho cả Click=Speak và Click=Read (translate-first;
+  bỏ Style B preview idle A+/loa cũ); giữ Option → A+ (Click=Speak) hoặc
+  loa (Click=Read); đang nói → loa; bấm Read → A+ 2.5s. Bỏ hẳn
+  `TriggerActivationMode` (luôn hover) và bỏ "Translate (legacy)" khỏi
+  "Click icon" (đổi tên thành "Click icon for:", chỉ còn Read/Speak) —
+  dịch là hover, không có flow Click=Translate. Chi tiết:
+  `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` §2–§3, §7.
+- Panel chính: nút **Capture OCR** có viền xanh dương, nút **Fast Read**
+  có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ "A+" của Fast Read);
+  chỉ viền lining bao ngoài nút, không tô nền, không đổi màu chữ/icon
+  (Manh 2026-11-19 23:56); **làm nhạt hết cỡ, opacity 0.25** (Manh
+  2026-11-20: màu đầy quá nổi, mất tập trung).
 - Window Read: thêm tuỳ chọn **"Run text automatically"** (on/off,
   mặc định ON) trong Settings của cửa sổ (Manh 2026-11-20 00:47) —
   khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần

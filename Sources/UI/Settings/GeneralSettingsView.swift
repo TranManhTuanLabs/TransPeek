@@ -8,7 +8,6 @@ import UniformTypeIdentifiers
 struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
     @Default(.textDetectionMode) private var textDetectionMode
-    @Default(.triggerActivationMode) private var triggerActivationMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
     @Default(.autoHideDelaySec) private var autoHideDelaySec
@@ -140,15 +139,12 @@ struct GeneralSettingsView: View {
                 Toggle("Show floating icon on text selection", isOn: $isAutoDetectEnabled)
 
                 if isAutoDetectEnabled {
-                    Picker("Floating Icon Activation:", selection: $triggerActivationMode) {
-                        Text("Hover").tag(TriggerActivationMode.hover)
-                        Text("Click").tag(TriggerActivationMode.click)
-                    }
-
-                    Picker("Click icon:", selection: $triggerClickAction) {
+                    // No "Floating Icon Activation" picker: the icon is
+                    // always hover (Manh 2026-11-20) — the old upstream
+                    // hover/click activation setting was removed.
+                    Picker("Click icon for:", selection: $triggerClickAction) {
                         Text("Speak").tag(TriggerClickAction.speak)
                         Text("Read (Fast Read)").tag(TriggerClickAction.read)
-                        Text("Translate (legacy)").tag(TriggerClickAction.translate)
                     }
                     Text("Option+click does the other one: when Click is Speak, Option+click opens Fast Read; when Click is Read, Option+click speaks.")
                         .font(.settingsCaption(appTextSize: appTextSize))

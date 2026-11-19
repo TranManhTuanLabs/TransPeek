@@ -102,7 +102,13 @@ struct SearchableLanguagePicker: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            VStack(spacing: 0) {
+            // NavigationStack is REQUIRED for `.searchable` to show its
+            // search field: without a navigation container macOS shows
+            // no search field at all (Manh testing CI258 — the list
+            // worked but there was no text input at the top). The stack
+            // adds no visible title bar here; the search field sits at
+            // the top of the list.
+            NavigationStack {
                 List {
                     if isSearching {
                         ForEach(searchResults, id: \.code) { entry in
