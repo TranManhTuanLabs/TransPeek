@@ -227,19 +227,19 @@ jobs:
       # Publish a pre-release so the app can be downloaded from a direct
       # link (Releases page) instead of digging into the Actions run to
       # find the artifact. Same pattern as the Windows repo: tag
-      # "v0.1.4.<run number>", prerelease, keep only the newest one.
+      # "v0.1.5.<run number>", prerelease, keep only the newest one.
       # The artifact upload above is still kept — release.yml (direction B)
       # promotes the tested artifact, and this pre-release is only a
       # convenience download for testing. Needs contents: write (see
       # permissions above) to create/delete releases.
-      # NOTE: the "0.1.4" in the tag is the current MARKETING_VERSION —
+      # NOTE: the "0.1.5" in the tag is the current MARKETING_VERSION —
       # update it here when the app version bumps.
       - name: Publish pre-release (direct download, keep only the newest)
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v0.1.4.${{ github.run_number }}"
+          tag="v0.1.5.${{ github.run_number }}"
           zip="TransPeek-macOS-${{ github.run_number }}.zip"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" --prerelease --title "TransPeek macOS preview — Build CI #${{ github.run_number }}" --notes "Preview build from Tests run #${{ github.run_number }} (commit ${{ github.sha }}). Download the .zip, unzip, and open TransPeek.app. For testing only — the stable release is on the Releases page." "$zip"
