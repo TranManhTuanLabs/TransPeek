@@ -43,8 +43,10 @@ The icon has exactly three glyphs, one per action:
 Two styles of the translate icon (Manh 2026-11-19):
 
 - **Style 1 — the standard / main template:** the plain A, regular weight
-  (**NOT bold**), blue highlight/border. This is the correct translate
-  icon.
+  (**NOT bold**), **blue** — "blue highlight/border" means the letter A
+  itself is blue (Manh 2026-11-19: like the Style 2 chat icon, where the
+  A is blue and the chat-box border wrapping the A is also blue). This is
+  the correct translate icon.
 - **Style 2 — temporary stand-in:** the chat / speech-bubble icon
   (`character.bubble`). It is **NOT** the translate icon; it is only
   used temporarily in place of Style 1, and kept as a backup style (in
@@ -74,10 +76,10 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   playing.
 
 - **The plain A glyph (Style 1)** is the letter "A" drawn as text (like
-  A+, not an SF Symbol), regular weight — **NOT bold** — with a blue
-  highlight/border. It is the main icon: the icon's identity is
-  "translate", and A+ / speaker are the same "A" family showing the
-  other two actions.
+  A+, not an SF Symbol), regular weight — **NOT bold** — and **blue**
+  (the letter itself is blue; that is what "blue highlight/border"
+  means). It is the main icon: the icon's identity is "translate", and
+  A+ / speaker are the same "A" family showing the other two actions.
 - **The A+ glyph** is custom-drawn (not an SF Symbol): a bold "A" (15pt)
   with a small bold "+" (8pt) centered on the A's top-right corner, in
   turmeric — a deep golden amber (`NSColor` red 0.78, green 0.50, blue
