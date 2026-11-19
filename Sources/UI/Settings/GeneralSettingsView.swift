@@ -154,25 +154,29 @@ struct GeneralSettingsView: View {
                     // "Click icon for:" — a dropdown of preset values,
                     // easier to read than a slider. The slider only ever
                     // produced these values (300–800 ms, step 100), so no
-                    // saved value is lost.
-                    Picker("Hover delay:", selection: $hoverDelayMs) {
+                    // saved value is lost. The default is in the label
+                    // itself (Manh 2026-11-20: a setting with a default
+                    // should show it in its name, so the user knows what
+                    // value to set it back to).
+                    Picker("Hover delay (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms):", selection: $hoverDelayMs) {
                         ForEach([300, 400, 500, 600, 700, 800], id: \.self) { ms in
                             Text("\(ms) ms").tag(ms)
                         }
                     }
-                    Text("How long to wait before the panel opens when you hover the icon. Default: 500 ms.")
+                    Text("How long to wait before the panel opens when you hover the icon.")
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
                     // Picker, not Slider (Manh 2026-11-20): same style as
                     // "Click icon for:". The slider only ever produced
                     // whole seconds 3–10, so no saved value is lost.
-                    Picker("Auto-hide icon:", selection: $autoHideDelaySec) {
+                    // Default in the label, same reason as above.
+                    Picker("Auto-hide icon (default: \(Defaults.Keys.autoHideDelaySec.defaultValue)s):", selection: $autoHideDelaySec) {
                         ForEach([3, 4, 5, 6, 7, 8, 9, 10], id: \.self) { sec in
                             Text("\(sec) s").tag(sec)
                         }
                     }
-                    Text("How long the icon stays before it hides by itself. Default: 5 s.")
+                    Text("How long the icon stays before it hides by itself.")
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
