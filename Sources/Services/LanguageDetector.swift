@@ -10,9 +10,15 @@ enum LanguageDetector {
     // Detection always uses the complete catalog, independently of target favorites.
     private static let supportedNLLanguages = SupportedLanguages.codes.compactMap(bcp47ToNLLanguage)
 
-    // Base language weight hints (inspired by Easydict, simplified)
+    // Base language weight hints (inspired by Easydict, simplified).
+    // English was 2.0, but that strong a prior overwhelms the text
+    // features once the candidate set grows: with the full 250-language
+    // catalog (Manh 2026-11-19, 0.1.5) the recognizer returned English
+    // for clearly Polish text (CI #249: detectsPolishFromTheFullCatalog
+    // got "en" instead of "pl"). 1.0 keeps English as a likely source
+    // without letting the prior beat distinctive diacritics.
     private static let baseHints: [NLLanguage: Double] = [
-        .english: 2.0,
+        .english: 1.0,
         .simplifiedChinese: 1.5,
         .traditionalChinese: 0.8,
         .japanese: 0.6,
