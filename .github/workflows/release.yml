@@ -286,7 +286,7 @@ jobs:
             ## Download
 
             - **First time?** Download the **DMG** — open it and drag TransPeek into your Applications folder.
-             - The ZIP is for automatic updates (Sparkle downloads it). If you run TransPeek from your Downloads folder, move it to Applications first — otherwise updates will fail with "can't be updated if it's running from the location it was downloaded to".
+            - The ZIP is for automatic updates (Sparkle downloads it). If you run TransPeek from your Downloads folder, move it to Applications first — otherwise updates will fail with "can't be updated if it's running from the location it was downloaded to".
           generate_release_notes: true
           files: |
             TransPeek-v${{ steps.version.outputs.version }}-macOS.zip
