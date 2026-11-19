@@ -37,6 +37,10 @@ final class PopupPanelController {
     private let coordinator: TranslationCoordinator
     private let ttsCoordinator: TTSCoordinator?
     private let settingsController: SettingsWindowController?
+    /// Focus timer store (Manh 2026-11-20, focus timer + panel decor):
+    /// one store for the app — the panel-left card, the panel-right
+    /// reading view, and the Rest window all read the same state.
+    private let focusTimerStore: FocusTimerStore
 
     /// The app that was frontmost before we activated ourselves for input mode.
     private var previouslyActiveApp: NSRunningApplication?
@@ -44,11 +48,13 @@ final class PopupPanelController {
     init(
         coordinator: TranslationCoordinator,
         ttsCoordinator: TTSCoordinator? = nil,
-        settingsController: SettingsWindowController? = nil
+        settingsController: SettingsWindowController? = nil,
+        focusTimerStore: FocusTimerStore
     ) {
         self.coordinator = coordinator
         self.ttsCoordinator = ttsCoordinator
         self.settingsController = settingsController
+        self.focusTimerStore = focusTimerStore
     }
 
     deinit {
@@ -207,6 +213,7 @@ final class PopupPanelController {
             }
             let contentView = PopupView(
                 coordinator: coordinator,
+                focusTimerStore: focusTimerStore,
                 languagePopoverTracker: languagePopoverTracker,
                 onDismiss: { [weak self] in
                     self?.dismiss()

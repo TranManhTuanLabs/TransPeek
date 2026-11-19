@@ -20,6 +20,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     lazy var updaterController = UpdaterController()
     /// Fast Read (RSVP) window controller (Manh 2026-11-17).
     lazy var rsvpWindowController = RSVPWindowController()
+    /// Focus timer + rest-eyes store (Manh 2026-11-20, focus timer +
+    /// panel decor): one store for the app — the panel-left card, the
+    /// panel-right reading view, and the Rest window all read it.
+    lazy var focusTimerStore = FocusTimerStore()
     var settingsController: SettingsWindowController!
     private var smartTranslationTask: Task<Void, Never>?
     private var smartTranslationTaskID: UUID?
@@ -41,7 +45,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController = PopupPanelController(
             coordinator: coordinator,
             ttsCoordinator: ttsCoordinator,
-            settingsController: settingsController
+            settingsController: settingsController,
+            focusTimerStore: focusTimerStore
         )
         panelController.onOCRCopyOnlySuccess = { [weak self] in
             self?.copyToastController.show(message: String(localized: "Copied"))
@@ -60,7 +65,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // when it ships, does NOT hide the panel.)
         panelController.onFastRead = { [weak self] text in
             self?.panelController.hidePanelTemporarily()
+            // A panel read and a window read are the same text read two
+            // ways — the window replaces the panel one (Manh 2026-11-20).
+            self?.focusTimerStore.stopPanelReading()
             self?.performFastRead(text: text)
+        }
+        // A focus / rest-eyes reminder with destination Right Panel
+        // (Manh 2026-11-20): the store holds the request; bring the
+        // panel forward and the panel switches to the Fast Read tab
+        // and starts the read itself.
+        focusTimerStore.onShowPanel = { [weak self] in
+            self?.panelController.showAtCursor()
         }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()
@@ -609,6 +624,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if self?.triggerIconController.isVisible == true {
                 self?.triggerIconController.dismiss()
             }
+            // Dismissing the panel also ends a panel read (Manh
+            // 2026-11-20): the reading view is gone, so the playback
+            // task must not keep advancing slides invisibly.
+            self?.focusTimerStore.stopPanelReading()
         }
 
         selectionMonitor.start()

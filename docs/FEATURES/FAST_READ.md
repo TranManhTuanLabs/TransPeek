@@ -109,9 +109,10 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   stays focusable so the keys work, just without the ring.)
 - **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
   scroll event** (page-turn convention, SwiftRead-style; a longer swipe
-  moves more words); vertical swipe = **font ±8pt** per 50pt of accumulated
-  vertical movement (Manh 2026-11-18, round 7 — was ±2pt, which felt too
-  slow; 8pt matches the font picker step); remainder carries;
+  moves more words); vertical swipe = **font ±16pt** per 50pt of accumulated
+  vertical movement (Manh 2026-11-19, 0.1.5 — was ±8pt, which still felt
+  too slow; 8pt was the 2026-11-18 round-7 value, ±2pt before that);
+  remainder carries;
   momentum-phase events are ignored; mouse-wheel events pass through. **While paused, a vertical
   swipe ONLY changes the text size and NEVER scrolls the block text** (all
   dominant-vertical `.changed` events are consumed).
@@ -160,12 +161,56 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   (`.preferredColorScheme`) so buttons and pickers stay visible on the
   black background.
 
+## 9. In-panel reading + Rest window (focus timer, Manh 2026-11-20)
+
+Same engine, view model and view as the window — `RSVPView` in
+`.panel` presentation — embedded in panel right and in the separate
+Rest window. No second reading implementation.
+
+- **Panel right** (`Sources/FocusTimer/PanelFastReadView.swift`):
+  idle = "Fast Read — coming soon" + focus demo ("reading", the "a"
+  in yellow, half-bars above/below, via the shared `ORPLineView`) +
+  "Read in panel" button for the translate tab's text; reading =
+  the reading view only (coming-soon + book icon hidden). Display
+  adapts to panel size: while playing, only focus + context + the
+  shortcut hint; while paused at the default size, compact chrome
+  (speed + compact Settings top-right, small progress bar, centered
+  Rewind / Play / Forward / Maximize); while paused near maximum
+  size (content width ≥ 540pt), the full window chrome (4-picker top
+  bar, progress, 5-button control row, completion + share). Focus
+  font is capped for the panel (48pt default size, 64pt near max) —
+  the setting itself is unchanged. Vertical trackpad swipe changes
+  font size (±16pt / 50pt, vertical-only monitor so horizontal swipes
+  still switch panels); Space / ←/→ / ↑/↓ work (Shift+←/→ = sentence);
+  Esc is ignored by the reading view so the panel's Esc-to-dismiss
+  still works. The panel auto-pins when a panel read starts (pin
+  button in the panel-right header toggles it off); auto-fit freezes
+  while reading; Maximize toggles default (420×450) ↔ max (600×800).
+- **Rest window** (`Sources/FocusTimer/RestWindowController.swift`,
+  "TransPeek — Rest", 560×400, min 480×320): opens when a work /
+  eye-rest interval ends and "Run reminder in:" is "New Fast Read
+  Window". RSVP-reads the reminder, then shows the rest countdown
+  (5 min / 20 s) and closes itself; Done closes early. Never touches
+  an open Fast Read window.
+- **Focus timer** (`Sources/FocusTimer/FocusTimerStore.swift`,
+  card `Sources/UI/PopupPanel/FocusTimerCard.swift` in panel left):
+  Pomodoro standard (Work 25 / Rest 5, long break 15 after 4 cycles)
+  + rest eyes 20-20-20 (fixed), each with its own Start / Stop.
+  "Run reminder in:" ("New Fast Read Window" / "Right Panel") applies
+  ONLY to the reminder — there is no global "Run FastRead in" setting.
+  A reminder to panel right opens the panel on the Fast Read tab and
+  starts reading; after the read, the panel shows the rest countdown
+  and returns to the demo.
+
 ## References
 
 - Implementation (mac): `Sources/FastRead/RSVPView.swift` (layout, book
-  page, controls), `RSVPViewModel` (state), `RSVPEngine.swift`
-  (tokenize/chunk/timing/ORP), `RSVPWindowController.swift` (window),
-  `RSVPTrackpadMonitor.swift` (swipes), `RSVPShare.swift` (share URLs).
+  page, controls; `.panel` presentation for in-panel / Rest-window
+  reading), `RSVPViewModel` (state), `RSVPEngine.swift`
+  (tokenize/chunk/timing/ORP), `ORPReadingLine.swift` (shared focus
+  line), `RSVPWindowController.swift` (window),
+  `RSVPTrackpadMonitor.swift` (swipes), `RSVPShare.swift` (share URLs),
+  `Sources/FocusTimer/` (store, Rest window, panel-right view).
 - Original design spec:
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md` §14.
 - Icon (entries + glyph): `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md`.

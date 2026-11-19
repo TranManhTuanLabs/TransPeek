@@ -465,6 +465,82 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   `.pointingHandCursor()` (About, share, link từ điển, link GitHub ở
   panel) đã gỡ bỏ — nút bấm và link dùng con trỏ mặc định của macOS.
 
+### 10.6 Thẻ "Focus & Rest" ở panel left (20/11/2026, nhánh `feature/focus-timer-decor`)
+
+- Nằm **dưới bảng "Keyboard Shortcuts", trên dãy share** — đúng
+  khoảng trống share từng để lại cho nó (19/11). File riêng
+  `Sources/UI/PopupPanel/FocusTimerCard.swift`, dễ xoá sau này.
+  Thu gọn được (header bấm toàn bộ, trạng thái lưu
+  `focusTimerCollapsed), giống 2 thẻ trên.
+- **Pomodoro — theo CHUẨN:** Work 25 / Rest 5 mặc định, có picker
+  đổi (Work: 5/10/15/20/25/30/45/60; Rest: 5/10/15); nhãn picker ghi
+  luôn default ("Work (default: 25 min):"). Sau 4 chu kỳ focus →
+  nghỉ dài 15 phút. 4 chấm tròn hiện số chu kỳ đã xong + dòng "Long
+  break 15 min after 4 cycles". Nút Start/Pause/Resume + Reset.
+  Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
+  nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp).
+- **Rest eyes (20-20-20)** — mục riêng trong cùng thẻ: cứ 20 phút
+  nhắc nghỉ mắt 20 giây (cố định, không picker — luật 20-20-20 là
+  chính nó). Nút Start/Stop riêng, chạy độc lập với Pomodoro.
+  Icon: heart (focus) + footsteps (đi bộ / nghỉ).
+- **"Run reminder in:"** — 2 lựa chọn: **"New Fast Read Window"**
+  (nhắc nghỉ mở cửa sổ Rest riêng) và **"Right Panel"** (nhắc nghỉ
+  hiện ngay trong panel phải, không mở cửa sổ riêng). Setting này
+  **CHỈ áp cho reminder** — KHÔNG có setting toàn cục "Run FastRead
+  in" (Manh 2026-11-20, 04:44: lựa chọn an toàn là reminder-only).
+- **Cửa sổ Rest** (`Sources/FocusTimer/RestWindowController.swift`,
+  tiêu đề "TransPeek — Rest", 560×400, min 480×320): RSVP-đọc câu
+  nhắc ("You have read, worked, and sat for X minutes continuously.
+  Rest your eyes and brain. Stand up and walk around. Be more
+  physically active." / "Rest your eyes. Look at something 20 feet
+  away for 20 seconds.") bằng ĐÚNG engine + view model + view của
+  Window Read (`.panel` presentation, không copy code). Đọc xong →
+  hiện countdown nghỉ (5 phút / 20 giây) rồi tự đóng; nút Done đóng
+  sớm. Không đụng tới cửa sổ Read đang mở.
+
+### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
+
+- Khi chưa đọc: vẫn có "Fast Read — coming soon" + **demo focus**
+  phía dưới: từ **"reading"**, chữ **"a" tô vàng**, gạch nửa trên/dưới
+  chỉ vào giữa chữ "a" (như Windows) — dùng chung `ORPLineView` với
+  Window Read nên demo không bao giờ lệch với chữ đọc thật. Dưới
+  demo là nút **"Read in panel"** (đọc text đang có ở tab dịch, ngay
+  trong panel; cửa sổ Fast Read đầy đủ vẫn mở từ nút Fast Read ở tab
+  dịch).
+- Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
+  đọc (cùng `RSVPView`, `.panel` presentation — engine + view model +
+  view dùng chung với Window Read, KHÔNG copy 2 bộ). Cỡ chữ focus bị
+  chặn lại cho vừa panel (48pt ở cỡ mặc định, 64pt gần max) — setting
+  cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
+- **Hiển thị theo size (Manh 2026-11-20, 04:44):**
+  - Đang chạy (play): CHỈ focus text + around text + dòng phím tắt.
+  - Pause, panel bé: thêm speed (WPM) + nút Settings gọn ở góc phải
+    trên (cùng tuỳ chọn như Window Read: cỡ chữ / màu nền / context /
+    auto-play / reset), thanh progress nhỏ, hàng nút Rewind / Play /
+    Forward / Maximize căn giữa dưới cùng.
+  - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
+    trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
+    picker (Speed / Focus size / Context size / Words at once) +
+    Settings + "?", progress, hàng 5 nút + Reading time + hint,
+    completion + share khi đọc xong.
+- **Tương tác trong panel phải:** vuốt dọc trackpad đổi cỡ chữ
+  (±16pt / 50pt, như cửa sổ — monitor riêng chỉ dọc, vuốt ngang vẫn
+  chuyển panel 1/2/3 như cũ); phím tắt Space / ←/→ / ↑/↓ vẫn chạy
+  (Shift+←/→ = theo câu); lùi/tiến slide bằng phím ←/→ hoặc nút
+  Rewind/Forward (KHÔNG vuốt ngang). Esc không bị view đọc nuốt —
+  panel vẫn ẩn như cũ.
+- **Nút pin ở panel phải:** khi bắt đầu đọc trong panel, panel tự
+  bật pin (click ra ngoài không làm mất bài đọc); nút pin ở hàng đầu
+  panel phải để user tắt. Đọc trong panel thì auto-fit bị đóng băng
+  (cùng cơ chế manual-resize) để panel cao không bị co lại; hết đọc
+  thì auto-fit chạy lại. Nút Maximize đổi panel giữa cỡ mặc định
+  (420×450) và max (600×800), giữ mép trên cố định.
+- **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "Right Panel"):
+  hết khoảng Work / 20 phút mắt → panel hiện lên (nếu đang ẩn) ở tab
+  phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
+  20 giây) rồi về lại demo. Bấm nút Fast Read ở tab dịch (mở cửa sổ)
+  hoặc ẩn panel thì đọc trong panel dừng hẳn (không chạy ngầm).
+
 ## Liên kết
 
 - [Icon float UX](FLOAT_ICON_UX_SPEC.md)

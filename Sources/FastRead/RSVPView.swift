@@ -2,6 +2,18 @@ import AppKit
 import Defaults
 import SwiftUI
 
+/// How the reading view presents itself (Manh 2026-11-20, focus
+/// timer + panel decor): `.window` is the full Fast Read window;
+/// `.panel` is the compact in-panel / Rest-window presentation, which
+/// adapts its chrome to the available size — while playing it shows
+/// only the focus line (+ context) and the shortcut hint; while paused
+/// it shows compact controls, or the full window chrome when the panel
+/// is at (near-)maximum size.
+enum RSVPPresentation {
+    case window
+    case panel
+}
+
 /// View model driving the RSVP reading window. Owns the engine, the
 /// current slide, and the playback task; the view only renders state.
 @MainActor
@@ -327,9 +339,17 @@ final class RSVPViewModel: ObservableObject {
 /// width), so the eye never has to move.
 struct RSVPView: View {
     @ObservedObject var viewModel: RSVPViewModel
+    /// `.window` (default) is the full Fast Read window; `.panel` is
+    /// the compact in-panel / Rest-window presentation (Manh
+    /// 2026-11-20, focus timer + panel decor). Existing call sites
+    /// pass nothing and keep the full window.
+    var presentation: RSVPPresentation = .window
     /// Called by the "Toggle maximize window" button (the controller
     /// zooms the NSWindow). Not fullscreen: the window already has the
     /// red/yellow/green traffic lights for that (Manh 2026-11-17).
+    /// In `.panel` presentation the host passes its own action instead
+    /// (the panel toggles between its default and maximum size; the
+    /// Rest window zooms).
     var onToggleMaximize: (() -> Void)?
     /// Called when the user closes the window (Esc / close button).
     var onClose: (() -> Void)?
@@ -337,6 +357,11 @@ struct RSVPView: View {
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
     @State private var showingHotkeys = false
+    /// Measured width of the reading view in `.panel` presentation,
+    /// for the font-size cap and the full-size switch (Manh
+    /// 2026-11-20): the panel is far narrower than the window, so a
+    /// window-size focus font would overflow it.
+    @State private var panelWidth: CGFloat = 420
 
     private var slide: RSVPEngine.Slide? { viewModel.currentSlide }
 
@@ -401,33 +426,24 @@ struct RSVPView: View {
     }
 
     var body: some View {
+        switch presentation {
+        case .window:
+            windowBody
+        case .panel:
+            panelBody
+        }
+    }
+
+    /// The full Fast Read window body (unchanged behavior): top bar,
+    /// reading area / book page, completion + share, progress, controls.
+    private var windowBody: some View {
         VStack(spacing: 0) {
             topBar
                 .padding(.horizontal, 32)
                 .padding(.top, 8)
                 .padding(.bottom, 6)
 
-            // Focus mode (§14.1) + "Show context around focus word"
-            // setting (Manh 2026-11-18, SwiftRead's contextDisplayStyle):
-            // Always = book page even while playing; Only show when
-            // paused = focus line while playing, book page when paused;
-            // Never = focus line only, even when paused.
-            switch viewModel.contextDisplayStyle {
-            case .always:
-                bookPage
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .never:
-                readingArea
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .onPause:
-                if viewModel.isPlaying {
-                    readingArea
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    bookPage
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
-            }
+            readingAreaForCurrentState
 
             // Completion line + share row, above the progress bar
             // (§14.5 + Manh 2026-11-18: the share icons show at the
@@ -472,41 +488,353 @@ struct RSVPView: View {
         // still work — just without the ring.
         .focusEffectDisabled()
         .onAppear { isFocused = true }
-        .onKeyPress { press in
-            switch press.key {
-            case .space:
-                viewModel.togglePlayPause()
-                return .handled
-            case .leftArrow:
-                if press.modifiers.contains(.shift) {
-                    viewModel.stepSentence(forward: false)
+        .onKeyPress(perform: handleKeyPress)
+    }
+
+    /// The compact in-panel / Rest-window body (Manh 2026-11-20, focus
+    /// timer + panel decor). The panel is far smaller than the window,
+    /// so the chrome adapts to the available size instead of squeezing
+    /// the window layout in:
+    /// - While PLAYING: only the focus line (+ context when the style
+    ///   is Always) and the shortcut hint — no buttons, no descriptions.
+    /// - While PAUSED at the panel's default size: the book page, then
+    ///   compact chrome — speed + compact Settings at the top-right, a
+    ///   small progress bar above bottom-center Rewind / Play / Forward /
+    ///   Maximize buttons.
+    /// - While PAUSED at (near-)maximum panel size (content width ≥
+    ///   540, i.e. panel width ≈ 580+ of the 600 max): the full window
+    ///   chrome — pickers top bar, progress, the 5-button control row
+    ///   with Reading time + hint, completion + share.
+    /// The reading area itself is the same `readingAreaForCurrentState`
+    /// as the window (same engine, same view model, same ORP line).
+    private var panelBody: some View {
+        GeometryReader { geo in
+            let isFullSize = geo.size.width >= 540
+            VStack(spacing: 0) {
+                if viewModel.isPlaying {
+                    readingAreaForCurrentState
+                    panelHint
+                        .padding(.top, 6)
+                        .padding(.bottom, 8)
                 } else {
-                    viewModel.stepBack()
+                    readingAreaForCurrentState
+                    if isFullSize {
+                        if let completion = viewModel.completionText {
+                            Text(completion)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, 4)
+                            shareRow
+                                .padding(.bottom, 8)
+                        }
+                        panelTopBar
+                        progressRow
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 8)
+                        controlRow
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 12)
+                    } else {
+                        compactPausedChrome
+                    }
                 }
-                return .handled
-            case .rightArrow:
-                if press.modifiers.contains(.shift) {
-                    viewModel.stepSentence(forward: true)
-                } else {
-                    viewModel.stepForward()
-                }
-                return .handled
-            case .upArrow:
-                viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + RSVPEngine.wpmStep)
-                return .handled
-            case .downArrow:
-                viewModel.wpm = max(50, viewModel.wpm - RSVPEngine.wpmStep)
-                return .handled
-            case .escape:
-                onClose?()
-                return .handled
-            default:
-                return .ignored
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(pageBackground)
+            .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
+            .focusable()
+            .focused($isFocused)
+            .focusEffectDisabled()
+            .onAppear {
+                isFocused = true
+                panelWidth = geo.size.width
+            }
+            .onChange(of: geo.size.width) { _, newWidth in
+                panelWidth = newWidth
+            }
+            .onKeyPress(perform: handleKeyPress)
+        }
+    }
+
+    /// Focus line or book page for the current state — shared by the
+    /// window and panel bodies (Manh 2026-11-18, SwiftRead's
+    /// `contextDisplayStyle`): Always = book page even while playing;
+    /// Only show when paused = focus line while playing, book page
+    /// when paused; Never = focus line only, even when paused.
+    @ViewBuilder
+    private var readingAreaForCurrentState: some View {
+        switch viewModel.contextDisplayStyle {
+        case .always:
+            bookPage
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .never:
+            readingArea
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .onPause:
+            if viewModel.isPlaying {
+                readingArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                bookPage
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
 
+    /// Focus font size actually rendered. The window uses the setting
+    /// as-is; the panel caps it so a window-size font never overflows
+    /// the narrow panel (Manh 2026-11-20): 48pt at the default panel
+    /// size, 64pt near maximum — the setting itself is unchanged, so
+    /// the window still opens at the user's chosen size.
+    private var displayFontSize: Double {
+        guard presentation == .panel else { return viewModel.fontSize }
+        return min(viewModel.fontSize, panelWidth >= 540 ? 64 : 48)
+    }
+
+    /// Keyboard shortcut hint shown under the focus line while playing
+    /// in the panel (same text as the window's control-row hint, Manh
+    /// 2026-11-18): the only control affordance while playing — the
+    /// buttons stay hidden until pause.
+    private var panelHint: some View {
+        Text("Space play/pause • ←/→ step • ↑/↓ speed • Swipe ↑/↓ font size")
+            .font(.caption)
+            .foregroundStyle(readingSecondary)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    /// Compact paused chrome for the panel (Manh 2026-11-20, 04:44):
+    /// speed + compact Settings at the top-right, a small progress bar
+    /// above bottom-center Rewind / Play / Forward / Maximize buttons.
+    /// The Settings popover is the same one as the window (color scheme,
+    /// context display, auto-play, reset) — same options, compact.
+    private var compactPausedChrome: some View {
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Spacer()
+                Text("\(viewModel.wpm) WPM")
+                    .font(.caption)
+                    .foregroundStyle(readingSecondary)
+                    .monospacedDigit()
+                    .help("Reading speed — ↑ / ↓ changes it by 50 WPM")
+                Button { showingSettings.toggle() } label: {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Reading settings")
+                .popover(isPresented: $showingSettings) {
+                    settingsPopover
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 6)
+
+            progressRow
+                .padding(.horizontal, 12)
+
+            HStack(spacing: 16) {
+                Button {
+                    viewModel.stepBack()
+                } label: {
+                    Image(systemName: "backward.fill")
+                }
+                .buttonStyle(.bordered)
+                .help("Rewind (←)")
+
+                Button {
+                    viewModel.togglePlayPause()
+                } label: {
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Play / Pause (Space)")
+
+                Button {
+                    viewModel.stepForward()
+                } label: {
+                    Image(systemName: "forward.fill")
+                }
+                .buttonStyle(.bordered)
+                .help("Fast-forward (→)")
+
+                Button {
+                    onToggleMaximize?()
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                }
+                .buttonStyle(.bordered)
+                .help("Toggle panel size")
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(.bottom, 10)
+        }
+    }
+
+    /// Top bar for the panel at (near-)maximum size (Manh 2026-11-20):
+    /// the same four pickers as the window's top bar (Speed / Focus
+    /// size / Context size / Words at once) + Settings + "?", but no
+    /// version text (the panel footer already shows it) and no centered
+    /// subtitle (the panel's own top bar already names the app) — the
+    /// window's full top bar is ~100pt too wide for the 600pt panel.
+    private var panelTopBar: some View {
+        HStack(spacing: 12) {
+            wpmPicker
+            focusSizePicker
+            contextSizePicker
+            chunkPicker
+
+            Spacer()
+
+            Button { showingSettings.toggle() } label: {
+                Image(systemName: "gearshape")
+            }
+            .buttonStyle(.bordered)
+            .help("Settings")
+            .popover(isPresented: $showingSettings) {
+                settingsPopover
+            }
+
+            Button { showingHotkeys.toggle() } label: {
+                Image(systemName: "questionmark.circle")
+            }
+            .buttonStyle(.bordered)
+            .help("Hotkeys")
+            .popover(isPresented: $showingHotkeys) {
+                hotkeysPopover
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+    }
+
+    /// Keyboard handling, shared by the window and panel bodies. Same
+    /// keys in both: Space play/pause, ←/→ step (Shift = sentence),
+    /// ↑/↓ speed ±50. Esc differs: the window closes; the panel
+    /// IGNORES it so the panel's own Esc-to-dismiss still works — the
+    /// reading view must not swallow the panel's dismiss key (and the
+    /// Rest window adds its own Esc handler on top).
+    private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
+        switch press.key {
+        case .space:
+            viewModel.togglePlayPause()
+            return .handled
+        case .leftArrow:
+            if press.modifiers.contains(.shift) {
+                viewModel.stepSentence(forward: false)
+            } else {
+                viewModel.stepBack()
+            }
+            return .handled
+        case .rightArrow:
+            if press.modifiers.contains(.shift) {
+                viewModel.stepSentence(forward: true)
+            } else {
+                viewModel.stepForward()
+            }
+            return .handled
+        case .upArrow:
+            viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + RSVPEngine.wpmStep)
+            return .handled
+        case .downArrow:
+            viewModel.wpm = max(50, viewModel.wpm - RSVPEngine.wpmStep)
+            return .handled
+        case .escape:
+            if presentation == .panel { return .ignored }
+            onClose?()
+            return .handled
+        default:
+            return .ignored
+        }
+    }
+
     // MARK: - Top bar
+
+    /// The four reading pickers, shared by the window's top bar and
+    /// the panel's full-size top bar (Manh 2026-11-20): one definition
+    /// so the two top bars can never drift apart.
+    private var wpmPicker: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Speed: \(viewModel.wpm) WPM")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+            Picker("", selection: Binding(
+                get: { Self.nearestWPMOption(to: viewModel.wpm) },
+                set: { viewModel.wpm = $0 }
+            )) {
+                ForEach(Self.wpmOptions, id: \.self) { w in
+                    Text("\(w)").tag(w)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 80)
+        }
+        .help("↑ / ↓ changes speed by 50 WPM")
+    }
+
+    private var focusSizePicker: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Focus size: \(Int(viewModel.fontSize))")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+            Picker("", selection: Binding(
+                get: { Self.nearestFontOption(to: viewModel.fontSize) },
+                set: { viewModel.fontSize = Double($0) }
+            )) {
+                ForEach(Self.fontSizeOptions, id: \.self) { s in
+                    Text("\(s)").tag(s)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 70)
+        }
+    }
+
+    /// Context (around) text size, as a percent of the focus size
+    /// (Manh 2026-11-18, round 7 — "Context size", right next to
+    /// "Focus size" in the top bar, not buried in Settings). Default
+    /// 40%, min 25%, max 100%.
+    private var contextSizePicker: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Context size: \(Int((viewModel.contextSizeRatio * 100).rounded()))%")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+            Picker("", selection: Binding(
+                get: { Self.nearestContextOption(to: viewModel.contextSizeRatio) },
+                set: { viewModel.contextSizeRatio = Double($0) / 100 }
+            )) {
+                ForEach(Self.contextSizeOptions, id: \.self) { p in
+                    Text("\(p)%").tag(p)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 70)
+        }
+        .help("Context text size, as a percent of the focus size")
+    }
+
+    private var chunkPicker: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Words at once")
+                .font(.caption)
+                .foregroundStyle(readingSecondary)
+            Picker("", selection: $viewModel.chunkSize) {
+                ForEach(RSVPEngine.chunkRange, id: \.self) { n in
+                    Text("\(n)").tag(n)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            .frame(width: 60)
+        }
+    }
 
     /// Left: WPM picker + Focus size picker + Context size picker +
     /// word picker. Center: what RSVP stands for, TRULY centered on
@@ -524,76 +852,10 @@ struct RSVPView: View {
     private var topBar: some View {
         HStack(spacing: 16) {
             HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Speed: \(viewModel.wpm) WPM")
-                        .font(.caption)
-                        .foregroundStyle(readingSecondary)
-                    Picker("", selection: Binding(
-                        get: { Self.nearestWPMOption(to: viewModel.wpm) },
-                        set: { viewModel.wpm = $0 }
-                    )) {
-                        ForEach(Self.wpmOptions, id: \.self) { w in
-                            Text("\(w)").tag(w)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 80)
-                }
-                .help("↑ / ↓ changes speed by 50 WPM")
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Focus size: \(Int(viewModel.fontSize))")
-                        .font(.caption)
-                        .foregroundStyle(readingSecondary)
-                    Picker("", selection: Binding(
-                        get: { Self.nearestFontOption(to: viewModel.fontSize) },
-                        set: { viewModel.fontSize = Double($0) }
-                    )) {
-                        ForEach(Self.fontSizeOptions, id: \.self) { s in
-                            Text("\(s)").tag(s)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 70)
-                }
-
-                // Context (around) text size, as a percent of the focus
-                // size (Manh 2026-11-18, round 7 — "Context size", right
-                // next to "Focus size" in the top bar, not buried in
-                // Settings). Default 40%, min 25%, max 100%.
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Context size: \(Int((viewModel.contextSizeRatio * 100).rounded()))%")
-                        .font(.caption)
-                        .foregroundStyle(readingSecondary)
-                    Picker("", selection: Binding(
-                        get: { Self.nearestContextOption(to: viewModel.contextSizeRatio) },
-                        set: { viewModel.contextSizeRatio = Double($0) / 100 }
-                    )) {
-                        ForEach(Self.contextSizeOptions, id: \.self) { p in
-                            Text("\(p)%").tag(p)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 70)
-                }
-                .help("Context text size, as a percent of the focus size")
-
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Words at once")
-                        .font(.caption)
-                        .foregroundStyle(readingSecondary)
-                    Picker("", selection: $viewModel.chunkSize) {
-                        ForEach(RSVPEngine.chunkRange, id: \.self) { n in
-                            Text("\(n)").tag(n)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(width: 60)
-                }
+                wpmPicker
+                focusSizePicker
+                contextSizePicker
+                chunkPicker
             }
 
             Spacer()
@@ -721,39 +983,29 @@ struct RSVPView: View {
     // MARK: - Reading area
 
     /// One line of reading text with the ORP pivot character in orange,
-    /// pinned at 35% of the width. The text before the pivot is
-    /// right-aligned into the left part, the text after it left-aligned
-    /// into the right part, so the pivot never moves. Shared by the
-    /// playing view and the paused book page's focus line (same size,
-    /// same position — SwiftRead-style, Manh 2026-11-18).
+    /// pinned at 35% of the width. The shared `ORPLineView` (Manh
+    /// 2026-11-20, focus timer + panel decor) holds the layout — the
+    /// in-panel reading view and the panel-right demo render the exact
+    /// same line. Shared by the playing view and the paused book page's
+    /// focus line (same size, same position — SwiftRead-style, Manh
+    /// 2026-11-18).
     private func orpLine(slide: RSVPEngine.Slide, fontSize: Double) -> some View {
-        GeometryReader { geo in
-            let pivotX = geo.size.width * 0.35
-            let font = Font.system(size: fontSize, weight: .medium)
-            let joined = slide.joinedText
-            let pivotOffset = slide.pivotOffset
-            let before = String(joined.prefix(pivotOffset))
-            let pivotChar = pivotOffset < joined.count
-                ? String(joined[joined.index(joined.startIndex, offsetBy: pivotOffset)])
-                : ""
-            let after = pivotOffset + 1 < joined.count
-                ? String(joined[joined.index(joined.startIndex, offsetBy: pivotOffset + 1)...])
-                : ""
-            HStack(spacing: 0) {
-                Text(before)
-                    .font(font)
-                    .foregroundStyle(readingForeground)
-                    .frame(width: pivotX, alignment: .trailing)
-                Text(pivotChar)
-                    .font(font)
-                    .foregroundStyle(.orange)
-                Text(after)
-                    .font(font)
-                    .foregroundStyle(readingForeground)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
+        let joined = slide.joinedText
+        let pivotOffset = slide.pivotOffset
+        let before = String(joined.prefix(pivotOffset))
+        let pivotChar = pivotOffset < joined.count
+            ? String(joined[joined.index(joined.startIndex, offsetBy: pivotOffset)])
+            : ""
+        let after = pivotOffset + 1 < joined.count
+            ? String(joined[joined.index(joined.startIndex, offsetBy: pivotOffset + 1)...])
+            : ""
+        return ORPLineView(
+            before: before,
+            pivot: pivotChar,
+            after: after,
+            fontSize: fontSize,
+            foreground: readingForeground
+        )
     }
 
     /// The current chunk with the ORP pivot character in orange, pinned
@@ -761,7 +1013,7 @@ struct RSVPView: View {
     private var readingArea: some View {
         Group {
             if let slide {
-                orpLine(slide: slide, fontSize: viewModel.fontSize)
+                orpLine(slide: slide, fontSize: displayFontSize)
             } else {
                 Color.clear
             }
@@ -809,7 +1061,7 @@ struct RSVPView: View {
                 Group {
                     if !beforeText.isEmpty {
                         Text(beforeText)
-                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
+                            .font(.system(size: displayFontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -822,8 +1074,8 @@ struct RSVPView: View {
                 // The focus line: fixed height, always at the vertical
                 // center (the two halves above/below share the rest).
                 if let slide {
-                    orpLine(slide: slide, fontSize: viewModel.fontSize)
-                        .frame(height: viewModel.fontSize * 1.3)
+                    orpLine(slide: slide, fontSize: displayFontSize)
+                        .frame(height: displayFontSize * 1.3)
                 }
                 // Words after the current chunk: bottom half, anchored
                 // to the top so the words nearest the focus line sit
@@ -832,7 +1084,7 @@ struct RSVPView: View {
                 Group {
                     if !afterText.isEmpty {
                         Text(afterText)
-                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
+                            .font(.system(size: displayFontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -952,7 +1204,7 @@ struct RSVPView: View {
                     Image(systemName: "arrow.up.left.and.arrow.down.right")
                 }
                 .buttonStyle(.bordered)
-                .help("Toggle maximize window")
+                .help(presentation == .panel ? "Toggle panel size" : "Toggle maximize window")
             }
             .frame(maxWidth: .infinity, alignment: .center)
 

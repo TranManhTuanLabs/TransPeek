@@ -595,6 +595,25 @@ enum SwapLanguagesShortcut {
 
 // MARK: - User Defaults Keys
 
+/// Where a focus / rest-eyes reminder shows (Manh 2026-11-20, focus
+/// timer + panel decor — the "Run reminder in:" picker in the panel-left
+/// Focus & Rest card). This applies ONLY to the reminder — there is no
+/// global "Run FastRead in" setting (Manh 2026-11-20, 04:44: the safe
+/// option is reminder-only).
+enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
+    /// The reminder opens a separate Rest window (the original design).
+    case newWindow
+    /// The reminder shows inside panel right, no separate window.
+    case rightPanel
+
+    var displayName: String {
+        switch self {
+        case .newWindow: return "New Fast Read Window"
+        case .rightPanel: return "Right Panel"
+        }
+    }
+}
+
 /// Fast Read (RSVP) window color scheme (Manh 2026-11-17, spec §14.3):
 /// picked in the window's Settings button; persists across opens.
 enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
@@ -750,6 +769,21 @@ extension Defaults.Keys {
     /// at once — no Space press needed. Toggled in the window's
     /// Settings popover.
     static let rsvpAutoPlay = Key<Bool>("transpeek_rsvpAutoPlay", default: true)
+
+    // Focus timer + rest eyes (Manh 2026-11-20, focus timer + panel
+    // decor — the Focus & Rest card in panel left). Pomodoro STANDARD
+    // logic: Work 25 / Rest 5 by default, long break 15 after 4 focus
+    // cycles. Rest eyes is the 20-20-20 rule: every 20 min, rest the
+    // eyes for 20 s (fixed — no picker, the rule is the point).
+    static let focusWorkMinutes = Key<Int>("transpeek_focusWorkMinutes", default: 25)
+    static let focusRestMinutes = Key<Int>("transpeek_focusRestMinutes", default: 5)
+    static let focusLongBreakMinutes = Key<Int>("transpeek_focusLongBreakMinutes", default: 15)
+    static let focusReminderDestination = Key<FocusReminderDestination>("transpeek_focusReminderDestination", default: .newWindow)
+    /// Whether the Focus & Rest card in panel left is collapsed
+    /// (Manh 2026-11-20). Same pattern as `flowIntroCollapsed` /
+    /// `shortcutsCollapsed`: remembered, so the card can stay collapsed
+    /// and leave room for the shortcuts table.
+    static let focusTimerCollapsed = Key<Bool>("transpeek_focusTimerCollapsed", default: false)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")
