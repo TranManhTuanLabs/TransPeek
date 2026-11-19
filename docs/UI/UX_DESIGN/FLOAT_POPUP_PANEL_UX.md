@@ -1,6 +1,6 @@
 # Float / Popup Panel — UX Spec (CHỐT)
 
-> **Trạng thái: CHỐT — 17/11/2026, theo build #200 (commit `3bad511`) + các đổi mới sau đó trên main (slogan 16, loa/Copy cố định từng card, bỏ Remember Last Popup Position).**
+> **Trạng thái: CHỐT — 17/11/2026, theo build #200 (commit `3bad511`) + các đổi mới sau đó trên main (slogan 16, loa/Copy cố định từng card, bỏ Remember Last Popup Position). Panel center + Panel left CHỐT thêm 19/11/2026, theo v0.1.4 (build 248) — xem §10.**
 >
 > Các con số trong doc này là **spec**. Đổi bất kỳ số đã chốt nào cũng cần Manh duyệt trước.
 >
@@ -327,6 +327,105 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   bảng nhúng); sau này panel ở trái thành timer thì nhảy tới đó để xem
   shortcut càng sai chỗ. Khi panel ở trái đổi thành timer, shortcut vẫn ở
   lại với nút "?" (nhúng trong ô output).
+
+## 10. Panel center + Panel left — thiết kế CHỐT (19/11/2026, v0.1.4 / build 248)
+
+> Mục này chốt thiết kế HIỆN TẠI của panel center (dịch) và panel left
+> (shortcut) như đã ship trong v0.1.4. Nó bổ sung / thay thế §9 ở những
+> chỗ khác nhau (vị trí hàng chấm, nội dung panel left). Các số nền tảng
+> ở §1–§8 không đổi (420×450 / min 400×450 / max 600×800 / cap output
+> 260 / snap-back +8).
+
+### 10.1 Khung 3 tab (hub) — thứ tự và hàng chấm
+
+- Thứ tự: **shortcut (trái, 1) / translate (giữa, 2, mặc định) / Fast
+  Read (phải, 3)**. Panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần.
+- Top bar + bottom bar giống nhau trên mọi tab; chỉ nội dung giữa đổi
+  theo tab. Đổi tab có animation fade 0.15s ease-out.
+- **Hàng chấm nằm ngay dưới top bar (TẠM THỜI, Manh 2026-11-18, vòng
+  5):** dời lên từ dưới nội dung tab để Manh thử — vị trí cuối cùng vẫn
+  chờ Manh quyết. (Mục §9 ghi hàng chấm dưới nội dung tab là vị trí cũ
+  17/11, đã lỗi thời.)
+- Hàng chấm gồm: nút `chevron.left` + 3 chấm tròn 8pt (cách nhau 8pt,
+  căn giữa) + nút `chevron.right`. Chấm đang chọn màu accent, còn lại
+  mờ. Chevron bị mờ + không bấm được ở 2 đầu. Bấm chấm / chevron để đổi
+  tab; vuốt ngang trên hàng chấm cũng đổi tab (vuốt rõ ràng >50pt, ngang
+  hơn dọc); vuốt 2 ngón trackpad cũng đổi tab (50pt = 1 tab, bỏ momentum).
+  Gesture vuốt đặt trên hàng chấm, KHÔNG đặt trên nội dung tab — vì kéo
+  chuột trên kết quả/input là bôi chọn text.
+- Panel phải là placeholder ("Fast Read — coming soon") cho tới khi
+  Fast Read window ship.
+
+### 10.2 Panel center (dịch, tab mặc định)
+
+- **Top bar:** tên app "TransPeek" (Bold, màu accent / xanh biển, cỡ N)
+  + slogan "Translate anywhere, Peek instantly!" (N−1, nghiêng, màu
+  secondary) + hint "Hover icon to translate, Click to listen" (N−4,
+  màu tertiary), căn giữa. Cả hàng là vùng kéo di chuyển
+  (`TopBarDragMarker`). N = `popupTopBarFontSize`, mặc định 17
+  (17 / 16 / 13, khớp Windows). Tên app màu accent từ vòng 9 (trước đó
+  màu mặc định).
+- **Nội dung dịch (VStack):** ô nhập (cao mặc định 48, tự cao tối đa 6
+  dòng) + hàng ngôn ngữ (Source ⇄ Target + Capture OCR) + các card kết
+  quả provider trong ScrollView (text cap 260, loa/Copy cố định ở đáy
+  card) + bảng shortcut của nút "?" nhúng ở ĐẦU ô output khi bấm + hàng
+  Actions + DictionaryBar.
+- **Hàng Actions:** nút "Fast Read" ở đầu trái (`book.pages` + chữ
+  "Fast Read", HStack spacing 0 — icon và chữ dính sát nhau; thêm chút
+  padding là việc hoãn lại 0.1.5) + Spacer + nút "?" + Pin + Settings ở
+  đầu phải.
+- **Bảng "?" :** nhúng ở đầu ô output (trong ScrollView kết quả, ngay
+  trên các card provider), tiêu đề "Keyboard Shortcuts" + nút đóng [×].
+  Liệt kê 10 shortcut + nút Run (bấm Run thì chạy đúng code path phím
+  tắt rồi về lại panel dịch; hành động chụp thì ẩn panel trước khi chụp).
+  Bảng này KHÔNG nhảy sang panel left. Mọi nút trong panel đều phải có
+  `InteractiveMarker`, không thì bấm không ăn (bài học #207).
+- **Bottom bar (giống nhau mọi tab):** icon mèo GitHub 16pt + link
+  "GitHub" căn giữa, text version ("Version X (Build CI #N)", ẩn số
+  build khi = 1) mờ ở bên phải. Khoảng trên/dưới đều 12pt.
+
+### 10.3 Panel left (shortcut, tab tạm thời)
+
+- Tab này là **TẠM THỜI** — sau này dành cho timer focus / tomato /
+  rest-eyes. Hiện tại nó chứa bảng shortcut.
+- Nội dung nằm trong ScrollView (để auto-fit vẫn tính đúng chiều cao),
+  theo thứ tự từ trên xuống:
+  1. **Thẻ "How the icon works" (`FlowIntroCard`)** — ĐỘNG: các dòng
+     theo đúng setting Click (Hover → dịch; Click → Fast Read / Nghe /
+     Dịch; Option+Click → hành động còn lại). Thu gọn được (bấm header),
+     trạng thái lưu trong `flowIntroCollapsed`. Header thẻ bấm được toàn
+     bộ (có `InteractiveMarker`, không thì click bị coi là kéo cửa sổ).
+  2. **Bảng "Keyboard Shortcuts" (`ShortcutsTableView`)** — cùng bảng
+     với nút "?" ở panel center. Thu gọn được (vòng 9), trạng thái lưu
+     trong `shortcutsCollapsed`. Bấm Run thì chạy shortcut rồi về lại
+     panel dịch. (Bảng "?" ở panel center KHÔNG dùng chế độ thu gọn —
+     header của nó vẫn là ẩn bảng như trước.)
+  3. **Dãy share** — ở cuối nội dung cuộn: nhãn "Share TransPeek"
+     (caption, màu secondary, căn giữa) + `ShareRowView` (6 icon, căn
+     giữa). KHÔNG tạo card mới, KHÔNG dùng Spacer đẩy xuống đáy — khi 2
+     thẻ trên thu gọn thì khoảng trống còn lại đến đáy để sau này thêm
+     timer focus, share chỉ chảy tự nhiên sau bảng shortcut.
+- Panel left KHÔNG ẩn bottom bar (icon mèo + version vẫn hiện).
+
+### 10.4 Hàng chấm — mac vs Windows
+
+| Hạng mục | mac | Windows |
+|---|---|---|
+| Vị trí hàng chấm | Ngay dưới top bar (tạm thời, vòng 5) + nút chevron 2 bên | Ở bottom bar, dưới icon GitHub (tạm thời) |
+| Sau này | Chờ Manh quyết vị trí cuối | Có thể dời lên top bar như mac (Manh 19/11) — hiện tại để tạm |
+
+- Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
+  vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
+  placeholder như mac.
+
+### 10.5 Chưa chốt trong mục này (hoãn sang 0.1.5)
+
+- Nút Fast Read ở panel center: thêm chút padding giữa icon và chữ
+  (HStack spacing 0 hiện quá dính).
+- Vị trí cuối cùng của hàng chấm (mac) — vẫn chờ Manh quyết.
+- Đổi tên Window Read (text giữa top bar, tiêu đề cửa sổ), tăng bước
+  đổi cỡ chữ khi vuốt trackpad dọc, mở rộng ngôn ngữ 20 → 249 + dropdown
+  tìm kiếm (kèm sửa dismiss monitor cho popover).
 
 ## Liên kết
 
