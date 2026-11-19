@@ -7,18 +7,32 @@ struct DetectionResult: Sendable {
 }
 
 enum LanguageDetector {
-    // Detection always uses the complete catalog, independently of target favorites.
-    private static let supportedNLLanguages = SupportedLanguages.codes.compactMap(bcp47ToNLLanguage)
+    // Detection uses the catalog, but only the languages the Natural
+    // Language framework can actually identify. The full 250-language
+    // catalog (0.1.5) broke Polish detection (CI #249, #250):
+    // variant codes like "pt-PT" / "crh-Latn" / "fa-AF" became
+    // NLLanguage values the framework doesn't recognize, and stuffing
+    // 250 constraints (many unsupported) into the recognizer made it
+    // fall back to English for clearly Polish text. Lowering the
+    // English hint 2.0 -> 1.0 was tried (dc700fb) and did NOT fix it,
+    // so the hint stays at 2.0 and the fix is here: map every code to
+    // its base language, and keep only 2-letter ISO codes (the major
+    // languages the framework supports) plus the two Chinese variants.
+    // Duplicates (e.g. "pt" and "pt-BR" both -> Portuguese) are removed.
+    private static let supportedNLLanguages: [NLLanguage] = {
+        let mapped = SupportedLanguages.codes.compactMap(bcp47ToNLLanguage)
+        var seen = Set<NLLanguage>()
+        return mapped.filter { lang in
+            guard seen.insert(lang).inserted else { return false }
+            return lang == .simplifiedChinese
+                || lang == .traditionalChinese
+                || lang.rawValue.count == 2
+        }
+    }()
 
-    // Base language weight hints (inspired by Easydict, simplified).
-    // English was 2.0, but that strong a prior overwhelms the text
-    // features once the candidate set grows: with the full 250-language
-    // catalog (Manh 2026-11-19, 0.1.5) the recognizer returned English
-    // for clearly Polish text (CI #249: detectsPolishFromTheFullCatalog
-    // got "en" instead of "pl"). 1.0 keeps English as a likely source
-    // without letting the prior beat distinctive diacritics.
+    // Base language weight hints (inspired by Easydict, simplified)
     private static let baseHints: [NLLanguage: Double] = [
-        .english: 1.0,
+        .english: 2.0,
         .simplifiedChinese: 1.5,
         .traditionalChinese: 0.8,
         .japanese: 0.6,
@@ -89,8 +103,14 @@ enum LanguageDetector {
         switch code {
         case "zh-Hans": return .simplifiedChinese
         case "zh-Hant": return .traditionalChinese
-        case "pt-BR": return .portuguese
-        default: return NLLanguage(rawValue: code)
+        case "pt", "pt-BR", "pt-PT": return .portuguese
+        default:
+            // Strip script/region subtags ("fa-AF" -> "fa",
+            // "crh-Latn" -> "crh", "ms-Arab" -> "ms"): the framework
+            // only knows base languages, and a subtagged value isn't a
+            // real NLLanguage the recognizer can use.
+            let base = code.split(separator: "-", maxSplits: 1).first.map(String.init) ?? code
+            return NLLanguage(rawValue: base)
         }
     }
 
