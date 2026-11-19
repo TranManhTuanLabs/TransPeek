@@ -597,13 +597,35 @@ enum SwapLanguagesShortcut {
 
 /// Where a focus / rest-eyes reminder shows (Manh 2026-11-20, focus
 /// timer + panel decor — the "Run reminder in:" picker in the panel-left
-/// Focus & Rest card). This applies ONLY to the reminder — there is no
-/// global "Run FastRead in" setting (Manh 2026-11-20, 04:44: the safe
-/// option is reminder-only).
+/// Focus & Rest card). This applies ONLY to the reminder — Fast Read
+/// has its OWN separate setting (`FastReadRunLocation`, the "Run
+/// FastRead in:" picker in panel right, Manh 2026-11-20, 05:27: the
+/// two features must not share one setting).
 enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
     /// The reminder opens a separate Rest window (the original design).
     case newWindow
     /// The reminder shows inside panel right, no separate window.
+    case rightPanel
+
+    var displayName: String {
+        switch self {
+        case .newWindow: return "New Fast Read Window"
+        case .rightPanel: return "Right Panel"
+        }
+    }
+}
+
+/// Where Fast Read (RSVP) runs (Manh 2026-11-20, 05:27 — the "Run
+/// FastRead in:" picker in panel right). Separate from the reminder
+/// destination: Reminder and Fast Read are two different features and
+/// must not share one setting. Applies GLOBALLY to every Fast Read
+/// launch (panel button, float icon, menubar, shortcut): the chosen
+/// location is the only place RSVP shows.
+enum FastReadRunLocation: String, CaseIterable, Defaults.Serializable {
+    /// Fast Read opens the separate Window Read (default — the current
+    /// behavior, so nothing changes until the user picks otherwise).
+    case newWindow
+    /// Fast Read runs inside panel right, no separate window.
     case rightPanel
 
     var displayName: String {
@@ -779,6 +801,10 @@ extension Defaults.Keys {
     static let focusRestMinutes = Key<Int>("transpeek_focusRestMinutes", default: 5)
     static let focusLongBreakMinutes = Key<Int>("transpeek_focusLongBreakMinutes", default: 15)
     static let focusReminderDestination = Key<FocusReminderDestination>("transpeek_focusReminderDestination", default: .newWindow)
+    /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
+    /// FastRead in:" picker in panel right. Default is the window, so
+    /// current behavior is preserved until the user picks otherwise.
+    static let fastReadRunLocation = Key<FastReadRunLocation>("transpeek_fastReadRunLocation", default: .newWindow)
     /// Whether the Focus & Rest card in panel left is collapsed
     /// (Manh 2026-11-20). Same pattern as `flowIntroCollapsed` /
     /// `shortcutsCollapsed`: remembered, so the card can stay collapsed

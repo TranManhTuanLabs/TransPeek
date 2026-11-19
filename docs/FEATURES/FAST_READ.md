@@ -197,7 +197,10 @@ Rest window. No second reading implementation.
   Pomodoro standard (Work 25 / Rest 5, long break 15 after 4 cycles)
   + rest eyes 20-20-20 (fixed), each with its own Start / Stop.
   "Run reminder in:" ("New Fast Read Window" / "Right Panel") applies
-  ONLY to the reminder — there is no global "Run FastRead in" setting.
+  ONLY to the reminder — Fast Read has its OWN separate setting, "Run
+  FastRead in:" in panel right (Manh 2026-11-20, 05:27): "New Fast
+  Read Window" (default) / "Right Panel", applying globally to every
+  Fast Read launch (panel button, float icon, menubar, shortcut).
   A reminder to panel right opens the panel on the Fast Read tab and
   starts reading; after the read, the panel shows the rest countdown
   and returns to the demo.

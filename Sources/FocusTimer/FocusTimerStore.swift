@@ -225,7 +225,8 @@ final class FocusTimerStore: ObservableObject {
 
     /// Route a reminder to its destination (Manh 2026-11-20, 04:44):
     /// the "Run reminder in:" setting applies ONLY to the reminder —
-    /// there is no global "Run FastRead in" setting.
+    /// Fast Read has its OWN separate setting ("Run FastRead in:",
+    /// Manh 2026-11-20, 05:27), so this never touches Fast Read.
     private func fireReminder(_ kind: FocusReminderKind, countdownSeconds: Int) {
         switch Defaults[.focusReminderDestination] {
         case .newWindow:

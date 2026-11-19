@@ -26,8 +26,9 @@ struct FocusTimerCard: View {
     @Default(.focusWorkMinutes) private var workMinutes
     @Default(.focusRestMinutes) private var restMinutes
     /// Where a reminder shows (Manh 2026-11-20, 04:44): the "Run
-    /// reminder in:" picker. Applies ONLY to the reminder — there is
-    /// no global "Run FastRead in" setting.
+    /// reminder in:" picker. Applies ONLY to the reminder — Fast Read
+    /// has its OWN separate setting ("Run FastRead in:", panel right,
+    /// Manh 2026-11-20, 05:27).
     @Default(.focusReminderDestination) private var reminderDestination
 
     /// Work-minute picker options (Manh 2026-11-20): the standard

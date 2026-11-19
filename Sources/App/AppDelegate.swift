@@ -57,18 +57,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController.onRunShortcut = { [weak self] name in
             self?.performShortcut(name)
         }
-        // The panel's "Fast Read" button opens the RSVP reading window
-        // with the text being translated (Manh 2026-11-17). The reading
-        // window is separate, so hide the translate panel first
-        // (Manh 2026-11-17, spec §14.8) — otherwise the panel would
-        // cover the screen while reading. (Reading inside panel 3,
-        // when it ships, does NOT hide the panel.)
+        // The panel's "Fast Read" button opens Fast Read with the text
+        // being translated (Manh 2026-11-17) — at the location the user
+        // picked in "Run FastRead in:" (panel right, Manh 2026-11-20,
+        // 05:27). Only the window destination hides the translate panel
+        // first (Manh 2026-11-17, spec §14.8) — otherwise the panel
+        // would cover the screen while reading. (Reading inside panel
+        // 3 does NOT hide the panel.)
         panelController.onFastRead = { [weak self] text in
-            self?.panelController.hidePanelTemporarily()
-            // A panel read and a window read are the same text read two
-            // ways — the window replaces the panel one (Manh 2026-11-20).
-            self?.focusTimerStore.stopPanelReading()
-            self?.performFastRead(text: text)
+            guard let self else { return }
+            if Defaults[.fastReadRunLocation] == .newWindow {
+                self.panelController.hidePanelTemporarily()
+                // A panel read and a window read are the same text read
+                // two ways — the window replaces the panel one (Manh
+                // 2026-11-20).
+                self.focusTimerStore.stopPanelReading()
+            }
+            self.performFastRead(text: text)
         }
         // A focus / rest-eyes reminder with destination Right Panel
         // (Manh 2026-11-20): the store holds the request; bring the
@@ -399,8 +404,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return String(payload.prefix(maxLength)) + "…"
     }
 
-    /// Fast Read (RSVP, Manh 2026-11-17): open the reading window with the
-    /// selected text, falling back to the clipboard. When `text` is given
+    /// Show Fast Read at the user's chosen location (Manh 2026-11-20,
+    /// 05:27 — the "Run FastRead in:" picker in panel right). "New Fast
+    /// Read Window" opens the separate Window Read (default, the current
+    /// behavior); "Right Panel" reads inside panel right — the store
+    /// holds the request and the panel switches to the Fast Read tab,
+    /// exactly like a reminder with destination Right Panel (PopupView
+    /// consumes the request on appear if the panel was hidden, or on
+    /// change if it was already visible). This is the single funnel:
+    /// every Fast Read launch (panel button, float icon, menubar,
+    /// shortcut) goes through here, so the setting is checked in
+    /// exactly one place.
+    private func showFastRead(text: String) {
+        switch Defaults[.fastReadRunLocation] {
+        case .newWindow:
+            rsvpWindowController.show(text: text)
+        case .rightPanel:
+            focusTimerStore.panelRightRequest = PanelRightRequest(
+                text: text,
+                countdownSeconds: nil
+            )
+            panelController.showAtCursor()
+        }
+    }
+
+    /// Fast Read (RSVP, Manh 2026-11-17): open Fast Read with the
+    /// selected text, falling back to the clipboard — at the location
+    /// the user picked in "Run FastRead in:" (via showFastRead).
+    /// When `text` is given
     /// (the panel's "Fast Read" button passes the text being translated)
     /// it is used directly, without re-grabbing the selection. Used by the
     /// global shortcut, the menubar item, and the panel button.
@@ -419,7 +450,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             guard let sourceText,
                   !sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            self.rsvpWindowController.show(text: sourceText)
+            self.showFastRead(text: sourceText)
         }
     }
 
@@ -597,11 +628,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.triggerIconController.setSpeaking(false)
         }
 
-        // Fast Read (RSVP, Manh 2026-11-17): open the reading window with
-        // the selected text; no panel, no translation.
+        // Fast Read (RSVP, Manh 2026-11-17): open Fast Read with the
+        // selected text; no panel, no translation. Goes through
+        // showFastRead, so the "Run FastRead in:" setting applies here
+        // too (Manh 2026-11-20, 05:27).
         triggerIconController.onReadRequested = { [weak self] text in
             guard let self else { return }
-            self.rsvpWindowController.show(text: text)
+            self.showFastRead(text: text)
         }
 
         triggerIconController.onOpenSettingsRequested = { [weak self] in

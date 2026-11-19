@@ -486,8 +486,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **"Run reminder in:"** — 2 lựa chọn: **"New Fast Read Window"**
   (nhắc nghỉ mở cửa sổ Rest riêng) và **"Right Panel"** (nhắc nghỉ
   hiện ngay trong panel phải, không mở cửa sổ riêng). Setting này
-  **CHỈ áp cho reminder** — KHÔNG có setting toàn cục "Run FastRead
-  in" (Manh 2026-11-20, 04:44: lựa chọn an toàn là reminder-only).
+  **CHỈ áp cho reminder** — Fast Read có nút chọn RIÊNG ("Run
+  FastRead in:" ở panel phải, §10.7); 2 tính năng không dùng chung
+  1 setting (Manh 2026-11-20, 05:27).
 - **Cửa sổ Rest** (`Sources/FocusTimer/RestWindowController.swift`,
   tiêu đề "TransPeek — Rest", 560×400, min 480×320): RSVP-đọc câu
   nhắc ("You have read, worked, and sat for X minutes continuously.
@@ -505,8 +506,16 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   chỉ vào giữa chữ "a" (như Windows) — dùng chung `ORPLineView` với
   Window Read nên demo không bao giờ lệch với chữ đọc thật. Dưới
   demo là nút **"Read in panel"** (đọc text đang có ở tab dịch, ngay
-  trong panel; cửa sổ Fast Read đầy đủ vẫn mở từ nút Fast Read ở tab
-  dịch).
+  trong panel — luôn đọc trong panel, không theo setting dưới) và
+  nút chọn **"Run FastRead in:"**.
+- **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn:
+  **"New Fast Read Window"** (mặc định — giữ hành vi hiện tại) và
+  **"Right Panel"**. Áp TOÀN CỤC cho mọi lần mở Fast Read (nút Fast
+  Read ở tab dịch, click icon, menubar, phím tắt): chọn 1 trong 2 thì
+  RSVP chỉ hiển thị theo lựa chọn đó. Một điểm vào duy nhất ở
+  `AppDelegate.showFastRead(text:)` — mọi đường mở đều qua đó nên
+  setting chỉ kiểm tra ở 1 chỗ. Riêng với "Run reminder in:" ở panel
+  trái (§10.6): 2 setting độc lập, không ảnh hưởng nhau.
 - Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
   đọc (cùng `RSVPView`, `.panel` presentation — engine + view model +
   view dùng chung với Window Read, KHÔNG copy 2 bộ). Cỡ chữ focus bị

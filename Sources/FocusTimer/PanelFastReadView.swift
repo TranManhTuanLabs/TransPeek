@@ -1,5 +1,6 @@
 import AppKit
 import Combine
+import Defaults
 import SwiftUI
 
 /// Panel right (Fast Read tab) — in-panel reading + focus demo (Manh
@@ -8,8 +9,9 @@ import SwiftUI
 /// Two states, both reusing the Fast Read window's code (no second
 /// reading implementation):
 /// - Idle: the "Fast Read — coming soon" placeholder, the focus demo
-///   ("reading" — the "a" in yellow, half-bars above and below), and a
-///   "Read in panel" button for the text in the translate tab.
+///   ("reading" — the "a" in yellow, half-bars above and below), a
+///   "Read in panel" button for the text in the translate tab, and the
+///   "Run FastRead in:" picker (Manh 2026-11-20, 05:27).
 /// - Reading: the same `RSVPView` as the Fast Read window, in `.panel`
 ///   presentation (adaptive chrome by panel size). The pin button sits
 ///   in the header row — the panel auto-pins when a read starts in it,
@@ -35,6 +37,10 @@ struct PanelFastReadView: View {
     /// Vertical only: a horizontal swipe still switches panels (the
     /// panel's own swipe monitor owns it).
     @StateObject private var swipeMonitor = PanelReadTrackpadMonitor()
+    /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
+    /// FastRead in:" picker in the demo below. `@Default` re-renders
+    /// the view when it changes.
+    @Default(.fastReadRunLocation) private var runLocation
 
     var body: some View {
         Group {
@@ -136,11 +142,11 @@ struct PanelFastReadView: View {
 
     // MARK: - Demo (idle)
 
-    /// Placeholder + focus demo + "Read in panel" (Manh 2026-11-20).
-    /// The "coming soon" header stays — the full in-panel experience
-    /// is still settling — but the subtitle no longer claims the
-    /// window is unshipped (it shipped in 0.1.4): it points at the
-    /// demo and the button below.
+    /// Placeholder + focus demo + "Read in panel" + "Run FastRead in:"
+    /// picker (Manh 2026-11-20). The "coming soon" header stays — the
+    /// full in-panel experience is still settling — but the subtitle no
+    /// longer claims the window is unshipped (it shipped in 0.1.4): it
+    /// points at the demo and the button below.
     private var demoState: some View {
         ScrollView {
             VStack(spacing: 8) {
@@ -168,10 +174,7 @@ struct PanelFastReadView: View {
                 .help("Read the text in the translate tab, right here in the panel")
                 .background { InteractiveMarker() }
 
-                Text("The full Fast Read window stays available from the Fast Read button in the translate tab.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                runLocationSection
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 14)
@@ -194,6 +197,37 @@ struct PanelFastReadView: View {
                         value: PopupResultLayout(viewportHeight: geometry.size.height)
                     )
             }
+        }
+    }
+
+    // MARK: - Run location
+
+    /// "Run FastRead in:" (Manh 2026-11-20, 05:27) — where Fast Read
+    /// runs, for EVERY launch (panel button, float icon, menubar,
+    /// shortcut). "New Fast Read Window" opens the separate Window Read
+    /// (default, the current behavior); "Right Panel" reads here, in
+    /// panel right, no separate window. Separate from the reminder's
+    /// "Run reminder in:" — the two features must not share a setting.
+    /// The "Read in panel" button above always reads here, whatever
+    /// this says — it is the explicit panel action, not a launch.
+    private var runLocationSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("Run FastRead in:")
+                    .font(.callout)
+                    .bold()
+                Picker("", selection: $runLocation) {
+                    ForEach(FastReadRunLocation.allCases, id: \.self) { location in
+                        Text(location.displayName).tag(location)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+                .background { InteractiveMarker() }
+            }
+            Text("Applies to the Fast Read button, the float icon, and the keyboard shortcut.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
