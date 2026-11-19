@@ -425,8 +425,19 @@ struct PopupView: View {
                         }
                         .font(.system(size: CGFloat(fontSize - 2)))
                         .foregroundStyle(.secondary)
+                        // Blue outline only (Manh 2026-11-19): a thin
+                        // border lining around the button, no fill, no
+                        // text/icon color change. The small padding is
+                        // just so the border doesn't touch the text.
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                     }
                     .buttonStyle(.plain)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.blue, lineWidth: 1)
+                            .allowsHitTesting(false)
+                    )
                     .help("OCR Screen Translate")
                     .background { InteractiveMarker() }
                 }
@@ -589,8 +600,21 @@ struct PopupView: View {
                         }
                         .font(.system(size: CGFloat(fontSize - 2)))
                         .foregroundStyle(.secondary)
+                        // Turmeric outline only (Manh 2026-11-19): a thin
+                        // border lining around the button, no fill, no
+                        // text/icon color change. Same turmeric as the
+                        // Fast Read "A+" icon (0.78 / 0.50 / 0.05). The
+                        // small padding is just so the border doesn't
+                        // touch the text.
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                     }
                     .buttonStyle(.plain)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color(red: 0.78, green: 0.50, blue: 0.05), lineWidth: 1)
+                            .allowsHitTesting(false)
+                    )
                     .help("Fast Read (RSVP)")
                     .background { InteractiveMarker() }
 
