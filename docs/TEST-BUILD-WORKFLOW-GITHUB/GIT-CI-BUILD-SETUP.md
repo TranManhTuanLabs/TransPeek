@@ -341,6 +341,19 @@ Related docs:
   §4. For a real release, push the tag first so the tag exists; a
   dispatch-only draft gets filed under an auto-generated
   `untagged-...` tag.
+- **Release naming + Download note (2026-11-19, commits `4beb9a1`,
+  `32ee9c5`).** The release title is now automatic: `TransPeek macOS
+  Release v<version> — Build CI #<Tests run number>` (matches the
+  pre-release title `TransPeek macOS preview — Build CI #<n>`), and the
+  release body always starts with a `## Download` section (DMG for first
+  install — drag into Applications; the ZIP is for Sparkle updates, and
+  running the app from Downloads breaks updates). The ZIP must never be
+  renamed or removed: the Sparkle appcast enclosure URL points at the
+  exact ZIP filename. **YAML trap:** a `#` preceded by a space starts a
+  YAML comment, so an unquoted `name: ... Build CI #${{...}}` is parsed
+  as ending at "Build CI" (the run number is silently dropped) — the
+  `name` value must be wrapped in double quotes for the `#` to survive
+  (found by parsing the file + `repr()` check, 2026-11-19).
 
 ## 4. Intervention log (what was changed, when, why)
 
