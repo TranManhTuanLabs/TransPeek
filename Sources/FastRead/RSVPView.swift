@@ -488,7 +488,7 @@ struct RSVPView: View {
         // still work — just without the ring.
         .focusEffectDisabled()
         .onAppear { isFocused = true }
-        .onKeyPress(perform: handleKeyPress)
+        .onKeyPress(action: handleKeyPress)
     }
 
     /// The compact in-panel / Rest-window body (Manh 2026-11-20, focus
@@ -554,7 +554,7 @@ struct RSVPView: View {
             .onChange(of: geo.size.width) { _, newWidth in
                 panelWidth = newWidth
             }
-            .onKeyPress(perform: handleKeyPress)
+            .onKeyPress(action: handleKeyPress)
         }
     }
 

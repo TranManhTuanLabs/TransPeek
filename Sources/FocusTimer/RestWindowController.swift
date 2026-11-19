@@ -161,7 +161,7 @@ private struct RestWindowView: View {
         // The panel presentation ignores Esc (so it never swallows the
         // popup panel's dismiss key); this window has no panel, so Esc
         // closes it — the ignored key press propagates up here.
-        .onKeyPress(.escape) { _ in
+        .onKeyPress(.escape) {
             onClose?()
             return .handled
         }
