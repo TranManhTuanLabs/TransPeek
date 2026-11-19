@@ -213,8 +213,8 @@ final class PopupPanelController {
             }
             let contentView = PopupView(
                 coordinator: coordinator,
-                focusTimerStore: focusTimerStore,
                 languagePopoverTracker: languagePopoverTracker,
+                focusTimerStore: focusTimerStore,
                 onDismiss: { [weak self] in
                     self?.dismiss()
                 },

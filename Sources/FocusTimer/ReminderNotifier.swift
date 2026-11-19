@@ -10,8 +10,16 @@ import UserNotifications
 /// keeps its delegate weak). The store never touches UserNotifications
 /// directly: it calls `onNotifyReminder`, and AppDelegate forwards to
 /// `notify(kind:)`.
-@MainActor
-final class ReminderNotifier: NSObject, UNUserNotificationCenterDelegate {
+///
+/// NOT `@MainActor`: `UNUserNotificationCenterDelegate` is a non-Sendable
+/// protocol, and a MainActor-isolated type conforming to it is an error
+/// in the Swift 6 language mode. This class is `@unchecked Sendable`
+/// instead — the only mutable state is `onTakeBreakNow` / `onSnooze`
+/// (set once by AppDelegate at launch, before any notification can
+/// fire) and `categoriesRegistered` (touched only from `notify`, which
+/// the store always calls on the MainActor). The delegate methods hop
+/// to the MainActor before touching the store.
+final class ReminderNotifier: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     /// Notification category for the reminder (its two actions).
     static let categoryID = "transpeek.focusReminder"
     /// "Take a break" — show the pending reminder now.
@@ -107,13 +115,19 @@ final class ReminderNotifier: NSObject, UNUserNotificationCenterDelegate {
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
-        switch response.actionIdentifier {
-        case Self.takeBreakActionID:
-            onTakeBreakNow?()
-        case Self.snoozeActionID:
-            onSnooze?()
-        default:
-            break
+        // The system may call this on any thread; the store lives on
+        // the MainActor, so hop there before touching it.
+        let action = response.actionIdentifier
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            switch action {
+            case Self.takeBreakActionID:
+                self.onTakeBreakNow?()
+            case Self.snoozeActionID:
+                self.onSnooze?()
+            default:
+                break
+            }
         }
         completionHandler()
     }
