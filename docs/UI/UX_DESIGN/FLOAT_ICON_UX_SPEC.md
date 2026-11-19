@@ -40,12 +40,18 @@ The icon has exactly three glyphs, one per action:
 - **A+** (bold "A" + small bold "+", turmeric) = **Fast Read**.
 - **Speaker** (`speaker.wave.2.fill`) = **TTS / Speak**.
 
-The chat / speech-bubble icon (`character.bubble`) is **NOT** the translate
-icon and must never replace the plain A. It is kept only as a backup style
-(in code and in docs) in case it is ever needed. Windows changed the plain
-A to the chat icon by mistake 1–2 builds ago; Manh caught it testing build
-191 and had it reverted to the plain A (2026-11-19). This mapping is the
-same on Windows (Alt instead of Option).
+Two styles of the translate icon (Manh 2026-11-19):
+
+- **Style 1 — the standard / main template:** the plain A, regular weight
+  (**NOT bold**), blue highlight/border. This is the correct translate
+  icon.
+- **Style 2 — temporary stand-in:** the chat / speech-bubble icon
+  (`character.bubble`). It is **NOT** the translate icon; it is only
+  used temporarily in place of Style 1, and kept as a backup style (in
+  code and in docs) in case it is ever needed. Windows changed the plain
+  A to the chat icon by mistake 1–2 builds ago; Manh caught it testing
+  build 191 and had it reverted to the plain A (2026-11-19). This mapping
+  is the same on Windows (Alt instead of Option).
 
 The icon's glyph shows what the next click will do, not what the icon "is":
 
@@ -67,10 +73,11 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   before the speaking check; the user had no way to tell speech was
   playing.
 
-- **The plain A glyph** is the letter "A" drawn as text (like A+, not an
-  SF Symbol), regular weight — **NOT bold**. It is the main icon: the
-  icon's identity is "translate", and A+ / speaker are the same "A"
-  family showing the other two actions.
+- **The plain A glyph (Style 1)** is the letter "A" drawn as text (like
+  A+, not an SF Symbol), regular weight — **NOT bold** — with a blue
+  highlight/border. It is the main icon: the icon's identity is
+  "translate", and A+ / speaker are the same "A" family showing the
+  other two actions.
 - **The A+ glyph** is custom-drawn (not an SF Symbol): a bold "A" (15pt)
   with a small bold "+" (8pt) centered on the A's top-right corner, in
   turmeric — a deep golden amber (`NSColor` red 0.78, green 0.50, blue
@@ -79,10 +86,10 @@ The icon's glyph shows what the next click will do, not what the icon "is":
 
 > **Code gap (2026-11-19):** the Mac code (`TriggerTrackingView.draw()`
 > in `Sources/UI/TriggerIcon/TriggerIconController.swift`) still draws
-> `character.bubble` for the translate/speak preview — the settled mapping
-> above (plain A for translate, speaker for speak preview) is not in the
-> code yet. Changing it is a small fix (draw the plain A / speaker
-> instead of the bubble); do it only when Manh says so.
+> `character.bubble` (Style 2) for the translate/speak preview — the
+> settled mapping above (Style 1 plain A for translate, speaker for speak
+> preview) is not in the code yet. Changing it is a small fix (draw the
+> plain A / speaker instead of the bubble); do it only when Manh says so.
 - **The 2.5s A+ linger:** after any Fast Read click (plain click,
   Option+Click, or right-click menu), the icon shows A+ for 2.5 seconds
   while the Read window opens, then hides — a confirmation so the user
