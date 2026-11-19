@@ -280,7 +280,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          name: TransPeek macOS Release v${{ steps.version.outputs.version }} — Build CI #${{ steps.tested.outputs.run_number }}
+          name: "TransPeek macOS Release v${{ steps.version.outputs.version }} — Build CI #${{ steps.tested.outputs.run_number }}"
           draft: ${{ github.event_name == 'workflow_dispatch' }}
           body: |
             ## Download
