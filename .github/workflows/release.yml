@@ -22,8 +22,8 @@ name: Release
 # offer it as an update; the artifact already carries the Tests run number,
 # which always increases. (2) The shipped binary is now the exact binary
 # that was tested — the old flow archived a second, different binary.
-# The release therefore needs a green [build-app] Tests run for the tagged
-# commit; if there is none, it fails loudly instead of shipping an
+# The release therefore needs a green Tests run with the app artifact for
+# the commit; if there is none, it fails loudly instead of shipping an
 # untested build. Permissions include actions: read so the workflow can
 # list runs and download the artifact of test.yml.
 # Release naming (2026-11-19): title is "TransPeek macOS Release
@@ -33,9 +33,6 @@ name: Release
 # Sparkle updates) — action-gh-release pre-pends `body` to the
 # auto-generated notes.
 on:
-  push:
-    tags:
-      - "v*"
   workflow_dispatch:
     inputs:
       version:
@@ -125,9 +122,9 @@ jobs:
       # number>" (or the old plain "TransPeek-macOS" for runs before the
       # 2026-11-13 rename) — this step outputs the exact name it found, so
       # the Download step below uses the right one. For a tag run the
-      # artifact MUST be for this exact commit (the gate: bump version +
-      # [build-app] + tag); if there is no green Tests run for the commit,
-      # fail loudly instead of shipping an untested build. For a manual
+      # artifact MUST be for this exact commit; if there is no green Tests
+      # run for the commit, fail loudly instead of shipping an untested
+      # build. For a manual
       # dispatch (a pipeline test, not a real release) fall back to the
       # latest green Tests run on main, and say so in the log.
       - name: Find tested build
@@ -158,7 +155,7 @@ jobs:
               FOUND=$(find_run_with_artifact "branch=main" || true)
             fi
           fi
-          [ -n "$FOUND" ] || { echo "ERROR: no green Tests run with a TransPeek-macOS artifact found for this commit — run test.yml with [build-app] first, then tag."; exit 1; }
+          [ -n "$FOUND" ] || { echo "ERROR: no green Tests run with a TransPeek-macOS artifact found for this commit — push a code change so test.yml builds the app, then dispatch the release again."; exit 1; }
           RUN_ID="${FOUND%% *}"
           ARTIFACT_NAME="${FOUND#* }"
           RUN_NUMBER=$(gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID" --jq '.run_number')
