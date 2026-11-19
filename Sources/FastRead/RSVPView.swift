@@ -341,6 +341,20 @@ struct RSVPView: View {
         viewModel.colorScheme == .dark ? .black : .white
     }
 
+    /// App version + build, same source as the panel footer
+    /// (PopupView) and About: CFBundleShortVersionString +
+    /// CFBundleVersion (the CI run number). Shown in the top bar,
+    /// top-right, left of Settings (Manh 2026-11-19).
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+    private var versionText: String {
+        buildNumber == "1" ? "Version \(appVersion)" : "Version \(appVersion) (\(buildNumber))"
+    }
+
     /// Speed (WPM) picker options (Manh 2026-11-18, round 7: 50–2000
     /// in steps of 50 — was 17 uneven values [100, 150, 200, 250, 275,
     /// ...]). Uniform steps are easier to remember, and 50 covers the
@@ -574,6 +588,15 @@ struct RSVPView: View {
             Spacer()
 
             HStack(spacing: 8) {
+                // Version, top-right, left of Settings (Manh
+                // 2026-11-19): same "Version X (build)" text as the
+                // panel footer, so Manh can tell which build this
+                // window is from without opening About.
+                Text(versionText)
+                    .font(.caption)
+                    .foregroundStyle(readingSecondary)
+                    .lineLimit(1)
+
                 Button { showingSettings.toggle() } label: {
                     Image(systemName: "gearshape")
                 }
@@ -594,14 +617,14 @@ struct RSVPView: View {
             }
         }
         .overlay(alignment: .center) {
-            // Subtitle (Manh 2026-11-19, round 10 + 0.1.5): bigger for beauty —
+            // Subtitle (Manh 2026-11-19, round 10): bigger for beauty —
             // 15pt semibold instead of the 12pt caption, so it reads as
             // the window's title, not a footnote. Still fits at the 880pt
-            // minimum (the text is ~250pt wide, centered between the
-            // picker cluster and the right buttons). The "— RSVP" suffix
-            // was added in 0.1.5 so the subtitle names the method, not
-            // just the expansion.
-            Text("Rapid Serial Visual Presentation — RSVP")
+            // minimum (the text is ~200pt wide, centered between the
+            // picker cluster and the right buttons). No "— RSVP" suffix
+            // (Manh 2026-11-19): the suffix made it long and ugly; the
+            // window title already says "TransPeek — Fast Read RSVP".
+            Text("Rapid Serial Visual Presentation")
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(readingSecondary)
                 .lineLimit(1)
