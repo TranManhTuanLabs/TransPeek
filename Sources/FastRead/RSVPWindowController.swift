@@ -37,6 +37,12 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             trackpadMonitor?.start(window: window)
+            // Auto-play (Manh 2026-11-20): when the setting is on
+            // (default), text sent in starts reading at once — no
+            // Space press needed.
+            if viewModel.autoPlay {
+                viewModel.play()
+            }
             return
         }
 
@@ -47,7 +53,8 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             fontSize: Double(Defaults[.rsvpFontSize]),
             contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
-            contextDisplayStyle: Defaults[.rsvpContextDisplayStyle]
+            contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
+            autoPlay: Defaults[.rsvpAutoPlay]
         )
         self.viewModel = viewModel
 
@@ -76,7 +83,7 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Fast Read - RSVP"
+        window.title = "TransPeek — Fast Read RSVP"
         window.contentView = hostingView
         window.minSize = NSSize(width: 880, height: 550)
         window.setFrameAutosaveName("TransPeekRSVPWindow")
@@ -95,14 +102,21 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             switch action {
             case .stepForward: viewModel.stepForward()
             case .stepBack: viewModel.stepBack()
-            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 8)
-            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 8)
+            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
+            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
         }
         monitor.start(window: window)
 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Auto-play (Manh 2026-11-20): when the setting is on
+        // (default), text sent in starts reading at once — no Space
+        // press needed.
+        if viewModel.autoPlay {
+            viewModel.play()
+        }
     }
 
     /// Close the window (and stop playback).

@@ -8,7 +8,6 @@ import UniformTypeIdentifiers
 struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
     @Default(.textDetectionMode) private var textDetectionMode
-    @Default(.triggerActivationMode) private var triggerActivationMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
     @Default(.autoHideDelaySec) private var autoHideDelaySec
@@ -140,41 +139,46 @@ struct GeneralSettingsView: View {
                 Toggle("Show floating icon on text selection", isOn: $isAutoDetectEnabled)
 
                 if isAutoDetectEnabled {
-                    Picker("Floating Icon Activation:", selection: $triggerActivationMode) {
-                        Text("Hover").tag(TriggerActivationMode.hover)
-                        Text("Click").tag(TriggerActivationMode.click)
-                    }
-
-                    Picker("Click icon:", selection: $triggerClickAction) {
+                    // No "Floating Icon Activation" picker: the icon is
+                    // always hover (Manh 2026-11-20) — the old upstream
+                    // hover/click activation setting was removed.
+                    Picker("Click icon for:", selection: $triggerClickAction) {
                         Text("Speak").tag(TriggerClickAction.speak)
                         Text("Read (Fast Read)").tag(TriggerClickAction.read)
-                        Text("Translate (legacy)").tag(TriggerClickAction.translate)
                     }
                     Text("Option+click does the other one: when Click is Speak, Option+click opens Fast Read; when Click is Read, Option+click speaks.")
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
-                    LabeledContent("Hover delay: \(hoverDelayMs)ms (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms)") {
-                        Slider(
-                            value: Binding(
-                                get: { Double(hoverDelayMs) },
-                                set: { hoverDelayMs = Int($0) }
-                            ),
-                            in: 300...800,
-                            step: 100
-                        )
+                    // Picker, not Slider (Manh 2026-11-20): same style as
+                    // "Click icon for:" — a dropdown of preset values,
+                    // easier to read than a slider. The slider only ever
+                    // produced these values (300–800 ms, step 100), so no
+                    // saved value is lost. The default is in the label
+                    // itself (Manh 2026-11-20: a setting with a default
+                    // should show it in its name, so the user knows what
+                    // value to set it back to).
+                    Picker("Hover delay (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms):", selection: $hoverDelayMs) {
+                        ForEach([300, 400, 500, 600, 700, 800], id: \.self) { ms in
+                            Text("\(ms) ms").tag(ms)
+                        }
                     }
+                    Text("How long to wait before the panel opens when you hover the icon.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
 
-                    LabeledContent("Auto-hide icon: \(autoHideDelaySec)s (default: \(Defaults.Keys.autoHideDelaySec.defaultValue)s)") {
-                        Slider(
-                            value: Binding(
-                                get: { Double(autoHideDelaySec) },
-                                set: { autoHideDelaySec = Int($0) }
-                            ),
-                            in: 3...10,
-                            step: 1
-                        )
+                    // Picker, not Slider (Manh 2026-11-20): same style as
+                    // "Click icon for:". The slider only ever produced
+                    // whole seconds 3–10, so no saved value is lost.
+                    // Default in the label, same reason as above.
+                    Picker("Auto-hide icon (default: \(Defaults.Keys.autoHideDelaySec.defaultValue)s):", selection: $autoHideDelaySec) {
+                        ForEach([3, 4, 5, 6, 7, 8, 9, 10], id: \.self) { sec in
+                            Text("\(sec) s").tag(sec)
+                        }
                     }
+                    Text("How long the icon stays before it hides by itself.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
 
                     Picker("Text Detection Mode:", selection: $textDetectionMode) {
                         Text("Conservative").tag(TextDetectionMode.conservative)

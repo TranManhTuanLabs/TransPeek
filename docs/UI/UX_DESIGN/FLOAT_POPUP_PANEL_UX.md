@@ -369,11 +369,15 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   dòng) + hàng ngôn ngữ (Source ⇄ Target + Capture OCR) + các card kết
   quả provider trong ScrollView (text cap 260, loa/Copy cố định ở đáy
   card) + bảng shortcut của nút "?" nhúng ở ĐẦU ô output khi bấm + hàng
-  Actions + DictionaryBar.
+  Actions + DictionaryBar. Hàng ngôn ngữ: 2 ô chọn là dropdown tìm kiếm
+  (Manh 2026-11-19, 0.1.5) — bấm hiện popover với list tìm được (Popular
+  20 đầu, rồi toàn bộ 249 ngôn ngữ + alias `pt` xếp A–Z theo tên tiếng Anh);
+  bấm trong popover không ẩn panel (dismiss monitor coi popover là 1 phần
+  của panel).
 - **Hàng Actions:** nút "Fast Read" ở đầu trái (`book.pages` + chữ
-  "Fast Read", HStack spacing 0 — icon và chữ dính sát nhau; thêm chút
-  padding là việc hoãn lại 0.1.5) + Spacer + nút "?" + Pin + Settings ở
-  đầu phải.
+  "Fast Read", HStack spacing 4 — icon và chữ cách nhau 4pt, Manh
+  2026-11-19, 0.1.5: spacing 0 trước đó vẫn quá dính, gấp đôi lên) +
+  Spacer + nút "?" + Pin + Settings ở đầu phải.
 - **Bảng "?" :** nhúng ở đầu ô output (trong ScrollView kết quả, ngay
   trên các card provider), tiêu đề "Keyboard Shortcuts" + nút đóng [×].
   Liệt kê 10 shortcut + nút Run (bấm Run thì chạy đúng code path phím
@@ -411,21 +415,55 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 | Hạng mục | mac | Windows |
 |---|---|---|
-| Vị trí hàng chấm | Ngay dưới top bar (tạm thời, vòng 5) + nút chevron 2 bên | Ở bottom bar, dưới icon GitHub (tạm thời) |
-| Sau này | Chờ Manh quyết vị trí cuối | Có thể dời lên top bar như mac (Manh 19/11) — hiện tại để tạm |
+| Vị trí hàng chấm | Ngay dưới top bar (**CHỐT**, Manh 2026-11-19 19:36 — giữ như hiện tại) + nút chevron 2 bên | Ở bottom bar, dưới icon GitHub (tạm thời) |
+| Sau này | Đã chốt ở top bar, không dời nữa | Có thể dời lên top bar như mac (Manh 19/11) — hiện tại để tạm |
 
 - Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
   vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
   placeholder như mac.
 
-### 10.5 Chưa chốt trong mục này (hoãn sang 0.1.5)
+### 10.5 Đã làm trong 0.1.5 (19/11/2026, nhánh `feature/015-deferred-batch`)
 
-- Nút Fast Read ở panel center: thêm chút padding giữa icon và chữ
-  (HStack spacing 0 hiện quá dính).
-- Vị trí cuối cùng của hàng chấm (mac) — vẫn chờ Manh quyết.
-- Đổi tên Window Read (text giữa top bar, tiêu đề cửa sổ), tăng bước
-  đổi cỡ chữ khi vuốt trackpad dọc, mở rộng ngôn ngữ 20 → 249 + dropdown
-  tìm kiếm (kèm sửa dismiss monitor cho popover).
+- Nút Fast Read ở panel center: HStack spacing 0 → 4 (icon và chữ cách
+  nhau thêm, gấp đôi cảm giác dính trước đó).
+- Vị trí hàng chấm (mac): **CHỐT ở ngay dưới top bar** (Manh 2026-11-19
+  19:36) — không còn tạm thời, không chờ quyết nữa.
+- Window Read: text giữa top bar → "Rapid Serial Visual Presentation"
+  (KHÔNG thêm hậu tố "— RSVP" — Manh 2026-11-19 21:10, dài và xấu;
+  tiêu đề cửa sổ vẫn là "TransPeek — Fast Read RSVP"); version hiển thị
+  ở góc phải trên, bên trái nút Settings (cùng dạng "Version X (build)"
+  như footer panel).
+- Window Read: bước đổi cỡ chữ khi vuốt trackpad dọc 8pt → 16pt / 50pt
+  (trước đó phải vuốt 2–3 lần mới tới cỡ muốn).
+- Ngôn ngữ: mở rộng 20 → 249 + alias `pt` (Popular 20 đầu đúng thứ tự
+  Manh chốt, rồi toàn bộ A–Z); 2 ô chọn ngôn ngữ thành dropdown tìm kiếm
+  (Popover + List + `.searchable`, native — không NSComboBox, không tự
+  chế); List phải bọc trong `NavigationStack` thì ô tìm mới hiện ở đầu
+  list (Manh test CI258 thấy thiếu ô tìm, sửa 2026-11-20); map Google bỏ
+  `pt-BR → pt` (mã biến thể giữ nguyên, không cắt ở "-"); dismiss
+  monitor coi popover ngôn ngữ là 1 phần của panel.
+- Icon float (Manh 2026-11-20, duyệt 02:41): icon lúc thường LUÔN là A
+  thường xanh (Style 1) cho cả Click=Speak và Click=Read (translate-first;
+  bỏ Style B preview idle A+/loa cũ); giữ Option → A+ (Click=Speak) hoặc
+  loa (Click=Read); đang nói → loa; bấm Read → A+ 2.5s. Bỏ hẳn
+  `TriggerActivationMode` (luôn hover) và bỏ "Translate (legacy)" khỏi
+  "Click icon" (đổi tên thành "Click icon for:", chỉ còn Read/Speak) —
+  dịch là hover, không có flow Click=Translate. Chi tiết:
+  `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` §2–§3, §7.
+- Panel chính: nút **Capture OCR** có viền xanh dương, nút **Fast Read**
+  có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ "A+" của Fast Read);
+  chỉ viền lining bao ngoài nút, không tô nền, không đổi màu chữ/icon
+  (Manh 2026-11-19 23:56); **làm nhạt hết cỡ, opacity 0.25** (Manh
+  2026-11-20: màu đầy quá nổi, mất tập trung).
+- Window Read: thêm tuỳ chọn **"Run text automatically"** (on/off,
+  mặc định ON) trong Settings của cửa sổ (Manh 2026-11-20 00:47) —
+  khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần
+  bấm Space; khi OFF, cửa sổ mở ra ở trạng thái dừng như trước.
+  "Reset to default" cũng trả auto-play về ON.
+- Con trỏ chuột: **theo đúng hệ thống, KHÔNG tự chế bàn tay**
+  (Manh 2026-11-20 00:14). File `PointingHandCursor.swift` và mọi
+  `.pointingHandCursor()` (About, share, link từ điển, link GitHub ở
+  panel) đã gỡ bỏ — nút bấm và link dùng con trỏ mặc định của macOS.
 
 ## Liên kết
 

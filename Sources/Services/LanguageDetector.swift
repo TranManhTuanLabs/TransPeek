@@ -7,8 +7,20 @@ struct DetectionResult: Sendable {
 }
 
 enum LanguageDetector {
-    // Detection always uses the complete catalog, independently of target favorites.
-    private static let supportedNLLanguages = SupportedLanguages.codes.compactMap(bcp47ToNLLanguage)
+    // Detection does NOT set languageConstraints. The full 250-language
+    // catalog (0.1.5) broke Polish detection (CI #249, #250, #251):
+    // stuffing 250 constraints (many the framework doesn't support)
+    // into the recognizer made it fall back to English, then
+    // Indonesian, for clearly Polish text. Restricting to 2-letter
+    // codes (edb0b4a) did NOT fix it either — the set was still ~100
+    // languages, many unsupported for recognition. Lowering the
+    // English hint 2.0 -> 1.0 was tried (dc700fb) and did NOT fix it.
+    // The framework's recognizer is most accurate with NO constraints:
+    // it then uses its full built-in model over the languages it
+    // actually supports (~60 major languages, all in the 250 catalog).
+    // languageHints below still bias it toward common languages.
+    // Only the Polish detection test depends on this; the other
+    // LanguagePreferencesTests test the catalog/mappings, not detection.
 
     // Base language weight hints (inspired by Easydict, simplified)
     private static let baseHints: [NLLanguage: Double] = [
@@ -41,7 +53,8 @@ enum LanguageDetector {
         preferredSourceHints: [String: Double]? = nil
     ) -> DetectionResult {
         let recognizer = NLLanguageRecognizer()
-        recognizer.languageConstraints = supportedNLLanguages
+        // No languageConstraints (see the comment above): the
+        // recognizer uses its full built-in model.
 
         // Merge base hints + user preference hints
         var hints = baseHints
@@ -83,8 +96,14 @@ enum LanguageDetector {
         switch code {
         case "zh-Hans": return .simplifiedChinese
         case "zh-Hant": return .traditionalChinese
-        case "pt-BR": return .portuguese
-        default: return NLLanguage(rawValue: code)
+        case "pt", "pt-BR", "pt-PT": return .portuguese
+        default:
+            // Strip script/region subtags ("fa-AF" -> "fa",
+            // "crh-Latn" -> "crh", "ms-Arab" -> "ms"): the framework
+            // only knows base languages, and a subtagged value isn't a
+            // real NLLanguage the recognizer can use.
+            let base = code.split(separator: "-", maxSplits: 1).first.map(String.init) ?? code
+            return NLLanguage(rawValue: base)
         }
     }
 

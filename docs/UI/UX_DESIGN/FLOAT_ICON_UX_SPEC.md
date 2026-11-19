@@ -48,12 +48,13 @@ Two styles of the translate icon (Manh 2026-11-19):
   A is blue and the chat-box border wrapping the A is also blue). This is
   the correct translate icon.
 - **Style 2 — temporary stand-in:** the chat / speech-bubble icon
-  (`character.bubble`). It is **NOT** the translate icon; it is only
-  used temporarily in place of Style 1, and kept as a backup style (in
-  code and in docs) in case it is ever needed. Windows changed the plain
-  A to the chat icon by mistake 1–2 builds ago; Manh caught it testing
-  build 191 and had it reverted to the plain A (2026-11-19). This mapping
-  is the same on Windows (Alt instead of Option).
+  (`character.bubble`). It is **NOT** the translate icon; it was only
+  used temporarily in place of Style 1, and is now kept only as a backup
+  style **in this doc** (the code no longer draws it since 0.1.5 — see the
+  code-gap note below). Windows changed the plain A to the chat icon by
+  mistake 1–2 builds ago; Manh caught it testing build 191 and had it
+  reverted to the plain A (2026-11-19). This mapping is the same on
+  Windows (Alt instead of Option).
 
 The icon's glyph shows what the next click will do, not what the icon "is":
 
@@ -86,12 +87,16 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   0.05) chosen to read on both light and dark backgrounds. It replaces
   the old `book.pages` glyph for Fast Read.
 
-> **Code gap (2026-11-19):** the Mac code (`TriggerTrackingView.draw()`
-> in `Sources/UI/TriggerIcon/TriggerIconController.swift`) still draws
-> `character.bubble` (Style 2) for the translate/speak preview — the
-> settled mapping above (Style 1 plain A for translate, speaker for speak
-> preview) is not in the code yet. Changing it is a small fix (draw the
-> plain A / speaker instead of the bubble); do it only when Manh says so.
+> **Code gap — ĐÃ SỬA (2026-11-19, 0.1.5):** the Mac code
+> (`TriggerTrackingView.draw()` in
+> `Sources/UI/TriggerIcon/TriggerIconController.swift`) now draws the
+> settled mapping above: plain blue A (Style 1, regular weight, drawn as
+> text) for translate, speaker (`speaker.wave.2.fill`, accent) for the
+> speak preview. The chat bubble (`character.bubble`, Style 2) is no
+> longer drawn anywhere in the icon — it stays only as a backup style in
+> this doc, not in code. Manh caught the gap testing v0.1.4 (Click = Read
+> + hold Option showed the bubble instead of the speaker) and ordered the
+> fix as part of the 0.1.5 batch.
 - **The 2.5s A+ linger:** after any Fast Read click (plain click,
   Option+Click, or right-click menu), the icon shows A+ for 2.5 seconds
   while the Read window opens, then hides — a confirmation so the user
@@ -192,8 +197,10 @@ re-reads the key state directly (see below).
 - `triggerClickAction`: `.read` (default, Manh 2026-11-18, round 7 — was
   `.speak`) / `.speak` / `.translate`.
 - `triggerActivationMode`: `.hover` (default) / `.click`.
-- `hoverDelayMs`: default 500 (Slider 300–800).
-- `autoHideDelaySec`: default 5 (Slider 3–10).
+- `hoverDelayMs`: default 500 (Picker: 300 / 400 / 500 / 600 / 700 / 800 ms —
+  changed from Slider 2026-11-20, Manh).
+- `autoHideDelaySec`: default 5 (Picker: 3–10 s — changed from Slider
+  2026-11-20, Manh).
 
 ## References
 

@@ -2,20 +2,23 @@ import Defaults
 import SwiftUI
 
 /// Language selection bar with source picker + swap + target picker.
+/// Both pickers are searchable dropdowns (Manh 2026-11-19, 0.1.5):
+/// a button showing the current language, opening a floating popover
+/// with a searchable list (Popular 20 first, then all languages A-Z).
+/// The old native `Picker` showed all 249 languages as one long menu —
+/// unusable at this size. Native Popover + List + `.searchable`, no
+/// NSComboBox, no custom dropdown.
 struct LanguageBarView: View {
     @Binding var sourceLanguage: String
     let detectedLanguage: String?
     var detectionConfidence: Double?
     @Binding var targetLanguage: String
     let onSwap: () -> Void
+    /// Tracks the picker's popover window so the dismiss monitor treats
+    /// clicks in it as clicks inside the panel.
+    let popoverTracker: LanguagePopoverTracker
     @Default(.popupFontSize) private var fontSize
     @Default(.favoriteTargetLanguages) private var favoriteTargetLanguages
-
-    private var pickerControlSize: ControlSize {
-        if fontSize <= 12 { .small }
-        else if fontSize <= 16 { .regular }
-        else { .large }
-    }
 
     var body: some View {
         // Pickers are intrinsic width and cluster left (Manh 2026-11-15):
@@ -23,15 +26,15 @@ struct LanguageBarView: View {
         // not push the target picker + swap button to the right edge — they
         // stay next to the source (Auto Detect) picker on the left.
         HStack(spacing: 8) {
-            // Source language picker
-            Picker("", selection: $sourceLanguage) {
-                Text(autoDetectDisplayName).tag("auto")
-                ForEach(SupportedLanguages.all, id: \.code) { code, name in
-                    Text(name).tag(code)
-                }
-            }
-            .labelsHidden()
-            .controlSize(pickerControlSize)
+            // Source language picker (Auto Detect + all languages)
+            SearchableLanguagePicker(
+                selection: $sourceLanguage,
+                leadingOption: (code: "auto", label: autoDetectDisplayName),
+                displayName: { code in
+                    code == "auto" ? autoDetectDisplayName : SupportedLanguages.nativeName(for: code)
+                },
+                popoverTracker: popoverTracker
+            )
 
             Button(action: onSwap) {
                 Image(systemName: "arrow.left.arrow.right")
@@ -41,19 +44,10 @@ struct LanguageBarView: View {
             .foregroundStyle(.secondary)
 
             // Target language picker
-            Picker("", selection: $targetLanguage) {
-                ForEach(
-                    SupportedLanguages.targetPickerCodes(
-                        favoriteTargetLanguages,
-                        selectedTarget: targetLanguage
-                    ),
-                    id: \.self
-                ) { code in
-                    Text(Locale.current.localizedString(forIdentifier: code) ?? code).tag(code)
-                }
-            }
-            .labelsHidden()
-            .controlSize(pickerControlSize)
+            SearchableLanguagePicker(
+                selection: $targetLanguage,
+                popoverTracker: popoverTracker
+            )
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)

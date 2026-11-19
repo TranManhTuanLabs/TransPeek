@@ -28,12 +28,12 @@ struct FlowIntroCard: View {
     @Default(.triggerClickAction) private var clickAction: TriggerClickAction
 
     /// What a plain click does (the Settings click action), as the row's
-    /// action text.
+    /// action text. Only Speak / Read — there is no Translate click
+    /// action (removed 2026-11-20, Manh; Translate is hover-only).
     private var clickActionText: String {
         switch clickAction {
         case .read: return "Fast Read — read it faster"
         case .speak: return "Listen — hear it read aloud"
-        case .translate: return "Translate — open the translation panel"
         }
     }
 
@@ -41,7 +41,7 @@ struct FlowIntroCard: View {
     private var optionClickActionText: String {
         switch clickAction {
         case .read: return "Listen — hear it read aloud"
-        case .speak, .translate: return "Fast Read — read it faster"
+        case .speak: return "Fast Read — read it faster"
         }
     }
 

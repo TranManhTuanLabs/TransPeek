@@ -14,7 +14,9 @@ final class TriggerTrackingView: NSView {
     /// A right-click (Control-click / two-finger tap) opens the icon menu.
     var onRightMouseDown: ((NSEvent) -> Void)?
 
-    /// When true the icon shows a speaker symbol (TTS playing) instead of the bubble.
+    /// When true the icon shows a speaker symbol (TTS playing) instead of
+    /// the plain A (Manh 2026-11-18, round 7: speaking wins the glyph so
+    /// the user can click again to stop it).
     var isSpeaking = false {
         didSet {
             if isSpeaking != oldValue {
@@ -23,11 +25,13 @@ final class TriggerTrackingView: NSView {
         }
     }
 
-    /// What a plain click on this icon does — the glyph shows it, so the
-    /// user can tell at a glance: bubble = translate/speak, A+ = Fast
-    /// Read (Manh 2026-11-18). Updated when the icon is shown (it follows
-    /// the Settings "Click icon" choice).
-    var clickAction: TriggerClickAction = .speak {
+    /// What a plain click on this icon does — it decides the Option+Click
+    /// preview (Option held flips to the other action) and what a click
+    /// does. Updated when the icon is shown (it follows the Settings
+    /// "Click icon for:" choice). Default `.read` to match the Defaults
+    /// key's default (the old `.speak` initial value was an upstream
+    /// leftover — the setting default has been Read since 2026-11-18).
+    var clickAction: TriggerClickAction = .read {
         didSet {
             if clickAction != oldValue {
                 needsDisplay = true
@@ -35,10 +39,17 @@ final class TriggerTrackingView: NSView {
         }
     }
 
-    /// How the icon is triggered (hover = click does the Settings action;
-    /// click = click always translates). The Option preview only flips the
-    /// glyph in hover mode, matching `handleIconClick` in the controller.
-    var activationMode: TriggerActivationMode = .hover
+    /// True while a Fast Read open is pending (the 2.5s A+ confirmation
+    /// after a Read click, Manh 2026-11-18): the glyph stays on A+ so the
+    /// user knows the click landed, even though the idle glyph is the
+    /// plain A (translate-first, Manh 2026-11-20). Set by the controller.
+    var isReadPending = false {
+        didSet {
+            if isReadPending != oldValue {
+                needsDisplay = true
+            }
+        }
+    }
 
     /// Whether the Option key is currently held. While held, the glyph
     /// shows the *other* click action (the one Option+click will run), so
@@ -93,11 +104,16 @@ final class TriggerTrackingView: NSView {
         ctx.setLineWidth(0.5)
         ctx.strokeEllipse(in: rect)
 
-        // Glyph — always shows what the *next* click will do (Manh
-        // 2026-11-17, extended 2026-11-18 style B). In hover mode, holding
-        // Option flips to the other action, so the user sees the preview
-        // before clicking; in click mode the click always translates, so
-        // there is nothing to preview.
+        // Glyph — translate-first (Manh 2026-11-20): the idle icon is
+        // ALWAYS the plain translate A (Style 1), for both Click
+        // settings — hover is the icon's primary job. The old Style B
+        // preview (idle A+ for Click=Read, idle speaker for
+        // Click=Speak) was removed 2026-11-20; it was a deviation added
+        // to make the Click setting visible at a glance, and it confused
+        // the flow with the upstream (MoePeek) activation logic.
+        // The glyph only leaves the plain A to show: the Option+Click
+        // preview (while Option is held), the speaking state, or the
+        // 2.5s A+ confirmation after a Read click.
         //
         // Speaking comes FIRST (Manh 2026-11-18, round 7): while TTS is
         // playing the icon must show the speaker, so the user can click
@@ -106,54 +122,49 @@ final class TriggerTrackingView: NSView {
         // Option+click to Speak (with Click = Read) the icon stayed on
         // A+ once Option was released, instead of switching to the
         // speaker, and the user had no way to tell speech was playing.
-        let effectiveAction: TriggerClickAction
-        if activationMode == .hover && isOptionHeld {
-            effectiveAction = clickAction == .read ? .speak : .read
-        } else {
-            effectiveAction = clickAction
-        }
-
         if isSpeaking {
             // TTS playing — speaker glyph (click again to stop).
-            let symbolName = "speaker.wave.2.fill"
-            let symbolColor = NSColor.controlAccentColor
-            let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
-            let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-            if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Stop speaking")?
-                .withSymbolConfiguration(sizeConfig.applying(colorConfig))
-            {
-                let imageSize = image.size
-                let imageRect = NSRect(
-                    x: (bounds.width - imageSize.width) / 2,
-                    y: (bounds.height - imageSize.height) / 2,
-                    width: imageSize.width,
-                    height: imageSize.height
-                )
-                image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
-            }
+            drawSpeakerGlyph(in: bounds)
             return
         }
 
-        if effectiveAction == .read {
-            // Fast Read → turmeric "A+" (bold A + small + badge at its
-            // top-right, Manh 2026-11-18). A custom-drawn glyph, not an
-            // SF Symbol — there is no A+ symbol.
+        if isReadPending {
+            // Fast Read click landed — turmeric "A+" for 2.5s as a
+            // confirmation while the Read window opens (Manh 2026-11-18).
             drawFastReadGlyph(in: bounds)
             return
         }
 
-        // Speech bubble (translate/speak preview). The bubble glyph is
-        // ocean blue (.systemBlue) so the icon stays easy to spot in both
-        // light and dark mode; the circle background keeps adapting to
-        // the system appearance — never a solid blue fill, which would
-        // hide the glyph. (Speaking is handled above and returns early,
-        // so this branch only runs when not speaking.)
-        let symbolName = "character.bubble"
-        let symbolColor = NSColor.systemBlue
-        let accessibilityDescription = "Translate"
+        if isOptionHeld {
+            // Option+Click preview — the OTHER action (Manh 2026-11-18,
+            // style B, kept): when the plain click reads, Option+click
+            // speaks (speaker); when the plain click speaks,
+            // Option+click opens Fast Read (A+).
+            if clickAction == .read {
+                drawSpeakerGlyph(in: bounds)
+            } else {
+                drawFastReadGlyph(in: bounds)
+            }
+            return
+        }
+
+        // Idle — plain blue "A" (Style 1, Manh 2026-11-20). The chat
+        // bubble (`character.bubble`, Style 2) is NOT the translate
+        // icon — it was the upstream original, only a temporary
+        // stand-in, documented in
+        // docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md §3.
+        drawPlainAGlyph(in: bounds)
+    }
+
+    /// Draw the speaker glyph (`speaker.wave.2.fill`, accent color) —
+    /// used both while TTS is playing (click again to stop) and as the
+    /// Speak preview (Manh 2026-11-19, 0.1.5).
+    private func drawSpeakerGlyph(in bounds: NSRect) {
+        let symbolName = "speaker.wave.2.fill"
+        let symbolColor = NSColor.controlAccentColor
         let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: accessibilityDescription)?
+        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Speak")?
             .withSymbolConfiguration(sizeConfig.applying(colorConfig))
         {
             let imageSize = image.size
@@ -165,6 +176,25 @@ final class TriggerTrackingView: NSView {
             )
             image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
         }
+    }
+
+    /// Draw the translate glyph: a plain "A", regular weight (NOT bold),
+    /// blue (Style 1, Manh 2026-11-19, 0.1.5). Drawn as text into the
+    /// current graphics context — there is no plain-A SF Symbol.
+    /// The blue is the color of the letter A itself.
+    private func drawPlainAGlyph(in bounds: NSRect) {
+        let aFont = NSFont.systemFont(ofSize: 15)
+        let aAttrs: [NSAttributedString.Key: Any] = [
+            .font: aFont,
+            .foregroundColor: NSColor.systemBlue,
+        ]
+        let aString = NSAttributedString(string: "A", attributes: aAttrs)
+        let aSize = aString.size()
+        let aOrigin = NSPoint(
+            x: bounds.midX - aSize.width / 2,
+            y: bounds.midY - aSize.height / 2
+        )
+        aString.draw(at: aOrigin)
     }
 
     /// Turmeric (màu nghệ) — the Fast Read "A+" glyph color (Manh
@@ -240,7 +270,7 @@ final class TriggerIconController: NSObject {
     var onStopSpeakRequested: (() -> Void)?
     /// Fast Read (RSVP, Manh 2026-11-17): invoked with the selected text when
     /// the user clicks the icon while `triggerClickAction` is `.read`, or
-    /// Option-clicks it while the click action is `.speak` / `.translate`.
+    /// Option-clicks it while the click action is `.speak`.
     /// The panel is not opened for this path.
     var onReadRequested: ((String) -> Void)?
     /// The icon menu's "Settings..." item.
@@ -275,7 +305,6 @@ final class TriggerIconController: NSObject {
     private var panel: TriggerIconPanel?
     private var trackingView: TriggerTrackingView?
     private var currentText: String = ""
-    private var activationMode: TriggerActivationMode = .hover
     private var hoverTimer: Timer?
     private var autoDismissTimer: Timer?
     /// Poll timer for the Option key while the icon is visible (Manh
@@ -315,9 +344,8 @@ final class TriggerIconController: NSObject {
         let trackingView = TriggerTrackingView(frame: NSRect(x: 0, y: 0, width: TriggerIconPanel.size, height: TriggerIconPanel.size))
         trackingView.clickAction = Defaults[.triggerClickAction]
 
-        let activationMode = Defaults[.triggerActivationMode]
-        self.activationMode = activationMode
-        trackingView.activationMode = activationMode
+        // The icon is always hover (Manh 2026-11-20): the old upstream
+        // activation mode (hover / click) was removed.
         // If Option is already held when the icon appears, show the other
         // action's glyph right away (Manh 2026-11-18, style B).
         trackingView.isOptionHeld = NSEvent.modifierFlags.contains(.option)
@@ -327,24 +355,11 @@ final class TriggerIconController: NSObject {
             // Re-check Option in case a flags-changed event was missed, so
             // the glyph preview is correct the moment the cursor arrives.
             self.trackingView?.isOptionHeld = NSEvent.modifierFlags.contains(.option)
-            switch activationMode {
-            case .hover:
-                self.startHoverTimer()
-            case .click:
-                // Pause auto-dismiss while cursor is over the icon so the user has time to click.
-                self.cancelAutoDismissTimer()
-            }
+            self.startHoverTimer()
         }
         trackingView.onMouseExited = { [weak self] in
             guard let self else { return }
-            switch activationMode {
-            case .hover:
-                self.cancelHoverTimer()
-            case .click:
-                // In click mode, mouseEntered paused auto-dismiss; restart it on exit
-                // so the icon eventually disappears if the user never clicks.
-                self.startAutoDismissTimer()
-            }
+            self.cancelHoverTimer()
         }
         trackingView.onMouseDown = { [weak self] event in
             self?.handleIconClick(event: event)
@@ -401,7 +416,7 @@ final class TriggerIconController: NSObject {
         // (The poll timer's first fire would do this too, but the pause
         // belongs here so the icon never gets a 5s timer it doesn't need.)
         lastOptionHeld = trackingView.isOptionHeld
-        if activationMode == .hover && trackingView.isOptionHeld {
+        if trackingView.isOptionHeld {
             cancelAutoDismissTimer()
         }
     }
@@ -511,18 +526,17 @@ final class TriggerIconController: NSObject {
         }
     }
 
-    /// Update the Option preview: flip the glyph to the other action and,
-    /// in hover mode, pause the auto-hide while Option is held so the
-    /// preview (A+) stays visible long enough to see and click (Manh
+    /// Update the Option preview: flip the glyph to the other action and
+    /// pause the auto-hide while Option is held so the preview (A+ /
+    /// speaker) stays visible long enough to see and click (Manh
     /// 2026-11-18: with Click = Speak the A+ only shows while Option is
     /// held, and the 5s auto-hide used to steal it — A+ was rarely seen).
     /// On release, restart the auto-hide so the icon still goes away.
-    /// Only in hover mode (in click mode Option doesn't flip the glyph);
-    /// skipped while a Read open is pending (the 2.5s A+ confirmation
+    /// Skipped while a Read open is pending (the 2.5s A+ confirmation
     /// has its own hide timer).
     private func updateOptionPreview(optionHeld: Bool) {
         trackingView?.isOptionHeld = optionHeld
-        guard activationMode == .hover, !isReadPending else { return }
+        guard !isReadPending else { return }
         if optionHeld {
             cancelAutoDismissTimer()
         } else {
@@ -536,22 +550,17 @@ final class TriggerIconController: NSObject {
     }
 
     /// Click handling (TransPeek Phase 1, extended with Fast Read 2026-11-17).
-    /// In click-activation mode the click always means translate — that mode's
-    /// whole point is click-to-translate.
-    /// In hover mode the click action follows `triggerClickAction`, and
-    /// Option+click runs the *other* action: when the plain click speaks,
-    /// Option+click opens Fast Read; when the plain click opens Fast Read,
-    /// Option+click speaks (the translate action is reachable from the
-    /// right-click menu instead).
+    /// The click action follows `triggerClickAction`, and Option+click runs
+    /// the *other* action: when the plain click speaks, Option+click opens
+    /// Fast Read; when the plain click opens Fast Read, Option+click speaks
+    /// (Translate is hover-only — there is no Translate click action,
+    /// Manh 2026-11-20; the old click-activation mode that made a click
+    /// always translate was removed the same day).
     private func handleIconClick(event: NSEvent) {
         // While a Fast Read open is pending (the 2.5s A+ confirmation),
         // ignore further clicks so a double-click cannot open two Read
         // windows or start speaking over the Read window (Manh 2026-11-18).
         guard !isReadPending else { return }
-        guard activationMode != .click else {
-            triggerTranslation()
-            return
-        }
         let optionClicked = event.modifierFlags.contains(.option)
         let action = Defaults[.triggerClickAction]
         let effectiveAction: TriggerClickAction
@@ -572,8 +581,6 @@ final class TriggerIconController: NSObject {
             }
         case .read:
             performRead()
-        case .translate:
-            triggerTranslation()
         }
     }
 
@@ -590,12 +597,17 @@ final class TriggerIconController: NSObject {
         cancelAllTimers()
         guard panel != nil else { return }
         isReadPending = true
+        // The view shows A+ while a Read open is pending (the 2.5s
+        // confirmation), even though the idle glyph is the plain A
+        // (translate-first, Manh 2026-11-20).
+        trackingView?.isReadPending = true
         onReadRequested?(text)
         readHideTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: false) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
                 self.readHideTimer = nil
                 self.isReadPending = false
+                self.trackingView?.isReadPending = false
                 guard let panel = self.panel else { return }
                 panel.contentView = nil
                 panel.close()

@@ -1,9 +1,14 @@
 import AppKit
 
 /// Monitors for clicks outside the panel and Escape key to dismiss the popup.
+/// The language picker's popover counts as part of the panel (Manh 2026-11-19,
+/// 0.1.5): a `.popover` is a separate NSWindow, so a click on it would read
+/// as "click outside" and hide the panel before anything can be picked.
+/// The `popoverTracker` tells this monitor which window is the popover.
 @MainActor
 final class PopupDismissMonitor {
     private let panel: NSPanel
+    private let popoverTracker: LanguagePopoverTracker?
     private let isPinned: @MainActor () -> Bool
     private let onDismiss: @MainActor () -> Void
 
@@ -14,10 +19,12 @@ final class PopupDismissMonitor {
 
     init(
         panel: NSPanel,
+        popoverTracker: LanguagePopoverTracker? = nil,
         isPinned: @escaping @MainActor () -> Bool = { false },
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.panel = panel
+        self.popoverTracker = popoverTracker
         self.isPinned = isPinned
         self.onDismiss = onDismiss
     }
@@ -45,13 +52,17 @@ final class PopupDismissMonitor {
             matching: [.leftMouseDown, .rightMouseDown]
         ) { [weak self] event in
             guard let self else { return event }
-            // Only dismiss if click is outside the panel
+            // Only dismiss if click is outside the panel AND outside the
+            // language popover (the popover is a separate window but part
+            // of the panel — a click there picks a language, it must not
+            // dismiss anything). A click outside BOTH still dismisses.
             let clickLocation = event.locationInWindow
-            if event.window !== self.panel {
+            let inPopover = event.window != nil && event.window === self.popoverTracker?.window
+            if event.window !== self.panel && !inPopover {
                 Task { @MainActor in
                     self.dismissForOutsideClick()
                 }
-            } else if let contentView = self.panel.contentView,
+            } else if !inPopover, let contentView = self.panel.contentView,
                       !contentView.frame.contains(clickLocation) {
                 Task { @MainActor in
                     self.dismissForOutsideClick()

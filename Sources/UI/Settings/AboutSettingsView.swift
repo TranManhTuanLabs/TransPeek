@@ -73,6 +73,11 @@ struct AboutSettingsView: View {
             // both are inside the same Link so the whole row is
             // clickable — the colors are independent, they do not have
             // to be all blue or all black.
+            // Every Link in this tab shows the pointing-hand cursor on
+            // hover (Manh 2026-11-19, 0.1.5) — the macOS link
+            // convention, so it is clear what is clickable. Standard
+            // push buttons (Check for Updates, the donate buttons) keep
+            // the arrow cursor, which is the macOS button convention.
             Link(destination: URL(string: "https://github.com/TranManhTuanLabs")!) {
                 HStack(spacing: 6) {
                     GitHubMarkShape()
