@@ -32,18 +32,33 @@
 
 ## 3. Glyph states — the icon always previews the NEXT click (Style B, Manh 2026-11-18)
 
+### Settled glyph mapping (Manh 2026-11-19 — do NOT change without asking Manh)
+
+The icon has exactly three glyphs, one per action:
+
+- **Plain A** (the main icon, regular weight — **NOT bold**) = **Translate**.
+- **A+** (bold "A" + small bold "+", turmeric) = **Fast Read**.
+- **Speaker** (`speaker.wave.2.fill`) = **TTS / Speak**.
+
+The chat / speech-bubble icon (`character.bubble`) is **NOT** the translate
+icon and must never replace the plain A. It is kept only as a backup style
+(in code and in docs) in case it is ever needed. Windows changed the plain
+A to the chat icon by mistake 1–2 builds ago; Manh caught it testing build
+191 and had it reverted to the plain A (2026-11-19). This mapping is the
+same on Windows (Alt instead of Option).
+
 The icon's glyph shows what the next click will do, not what the icon "is":
 
 | Click setting | No Option held | Option held | While speaking |
 | --- | --- | --- | --- |
-| Fast Read (default) | **A+** (turmeric) | speech bubble (Speak preview) | speaker (`speaker.wave.2.fill`, accent) |
-| Speak | speech bubble (`character.bubble`, blue) | **A+** (turmeric, Fast Read preview) | speaker |
-| Translate | speech bubble | A+ | speaker |
+| Fast Read (default) | **A+** (turmeric) | speaker (Speak preview) | speaker (`speaker.wave.2.fill`, accent) |
+| Speak | speaker | **A+** (turmeric, Fast Read preview) | speaker |
+| Translate | **A** (plain, not bold) | **A+** | speaker |
 
 - **The default icon is A+** (Manh 2026-11-18, round 7): because the
   default click is Fast Read, the icon shows A+ by default — the user
   can tell at a glance that a plain click reads, without opening
-  Settings. Holding Option flips it to the bubble (Speak preview).
+  Settings. Holding Option flips it to the speaker (Speak preview).
 - **Speaking always wins the glyph** (Manh 2026-11-18, round 7): while
   TTS is playing the icon shows the speaker, so the user can click
   again to stop it — even when the click action is Read. Before this
@@ -52,11 +67,22 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   before the speaking check; the user had no way to tell speech was
   playing.
 
+- **The plain A glyph** is the letter "A" drawn as text (like A+, not an
+  SF Symbol), regular weight — **NOT bold**. It is the main icon: the
+  icon's identity is "translate", and A+ / speaker are the same "A"
+  family showing the other two actions.
 - **The A+ glyph** is custom-drawn (not an SF Symbol): a bold "A" (15pt)
   with a small bold "+" (8pt) centered on the A's top-right corner, in
   turmeric — a deep golden amber (`NSColor` red 0.78, green 0.50, blue
   0.05) chosen to read on both light and dark backgrounds. It replaces
   the old `book.pages` glyph for Fast Read.
+
+> **Code gap (2026-11-19):** the Mac code (`TriggerTrackingView.draw()`
+> in `Sources/UI/TriggerIcon/TriggerIconController.swift`) still draws
+> `character.bubble` for the translate/speak preview — the settled mapping
+> above (plain A for translate, speaker for speak preview) is not in the
+> code yet. Changing it is a small fix (draw the plain A / speaker
+> instead of the bubble); do it only when Manh says so.
 - **The 2.5s A+ linger:** after any Fast Read click (plain click,
   Option+Click, or right-click menu), the icon shows A+ for 2.5 seconds
   while the Read window opens, then hides — a confirmation so the user
