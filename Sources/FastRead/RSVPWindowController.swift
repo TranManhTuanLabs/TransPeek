@@ -37,6 +37,12 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             trackpadMonitor?.start(window: window)
+            // Auto-play (Manh 2026-11-20): when the setting is on
+            // (default), text sent in starts reading at once — no
+            // Space press needed.
+            if viewModel.autoPlay {
+                viewModel.play()
+            }
             return
         }
 
@@ -47,7 +53,8 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             fontSize: Double(Defaults[.rsvpFontSize]),
             contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
-            contextDisplayStyle: Defaults[.rsvpContextDisplayStyle]
+            contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
+            autoPlay: Defaults[.rsvpAutoPlay]
         )
         self.viewModel = viewModel
 
@@ -103,6 +110,13 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
 
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+
+        // Auto-play (Manh 2026-11-20): when the setting is on
+        // (default), text sent in starts reading at once — no Space
+        // press needed.
+        if viewModel.autoPlay {
+            viewModel.play()
+        }
     }
 
     /// Close the window (and stop playback).

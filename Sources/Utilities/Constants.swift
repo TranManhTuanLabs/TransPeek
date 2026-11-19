@@ -750,6 +750,12 @@ extension Defaults.Keys {
     static let rsvpContextSizeRatio = Key<Double>("transpeek_rsvpContextSizeRatio", default: 0.40)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
     static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
+    /// Whether text starts reading automatically when it is sent in
+    /// (Manh 2026-11-20): when ON (default), every time text arrives
+    /// from the select-text icon the Fast Read window starts reading
+    /// at once — no Space press needed. Toggled in the window's
+    /// Settings popover.
+    static let rsvpAutoPlay = Key<Bool>("transpeek_rsvpAutoPlay", default: true)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")

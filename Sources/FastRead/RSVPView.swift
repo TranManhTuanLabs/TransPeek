@@ -47,6 +47,14 @@ final class RSVPViewModel: ObservableObject {
     @Published var contextDisplayStyle: RSVPContextDisplayStyle {
         didSet { Defaults[.rsvpContextDisplayStyle] = contextDisplayStyle }
     }
+    /// Whether text starts reading automatically when it is sent in
+    /// (Manh 2026-11-20): when ON (default), every time text arrives
+    /// from the select-text icon the window starts reading at once —
+    /// no Space press needed. Toggled in the window's Settings
+    /// popover; persisted, so the reader picks it once.
+    @Published var autoPlay: Bool {
+        didSet { Defaults[.rsvpAutoPlay] = autoPlay }
+    }
     /// Index of the slide currently on screen.
     @Published var currentSlideIndex: Int = 0
     /// True while slides advance automatically.
@@ -71,7 +79,8 @@ final class RSVPViewModel: ObservableObject {
         fontSize: Double = 80,
         contextSizeRatio: Double = 0.40,
         colorScheme: RSVPColorScheme = .light,
-        contextDisplayStyle: RSVPContextDisplayStyle = .onPause
+        contextDisplayStyle: RSVPContextDisplayStyle = .onPause,
+        autoPlay: Bool = true
     ) {
         self.text = text
         self.wpm = wpm
@@ -80,19 +89,21 @@ final class RSVPViewModel: ObservableObject {
         self.contextSizeRatio = contextSizeRatio
         self.colorScheme = colorScheme
         self.contextDisplayStyle = contextDisplayStyle
+        self.autoPlay = autoPlay
         self.engine = RSVPEngine(text: text, wpm: wpm, chunkSize: chunkSize)
     }
 
     /// Reset the reading settings to their defaults (Manh 2026-11-18,
     /// round 7 — the Settings popover's "Reset to default" button):
     /// speed 500, focus font 80, context size 40%, context display
-    /// "Only show when paused". Color scheme is a theme preference, so
-    /// it is NOT reset here.
+    /// "Only show when paused", auto-play ON (Manh 2026-11-20).
+    /// Color scheme is a theme preference, so it is NOT reset here.
     func resetToDefaults() {
         wpm = RSVPEngine.defaultWPM
         fontSize = 80
         contextSizeRatio = 0.40
         contextDisplayStyle = .onPause
+        autoPlay = true
     }
 
     var slideCount: Int { engine.slides.count }
@@ -633,7 +644,8 @@ struct RSVPView: View {
 
     /// Color Scheme picker (White on Black / Black on White) + when
     /// the context around the focus word shows (spec §14.3 + Manh
-    /// 2026-11-18, SwiftRead's `contextDisplayStyle`) + Reset to
+    /// 2026-11-18, SwiftRead's `contextDisplayStyle`) + auto-play
+    /// (Manh 2026-11-20) + Reset to
     /// default (Manh 2026-11-18, round 7).
     private var settingsPopover: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -656,16 +668,24 @@ struct RSVPView: View {
             }
             .pickerStyle(.menu)
             .labelsHidden()
+            // Auto-play (Manh 2026-11-20): when ON (default), text
+            // starts reading as soon as it is sent in from the
+            // select-text icon — no Space press needed. When OFF,
+            // the window opens paused, as before.
+            Toggle("Run text automatically", isOn: $viewModel.autoPlay)
+                .padding(.top, 4)
+                .help("When on, text starts reading as soon as it is sent in")
             // Reset the reading settings to their defaults (Manh
             // 2026-11-18, round 7): speed 500, focus font 80, context
-            // size 40%, context display "Only show when paused". The
+            // size 40%, context display "Only show when paused",
+            // auto-play ON. The
             // color scheme is a theme preference, so it is NOT reset.
             Button("Reset to default") {
                 viewModel.resetToDefaults()
             }
             .buttonStyle(.bordered)
             .padding(.top, 4)
-            .help("Reset speed, focus size, context size and context display to their defaults")
+            .help("Reset speed, focus size, context size, context display and auto-play to their defaults")
         }
         .padding(12)
         .frame(width: 260)
