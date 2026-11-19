@@ -7,28 +7,20 @@ struct DetectionResult: Sendable {
 }
 
 enum LanguageDetector {
-    // Detection uses the catalog, but only the languages the Natural
-    // Language framework can actually identify. The full 250-language
-    // catalog (0.1.5) broke Polish detection (CI #249, #250):
-    // variant codes like "pt-PT" / "crh-Latn" / "fa-AF" became
-    // NLLanguage values the framework doesn't recognize, and stuffing
-    // 250 constraints (many unsupported) into the recognizer made it
-    // fall back to English for clearly Polish text. Lowering the
-    // English hint 2.0 -> 1.0 was tried (dc700fb) and did NOT fix it,
-    // so the hint stays at 2.0 and the fix is here: map every code to
-    // its base language, and keep only 2-letter ISO codes (the major
-    // languages the framework supports) plus the two Chinese variants.
-    // Duplicates (e.g. "pt" and "pt-BR" both -> Portuguese) are removed.
-    private static let supportedNLLanguages: [NLLanguage] = {
-        let mapped = SupportedLanguages.codes.compactMap(bcp47ToNLLanguage)
-        var seen = Set<NLLanguage>()
-        return mapped.filter { lang in
-            guard seen.insert(lang).inserted else { return false }
-            return lang == .simplifiedChinese
-                || lang == .traditionalChinese
-                || lang.rawValue.count == 2
-        }
-    }()
+    // Detection does NOT set languageConstraints. The full 250-language
+    // catalog (0.1.5) broke Polish detection (CI #249, #250, #251):
+    // stuffing 250 constraints (many the framework doesn't support)
+    // into the recognizer made it fall back to English, then
+    // Indonesian, for clearly Polish text. Restricting to 2-letter
+    // codes (edb0b4a) did NOT fix it either — the set was still ~100
+    // languages, many unsupported for recognition. Lowering the
+    // English hint 2.0 -> 1.0 was tried (dc700fb) and did NOT fix it.
+    // The framework's recognizer is most accurate with NO constraints:
+    // it then uses its full built-in model over the languages it
+    // actually supports (~60 major languages, all in the 250 catalog).
+    // languageHints below still bias it toward common languages.
+    // Only the Polish detection test depends on this; the other
+    // LanguagePreferencesTests test the catalog/mappings, not detection.
 
     // Base language weight hints (inspired by Easydict, simplified)
     private static let baseHints: [NLLanguage: Double] = [
@@ -61,7 +53,8 @@ enum LanguageDetector {
         preferredSourceHints: [String: Double]? = nil
     ) -> DetectionResult {
         let recognizer = NLLanguageRecognizer()
-        recognizer.languageConstraints = supportedNLLanguages
+        // No languageConstraints (see the comment above): the
+        // recognizer uses its full built-in model.
 
         // Merge base hints + user preference hints
         var hints = baseHints
