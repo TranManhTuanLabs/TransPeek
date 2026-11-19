@@ -1,6 +1,7 @@
 import AppKit
 import Defaults
 import KeyboardShortcuts
+import UserNotifications
 
 /// Handles app lifecycle, permission checks, and global shortcut registration.
 @MainActor
@@ -24,6 +25,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// panel decor): one store for the app — the panel-left card, the
     /// panel-right reading view, and the Rest window all read it.
     lazy var focusTimerStore = FocusTimerStore()
+    /// System notification for a pending break reminder (Manh
+    /// 2026-11-20, 05:33) — held strongly, the notification center
+    /// keeps its delegate weak.
+    var reminderNotifier: ReminderNotifier!
     var settingsController: SettingsWindowController!
     private var smartTranslationTask: Task<Void, Never>?
     private var smartTranslationTaskID: UUID?
@@ -70,8 +75,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.panelController.hidePanelTemporarily()
                 // A panel read and a window read are the same text read
                 // two ways — the window replaces the panel one (Manh
-                // 2026-11-20).
-                self.focusTimerStore.stopPanelReading()
+                // 2026-11-20). The user is still reading, just in the
+                // window, so a pending reminder keeps waiting (Manh
+                // 2026-11-20, 05:33).
+                self.focusTimerStore.stopPanelReading(showPending: false)
             }
             self.performFastRead(text: text)
         }
@@ -81,6 +88,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // and starts the read itself.
         focusTimerStore.onShowPanel = { [weak self] in
             self?.panelController.showAtCursor()
+        }
+        // A break reminder that fired while reading waits (Manh
+        // 2026-11-20, 05:33): show it when the Fast Read window closes,
+        // and let the store ask whether the window is open.
+        rsvpWindowController.onClose = { [weak self] in
+            self?.focusTimerStore.fastReadWindowClosed()
+        }
+        focusTimerStore.isFastReadWindowOpen = { [weak self] in
+            self?.rsvpWindowController.isVisible ?? false
+        }
+        // System notification for a pending reminder (Manh 2026-11-20,
+        // 05:33): the notifier owns UserNotifications; the store only
+        // asks for a notification, never touches the framework.
+        let notifier = ReminderNotifier()
+        notifier.onTakeBreakNow = { [weak self] in
+            self?.focusTimerStore.takePendingBreakNow()
+        }
+        notifier.onSnooze = { [weak self] in
+            self?.focusTimerStore.snoozePendingReminder()
+        }
+        reminderNotifier = notifier
+        UNUserNotificationCenter.current().delegate = notifier
+        focusTimerStore.onNotifyReminder = { [weak self] kind in
+            self?.reminderNotifier.notify(kind: kind)
         }
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()

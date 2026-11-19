@@ -203,7 +203,11 @@ Rest window. No second reading implementation.
   Fast Read launch (panel button, float icon, menubar, shortcut).
   A reminder to panel right opens the panel on the Fast Read tab and
   starts reading; after the read, the panel shows the rest countdown
-  and returns to the demo.
+  and returns to the demo. If a reminder fires while reading (window
+  or panel), it does NOT interrupt — it waits as a banner + system
+  notification ("Take a break" / "Snooze 5 min", orange dot on the
+  Focus-Rest card) and shows when the read stops (Manh 2026-11-20,
+  05:33).
 
 ## References
 

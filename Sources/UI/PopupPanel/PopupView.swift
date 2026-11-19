@@ -323,6 +323,12 @@ struct PopupView: View {
             // content, because a drag over the results is text selection.
             dotsRow
 
+            // A break reminder that fired while reading waits here
+            // (Manh 2026-11-20, 05:33): the banner is its own view
+            // (observing the store), so the panel never re-renders on
+            // the timer's one-second ticks. It shows on every tab.
+            PendingReminderBanner(store: focusTimerStore)
+
             switch selectedTab {
             case .translate:
                 translateContent

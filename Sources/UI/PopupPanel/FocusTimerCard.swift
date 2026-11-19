@@ -55,6 +55,17 @@ struct FocusTimerCard: View {
                         .foregroundStyle(.secondary)
                     Text("Focus & Rest")
                         .font(.headline)
+                    // Orange dot (Manh 2026-11-20, 05:33): a break
+                    // reminder fired while reading and is waiting — it
+                    // shows when the read stops; the banner above the
+                    // tabs (and the system notification) carries the
+                    // "Take a break" / "Snooze 5 min" actions.
+                    if store.pendingReminder != nil {
+                        Circle()
+                            .fill(Color.orange)
+                            .frame(width: 8, height: 8)
+                            .help("A break reminder is waiting")
+                    }
                     Spacer()
                     Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                         .foregroundStyle(.secondary)

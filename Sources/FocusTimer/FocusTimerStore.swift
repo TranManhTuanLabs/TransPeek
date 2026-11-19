@@ -27,6 +27,27 @@ enum FocusReminderKind {
         case .eyeRest: return "Rest your eyes"
         }
     }
+
+    /// Title of the system notification + in-panel banner when the
+    /// reminder fires while reading (Manh 2026-11-20, 05:33) — names
+    /// the real duration. English, like the rest of the UI (Manh
+    /// 2026-11-11: English first, Vietnamese later).
+    var notificationTitle: String {
+        switch self {
+        case .workBreak(let minutes):
+            return "\(minutes) minutes of work done — time for a break"
+        case .eyeRest:
+            return "Time to rest your eyes (20-20-20)"
+        }
+    }
+}
+
+/// A break reminder waiting while the user reads (Manh 2026-11-20,
+/// 05:33). `countdownSeconds` is the rest countdown shown after the
+/// reminder read finishes.
+struct PendingReminder {
+    let kind: FocusReminderKind
+    let countdownSeconds: Int
 }
 
 /// A request to show text reading in panel right (Manh 2026-11-20).
@@ -99,6 +120,21 @@ final class FocusTimerStore: ObservableObject {
 
     /// Pending request to read in panel right (consumed by `PopupView`).
     @Published var panelRightRequest: PanelRightRequest?
+    /// A break reminder that fired while the user was reading and is
+    /// waiting (Manh 2026-11-20, 05:33). Shown as a banner + system
+    /// notification + dot on the Focus-Rest card; shows automatically
+    /// when the read stops. A second reminder firing while one waits
+    /// replaces it (latest wins — the earlier one was already notified).
+    @Published var pendingReminder: PendingReminder?
+    /// Called when a reminder fires while reading (set by AppDelegate):
+    /// the store does not own UserNotifications.
+    var onNotifyReminder: ((FocusReminderKind) -> Void)?
+    /// Whether the Fast Read window is open (set by AppDelegate — it
+    /// owns the window controller). Asked at fire time; no observation.
+    var isFastReadWindowOpen: (() -> Bool)?
+    /// Snooze task ("Snooze 5 min") — cancelled when the pending
+    /// reminder shows or is replaced.
+    private var snoozeTask: Task<Void, Never>?
     /// View model of the read currently running in panel right (`nil`
     /// = the panel shows the demo instead). Lives here — not in
     /// `PopupView` — because the panel view tree is rebuilt on every
@@ -227,7 +263,36 @@ final class FocusTimerStore: ObservableObject {
     /// the "Run reminder in:" setting applies ONLY to the reminder —
     /// Fast Read has its OWN separate setting ("Run FastRead in:",
     /// Manh 2026-11-20, 05:27), so this never touches Fast Read.
+    ///
+    /// If the user is actively reading (Manh 2026-11-20, 05:33), the
+    /// reminder does NOT steal the read — it waits as `pendingReminder`
+    /// (banner + system notification + dot on the Focus-Rest card) and
+    /// shows automatically when the read stops.
     private func fireReminder(_ kind: FocusReminderKind, countdownSeconds: Int) {
+        if isReading {
+            pendingReminder = PendingReminder(kind: kind, countdownSeconds: countdownSeconds)
+            onNotifyReminder?(kind)
+        } else {
+            showReminder(kind, countdownSeconds: countdownSeconds)
+        }
+    }
+
+    /// Whether the user is actively reading (Manh 2026-11-20, 05:33):
+    /// a panel read is running, or the Fast Read window is open. The
+    /// window side is asked via `isFastReadWindowOpen` (set by
+    /// AppDelegate — it owns the window controller); the panel side is
+    /// this store's own state.
+    private var isReading: Bool {
+        panelReadingViewModel != nil || (isFastReadWindowOpen?() ?? false)
+    }
+
+    /// Show a reminder now, per the "Run reminder in:" setting. Clears
+    /// any pending reminder (and a snooze) FIRST, so a panel read
+    /// started from here never re-triggers the pending show.
+    private func showReminder(_ kind: FocusReminderKind, countdownSeconds: Int) {
+        pendingReminder = nil
+        snoozeTask?.cancel()
+        snoozeTask = nil
         switch Defaults[.focusReminderDestination] {
         case .newWindow:
             restWindowController.show(
@@ -244,6 +309,37 @@ final class FocusTimerStore: ObservableObject {
         }
     }
 
+    /// "Take a break" (Manh 2026-11-20, 05:33): the user explicitly
+    /// takes the break now — show the pending reminder at once, even
+    /// mid-read.
+    func takePendingBreakNow() {
+        guard let pending = pendingReminder else { return }
+        showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+    }
+
+    /// "Snooze 5 min" (Manh 2026-11-20, 05:33): keep the reminder
+    /// pending and fire it again in 5 minutes — it notifies again if
+    /// the user is still reading, or shows directly if not.
+    func snoozePendingReminder() {
+        guard pendingReminder != nil else { return }
+        snoozeTask?.cancel()
+        snoozeTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            try? await Task.sleep(for: .seconds(5 * 60))
+            guard !Task.isCancelled else { return }
+            self.snoozeTask = nil
+            guard let pending = self.pendingReminder else { return }
+            self.fireReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+        }
+    }
+
+    /// The Fast Read window closed (Manh 2026-11-20, 05:33): if a
+    /// reminder waited while the user read there, show it now.
+    func fastReadWindowClosed() {
+        guard let pending = pendingReminder else { return }
+        showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+    }
+
     // MARK: - Panel-right reading
 
     /// Start reading `text` in panel right (called by `PopupView`
@@ -256,7 +352,10 @@ final class FocusTimerStore: ObservableObject {
     func startPanelReading(text: String, countdownSeconds: Int? = nil) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        stopPanelReading()
+        // A new read replaces the old one — the user is still reading,
+        // just different text, so a pending reminder keeps waiting
+        // (Manh 2026-11-20, 05:33).
+        stopPanelReading(showPending: false)
         let viewModel = RSVPViewModel(
             text: trimmed,
             wpm: Defaults[.rsvpWPM],
@@ -273,8 +372,12 @@ final class FocusTimerStore: ObservableObject {
     }
 
     /// Stop a panel read (panel dismissed, read finished its countdown,
-    /// or a new read replaces it).
-    func stopPanelReading() {
+    /// or a new read replaces it). When the read ends for real
+    /// (`showPending`, the default), a reminder that waited while
+    /// reading shows automatically (Manh 2026-11-20, 05:33). A new
+    /// read replacing the old one passes `false` — the user is still
+    /// reading, so the reminder keeps waiting.
+    func stopPanelReading(showPending: Bool = true) {
         panelCountdownTask?.cancel()
         panelCountdownTask = nil
         panelReminderCountdown = nil
@@ -282,6 +385,9 @@ final class FocusTimerStore: ObservableObject {
         panelRightRequest = nil
         panelReadingViewModel?.pause()
         panelReadingViewModel = nil
+        if showPending, let pending = pendingReminder {
+            showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+        }
     }
 
     /// Start the rest countdown after a reminder read finishes

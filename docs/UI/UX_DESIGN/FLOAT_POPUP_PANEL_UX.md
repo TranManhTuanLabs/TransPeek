@@ -498,6 +498,15 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Window Read (`.panel` presentation, không copy code). Đọc xong →
   hiện countdown nghỉ (5 phút / 20 giây) rồi tự đóng; nút Done đóng
   sớm. Không đụng tới cửa sổ Read đang mở.
+- **Nhắc nghỉ lúc đang đọc** (Manh 2026-11-20, 05:33): timer tới giờ
+  mà user đang đọc (cửa sổ Read hay trong panel) thì KHÔNG cướp màn
+  hình — chỉ hiện banner trong panel (trên mọi tab) + thông báo hệ
+  thống macOS, có 2 nút "Take a break" (hiện nhắc nghỉ ngay theo
+  "Run reminder in") và "Snooze 5 min" (nhắc lại sau 5 phút). Cứ đọc
+  tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng đọc
+  (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown nghỉ)
+  thì nhắc nghỉ tự hiện. Không đang đọc thì hiện nhắc nghỉ luôn theo
+  setting. Áp cho cả 2 lựa chọn "Run reminder in".
 
 ### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
 
@@ -549,6 +558,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
   20 giây) rồi về lại demo. Bấm nút Fast Read ở tab dịch (mở cửa sổ)
   hoặc ẩn panel thì đọc trong panel dừng hẳn (không chạy ngầm).
+- **Banner nhắc nghỉ chờ** (Manh 2026-11-20, 05:33): khi timer tới
+  lúc đang đọc, banner hiện trên mọi tab (dưới hàng chấm) với 2 nút
+  "Take a break" / "Snooze 5 min"; chấm cam ở thẻ Focus & Rest báo
+  có nhắc chờ. Banner là view riêng (tự observe store) nên panel
+  không re-render theo từng giây của timer.
 
 ## Liên kết
 
