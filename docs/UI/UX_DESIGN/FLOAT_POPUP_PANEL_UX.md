@@ -66,6 +66,8 @@ Panel mac là một `VStack` (padding ngang 14), các hàng theo thứ tự từ
 - **Ẩn panel:** click chuột ra chỗ khác. **KHÔNG có nút đóng tay, và cũng KHÔNG CẦN** — workflow của Manh là tra xong click ra chỗ khác, rồi tra cái mới.
 - **Mở panel:** mặc định ở kích thước Settings (420×450), không mở compact, không nhớ cỡ kéo cũ.
 
+> **Panel stays a panel — NOT converted to a window (Manh 2026-11-20, applies to mac AND Windows):** the translate UI stays a panel (`NSPanel` with `.nonactivatingPanel` on macOS; the equivalent non-activating popup on Windows) and is never converted to a regular window, on either platform. Reason: the panel exists for a quick "peek" — it does not activate the app or steal focus, it opens at the cursor, and it dismisses on outside click / Esc, so the user stays in the app they were working in. A regular window would steal focus on every translation and lose click-away dismissal, breaking the quick-translate workflow (the "Peek" in TransPeek). The hover-highlight limitation of a non-activating panel is fixed with a custom `.onHover` highlight (approved 2026-11-20), not by converting to a window. The window role already exists for the right job — the Fast Read window (Window Read RSVP) for long reading. Panel = quick translate, Window = long reading.
+
 ### Tay kéo / tay cầm (grip + tay nắm viền) — lý do làm và cảnh báo
 
 - **Lý do làm:** panel là `NSPanel` borderless (không có title bar, không có viền hệ thống) nên macOS **không cho kéo resize native** — không có viền để túm, không có góc để kéo. Muốn đổi cỡ panel thì bắt buộc phải tự làm: 1 grip 3 vạch ở góc dưới-phải (kéo 2 chiều) + 2 tay nắm viền trong suốt 6pt (phải = chỉ rộng, dưới = chỉ cao). Windows không cần tự làm vì cửa sổ WinUI có viền native resize sẵn.
