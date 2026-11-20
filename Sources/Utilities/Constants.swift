@@ -621,12 +621,17 @@ enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
 /// must not share one setting. Applies GLOBALLY to every Fast Read
 /// launch (panel button, float icon, menubar, shortcut): the chosen
 /// location is the only place RSVP shows.
+/// Case order = picker order (Manh 2026-11-20, 17:11): "FastRead Lite"
+/// first, "New FastRead Window (recommended)" second. Order is display
+/// only — the default is still `.newWindow` (set explicitly in the
+/// Defaults key) and values are stored as Strings, so existing saved
+/// values keep working.
 enum FastReadRunLocation: String, CaseIterable, Defaults.Serializable {
+    /// Fast Read runs inside panel right, no separate window.
+    case rightPanel
     /// Fast Read opens the separate Window Read (default — the current
     /// behavior, so nothing changes until the user picks otherwise).
     case newWindow
-    /// Fast Read runs inside panel right, no separate window.
-    case rightPanel
 
     /// Labels (Manh 2026-11-20, 11:41): "FastRead" one word, matching
     /// the setting name; the picker appends " (recommended)" (lowercase)
@@ -855,3 +860,4 @@ extension Defaults.Keys {
     static let ttsAutoPlayTargetProvider = Key<String>("tts_autoPlayTargetProvider", default: "first")
     static let ttsLanguageRates = Key<[String: Double]>("tts_languageRates", default: [:])
 }
+

@@ -500,18 +500,19 @@ struct PopupView: View {
                         // Blue outline only (Manh 2026-11-19). 0.25
                         // opacity (Manh 2026-11-20: the full blue was
                         // too bright and distracting) proved a touch
-                        // too pale, so 0.4 now (Manh 2026-11-20, 11:27
-                        // — experiment, still light, just easier to
-                        // see). No fill, no text/icon color change.
-                        // The small padding is just so the border
-                        // doesn't touch the text.
+                        // too pale, so 0.4 (Manh 2026-11-20, 11:27 —
+                        // experiment, still light, just easier to
+                        // see); 0.5 now (Manh 2026-11-20, 17:15 —
+                        // just a touch stronger). No fill, no
+                        // text/icon color change. The small padding
+                        // is just so the border doesn't touch the text.
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                     }
                     .buttonStyle(.plain)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.blue.opacity(0.4), lineWidth: 1)
+                            .stroke(Color.blue.opacity(0.5), lineWidth: 1)
                             .allowsHitTesting(false)
                     )
                     .help("OCR Screen Translate")
@@ -685,17 +686,18 @@ struct PopupView: View {
                         // Fast Read "A+" icon (0.78 / 0.50 / 0.05). 0.25
                         // opacity (Manh 2026-11-20: the full turmeric
                         // was too bright and distracting) proved a touch
-                        // too pale, so 0.4 now (Manh 2026-11-20, 11:27
-                        // — experiment, still light, just easier to
-                        // see). The small padding is just so the border
-                        // doesn't touch the text.
+                        // too pale, so 0.4 (Manh 2026-11-20, 11:27 —
+                        // experiment, still light, just easier to
+                        // see); 0.5 now (Manh 2026-11-20, 17:15 —
+                        // just a touch stronger). The small padding
+                        // is just so the border doesn't touch the text.
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                     }
                     .buttonStyle(.plain)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(red: 0.78, green: 0.50, blue: 0.05).opacity(0.4), lineWidth: 1)
+                            .stroke(Color(red: 0.78, green: 0.50, blue: 0.05).opacity(0.5), lineWidth: 1)
                             .allowsHitTesting(false)
                     )
                     .help("Fast Read (RSVP)")
@@ -1578,3 +1580,4 @@ struct TopBarDragMarker: NSViewRepresentable {
     func makeNSView(context: Context) -> TopBarDragMarkerView { TopBarDragMarkerView() }
     func updateNSView(_: TopBarDragMarkerView, context: Context) {}
 }
+

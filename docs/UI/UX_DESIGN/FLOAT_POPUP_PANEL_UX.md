@@ -378,8 +378,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Settings, Copy, loa, "Copy source/translation", nút hàng điều khiển
   Read lite, chevron hàng chấm, nút "Read in panel" / "Done" /
   Settings / "?" ở panel phải, loa + Copy phía nguồn, nút swap ngôn
-  ngữ). Không đổi style nút, không đổi viền 0.4 (tăng từ 0.25, Manh
-  2026-11-20 11:27 — thử nghiệm, 0.25 hơi nhạt), không kích hoạt app
+  ngữ). Không đổi style nút, không đổi viền 0.5 (0.25 → 0.4 Manh
+  2026-11-20 11:27, → 0.5 Manh 2026-11-20 17:15 — thêm chút thôi cho
+  đẹp), không kích hoạt app
   khi panel hiện. Ô nhập (source text) + 2 ô chọn ngôn ngữ (Source /
   Target) cũng có cùng highlight này (Manh 2026-11-20, 10:11).
   (Bảng đầy đủ mọi nút panel: §10.8.)
@@ -530,9 +531,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Panel chính: nút **Capture OCR** có viền xanh dương, nút **Fast Read**
   có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ "A+" của Fast Read);
   chỉ viền lining bao ngoài nút, không tô nền, không đổi màu chữ/icon
-  (Manh 2026-11-19 23:56); **opacity 0.4** (Manh 2026-11-20 11:27 —
-  thử nghiệm: 0.25 hơi nhạt, tăng lên chút; trước đó 2026-11-20 làm
-  nhạt hết cỡ 0.25 vì màu đầy quá nổi, mất tập trung).
+  (Manh 2026-11-19 23:56); **opacity 0.5** (Manh 2026-11-20 17:15 —
+  thêm chút thôi cho đẹp; trước đó 0.4 từ 11:27 — thử nghiệm: 0.25 hơi
+  nhạt, tăng lên chút; trước nữa 2026-11-20 làm nhạt hết cỡ 0.25 vì
+  màu đầy quá nổi, mất tập trung).
 - Window Read: thêm tuỳ chọn **"Run text automatically"** (on/off,
   mặc định ON) trong Settings của cửa sổ (Manh 2026-11-20 00:47) —
   khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần
@@ -562,8 +564,14 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **Pomodoro — theo CHUẨN:** Work 25 / Rest 5 mặc định, có picker
   đổi (Work: 5/10/15/20/25/30/45/60; Rest: 5/10/15); nhãn picker ghi
   luôn default ("Work (default: 25 min):"). Sau 4 chu kỳ focus →
-  nghỉ dài 15 phút. 4 chấm tròn hiện số chu kỳ đã xong + dòng "Long
-  break 15 min after 4 cycles". Nút Start/Pause/Resume + Reset.
+  nghỉ dài 15 phút. Timer đếm ngược, 4 chấm tròn + dòng "Long break
+  …", nút Start/Pause/Resume + Reset và nút "Start eye reminders"
+  đều **căn center** (Manh 2026-11-20, 17:11 — cho đẹp): 4 chấm tròn
+  hiện số chu kỳ đã xong ở 1 dòng riêng, dòng "Long break 15 min
+  after 4 cycles" ở dòng dưới (cũng center); Work/Rest picker giữ
+  nguyên căn trái. "Repeat automatically" + "Auto start focus" là
+  Toggle của SwiftUI — vốn đã là nút gạt (switch) trên macOS, không
+  cần đổi (Manh 2026-11-20, 17:11 — "thử để nút gạt").
   Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
   nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp) —
   TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12;
@@ -633,7 +641,8 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Read đầy đủ.)
 - **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
   nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
-  dropdown): **"FastRead Lite"** và **"New FastRead Window
+  dropdown): **"FastRead Lite"** (lên trên, lựa chọn đầu tiên — Manh
+  2026-11-20, 17:11) và **"New FastRead Window
   (recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
   cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
   menubar, phím tắt): chọn 1 trong 2 thì RSVP chỉ hiển thị theo lựa
@@ -755,8 +764,8 @@ Two rules apply to EVERY panel button:
   hit-testable `.overlay` Shape on top of a button swallows the click
   and the button never fires). It does not change the button style
   (`.plain` stays `.plain`, `.bordered` stays `.bordered`) and does
-  not touch the settled 0.4-opacity borders (0.25 → 0.4, Manh
-  2026-11-20 11:27 — experiment, 0.25 was a touch too pale).
+  not touch the settled 0.5-opacity borders (0.25 → 0.4 → 0.5, Manh
+  2026-11-20 17:15 — just a touch stronger; 0.25 was a touch too pale).
 - **Cursor (see §10.5):** links → system pointing hand; plain buttons
   → system default arrow (+ the highlight above); text fields →
   I-beam; panel resize cursor untouched.
@@ -773,8 +782,8 @@ Two rules apply to EVERY panel button:
 | Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned |
 | chevron.left / chevron.right | dotsRow, flanking the 3 dots | Previous / next tab; disabled + dimmed (secondary 0.3) at the ends | `.plain`, `.caption` |
 | 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
-| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |
-| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |
+| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.5 opacity (0.25 → 0.4 → 0.5, Manh 2026-11-20 17:15 — just a touch stronger) |
+| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.5 opacity (0.25 → 0.4 → 0.5, Manh 2026-11-20 17:15 — just a touch stronger) |
 | "?" | Actions row, right (left of Settings) | Toggle the shortcuts table embedded at the top of the output | `.plain`; accent + filled icon while open |
 | Settings (gear) | Actions row, right end | Open Settings | `.plain` |
 | Copy / speaker (provider card) | Bottom of each provider card, fixed outside the scrolling text | Copy / speak that card's text | `.bordered` |
@@ -788,7 +797,7 @@ Two rules apply to EVERY panel button:
 | Rewind / Play-Pause / Forward | Read lite control row | Step back / toggle play-pause / step forward | `.bordered` (Play = `.borderedProminent`) |
 | Maximize | Read lite control row, right end | Toggle panel default (420×450) ↔ max, clamped to the visible frame (never covers the Dock) | `.bordered` |
 | "Read in panel" | Panel-right demo state | Read the translate-tab text right here in the panel — always in-panel, ignores "Run FastRead in:" | `.bordered` |
-| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: FastRead Lite / New FastRead Window (recommended), default Window | `.radioGroup` Picker |
+| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: FastRead Lite (first, on top) / New FastRead Window (recommended), default Window (Manh 2026-11-20 17:11) | `.radioGroup` Picker |
 | "?" / Settings (Read lite top bar) | Panel-right paused top bar, top-right | Open the hotkeys table / Settings popover | `.plain` |
 | GitHub link | bottomBar, centered | Open the repo in the browser | Link — system pointing hand on hover |
 | [×] / Run (shortcuts table) | Embedded shortcuts table ("?") and panel-left table | [×] hides the table; Run runs that shortcut's code path, then back to the translate tab | Both carry `InteractiveMarker` |
@@ -932,3 +941,4 @@ trigger it (the user is still reading, so the reminder keeps waiting).
 - [Trạng thái dự án](../../PROJECT_STATE.md)
 - [Chỉ mục UX](../../UI_DESIGN.md)
 - [Panel UX Windows (đã chốt)](https://github.com/TranManhTuanLabs/TransPeek-Windows/blob/main/docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
+

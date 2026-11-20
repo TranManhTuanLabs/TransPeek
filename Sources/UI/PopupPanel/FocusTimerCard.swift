@@ -128,10 +128,13 @@ struct FocusTimerCard: View {
             .padding(.horizontal, 12)
 
             // Countdown — big, monospaced, so it reads as a timer.
+            // Centered (Manh 2026-11-20, 17:11): the timer is the
+            // card's centerpiece, so it sits in the middle, not at
+            // the left edge with the pickers below it.
             Text(FocusTimerStore.mmss(store.pomodoroRemainingSeconds))
                 .font(.system(size: 28, weight: .bold, design: .monospaced))
                 .monospacedDigit()
-                .padding(.horizontal, 12)
+                .frame(maxWidth: .infinity, alignment: .center)
 
             // Work / Rest pickers. The label names the default (Manh
             // 2026-11-20, 03:44 — any setting with a default shows it
@@ -180,19 +183,25 @@ struct FocusTimerCard: View {
             .padding(.horizontal, 12)
 
             // Cycle dots — one per focus interval in the round; a long
-            // break follows the 4th.
+            // break follows the 4th. Centered (Manh 2026-11-20, 17:11),
+            // dots on their own line with the "Long break … after 4
+            // cycles" note on the line below — so the row reads as a
+            // centered stack instead of a left-aligned run-on line.
             HStack(spacing: 6) {
                 ForEach(0..<4, id: \.self) { index in
                     Circle()
                         .fill(index < store.completedFocusCycles ? Color.accentColor : Color.secondary.opacity(0.4))
                         .frame(width: 8, height: 8)
                 }
-                Text("Long break \(Defaults.Keys.focusLongBreakMinutes.defaultValue) min after 4 cycles")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, alignment: .center)
+            Text("Long break \(Defaults.Keys.focusLongBreakMinutes.defaultValue) min after 4 cycles")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
 
+            // Start / Reset — centered (Manh 2026-11-20, 17:11): the
+            // main action row sits under the centered timer and dots.
             HStack(spacing: 8) {
                 Button(pomodoroButtonLabel) {
                     store.togglePomodoro()
@@ -208,6 +217,7 @@ struct FocusTimerCard: View {
                 .help("Back to idle — clears the timer and the cycle count")
                 .background { InteractiveMarker() }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 12)
 
             // "Repeat automatically" (Manh 2026-11-20, 07:12;
@@ -262,12 +272,15 @@ struct FocusTimerCard: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)
 
+            // "Start eye reminders" — centered (Manh 2026-11-20,
+            // 17:11), like the Focus action row above it.
             Button(store.eyeRestRunning ? "Stop eye reminders" : "Start eye reminders") {
                 store.toggleEyeRest()
             }
             .buttonStyle(.bordered)
             .help("Remind me every 20 minutes to rest my eyes for 20 seconds")
             .background { InteractiveMarker() }
+            .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, 12)
         }
     }
@@ -302,3 +315,4 @@ struct FocusTimerCard: View {
         }
     }
 }
+
