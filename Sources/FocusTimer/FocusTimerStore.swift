@@ -63,11 +63,12 @@ struct PendingReminder {
 struct PanelRightRequest: Equatable {
     let text: String
     let countdownSeconds: Int?
-    // Default `nil` (Manh 2026-11-20, CI #297 fix): a plain read has no
-    // reminder kind, so call sites that launch a plain read (e.g.
-    // `AppDelegate.showFastRead`) must not have to pass `kind:` — and a
-    // future call site can never hit the missing-argument trap again.
-    let kind: FocusReminderKind? = nil
+    // No default (Manh 2026-11-20, CI #298 fix): a defaulted `= nil`
+    // here made the compiler reject the explicit `kind:` at the
+    // reminder call site ("extra argument", CI #298), so `kind` is
+    // required and BOTH call sites pass it explicitly — `nil` for a
+    // plain read, the reminder kind for a reminder read.
+    let kind: FocusReminderKind?
 }
 
 /// Pomodoro phase (STANDARD logic, Manh 2026-11-20, 04:08): Work /

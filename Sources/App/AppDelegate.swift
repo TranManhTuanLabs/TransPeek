@@ -469,7 +469,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .rightPanel:
             focusTimerStore.panelRightRequest = PanelRightRequest(
                 text: text,
-                countdownSeconds: nil
+                countdownSeconds: nil,
+                // `kind: nil` (Manh 2026-11-20, CI #298 fix): a plain
+                // read has no reminder kind — passed explicitly because
+                // `PanelRightRequest.kind` has no default (a defaulted
+                // `= nil` broke the reminder call site, CI #298).
+                kind: nil
             )
             panelController.showAtCursor()
         }
