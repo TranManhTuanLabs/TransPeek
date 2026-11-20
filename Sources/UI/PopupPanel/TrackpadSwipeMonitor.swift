@@ -40,16 +40,20 @@ enum TrackpadSwipeDirection {
 ///   50pt, it fires once per gesture, and momentum events are drained
 ///   (ignored) until the gesture fully ends, so a single swipe never
 ///   flips two tabs.
-/// - A swipe that begins over a horizontally-scrollable view is yielded
-///   to it (Manh 2026-11-20, "Làm cả 2"): the dictionary link bar is a
-///   horizontal ScrollView at the panel bottom, and the monitor runs
-///   before view dispatch, so without this the bar could never scroll —
-///   every swipe over it switched tabs. On `.began` the monitor
-///   hit-tests the swipe position; over a scroll view whose content is
-///   wider than its viewport (links overflow), the whole gesture passes
-///   through and the bar scrolls. When the links fit, a swipe on the bar
-///   still switches tabs. The vertical results ScrollView never counts
-///   (its content is no wider than its viewport).
+/// - The dictionary link bar is a HARD no-tab-switch zone (Manh
+///   2026-11-20, 10:13): a swipe that begins over the bar NEVER switches
+///   tabs — it scrolls the links when they overflow, and does nothing
+///   when they fit. (The first version, Manh 2026-11-20 "Làm cả 2", only
+///   yielded when the bar could scroll — content wider than viewport —
+///   and still switched tabs when the links fit; Manh changed it to a
+///   hard zone.) The bar carries a `DictionaryBarMarkerView` background,
+///   so on `.began` the monitor checks by rect containment whether the
+///   swipe position is over the bar (same pattern as
+///   `InteractiveMarkerView` in `PopupPanel.shouldStartWindowDrag`) —
+///   NOT by scrollability, so the vertical results ScrollView (which has
+///   no such marker) never counts and swipes over it still switch tabs.
+///   A local monitor runs before view dispatch, so this check is the only
+///   place the swipe can be yielded to the bar's ScrollView.
 /// - Only horizontal-dominant swipes count (|deltaX| > |deltaY| × 1.5);
 ///   a vertical-dominant swipe passes through untouched so the results
 ///   ScrollView scrolls normally. Text selection is a mouse drag, not a
@@ -62,10 +66,10 @@ final class TrackpadSwipeMonitor: ObservableObject {
     private var accumulatedX: CGFloat = 0
     /// Whether this gesture already fired a switch (one swipe = one switch).
     private var firedForGesture = false
-    /// Whether the current gesture began over a horizontally-scrollable
-    /// view (the dictionary link bar) — if so, the whole gesture is
-    /// yielded to that view and never switches tabs (Manh 2026-11-20).
-    private var yieldingToScrollableView = false
+    /// Whether the current gesture began over the dictionary link bar —
+    /// if so, the whole gesture is yielded to the bar and never switches
+    /// tabs (Manh 2026-11-20, 10:13: hard no-switch zone).
+    private var yieldingToDictionaryBar = false
     /// The local monitor token (nil when not installed).
     private var monitor: Any?
 
@@ -93,7 +97,7 @@ final class TrackpadSwipeMonitor: ObservableObject {
         panel = nil
         accumulatedX = 0
         firedForGesture = false
-        yieldingToScrollableView = false
+        yieldingToDictionaryBar = false
     }
 
     deinit {
@@ -119,17 +123,18 @@ final class TrackpadSwipeMonitor: ObservableObject {
         case .began:
             accumulatedX = 0
             firedForGesture = false
-            // A swipe that begins over a horizontally-scrollable view
-            // (the dictionary link bar when its links overflow) belongs
-            // to that view: yield the whole gesture to it (Manh
-            // 2026-11-20). A local monitor runs before view dispatch,
-            // so this hit-test is the only place the swipe can be
-            // yielded to the ScrollView.
-            yieldingToScrollableView = eventBeginsOverHorizontallyScrollableView(event)
+            // A swipe that begins over the dictionary link bar belongs to
+            // the bar: yield the whole gesture to it (Manh 2026-11-20,
+            // 10:13 — hard no-switch zone, whether or not the links
+            // overflow). A local monitor runs before view dispatch, so
+            // this check is the only place the swipe can be yielded to
+            // the bar's ScrollView.
+            yieldingToDictionaryBar = eventBeginsOverDictionaryBar(event)
         case .changed:
             // Yielded gesture: pass every event through untouched so the
-            // scroll view scrolls, and never switch tabs.
-            guard !yieldingToScrollableView else { return event }
+            // scroll view scrolls when it can (and nothing happens when
+            // the links fit), and never switch tabs.
+            guard !yieldingToDictionaryBar else { return event }
             // Only a horizontal-dominant swipe counts; a vertical one
             // passes through so the results ScrollView scrolls normally.
             guard abs(deltaX) > abs(deltaY) * 1.5 else { return event }
@@ -146,33 +151,35 @@ final class TrackpadSwipeMonitor: ObservableObject {
         case .ended, .cancelled:
             accumulatedX = 0
             firedForGesture = false
-            yieldingToScrollableView = false
+            yieldingToDictionaryBar = false
         default:
             break
         }
         return event
     }
 
-    /// Whether the gesture began over a view that can scroll horizontally
-    /// — the dictionary link bar (`DictionaryBarView`, a horizontal
-    /// ScrollView at the panel bottom). Hit-test the event location, then
-    /// walk up the view hierarchy: a scroll view counts only when its
-    /// content is wider than its viewport (links overflow), so when the
-    /// links fit, a swipe on the bar still switches tabs. The vertical
-    /// results ScrollView never counts: its content is no wider than its
-    /// viewport.
-    private func eventBeginsOverHorizontallyScrollableView(_ event: NSEvent) -> Bool {
+    /// Whether the gesture began over the dictionary link bar
+    /// (`DictionaryBarView`, a horizontal ScrollView at the panel
+    /// bottom). The bar is a HARD no-tab-switch zone (Manh 2026-11-20,
+    /// 10:13): the check is only whether the swipe position is over the
+    /// bar's region — NOT whether the bar can scroll. The bar carries a
+    /// `DictionaryBarMarkerView` background, so this is a rect-containment
+    /// search over the panel's view tree (same pattern as
+    /// `InteractiveMarkerView` in `PopupPanel.shouldStartWindowDrag`).
+    /// The vertical results ScrollView has no such marker, so a swipe
+    /// beginning over the results still switches tabs.
+    private func eventBeginsOverDictionaryBar(_ event: NSEvent) -> Bool {
         guard let panel, let contentView = panel.contentView else { return false }
-        let location = contentView.convert(event.locationInWindow, from: nil)
-        guard let hitView = contentView.hitTest(location) else { return false }
-        var view: NSView? = hitView
-        while let current = view {
-            if let scrollView = current as? NSScrollView,
-               let documentWidth = scrollView.documentView?.frame.width,
-               documentWidth > scrollView.contentSize.width + 1 {
-                return true
-            }
-            view = current.superview
+        return containsDictionaryBarMarker(contentView, point: event.locationInWindow)
+    }
+
+    private func containsDictionaryBarMarker(_ view: NSView, point: NSPoint) -> Bool {
+        if let marker = view as? DictionaryBarMarkerView {
+            let rect = marker.convert(marker.bounds, to: nil)
+            if rect.contains(point) { return true }
+        }
+        for subview in view.subviews {
+            if containsDictionaryBarMarker(subview, point: point) { return true }
         }
         return false
     }

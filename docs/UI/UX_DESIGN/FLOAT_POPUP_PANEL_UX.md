@@ -363,15 +363,38 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   lên nút — áp cho mọi nút panel (Pin, Capture OCR, Fast Read, "?",
   Settings, Copy, loa, "Copy source/translation", nút hàng điều khiển
   Read lite, chevron hàng chấm, nút "Read in panel" / "Done" /
-  Settings / "?" ở panel phải). Không đổi style nút, không đổi viền
-  0.25, không kích hoạt app khi panel hiện.
-- **Vuốt ngang trên thanh link từ điển (Manh 2026-11-20, "Làm cả
-  2"):** vuốt 2 ngón bắt đầu trên thanh link từ điển thì cuộn link
-  (khi link tràn — nội dung rộng hơn khung nhìn) thay vì đổi tab; vuốt
-  ở chỗ khác vẫn đổi tab như cũ. `TrackpadSwipeMonitor` hit-test vị
-  trí bắt đầu vuốt (`.began`) xem có nằm trên `NSScrollView` cuộn
-  ngang được không; nếu có thì nhường toàn bộ gesture cho ScrollView.
-  Khi link vừa khung (không cuộn được) thì vuốt trên thanh vẫn đổi tab.
+  Settings / "?" ở panel phải, loa + Copy phía nguồn, nút swap ngôn
+  ngữ). Không đổi style nút, không đổi viền 0.25, không kích hoạt app
+  khi panel hiện. Ô nhập (source text) + 2 ô chọn ngôn ngữ (Source /
+  Target) cũng có cùng highlight này (Manh 2026-11-20, 10:11).
+  - **Lỗi bấm không ăn, build 285 (Manh 2026-11-20, 10:11) — NGUYÊN
+    NHÂN GỐC:** bản đầu vẽ tint bằng `.overlay` Shape thường — Shape
+    đó nằm TRÊN nút và bắt được hit-test, nên thành hit view của cú
+    click: AppKit đưa mouse-down cho view trên cùng, Shape không làm
+    gì với nó, nút bên dưới không bao giờ nhận được click. (Ô nhập +
+    ô chọn ngôn ngữ lúc đó chưa có modifier nên vẫn bấm được — chỉ
+    khác nhau ở modifier.) **CÁCH SỬA:** tint có
+    `.allowsHitTesting(false)` — highlight chỉ để nhìn, không bao giờ
+    tham gia hit-test, click tới đúng nút như trước khi có modifier.
+    Trạng thái gốc trước sửa: nút không có highlight tự vẽ, chỉ dựa
+    vào hiệu ứng hover của hệ thống (vốn không hiện vì panel không
+    active) — bấm vẫn ăn bình thường.
+  - **Trạng thái bấm khác hover (Manh 2026-11-20, 10:11):** chỉ hover
+    thì chưa đủ phân biệt — bấm xuống phải sáng khác hẳn. Modifier
+    theo dõi trạng thái bấm bằng simultaneous `DragGesture`
+    (minimumDistance 0, không chặn tap của nút, không thêm view bắt
+    hit-test): hover = tint 0.08, bấm = tint đậm hơn 0.18.
+- **Vuốt ngang trên thanh link từ điển — VÙNG CẤM ĐỔI TAB CỨNG
+  (Manh 2026-11-20, 10:13):** vuốt 2 ngón bắt đầu trên thanh link từ
+  điển thì KHÔNG BAO GIỜ đổi tab — cuộn link khi link tràn, không làm
+  gì khi link vừa khung (không cuộn được). Vuốt ở chỗ khác vẫn đổi tab
+  như cũ. `TrackpadSwipeMonitor` kiểm tra vị trí bắt đầu vuốt
+  (`.began`) có nằm trong vùng thanh link không (thanh link mang
+  `DictionaryBarMarkerView` làm background, tìm bằng rect-containment
+  như `InteractiveMarkerView`); nếu có thì nhường toàn bộ gesture cho
+  ScrollView. (Bản trước, "Làm cả 2", chỉ nhường khi link tràn —
+  nội dung rộng hơn khung nhìn — còn link vừa khung thì vuốt trên đó
+  vẫn đổi tab; Manh đổi thành vùng cấm cứng.)
 - Panel phải là placeholder ("Fast Read — coming soon") cho tới khi
   Fast Read window ship.
 
@@ -385,7 +408,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (17 / 16 / 13, khớp Windows). Tên app màu accent từ vòng 9 (trước đó
   màu mặc định).
 - **Nội dung dịch (VStack):** ô nhập (cao mặc định 48, tự cao tối đa 6
-  dòng) + hàng ngôn ngữ (Source ⇄ Target + Capture OCR) + các card kết
+  dòng, có highlight hover + bấm như nút — Manh 2026-11-20, 10:11) +
+  hàng ngôn ngữ (Source ⇄ Target + Capture OCR, 2 ô chọn ngôn ngữ cũng
+  có highlight hover + bấm như nút) + các card kết
   quả provider trong ScrollView (text cap 260, loa/Copy cố định ở đáy
   card) + bảng shortcut của nút "?" nhúng ở ĐẦU ô output khi bấm + hàng
   Actions + DictionaryBar. Hàng ngôn ngữ: 2 ô chọn là dropdown tìm kiếm

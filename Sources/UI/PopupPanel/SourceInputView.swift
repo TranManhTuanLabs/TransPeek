@@ -51,6 +51,7 @@ struct SourceInputView: View {
                 }
                 .frame(maxHeight: .infinity)
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             } else {
                 SourceTextEditor(
                     text: $text,
@@ -69,6 +70,7 @@ struct SourceInputView: View {
                 )
                 .frame(maxHeight: .infinity)
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
 
             HStack(spacing: 4) {
@@ -123,6 +125,7 @@ struct SourceInputView: View {
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .help("Speak source text")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
 
                 // Copy source text (stays in the panel, unlike ⌘↵ Copy & Close).
@@ -141,6 +144,7 @@ struct SourceInputView: View {
                 .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .help("Copy source text")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: SwapLanguagesShortcut.didChangeNotification)) { _ in

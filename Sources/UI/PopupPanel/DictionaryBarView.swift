@@ -36,6 +36,12 @@ struct DictionaryBarView: View {
                 }
                 .padding(.horizontal, 4)
             }
+            // Marks the bar's region for TrackpadSwipeMonitor (Manh
+            // 2026-11-20, 10:13): the bar is a hard no-tab-switch zone —
+            // a swipe beginning over it never switches tabs. The marker
+            // is a background (behind the ScrollView), so it never
+            // becomes a hit view and cannot affect clicks or dragging.
+            .background { DictionaryBarMarker() }
             .onAppear { links = DictionaryLink.load() }
             .task(id: links) {
                 for link in links {
@@ -95,4 +101,18 @@ struct DictionaryBarView: View {
             .frame(width: 16, height: 16)
         }
     }
+}
+
+/// NSView marker placed as `.background()` on the dictionary link bar's
+/// ScrollView. `TrackpadSwipeMonitor` treats the bar as a hard
+/// no-tab-switch zone (Manh 2026-11-20, 10:13): it finds this marker by
+/// rect containment (same pattern as `InteractiveMarkerView` in
+/// `PopupPanel.shouldStartWindowDrag`). A plain NSView — it draws
+/// nothing and, as a background behind the ScrollView, never becomes a
+/// hit view, so it cannot affect clicks or window dragging.
+final class DictionaryBarMarkerView: NSView {}
+
+struct DictionaryBarMarker: NSViewRepresentable {
+    func makeNSView(context: Context) -> DictionaryBarMarkerView { DictionaryBarMarkerView() }
+    func updateNSView(_: DictionaryBarMarkerView, context: Context) {}
 }

@@ -35,6 +35,7 @@ struct LanguageBarView: View {
                 },
                 popoverTracker: popoverTracker
             )
+            .panelHoverHighlight()
 
             Button(action: onSwap) {
                 Image(systemName: "arrow.left.arrow.right")
@@ -42,12 +43,14 @@ struct LanguageBarView: View {
             }
             .buttonStyle(.plain)
             .foregroundStyle(.secondary)
+            .panelHoverHighlight()
 
             // Target language picker
             SearchableLanguagePicker(
                 selection: $targetLanguage,
                 popoverTracker: popoverTracker
             )
+            .panelHoverHighlight()
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 2)
