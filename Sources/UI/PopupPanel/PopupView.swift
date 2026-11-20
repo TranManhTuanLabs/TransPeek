@@ -125,14 +125,19 @@ struct PopupView: View {
         )
     }
 
+    /// Whether the panel has anything to show (Manh 2026-11-20, icon-click Fast Read bug): a translation is active, OR the user is on the Fast Read tab (a panel read was requested there), OR a panel read is running. The Fast Read tab must stay rendered even with no translation — hovering the float icon hides it, so an icon click can only happen before any hover, when the coordinator is still `.idle`; without this the panel opened empty and the requested read played invisibly. The store is held as a plain `let` on purpose (so the panel never re-renders on timer ticks), so this reads its @Published values without subscribing — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes, so the gate is always evaluated with fresh values.
+    private var hasPanelContent: Bool {
+        coordinator.phase == .active
+            || selectedTab == .fastRead
+            || focusTimerStore.panelReadingViewModel != nil
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            switch coordinator.phase {
-            case .idle:
-                EmptyView()
-
-            case .active:
+            if hasPanelContent {
                 activeContent
+            } else {
+                EmptyView()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
