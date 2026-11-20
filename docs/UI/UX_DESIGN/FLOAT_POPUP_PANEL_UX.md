@@ -424,8 +424,8 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
   vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
   placeholder như mac.
-- Nút pin (Manh 2026-11-20, 07:08 + 07:10, tạm thời) ở đầu trái hàng
-  chấm, trước chevron.left, gần mép trái panel với padding nhỏ 4pt
+- Nút pin (Manh 2026-11-20, 07:08 + 07:10 + 07:54, tạm thời) ở đầu trái hàng
+  chấm, trước chevron.left, gần mép trái panel với padding nhỏ 10pt
   (chi tiết §10.7).
 
 ### 10.5 Đã làm trong 0.1.5 (19/11/2026, nhánh `feature/015-deferred-batch`)
@@ -556,11 +556,13 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   setting cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
 - **Hiển thị theo size (Manh 2026-11-20, 04:44):**
   - Đang chạy (play): CHỈ focus text + around text + dòng phím tắt.
-  - Pause, panel bé: thêm speed (WPM) + nút Settings gọn ở góc phải
-    trên (cùng tuỳ chọn như Window Read: cỡ chữ / màu nền / context /
-    auto-play / reset), thanh progress nhỏ, hàng nút X / Restart /
-    Rewind / Play / Forward / Maximize căn giữa dưới cùng (Manh
-    2026-11-20, 07:02 — X + Restart có cả khi panel bé).
+  - Pause, panel bé: top row có đủ 4 picker như top bar (Speed /
+    Focus size / Context size / Words at once, spacing gọn 6pt cho
+    vừa panel 420pt) + Settings + "?" ở góc phải trên (Manh
+    2026-11-20, 07:54 — frame nhỏ vẫn đủ ô; "?" đặt cạnh Settings),
+    thanh progress nhỏ, hàng nút X / Restart / Rewind / Play /
+    Forward / Maximize căn giữa dưới cùng (Manh 2026-11-20, 07:02
+    — X + Restart có cả khi panel bé).
   - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
     trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
     picker (Speed / Focus size / Context size / Words at once) +
@@ -579,10 +581,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   bằng hook `onEscape` trong `PopupDismissMonitor` — monitor chặn
   Esc trước SwiftUI nên view đọc không bao giờ thấy phím Esc.
 - **Nút pin ở CẢ 3 panel (tạm thời)** (Manh 2026-11-20, 07:08 +
-  07:09 + 07:10): nằm ở hàng chấm (dotsRow, dùng chung cả 3 tab nên
+  07:09 + 07:10 + 07:54): nằm ở hàng chấm (dotsRow, dùng chung cả 3 tab nên
   hiện cả 3 panel), bên trái chevron.left, gần mép trái panel với
-  padding nhỏ 4pt cho đẹp (không dính sát mép, không padding lớn như
-  hàng thường). Chức năng không đổi: khi bắt đầu đọc trong panel,
+  padding nhỏ 10pt cho đẹp (was 4pt, dịch phải 6pt, Manh 2026-11-20,
+  07:54; không dính sát mép, không padding lớn như hàng thường). Chức năng không đổi: khi bắt đầu đọc trong panel,
   panel tự bật pin (click ra ngoài không làm mất bài đọc); user bấm
   nút để tắt. Đọc trong panel thì auto-fit bị đóng băng
   (cùng cơ chế manual-resize) để panel cao không bị co lại; hết đọc

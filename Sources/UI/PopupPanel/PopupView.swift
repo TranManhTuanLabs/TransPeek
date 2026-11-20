@@ -917,7 +917,8 @@ struct PopupView: View {
 
             // Pin button (Manh 2026-11-20, 07:08 + 07:10, temporary):
             // at the left end of the dots row, near the panel's left
-            // edge with a small padding (4pt) so it looks neat — not
+            // edge with a small padding (10pt — was 4pt, shifted 6pt
+            // right, Manh 2026-11-20, 07:54) so it looks neat — not
             // flush to the edge (0), not the row's normal large
             // padding. The dots row is shared across all 3 tabs, so
             // the pin is on every tab.
@@ -925,7 +926,7 @@ struct PopupView: View {
                 pinButton
                 Spacer()
             }
-            .padding(.leading, 4)
+            .padding(.leading, 10)
         }
         .padding(.top, 2)
         .padding(.bottom, 4)

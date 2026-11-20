@@ -233,9 +233,11 @@ struct PanelFastReadView: View {
 /// - While PLAYING: only the focus line (+ context when the style is
 ///   Always) and the shortcut hint — no buttons, no descriptions.
 /// - While PAUSED at the panel's default size: the book page, then
-///   compact chrome — speed + compact Settings at the top-right, a
-///   small progress bar above bottom-center X / Restart / Rewind /
-///   Play / Forward / Maximize buttons.
+///   compact chrome — the same four pickers as the top bar (Speed /
+///   Focus size / Context size / Words at once) + Settings + "?" at
+///   the top-right (Manh 2026-11-20, 07:54 — the small frame still
+///   has room), a small progress bar above bottom-center X / Restart /
+///   Rewind / Play / Forward / Maximize buttons.
 /// - While PAUSED at (near-)maximum panel size (content width ≥ 540,
 ///   i.e. panel width ≈ 580+ of the 600 max): the full window chrome —
 ///   pickers top bar, progress, the 6-button control row (X first,
@@ -362,20 +364,26 @@ struct CompactReadingView: View {
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    /// Compact paused chrome (Manh 2026-11-20, 04:44): speed + compact
-    /// Settings at the top-right, a small progress bar above
-    /// bottom-center Rewind / Play / Forward / Maximize buttons. The
-    /// Settings popover is the same one as the window (color scheme,
-    /// context display, auto-play, reset) — same options, compact.
+    /// Compact paused chrome (Manh 2026-11-20, 04:44; pickers on the
+    /// top row even at the small size, Manh 2026-11-20, 07:54 — the
+    /// small frame still has room): the same four pickers as the top
+    /// bar (Speed / Focus size / Context size / Words at once) +
+    /// Settings + "?" at the top-right, a small progress bar above
+    /// bottom-center X / Restart / Rewind / Play / Forward / Maximize
+    /// buttons. The Settings popover is the same one as the window
+    /// (color scheme, context display, auto-play, reset) — same
+    /// options, compact. The row uses tight spacing (6pt) so the four
+    /// pickers + gear + "?" fit the default 420pt panel width.
     private var compactPausedChrome: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                wpmPicker
+                focusSizePicker
+                contextSizePicker
+                chunkPicker
+
                 Spacer()
-                Text("\(viewModel.wpm) WPM")
-                    .font(.caption)
-                    .foregroundStyle(readingSecondary)
-                    .monospacedDigit()
-                    .help("Reading speed — ↑ / ↓ changes it by 50 WPM")
+
                 Button { showingSettings.toggle() } label: {
                     Image(systemName: "gearshape")
                 }
@@ -385,6 +393,17 @@ struct CompactReadingView: View {
                 .background { InteractiveMarker() }
                 .popover(isPresented: $showingSettings) {
                     settingsPopover
+                }
+
+                Button { showingHotkeys.toggle() } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Hotkeys")
+                .background { InteractiveMarker() }
+                .popover(isPresented: $showingHotkeys) {
+                    hotkeysPopover
                 }
             }
             .padding(.horizontal, 12)
