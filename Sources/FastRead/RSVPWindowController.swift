@@ -128,6 +128,12 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
         viewModel = nil
     }
 
+    /// Called when the window closes (Manh 2026-11-20, 05:33) — set by
+    /// AppDelegate so a pending break reminder can show once the read
+    /// ends. Fires from `windowWillClose`, which runs for both the red
+    /// button and a programmatic `close()`, exactly once each.
+    var onClose: (() -> Void)?
+
     var isVisible: Bool {
         window?.isVisible ?? false
     }
@@ -140,5 +146,6 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         viewModel?.pause()
         trackpadMonitor?.stop()
+        onClose?()
     }
 }

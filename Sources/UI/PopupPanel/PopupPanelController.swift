@@ -37,6 +37,10 @@ final class PopupPanelController {
     private let coordinator: TranslationCoordinator
     private let ttsCoordinator: TTSCoordinator?
     private let settingsController: SettingsWindowController?
+    /// Focus timer store (Manh 2026-11-20, focus timer + panel decor):
+    /// one store for the app — the panel-left card, the panel-right
+    /// reading view, and the Rest window all read the same state.
+    private let focusTimerStore: FocusTimerStore
 
     /// The app that was frontmost before we activated ourselves for input mode.
     private var previouslyActiveApp: NSRunningApplication?
@@ -44,11 +48,15 @@ final class PopupPanelController {
     init(
         coordinator: TranslationCoordinator,
         ttsCoordinator: TTSCoordinator? = nil,
-        settingsController: SettingsWindowController? = nil
+        settingsController: SettingsWindowController? = nil,
+        // Default is a fresh store (tests construct the controller
+        // without one); the app passes its shared store.
+        focusTimerStore: FocusTimerStore = FocusTimerStore()
     ) {
         self.coordinator = coordinator
         self.ttsCoordinator = ttsCoordinator
         self.settingsController = settingsController
+        self.focusTimerStore = focusTimerStore
     }
 
     deinit {
@@ -208,6 +216,7 @@ final class PopupPanelController {
             let contentView = PopupView(
                 coordinator: coordinator,
                 languagePopoverTracker: languagePopoverTracker,
+                focusTimerStore: focusTimerStore,
                 onDismiss: { [weak self] in
                     self?.dismiss()
                 },
@@ -332,7 +341,17 @@ final class PopupPanelController {
         dismissMonitor = PopupDismissMonitor(
             panel: panel,
             popoverTracker: languagePopoverTracker,
-            isPinned: { [weak self] in self?.coordinator.isPinned ?? false }
+            isPinned: { [weak self] in self?.coordinator.isPinned ?? false },
+            // Two-stage Esc (Manh 2026-11-20, 07:02): while a read is
+            // running in panel right, the first Esc only closes the
+            // reading and returns to panel right; the next Esc dismisses
+            // the panel.
+            onEscape: { [weak self] in
+                guard let self else { return false }
+                guard self.focusTimerStore.panelReadingViewModel != nil else { return false }
+                self.focusTimerStore.stopPanelReading()
+                return true
+            }
         ) { [weak self] in
             self?.dismiss()
         }

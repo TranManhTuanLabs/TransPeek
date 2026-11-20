@@ -399,16 +399,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
      Dịch; Option+Click → hành động còn lại). Thu gọn được (bấm header),
      trạng thái lưu trong `flowIntroCollapsed`. Header thẻ bấm được toàn
      bộ (có `InteractiveMarker`, không thì click bị coi là kéo cửa sổ).
-  2. **Bảng "Keyboard Shortcuts" (`ShortcutsTableView`)** — cùng bảng
+  2. **Thẻ "Focus & Rest" (`FocusTimerCard`)** — Pomodoro + rest
+     eyes + "Run reminder in:" (chi tiết §10.6). Ngay dưới "How the
+     icon works", trên bảng Shortcuts (Manh 2026-11-20, 07:06 — dời
+     lên từ dưới bảng Shortcuts).
+  3. **Bảng "Keyboard Shortcuts" (`ShortcutsTableView`)** — cùng bảng
      với nút "?" ở panel center. Thu gọn được (vòng 9), trạng thái lưu
      trong `shortcutsCollapsed`. Bấm Run thì chạy shortcut rồi về lại
      panel dịch. (Bảng "?" ở panel center KHÔNG dùng chế độ thu gọn —
      header của nó vẫn là ẩn bảng như trước.)
-  3. **Dãy share** — ở cuối nội dung cuộn: nhãn "Share TransPeek"
+  4. **Dãy share** — ở cuối nội dung cuộn: nhãn "Share TransPeek"
      (caption, màu secondary, căn giữa) + `ShareRowView` (6 icon, căn
-     giữa). KHÔNG tạo card mới, KHÔNG dùng Spacer đẩy xuống đáy — khi 2
-     thẻ trên thu gọn thì khoảng trống còn lại đến đáy để sau này thêm
-     timer focus, share chỉ chảy tự nhiên sau bảng shortcut.
+     giữa). KHÔNG tạo card mới, KHÔNG dùng Spacer đẩy xuống đáy — khi
+     các thẻ trên thu gọn thì khoảng trống còn lại đến đáy.
 - Panel left KHÔNG ẩn bottom bar (icon mèo + version vẫn hiện).
 
 ### 10.4 Hàng chấm — mac vs Windows
@@ -421,6 +424,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
   vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
   placeholder như mac.
+- Nút pin (Manh 2026-11-20, 07:08 + 07:10 + 07:54, tạm thời) ở đầu trái hàng
+  chấm, trước chevron.left, gần mép trái panel với padding nhỏ 10pt
+  (chi tiết §10.7).
 
 ### 10.5 Đã làm trong 0.1.5 (19/11/2026, nhánh `feature/015-deferred-batch`)
 
@@ -475,6 +481,138 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   và đã chốt, KHÔNG động vào nữa (không nối lại
   `PopupResizeCursorMonitor`; `PopupPanelController.swift` giữ nguyên
   như main).
+
+### 10.6 Thẻ "Focus & Rest" ở panel left (20/11/2026, nhánh `feature/focus-timer-decor`)
+
+- Nằm **ngay dưới "How the icon works", trên bảng "Keyboard
+  Shortcuts"** (Manh 2026-11-20, 07:06 — dời lên từ dưới bảng
+  Shortcuts). File riêng
+  `Sources/UI/PopupPanel/FocusTimerCard.swift`, dễ xoá sau này.
+  Thu gọn được (header bấm toàn bộ, trạng thái lưu
+  `focusTimerCollapsed), giống 2 thẻ trên.
+- **Pomodoro — theo CHUẨN:** Work 25 / Rest 5 mặc định, có picker
+  đổi (Work: 5/10/15/20/25/30/45/60; Rest: 5/10/15); nhãn picker ghi
+  luôn default ("Work (default: 25 min):"). Sau 4 chu kỳ focus →
+  nghỉ dài 15 phút. 4 chấm tròn hiện số chu kỳ đã xong + dòng "Long
+  break 15 min after 4 cycles". Nút Start/Pause/Resume + Reset.
+  Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
+  nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp) —
+  TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12;
+  mặc định BẬT, Manh 2026-11-20, 07:25): toggle trong thẻ, mặc định
+  BẬT nên hết Rest / nghỉ dài tự chạy focus tiếp (Work → Rest →
+  Work …, nghỉ dài 15 phút sau 4 chu kỳ rồi Work lại), lặp liên tục
+  tới khi tắt toggle hoặc bấm Reset/Dừng; TẮT toggle thì hết phiên
+  chờ bấm Start như cũ. Chuyển phiên tự động vẫn theo luật nhắc nghỉ
+  (đang đọc thì chỉ thông báo, không cướp màn hình — xem dưới).
+- **Rest eyes (20-20-20)** — mục riêng trong cùng thẻ: cứ 20 phút
+  nhắc nghỉ mắt 20 giây (cố định, không picker — luật 20-20-20 là
+  chính nó). Mặc định TẮT (Manh 2026-11-20, 07:25): không nhắc gì
+  cho tới khi user bấm "Start eye reminders"; khi bật thì cứ 20 phút
+  nhắc 1 lần, lặp lại. Nút Start/Stop riêng, chạy độc lập với
+  Pomodoro. Icon: heart (focus) + footsteps (đi bộ / nghỉ).
+- **"Run reminder in:"** — 2 lựa chọn: **"New Fast Read Window"**
+  (nhắc nghỉ mở cửa sổ Rest riêng) và **"Right Panel"** (nhắc nghỉ
+  hiện ngay trong panel phải, không mở cửa sổ riêng). Setting này
+  **CHỈ áp cho reminder** — Fast Read có nút chọn RIÊNG ("Run
+  FastRead in:" ở panel phải, §10.7); 2 tính năng không dùng chung
+  1 setting (Manh 2026-11-20, 05:27).
+- **Cửa sổ Rest** (`Sources/FocusTimer/RestWindowController.swift`,
+  tiêu đề "TransPeek — Rest", 560×400, min 480×320): RSVP-đọc câu
+  nhắc ("You have read, worked, and sat for X minutes continuously.
+  Rest your eyes and brain. Stand up and walk around. Be more
+  physically active." / "Rest your eyes. Look at something 20 feet
+  away for 20 seconds.") bằng ĐÚNG engine + view model của Window
+  Read, hiện bằng view đọc gọn riêng (`CompactReadingView` trong
+  `PanelFastReadView.swift` — file Window Read `RSVPView.swift` để
+  nguyên không sửa, Manh 2026-11-20, 05:36; chỉ dùng chung logic đọc,
+  không copy code). Đọc xong →
+  hiện countdown nghỉ (5 phút / 20 giây) rồi tự đóng; nút Done đóng
+  sớm. Không đụng tới cửa sổ Read đang mở.
+- **Nhắc nghỉ lúc đang đọc** (Manh 2026-11-20, 05:33): timer tới giờ
+  mà user đang đọc (cửa sổ Read hay trong panel) thì KHÔNG cướp màn
+  hình — chỉ hiện banner trong panel (trên mọi tab) + thông báo hệ
+  thống macOS, có 2 nút "Take a break" (hiện nhắc nghỉ ngay theo
+  "Run reminder in") và "Snooze 5 min" (nhắc lại sau 5 phút). Cứ đọc
+  tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng đọc
+  (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown nghỉ)
+  thì nhắc nghỉ tự hiện. Không đang đọc thì hiện nhắc nghỉ luôn theo
+  setting. Áp cho cả 2 lựa chọn "Run reminder in".
+
+### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
+
+- Khi chưa đọc: vẫn có "Fast Read — coming soon" + **demo focus**
+  phía dưới: từ **"reading"**, chữ **"a" tô vàng**, gạch nửa trên/dưới
+  chỉ vào giữa chữ "a" (như Windows) — dùng chung `ORPLineView` với
+  Window Read nên demo không bao giờ lệch với chữ đọc thật. Dưới
+  demo là nút **"Read in panel"** (đọc text đang có ở tab dịch, ngay
+  trong panel — luôn đọc trong panel, không theo setting dưới) và
+  nút chọn **"Run FastRead in:"**.
+- **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
+  nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
+  dropdown): **"Right Panel"** và **"New Fast Read Window
+  (Recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
+  cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
+  menubar, phím tắt): chọn 1 trong 2 thì RSVP chỉ hiển thị theo lựa
+  chọn đó. Một điểm vào duy nhất ở `AppDelegate.showFastRead(text:)`
+  — mọi đường mở đều qua đó nên setting chỉ kiểm tra ở 1 chỗ. Riêng
+  với "Run reminder in:" ở panel trái (§10.6): 2 setting độc lập,
+  không ảnh hưởng nhau.
+- Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
+  đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
+  — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
+  Read, KHÔNG copy 2 bộ; file Window Read `RSVPView.swift` để nguyên
+  không sửa, Manh 2026-11-20, 05:36). Cỡ chữ focus trong panel
+  KHÔNG bị chặn (Manh 2026-11-20, 07:02 — bỏ cap 48/64pt): vuốt
+  dọc đổi cỡ chữ bao nhiêu cũng được, user tự chỉnh cho vừa frame;
+  setting cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
+- **Hiển thị theo size (Manh 2026-11-20, 04:44):**
+  - Đang chạy (play): CHỈ focus text + around text + dòng phím tắt.
+  - Pause, panel bé: top row có đủ 4 picker như top bar (Speed /
+    Focus size / Context size / Words at once, spacing gọn 6pt cho
+    vừa panel 420pt) + Settings + "?" ở góc phải trên (Manh
+    2026-11-20, 07:54 — frame nhỏ vẫn đủ ô; "?" đặt cạnh Settings),
+    thanh progress nhỏ, hàng nút X / Restart / Rewind / Play /
+    Forward / Maximize căn giữa dưới cùng (Manh 2026-11-20, 07:02
+    — X + Restart có cả khi panel bé).
+  - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
+    trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
+    picker (Speed / Focus size / Context size / Words at once) +
+    Settings + "?", progress, hàng 5 nút + Reading time + hint,
+    completion + share khi đọc xong.
+- **Tương tác trong panel phải:** vuốt dọc trackpad đổi cỡ chữ
+  (±16pt / 50pt, như cửa sổ — monitor riêng chỉ dọc, vuốt ngang vẫn
+  chuyển panel 1/2/3 như cũ); phím tắt Space / ←/→ / ↑/↓ vẫn chạy
+  (Shift+←/→ = theo câu); lùi/tiến slide bằng phím ←/→ hoặc nút
+  Rewind/Forward (KHÔNG vuốt ngang).
+- **Nút X + Esc 2 nấc** (Manh 2026-11-20, 07:02): nút X đặt ngay
+  TRÁI nút Restart trong hàng nút (cả khi panel bé lẫn full), tooltip
+  "Close reading (Esc)" — bấm X đóng bài đọc, về lại panel phải mặc
+  định. Phím Esc làm đúng việc đó: Esc lần 1 (đang đọc) đóng bài đọc
+  về panel phải; Esc lần 2 (đã về mặc định) mới thoát cả panel. Làm
+  bằng hook `onEscape` trong `PopupDismissMonitor` — monitor chặn
+  Esc trước SwiftUI nên view đọc không bao giờ thấy phím Esc.
+- **Nút pin ở CẢ 3 panel (tạm thời)** (Manh 2026-11-20, 07:08 +
+  07:09 + 07:10 + 07:54): nằm ở hàng chấm (dotsRow, dùng chung cả 3 tab nên
+  hiện cả 3 panel), bên trái chevron.left, gần mép trái panel với
+  padding nhỏ 10pt cho đẹp (was 4pt, dịch phải 6pt, Manh 2026-11-20,
+  07:54; không dính sát mép, không padding lớn như hàng thường). Chức năng không đổi: khi bắt đầu đọc trong panel,
+  panel tự bật pin (click ra ngoài không làm mất bài đọc); user bấm
+  nút để tắt. Đọc trong panel thì auto-fit bị đóng băng
+  (cùng cơ chế manual-resize) để panel cao không bị co lại; hết đọc
+  thì auto-fit chạy lại. Nút Maximize đổi panel giữa cỡ mặc định
+  (420×450) và max (600×800), giữ mép trên cố định — max bị chặn
+  thêm bởi khung hiển thị (visible frame, Manh 2026-11-20, 08:11)
+  nên không bao giờ che Dock / menu bar khi màn hình nhỏ.
+- **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "Right Panel"):
+  hết khoảng Work / 20 phút mắt → panel hiện lên (nếu đang ẩn) ở tab
+  phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
+  20 giây) rồi về lại demo. Bấm nút Fast Read ở tab dịch (mở cửa sổ)
+  hoặc ẩn panel thì đọc trong panel dừng hẳn (không chạy ngầm).
+- **Banner nhắc nghỉ chờ** (Manh 2026-11-20, 05:33): khi timer tới
+  lúc đang đọc, banner hiện trên mọi tab (dưới hàng chấm) với 2 nút
+  "Take a break" / "Snooze 5 min"; chấm cam ở thẻ Focus & Rest báo
+  có nhắc chờ. Banner là view riêng (tự observe store) nên panel
+  không re-render theo từng giây của timer.
 
 ## Liên kết
 

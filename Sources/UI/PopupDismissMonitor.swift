@@ -5,12 +5,18 @@ import AppKit
 /// 0.1.5): a `.popover` is a separate NSWindow, so a click on it would read
 /// as "click outside" and hide the panel before anything can be picked.
 /// The `popoverTracker` tells this monitor which window is the popover.
+/// Two-stage Escape (Manh 2026-11-20, 07:02): `onEscape` lets the host
+/// handle the key first — when it returns true (e.g. the panel closed its
+/// in-panel reading instead of dismissing), the panel is NOT dismissed.
 @MainActor
 final class PopupDismissMonitor {
     private let panel: NSPanel
     private let popoverTracker: LanguagePopoverTracker?
     private let isPinned: @MainActor () -> Bool
     private let onDismiss: @MainActor () -> Void
+    /// Called when Escape is pressed; return true if the key was handled
+    /// (e.g. the in-panel reading was closed) so the panel stays open.
+    private let onEscape: (@MainActor () -> Bool)?
 
     nonisolated(unsafe) private var globalClickMonitor: Any?
     nonisolated(unsafe) private var globalKeyMonitor: Any?
@@ -21,11 +27,16 @@ final class PopupDismissMonitor {
         panel: NSPanel,
         popoverTracker: LanguagePopoverTracker? = nil,
         isPinned: @escaping @MainActor () -> Bool = { false },
+        // NOTE: no @escaping here — an Optional closure is already
+        // escaping; @escaping inside the Optional type is a compile
+        // error ("closure is already escaping", CI 273).
+        onEscape: (@MainActor () -> Bool)? = nil,
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.panel = panel
         self.popoverTracker = popoverTracker
         self.isPinned = isPinned
+        self.onEscape = onEscape
         self.onDismiss = onDismiss
     }
 
@@ -42,7 +53,7 @@ final class PopupDismissMonitor {
         globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
                 Task { @MainActor in
-                    self?.onDismiss()
+                    self?.handleEscape()
                 }
             }
         }
@@ -74,12 +85,19 @@ final class PopupDismissMonitor {
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { // Escape
                 Task { @MainActor in
-                    self?.onDismiss()
+                    self?.handleEscape()
                 }
                 return nil // Consume the event
             }
             return event
         }
+    }
+
+    /// Escape pressed: let the host handle it first (two-stage Esc,
+    /// Manh 2026-11-20, 07:02); dismiss only if the host did not.
+    private func handleEscape() {
+        if onEscape?() == true { return }
+        onDismiss()
     }
 
     private func dismissForOutsideClick() {

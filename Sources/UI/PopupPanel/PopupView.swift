@@ -25,6 +25,11 @@ struct PopupView: View {
     /// treats clicks in it as clicks inside the panel (Manh 2026-11-19,
     /// 0.1.5). Created by the PopupPanelController, shared with the monitor.
     let languagePopoverTracker: LanguagePopoverTracker
+    /// Focus timer store (Manh 2026-11-20, focus timer + panel decor):
+    /// one store for the app (created by AppDelegate, passed through
+    /// the panel controller) — the panel-left card, the panel-right
+    /// reading view, and the Rest window all read the same state.
+    let focusTimerStore: FocusTimerStore
     var onDismiss: (() -> Void)?
     var onOpenSettings: (() -> Void)?
     var onOCRRequested: (() -> Void)?
@@ -50,6 +55,10 @@ struct PopupView: View {
     /// remembered in Defaults, so both cards can stay collapsed and
     /// leave room for the future focus/tomato timer in panel left.
     @State private var isShortcutsCollapsed: Bool = Defaults[.shortcutsCollapsed]
+    /// Whether the "Focus & Rest" card in panel left is collapsed
+    /// (Manh 2026-11-20, focus timer + panel decor). Same pattern as
+    /// the flow / shortcuts cards: remembered in Defaults.
+    @State private var isFocusTimerCollapsed: Bool = Defaults[.focusTimerCollapsed]
     /// Which panel of the multi-tab frame is showing (Manh 2026-11-17).
     /// Panel dịch (middle) is the default; a new translation always
     /// returns here (see the sourceText onChange below).
@@ -200,6 +209,11 @@ struct PopupView: View {
                 let lang = coordinator.detectedLanguage ?? Defaults[.sourceLanguage]
                 tts.speak(MarkdownSupport.speakableText(coordinator.sourceText), language: lang)
             }
+
+            // A reminder fired while the panel was hidden (destination
+            // Right Panel): the store holds the request; open on the
+            // Fast Read tab and start the read (Manh 2026-11-20).
+            consumePanelRightRequest(focusTimerStore.panelRightRequest)
         }
         // A 2-finger trackpad swipe switches tabs (Manh 2026-11-17): next
         // is the panel on the right, previous the one on the left.
@@ -226,6 +240,38 @@ struct PopupView: View {
         .onChange(of: coordinator.providerStates) { _, newStates in
             handleAutoPlay(states: newStates)
         }
+        // A focus / rest-eyes reminder fired with destination Right
+        // Panel (Manh 2026-11-20): the store holds the request; switch
+        // to the Fast Read tab and start the read.
+        .onChange(of: focusTimerStore.panelRightRequest) { _, request in
+            consumePanelRightRequest(request)
+        }
+        // While a read runs in the panel, freeze auto-fit (Manh
+        // 2026-11-20): the reading view fills the panel, so its content
+        // height would otherwise shrink a tall panel back to the fitted
+        // size. Same mechanism as a manual drag
+        // (`manualResizeGeneration`); cleared when the read stops, so
+        // auto-fit resumes for the demo.
+        .onChange(of: focusTimerStore.panelReadingViewModel == nil) { _, isNil in
+            guard let panel else { return }
+            if isNil {
+                panel.manualResizeGeneration = nil
+            } else {
+                panel.manualResizeGeneration = coordinator.translationGeneration
+            }
+        }
+    }
+
+    /// Start a panel-right read requested by the focus timer (Manh
+    /// 2026-11-20): switch to the Fast Read tab, start the read, and
+    /// pin the panel so an outside click never dismisses the reminder
+    /// mid-read.
+    private func consumePanelRightRequest(_ request: PanelRightRequest?) {
+        guard let request else { return }
+        focusTimerStore.panelRightRequest = nil
+        selectedTab = .fastRead
+        focusTimerStore.startPanelReading(text: request.text, countdownSeconds: request.countdownSeconds)
+        coordinator.isPinned = true
     }
 
     private var pinButton: some View {
@@ -276,6 +322,12 @@ struct PopupView: View {
             // swipe); the swipe gesture lives on the dots row, not the
             // content, because a drag over the results is text selection.
             dotsRow
+
+            // A break reminder that fired while reading waits here
+            // (Manh 2026-11-20, 05:33): the banner is its own view
+            // (observing the store), so the panel never re-renders on
+            // the timer's one-second ticks. It shows on every tab.
+            PendingReminderBanner(store: focusTimerStore)
 
             switch selectedTab {
             case .translate:
@@ -637,8 +689,6 @@ struct PopupView: View {
                     .help("Keyboard shortcuts")
                     .background { InteractiveMarker() }
 
-                    pinButton
-
                     Button {
                         onOpenSettings?()
                     } label: {
@@ -664,9 +714,10 @@ struct PopupView: View {
     }
 
     /// Panel left (panel 1, shortcuts — temporary content): the "How the
-    /// icon works" intro card on top, then the full shortcuts table as a
-    /// page — the same ShortcutsTableView that the "?" button embeds in
-    /// panel center, reused here (Manh 2026-11-17). The flow card moved
+    /// icon works" intro card on top, then the Focus & Rest timer card,
+    /// then the full shortcuts table as a page — the same
+    /// ShortcutsTableView that the "?" button embeds in panel center,
+    /// reused here (Manh 2026-11-17). The flow card moved
     /// here from panel center (Manh 2026-11-18 — it was put in panel
     /// center by mistake; panel center goes back to how it was). Run
     /// calls the same code path as the hotkey; closing the table (×, or
@@ -690,16 +741,26 @@ struct PopupView: View {
                         Defaults[.flowIntroCollapsed] = newValue
                     }
 
+                // Focus & Rest timer card (Manh 2026-11-20, focus timer
+                // + panel decor): Pomodoro + rest eyes + where the
+                // reminder shows. Directly under "How the icon works",
+                // above the shortcuts table (Manh 2026-11-20, 07:06 —
+                // moved up from under the shortcuts table).
+                FocusTimerCard(store: focusTimerStore, isCollapsed: $isFocusTimerCollapsed)
+                    .onChange(of: isFocusTimerCollapsed) { _, newValue in
+                        Defaults[.focusTimerCollapsed] = newValue
+                    }
+
                 // "Keyboard Shortcuts" card (Manh 2026-11-18, round 9):
                 // collapsible in panel left — the header toggles collapse
                 // (chevron) instead of closing the card, like the flow
-                // card above it, so both cards can stay collapsed and
-                // leave room for the future focus/tomato timer. The
-                // `onClose` still switches to the translate tab after a
-                // Run button, so the result is visible — only the header
-                // changed from close to collapse. (Panel center's "?"
-                // table does NOT pass isCollapsed: its header still
-                // hides the table, as before.)
+                // card above it, so the cards can stay collapsed and
+                // leave room. The `onClose` still switches to the
+                // translate tab after a Run button, so the result is
+                // visible — only the header changed from close to
+                // collapse. (Panel center's "?" table does NOT pass
+                // isCollapsed: its header still hides the table, as
+                // before.)
                 ShortcutsTableView(
                     onRunShortcut: onRunShortcut,
                     onClose: { selectedTab = .translate },
@@ -748,45 +809,59 @@ struct PopupView: View {
         }
     }
 
-    /// Panel Fast Read (right tab, temporary name): placeholder until the
-    /// Fast Read window ships (Manh 2026-11-17). The panel stays at its
-    /// minimum height on this tab; the placeholder is centered in the
-    /// ScrollView so it reads as a coming-soon page, not an empty panel.
+    /// Panel Fast Read (right tab): in-panel reading + focus demo
+    /// (Manh 2026-11-20, focus timer + panel decor). The placeholder
+    /// is gone as the idle state — `PanelFastReadView` shows the demo
+    /// ("reading", yellow "a", half-bars) and a "Read in panel"
+    /// button, and swaps in the reading view (same RSVP engine / view
+    /// model / view as the Fast Read window) when a read starts.
+    /// The panel stays at its minimum height on this tab when idle;
+    /// while reading, auto-fit is frozen (see the
+    /// `panelReadingViewModel` onChange below) so the reading view
+    /// never shrinks a tall panel back to the fitted size.
     private var fastReadContent: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                Image(systemName: "book.pages")
-                    .font(.system(size: 32))
-                    .foregroundStyle(.secondary)
-                Text("Fast Read — coming soon")
-                    .font(.headline)
-                Text("Fast reading (RSVP) will live here once the Fast Read window is ready.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, contentHorizontalPadding)
-            .padding(.vertical, 24)
-            .background {
-                GeometryReader { geometry in
-                    Color.clear
-                        .preference(
-                            key: PopupResultLayoutPreferenceKey.self,
-                            value: PopupResultLayout(contentHeight: geometry.size.height)
-                        )
-                }
-            }
-        }
-        .background {
-            GeometryReader { geometry in
-                Color.clear
-                    .preference(
-                        key: PopupResultLayoutPreferenceKey.self,
-                        value: PopupResultLayout(viewportHeight: geometry.size.height)
-                    )
-            }
-        }
+        PanelFastReadView(
+            store: focusTimerStore,
+            sourceText: editableText,
+            onStartReading: { coordinator.isPinned = true },
+            onToggleMaximize: { togglePanelSize() }
+        )
+    }
+
+    /// Toggle the panel between its default size and its maximum size
+    /// (Manh 2026-11-20): the Maximize button in the panel-right
+    /// reading chrome. Keeps the top edge fixed and clamps to the
+    /// visible frame; marks the size as a manual resize so auto-fit
+    /// does not fight it for this generation (same as a drag — see
+    /// `finishPanelResize`). The maximum is the panel's own max
+    /// CLAMPED to the visible frame (Manh 2026-11-20, 08:11): when
+    /// the visible height is under 800 (Dock / menu bar), the
+    /// maximized panel is only as tall as the visible frame, so it
+    /// never covers the Dock — and the toggle still works, because
+    /// "is max" is measured against that same clamped maximum.
+    private func togglePanelSize() {
+        guard let panel else { return }
+        guard let screen = panel.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let effectiveMax = CGSize(
+            width: min(PopupPanel.maximumSize.width, visible.width),
+            height: min(PopupPanel.maximumSize.height, visible.height)
+        )
+        let current = panel.frame.size
+        let isMax = current.width >= effectiveMax.width - 1
+            && current.height >= effectiveMax.height - 1
+        let target: CGSize = isMax
+            ? CGSize(
+                width: CGFloat(Defaults[.popupDefaultWidth]),
+                height: CGFloat(Defaults[.popupDefaultHeight])
+            )
+            : effectiveMax
+        let width = min(max(target.width, PopupPanel.minimumSize.width), effectiveMax.width)
+        let height = min(max(target.height, PopupPanel.minimumSize.height), effectiveMax.height)
+        let x = min(max(panel.frame.minX, visible.minX), visible.maxX - width)
+        let y = min(max(panel.frame.maxY - height, visible.minY), visible.maxY - height)
+        panel.manualResizeGeneration = coordinator.translationGeneration
+        panel.setFrame(NSRect(x: x, y: y, width: width, height: height), display: true, animate: true)
     }
 
     /// Dots row (Manh 2026-11-17): 3 dots, one per panel, centered.
@@ -808,45 +883,60 @@ struct PopupView: View {
     /// previous / no next panel). The dots' position is UNCHANGED
     /// (Manh 2026-11-18: keep it as-is on both repos for comparison).
     private var dotsRow: some View {
-        HStack(spacing: 8) {
-            Button {
-                selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.caption)
-                    .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(selectedTab == .shortcut)
-            .help("Previous panel")
-            .background { InteractiveMarker() }
-
-            ForEach(PanelTab.allCases, id: \.self) { tab in
+        ZStack {
+            HStack(spacing: 8) {
                 Button {
-                    selectedTab = tab
+                    selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
                 } label: {
-                    Circle()
-                        .fill(selectedTab == tab ? Color.accentColor : Color.secondary.opacity(0.4))
-                        .frame(width: 8, height: 8)
+                    Image(systemName: "chevron.left")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
                 }
                 .buttonStyle(.plain)
-                .help(dotHelp(tab))
+                .disabled(selectedTab == .shortcut)
+                .help("Previous panel")
+                .background { InteractiveMarker() }
+
+                ForEach(PanelTab.allCases, id: \.self) { tab in
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        Circle()
+                            .fill(selectedTab == tab ? Color.accentColor : Color.secondary.opacity(0.4))
+                            .frame(width: 8, height: 8)
+                    }
+                    .buttonStyle(.plain)
+                    .help(dotHelp(tab))
+                    .background { InteractiveMarker() }
+                }
+
+                Button {
+                    selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedTab == .fastRead)
+                .help("Next panel")
                 .background { InteractiveMarker() }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
 
-            Button {
-                selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+            // Pin button (Manh 2026-11-20, 07:08 + 07:10, temporary):
+            // at the left end of the dots row, near the panel's left
+            // edge with a small padding (10pt — was 4pt, shifted 6pt
+            // right, Manh 2026-11-20, 07:54) so it looks neat — not
+            // flush to the edge (0), not the row's normal large
+            // padding. The dots row is shared across all 3 tabs, so
+            // the pin is on every tab.
+            HStack {
+                pinButton
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .disabled(selectedTab == .fastRead)
-            .help("Next panel")
-            .background { InteractiveMarker() }
+            .padding(.leading, 10)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 2)
         .padding(.bottom, 4)
         .gesture(swipeGesture)
@@ -1055,7 +1145,10 @@ struct PopupView: View {
 
 // Collect one layout pass before reporting sizes; separate state callbacks can mix
 // a new viewport height with the previous container height and keep resizing the panel.
-private struct PopupResultLayoutPreferenceKey: PreferenceKey {
+/// Merges layout measurements from the panel content. Internal (not
+/// private) since 2026-11-20: `PanelFastReadView` reports its own
+/// content/viewport heights the same way the other tabs do.
+struct PopupResultLayoutPreferenceKey: PreferenceKey {
     static var defaultValue: PopupResultLayout { PopupResultLayout() }
 
     static func reduce(value: inout PopupResultLayout, nextValue: () -> PopupResultLayout) {

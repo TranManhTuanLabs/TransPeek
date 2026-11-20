@@ -595,6 +595,47 @@ enum SwapLanguagesShortcut {
 
 // MARK: - User Defaults Keys
 
+/// Where a focus / rest-eyes reminder shows (Manh 2026-11-20, focus
+/// timer + panel decor — the "Run reminder in:" picker in the panel-left
+/// Focus & Rest card). This applies ONLY to the reminder — Fast Read
+/// has its OWN separate setting (`FastReadRunLocation`, the "Run
+/// FastRead in:" picker in panel right, Manh 2026-11-20, 05:27: the
+/// two features must not share one setting).
+enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
+    /// The reminder opens a separate Rest window (the original design).
+    case newWindow
+    /// The reminder shows inside panel right, no separate window.
+    case rightPanel
+
+    var displayName: String {
+        switch self {
+        case .newWindow: return "New Fast Read Window"
+        case .rightPanel: return "Right Panel"
+        }
+    }
+}
+
+/// Where Fast Read (RSVP) runs (Manh 2026-11-20, 05:27 — the "Run
+/// FastRead in:" picker in panel right). Separate from the reminder
+/// destination: Reminder and Fast Read are two different features and
+/// must not share one setting. Applies GLOBALLY to every Fast Read
+/// launch (panel button, float icon, menubar, shortcut): the chosen
+/// location is the only place RSVP shows.
+enum FastReadRunLocation: String, CaseIterable, Defaults.Serializable {
+    /// Fast Read opens the separate Window Read (default — the current
+    /// behavior, so nothing changes until the user picks otherwise).
+    case newWindow
+    /// Fast Read runs inside panel right, no separate window.
+    case rightPanel
+
+    var displayName: String {
+        switch self {
+        case .newWindow: return "New Fast Read Window"
+        case .rightPanel: return "Right Panel"
+        }
+    }
+}
+
 /// Fast Read (RSVP) window color scheme (Manh 2026-11-17, spec §14.3):
 /// picked in the window's Settings button; persists across opens.
 enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
@@ -750,6 +791,32 @@ extension Defaults.Keys {
     /// at once — no Space press needed. Toggled in the window's
     /// Settings popover.
     static let rsvpAutoPlay = Key<Bool>("transpeek_rsvpAutoPlay", default: true)
+
+    // Focus timer + rest eyes (Manh 2026-11-20, focus timer + panel
+    // decor — the Focus & Rest card in panel left). Pomodoro STANDARD
+    // logic: Work 25 / Rest 5 by default, long break 15 after 4 focus
+    // cycles. Rest eyes is the 20-20-20 rule: every 20 min, rest the
+    // eyes for 20 s (fixed — no picker, the rule is the point).
+    static let focusWorkMinutes = Key<Int>("transpeek_focusWorkMinutes", default: 25)
+    static let focusRestMinutes = Key<Int>("transpeek_focusRestMinutes", default: 5)
+    static let focusLongBreakMinutes = Key<Int>("transpeek_focusLongBreakMinutes", default: 15)
+    static let focusReminderDestination = Key<FocusReminderDestination>("transpeek_focusReminderDestination", default: .newWindow)
+    /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
+    /// Manh 2026-11-20, 07:25): when ON, the next session starts
+    /// automatically after a rest / long break (Work → Rest →
+    /// Work …, long break after 4 focus cycles), looping until the
+    /// user turns it off or stops it. OFF = each session ends and
+    /// waits for a manual start.
+    static let focusRepeatAutomatically = Key<Bool>("transpeek_focusRepeatAutomatically", default: true)
+    /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
+    /// FastRead in:" picker in panel right. Default is the window, so
+    /// current behavior is preserved until the user picks otherwise.
+    static let fastReadRunLocation = Key<FastReadRunLocation>("transpeek_fastReadRunLocation", default: .newWindow)
+    /// Whether the Focus & Rest card in panel left is collapsed
+    /// (Manh 2026-11-20). Same pattern as `flowIntroCollapsed` /
+    /// `shortcutsCollapsed`: remembered, so the card can stay collapsed
+    /// and leave room for the shortcuts table.
+    static let focusTimerCollapsed = Key<Bool>("transpeek_focusTimerCollapsed", default: false)
 
     // TransPeek Phase 1 — translation fallback (primary -> fallback -> free Apple/Google)
     static let primaryProviderID = Key<String>("transpeek_primaryProviderID", default: "")
