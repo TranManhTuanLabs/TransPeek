@@ -7,7 +7,7 @@ import SwiftUI
 /// 2026-11-20, focus timer + panel decor).
 ///
 /// Two states:
-/// - Idle: the "Fast Read — coming soon" placeholder, the focus demo
+/// - Idle: the "Fast Read Lite" placeholder, the focus demo
 ///   ("reading" — the "a" in yellow, half-bars above and below), a
 ///   "Read in panel" button for the text in the translate tab, and the
 ///   "Run FastRead in:" radio buttons (Manh 2026-11-20, 05:27;
@@ -133,17 +133,19 @@ struct PanelFastReadView: View {
     // MARK: - Demo (idle)
 
     /// Placeholder + focus demo + "Read in panel" + "Run FastRead in:"
-    /// picker (Manh 2026-11-20). The "coming soon" header stays — the
-    /// full in-panel experience is still settling — but the subtitle no
-    /// longer claims the window is unshipped (it shipped in 0.1.4): it
-    /// points at the demo and the button below.
+    /// picker (Manh 2026-11-20). The header is "Fast Read Lite" (Manh
+    /// 2026-11-20, 11:35 — the in-panel reading works, so "coming soon"
+    /// is no longer true; "Lite" names the in-panel version, distinct
+    /// from the full Window Read). The subtitle no longer claims the
+    /// window is unshipped (it shipped in 0.1.4): it points at the demo
+    /// and the button below.
     private var demoState: some View {
         ScrollView {
             VStack(spacing: 8) {
                 Image(systemName: "book.pages")
                     .font(.system(size: 32))
                     .foregroundStyle(.secondary)
-                Text("Fast Read — coming soon")
+                Text("Fast Read Lite")
                     .font(.headline)
                 Text("Try the focus preview below, or read the current text in this panel.")
                     .font(.caption)

@@ -251,7 +251,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   riêng và báo chiều cao qua cùng layout preference như kết quả dịch, nên
   auto-fit vẫn vừa khung cho tab này.
 - **Panel Fast Read (ở phải) là placeholder:** icon sách + text
-  "Fast Read — coming soon" + 1 dòng giải thích, căn giữa. Panel giữ chiều
+  "Fast Read Lite" + 1 dòng giải thích, căn giữa. Panel giữ chiều
   cao tối thiểu (450) ở tab này. Nội dung placeholder do bên mac tự quyết.
 - **Dịch mới luôn về panel dịch:** khi có source text mới (dịch mới) thì
   panel tự về panel dịch — người dùng mở panel là để xem bản dịch, không
@@ -412,7 +412,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   nội dung rộng hơn khung nhìn — còn link vừa khung thì vuốt trên đó
   vẫn đổi tab; Manh đổi thành vùng cấm cứng.) (Luật swipe đầy đủ: §10.9.)
 - Panel phải là **Read lite** — đọc trong panel (§10.7), không còn là
-  placeholder. "Fast Read — coming soon" chỉ còn là tiêu đề của trạng
+  placeholder. "Fast Read Lite" chỉ còn là tiêu đề của trạng
   thái chưa đọc trong §10.7.
 
 ### 10.2 Panel center (dịch, tab mặc định)
@@ -621,13 +621,16 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 ### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
 
-- Khi chưa đọc: vẫn có "Fast Read — coming soon" + **demo focus**
+- Khi chưa đọc: vẫn có "Fast Read Lite" + **demo focus**
   phía dưới: từ **"reading"**, chữ **"a" tô vàng**, gạch nửa trên/dưới
   chỉ vào giữa chữ "a" (như Windows) — dùng chung `ORPLineView` với
   Window Read nên demo không bao giờ lệch với chữ đọc thật. Dưới
   demo là nút **"Read in panel"** (đọc text đang có ở tab dịch, ngay
   trong panel — luôn đọc trong panel, không theo setting dưới) và
-  nút chọn **"Run FastRead in:"**.
+  nút chọn **"Run FastRead in:"**. (Đổi tên từ "Fast Read — coming
+  soon", Manh 2026-11-20 11:35 — tính năng đã chạy được, "coming
+  soon" không còn đúng; "Lite" là bản lite trong panel, khác Window
+  Read đầy đủ.)
 - **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
   nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
   dropdown): **"Right Panel"** và **"New Fast Read Window
@@ -649,7 +652,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   của `panelRightRequest` chỉ chạy khi có state khác re-render body;
   sửa bằng `.onReceive` trực tiếp trên publisher của store — tab tự
   chuyển ngay khi bấm, không cần re-render. Đã sửa sau v0.1.7.)
-- Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
+- Khi đọc trong panel: ẩn hẳn tiêu đề "Fast Read Lite" + quyển sách, hiện view
   đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
   — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
   Read, KHÔNG copy 2 bộ; file Window Read `RSVPView.swift` để nguyên
