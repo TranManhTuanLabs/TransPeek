@@ -603,7 +603,8 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng đọc
   (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown nghỉ)
   thì nhắc nghỉ tự hiện. Không đang đọc thì hiện nhắc nghỉ luôn theo
-  setting. Áp cho cả 2 lựa chọn "Run reminder in".
+  setting. Áp cho cả 2 lựa chọn "Run reminder in". (Vị trí hiển thị +
+  cơ chế đầy đủ: §10.11.)
 
 ### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
 
@@ -807,6 +808,87 @@ Two rules apply to EVERY panel button:
   buttons (`ShareRowView`) open share URLs — should they also show the
   system pointing hand like other links? Currently NOT included.
   Undecided.
+- **Reminder / notification language (open question):** the reminder
+  text, banner and system notification are English, per the UI-language
+  decision (English first, Vietnamese later, Manh 2026-11-11). Manh has
+  NOT confirmed whether he wants Vietnamese there. Do not translate
+  until he approves.
+
+### 10.11 Focus reminder — where it shows + what happens while reading (finalized 2026-11-20)
+
+A reminder fires when a Pomodoro Work interval ends or a 20-20-20
+eye-rest interval ends (Manh 2026-11-20, 05:33). Where it shows
+depends on whether the user is reading, and on "Run reminder in:"
+(§10.6). The reminder never turns the panel into a window (the
+translate UI stays a panel, §3) — the only window involved is the Rest
+window, and only when the setting says so.
+
+**Reminder texts** (`FocusReminderKind`,
+`Sources/FocusTimer/FocusTimerStore.swift`):
+- Work break (X = the Work minutes just finished): RSVP text "You have
+  read, worked, and sat for X minutes continuously. Rest your eyes and
+  brain. Stand up and walk around. Be more physically active."
+  Rest-window title "Take a break". Notification/banner title "X
+  minutes of work done — time for a break".
+- Eye rest: RSVP text "Rest your eyes. Look at something 20 feet away
+  for 20 seconds." Rest-window title "Rest your eyes".
+  Notification/banner title "Time to rest your eyes (20-20-20)".
+
+**Not reading — shows directly, per "Run reminder in:"** (§10.6; this
+picker applies ONLY to the reminder — Fast Read has its own separate
+"Run FastRead in:", §10.7):
+- "New Fast Read Window": a separate Rest window (`RestWindowController`,
+  title "TransPeek — Rest", 560×400 centered on screen, min 480×320).
+  It RSVP-reads the reminder text (same engine + view model as Window
+  Read, rendered by `CompactReadingView`; `RSVPView.swift` untouched),
+  then shows the rest countdown (5 min for a work break / 20 s for eye
+  rest) and closes itself at zero; "Done" closes early, Esc closes. Its
+  own window with its own view model — it never touches an open Fast
+  Read window. A new reminder closes any previous Rest window first.
+- "Right Panel": the panel is brought forward at the cursor, switches
+  to the Fast Read tab (panel right), and RSVP-reads the reminder text
+  there (`CompactReadingView`, auto-play); after the read it shows the
+  rest countdown (5 min / 20 s) and then returns to the demo (see §10.7
+  for the Read lite layout).
+
+**Reading — conflict (Manh 2026-11-20, 05:33):** "reading" means a
+panel-right read is running OR the Fast Read window is open
+(`FocusTimerStore.isReading`). The reminder does NOT steal the screen.
+All three appear at once:
+- **In-panel banner** (`PendingReminderBanner`,
+  `Sources/FocusTimer/PendingReminderBanner.swift`): directly below the
+  dots row, above the tab content, on ALL tabs (`PopupView.activeContent`:
+  topBar → dotsRow → banner → tab content → bottomBar). Orange bell icon
+  + the notification title (bold) + caption "Your reading stays as it
+  is." + two buttons: "Take a break" (prominent) and "Snooze 5 min".
+  Its own view observing the store, so the panel does not re-render on
+  the timer's 1-second ticks.
+- **macOS system notification** (`ReminderNotifier`, UserNotifications,
+  category `transpeek.focusReminder`): title = notification title, body
+  = reminder text, default sound, same two actions ("Take a break" shows
+  the reminder at once; "Snooze 5 min" reminds again in 5 minutes).
+  Shown even when the app is frontmost. One notification at a time — a
+  re-fire replaces the old one instead of piling up. Permission is asked
+  on first use if undecided; if denied, nothing is posted and the
+  reminder is NOT lost — the banner + card dot still work.
+- **Orange dot** on the Focus & Rest card: an 8pt orange circle in the
+  card header, right after the "Focus & Rest" title (tooltip "A break
+  reminder is waiting"), visible while a reminder is pending.
+
+**The two actions:**
+- "Take a break" (`takePendingBreakNow`): shows the pending reminder at
+  once, even mid-read, per "Run reminder in:".
+- "Snooze 5 min" (`snoozePendingReminder`): keeps the reminder pending
+  and fires it again after 5 minutes (5 × 60 s) — if the user is still
+  reading it notifies again (banner + notification + dot); if not, it
+  shows directly. Spelled "Snooze 5 min" with a space ("5min" without a
+  space is wrong).
+
+**When a pending reminder shows on its own:** as soon as reading stops
+— the Fast Read window closes, the panel read ends, the panel is
+dismissed, or the panel reminder countdown finishes. Applies to BOTH
+"Run reminder in:" options. A new read replacing the old one does NOT
+trigger it (the user is still reading, so the reminder keeps waiting).
 
 ## Liên kết
 
