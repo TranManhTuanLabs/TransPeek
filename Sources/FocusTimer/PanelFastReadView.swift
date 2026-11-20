@@ -10,25 +10,22 @@ import SwiftUI
 /// - Idle: the "Fast Read — coming soon" placeholder, the focus demo
 ///   ("reading" — the "a" in yellow, half-bars above and below), a
 ///   "Read in panel" button for the text in the translate tab, and the
-///   "Run FastRead in:" picker (Manh 2026-11-20, 05:27).
+///   "Run FastRead in:" radio buttons (Manh 2026-11-20, 05:27;
+///   radio since 07:02).
 /// - Reading: `CompactReadingView` below — the panel's OWN lite reading
 ///   view (Manh 2026-11-20, 05:36: the Window Fast Read file
 ///   `RSVPView.swift` stays untouched). It shares ONLY the reading
 ///   logic (`RSVPEngine` + `RSVPViewModel`) with the window; the layout
-///   (adaptive chrome, font cap, positions) lives here. The pin button
-///   sits in the header row — the panel auto-pins when a read starts in
-///   it, so an outside click never dismisses the panel mid-read, and the
-///   button lets the user toggle it off (Manh 2026-11-20, 04:44).
+///   (adaptive chrome, positions) lives here. The panel auto-pins when
+///   a read starts in it, so an outside click never dismisses the panel
+///   mid-read; the pin button itself lives in the shared dots row
+///   (Manh 2026-11-20, 07:08), on all 3 tabs.
 ///   A reminder countdown banner shows after a reminder read finishes.
 ///   The Rest window uses the same `CompactReadingView`.
 struct PanelFastReadView: View {
     @ObservedObject var store: FocusTimerStore
     /// Text available to read (the panel's current source text).
     var sourceText: String
-    /// Whether the panel is pinned (auto-enabled when a panel read starts).
-    var isPinned: Bool
-    /// Toggle the panel pin (the host owns `coordinator.isPinned`).
-    var onTogglePin: (() -> Void)?
     /// Called when a panel read starts (the host pins the panel).
     var onStartReading: (() -> Void)?
     /// Called by the Maximize button in the reading chrome (the host
@@ -41,8 +38,8 @@ struct PanelFastReadView: View {
     /// panel's own swipe monitor owns it).
     @StateObject private var swipeMonitor = PanelReadTrackpadMonitor()
     /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
-    /// FastRead in:" picker in the demo below. `@Default` re-renders
-    /// the view when it changes.
+    /// FastRead in:" radio buttons in the demo below. `@Default`
+    /// re-renders the view when it changes.
     @Default(.fastReadRunLocation) private var runLocation
 
     var body: some View {
@@ -64,23 +61,14 @@ struct PanelFastReadView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button {
-                    onTogglePin?()
-                } label: {
-                    Image(systemName: isPinned ? "pin.fill" : "pin")
-                        .font(.caption)
-                        .foregroundStyle(isPinned ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .help(isPinned ? "Unpin Popup" : "Pin Popup")
-                .background { InteractiveMarker() }
             }
             .padding(.horizontal, 12)
             .padding(.top, 6)
 
             CompactReadingView(
                 viewModel: viewModel,
-                onToggleMaximize: onToggleMaximize
+                onToggleMaximize: onToggleMaximize,
+                onCloseReading: { store.stopPanelReading() }
             )
             .onChange(of: viewModel.isFinished) { _, finished in
                 if finished { store.startPanelReminderCountdown() }
@@ -203,29 +191,28 @@ struct PanelFastReadView: View {
 
     // MARK: - Run location
 
-    /// "Run FastRead in:" (Manh 2026-11-20, 05:27) — where Fast Read
-    /// runs, for EVERY launch (panel button, float icon, menubar,
-    /// shortcut). "New Fast Read Window" opens the separate Window Read
-    /// (default, the current behavior); "Right Panel" reads here, in
-    /// panel right, no separate window. Separate from the reminder's
-    /// "Run reminder in:" — the two features must not share a setting.
-    /// The "Read in panel" button above always reads here, whatever
-    /// this says — it is the explicit panel action, not a launch.
+    /// "Run FastRead in:" (Manh 2026-11-20, 05:27; radio buttons since
+    /// 07:02) — where Fast Read runs, for EVERY launch (panel button,
+    /// float icon, menubar, shortcut). "New Fast Read Window" opens the
+    /// separate Window Read (default, the current behavior — marked
+    /// "(Recommended)"); "Right Panel" reads here, in panel right, no
+    /// separate window. Separate from the reminder's "Run reminder in:"
+    /// — the two features must not share a setting. The "Read in panel"
+    /// button above always reads here, whatever this says — it is the
+    /// explicit panel action, not a launch.
     private var runLocationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Run FastRead in:")
-                    .font(.callout)
-                    .bold()
-                Picker("", selection: $runLocation) {
-                    ForEach(FastReadRunLocation.allCases, id: \.self) { location in
-                        Text(location.displayName).tag(location)
-                    }
+            Text("Run FastRead in:")
+                .font(.callout)
+                .bold()
+            Picker("", selection: $runLocation) {
+                ForEach(FastReadRunLocation.allCases, id: \.self) { location in
+                    Text(location.displayName + (location == .newWindow ? " (Recommended)" : "")).tag(location)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .background { InteractiveMarker() }
             }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            .background { InteractiveMarker() }
             Text("Applies to the Fast Read button, the float icon, and the keyboard shortcut.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -240,40 +227,43 @@ struct PanelFastReadView: View {
 /// stays untouched, so the panel's lite layout lives here, in its own
 /// file). Shares ONLY the reading logic with the window (`RSVPEngine` +
 /// `RSVPViewModel` — chunking, timing, ORP, current slide, settings);
-/// the layout is the panel's own: the focus font is capped so a
-/// window-size font never overflows the narrow panel, and the chrome
-/// adapts to the available size:
+/// the layout is the panel's own: the focus font is NOT capped (Manh
+/// 2026-11-20, 07:02 — the user swipes up/down freely and fits the
+/// size to the frame), and the chrome adapts to the available size:
 /// - While PLAYING: only the focus line (+ context when the style is
 ///   Always) and the shortcut hint — no buttons, no descriptions.
 /// - While PAUSED at the panel's default size: the book page, then
 ///   compact chrome — speed + compact Settings at the top-right, a
-///   small progress bar above bottom-center Rewind / Play / Forward /
-///   Maximize buttons.
+///   small progress bar above bottom-center X / Restart / Rewind /
+///   Play / Forward / Maximize buttons.
 /// - While PAUSED at (near-)maximum panel size (content width ≥ 540,
 ///   i.e. panel width ≈ 580+ of the 600 max): the full window chrome —
-///   pickers top bar, progress, the 5-button control row with Reading
+///   pickers top bar, progress, the 6-button control row (X first,
+///   then Restart / Rewind / Play / Forward / Maximize) with Reading
 ///   time + hint, completion + share.
 /// The focus line uses the shared `ORPLineView` (same layout as the
 /// window's inline ORP line and the panel-right demo), so the three can
 /// never drift apart. Every button/picker carries an `InteractiveMarker`
 /// (panel clicks are window drags without it, Manh 2026-11-17, build
 /// #207) — harmless in the Rest window, where the marker is just a
-/// background view. Esc is ignored here (the host handles it: the panel
-/// dismisses itself, the Rest window closes itself).
+/// background view. Esc is ignored here (the host handles it: the
+/// panel's dismiss monitor closes the reading first, then dismisses
+/// the panel — two-stage Esc, Manh 2026-11-20, 07:02; the Rest window
+/// closes itself). The X button does the same as the first Esc (it
+/// calls `onCloseReading`, only set by the panel).
 struct CompactReadingView: View {
     @ObservedObject var viewModel: RSVPViewModel
     /// Called by the Maximize button (the host toggles the panel size
     /// or zooms the Rest window).
     var onToggleMaximize: (() -> Void)?
+    /// Called by the X button (Manh 2026-11-20, 07:02): closes the
+    /// reading and returns to panel right. Only the panel sets it (the
+    /// Rest window has no X button — it closes itself on Esc / Done).
+    var onCloseReading: (() -> Void)? = nil
 
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
     @State private var showingHotkeys = false
-    /// Measured width of the reading view, for the font-size cap and
-    /// the full-size switch (Manh 2026-11-20): the panel is far
-    /// narrower than the window, so a window-size focus font would
-    /// overflow it.
-    @State private var panelWidth: CGFloat = 420
 
     private var slide: RSVPEngine.Slide? { viewModel.currentSlide }
 
@@ -287,15 +277,6 @@ struct CompactReadingView: View {
     }
     private var pageBackground: Color {
         viewModel.colorScheme == .dark ? .black : .white
-    }
-
-    /// Focus font size actually rendered — capped so a window-size
-    /// font never overflows the narrow panel (Manh 2026-11-20): 48pt
-    /// at the default panel size, 64pt near maximum. The setting
-    /// itself is unchanged, so the window still opens at the user's
-    /// chosen size.
-    private var displayFontSize: Double {
-        min(viewModel.fontSize, panelWidth >= 540 ? 64 : 48)
     }
 
     var body: some View {
@@ -340,10 +321,6 @@ struct CompactReadingView: View {
             .focusEffectDisabled()
             .onAppear {
                 isFocused = true
-                panelWidth = geo.size.width
-            }
-            .onChange(of: geo.size.width) { _, newWidth in
-                panelWidth = newWidth
             }
             .onKeyPress(action: handleKeyPress)
         }
@@ -417,6 +394,33 @@ struct CompactReadingView: View {
                 .padding(.horizontal, 12)
 
             HStack(spacing: 16) {
+                // Close reading (Manh 2026-11-20, 07:02): X closes
+                // the read and returns to panel right (same as the
+                // first Esc). Only the panel shows it (the Rest window
+                // has no X — it closes itself on Esc / Done).
+                if let onCloseReading {
+                    Button {
+                        onCloseReading()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Close reading (Esc)")
+                    .background { InteractiveMarker() }
+                }
+
+                // Restart (Manh 2026-11-20, 07:02): shown even at the
+                // small size — there is still enough room. Same as the
+                // full-size control row: read from the beginning.
+                Button {
+                    viewModel.restart()
+                } label: {
+                    Image(systemName: "arrow.counterclockwise")
+                }
+                .buttonStyle(.bordered)
+                .help("Restart (read from the beginning)")
+                .background { InteractiveMarker() }
+
                 Button {
                     viewModel.stepBack()
                 } label: {
@@ -501,8 +505,10 @@ struct CompactReadingView: View {
 
     /// Keyboard handling. Same keys as the window: Space play/pause,
     /// ←/→ step (Shift = sentence), ↑/↓ speed ±50. Esc is IGNORED —
-    /// the host owns it (the panel dismisses itself; the Rest window
-    /// closes itself), so this view must not swallow the key.
+    /// the host owns it: the panel's dismiss monitor closes the reading
+    /// first (two-stage Esc, Manh 2026-11-20, 07:02) and only dismisses
+    /// the panel on the next Esc; the Rest window closes itself. This
+    /// view must not swallow the key.
     private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
         switch press.key {
         case .space:
@@ -758,7 +764,7 @@ struct CompactReadingView: View {
     private var readingArea: some View {
         Group {
             if let slide {
-                orpLine(slide: slide, fontSize: displayFontSize)
+                orpLine(slide: slide, fontSize: viewModel.fontSize)
             } else {
                 Color.clear
             }
@@ -802,7 +808,7 @@ struct CompactReadingView: View {
                 Group {
                     if !beforeText.isEmpty {
                         Text(beforeText)
-                            .font(.system(size: displayFontSize * viewModel.contextSizeRatio))
+                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
@@ -815,8 +821,8 @@ struct CompactReadingView: View {
                 // The focus line: fixed height, always at the vertical
                 // center (the two halves above/below share the rest).
                 if let slide {
-                    orpLine(slide: slide, fontSize: displayFontSize)
-                        .frame(height: displayFontSize * 1.3)
+                    orpLine(slide: slide, fontSize: viewModel.fontSize)
+                        .frame(height: viewModel.fontSize * 1.3)
                 }
                 // Words after the current chunk: bottom half, anchored
                 // to the top so the words nearest the focus line sit
@@ -825,7 +831,7 @@ struct CompactReadingView: View {
                 Group {
                     if !afterText.isEmpty {
                         Text(afterText)
-                            .font(.system(size: displayFontSize * viewModel.contextSizeRatio))
+                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -895,6 +901,20 @@ struct CompactReadingView: View {
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
+                // Close reading (Manh 2026-11-20, 07:02): X first,
+                // immediately left of Restart — same as the first Esc.
+                // Only the panel shows it (the Rest window has no X).
+                if let onCloseReading {
+                    Button {
+                        onCloseReading()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.bordered)
+                    .help("Close reading (Esc)")
+                    .background { InteractiveMarker() }
+                }
+
                 // Restart (Manh 2026-11-19, round 10): read from the
                 // beginning — jump to slide 0, reset the timer, and
                 // start playing. First button in the row, left of

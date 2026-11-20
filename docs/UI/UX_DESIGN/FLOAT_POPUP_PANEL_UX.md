@@ -399,16 +399,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
      Dịch; Option+Click → hành động còn lại). Thu gọn được (bấm header),
      trạng thái lưu trong `flowIntroCollapsed`. Header thẻ bấm được toàn
      bộ (có `InteractiveMarker`, không thì click bị coi là kéo cửa sổ).
-  2. **Bảng "Keyboard Shortcuts" (`ShortcutsTableView`)** — cùng bảng
+  2. **Thẻ "Focus & Rest" (`FocusTimerCard`)** — Pomodoro + rest
+     eyes + "Run reminder in:" (chi tiết §10.6). Ngay dưới "How the
+     icon works", trên bảng Shortcuts (Manh 2026-11-20, 07:06 — dời
+     lên từ dưới bảng Shortcuts).
+  3. **Bảng "Keyboard Shortcuts" (`ShortcutsTableView`)** — cùng bảng
      với nút "?" ở panel center. Thu gọn được (vòng 9), trạng thái lưu
      trong `shortcutsCollapsed`. Bấm Run thì chạy shortcut rồi về lại
      panel dịch. (Bảng "?" ở panel center KHÔNG dùng chế độ thu gọn —
      header của nó vẫn là ẩn bảng như trước.)
-  3. **Dãy share** — ở cuối nội dung cuộn: nhãn "Share TransPeek"
+  4. **Dãy share** — ở cuối nội dung cuộn: nhãn "Share TransPeek"
      (caption, màu secondary, căn giữa) + `ShareRowView` (6 icon, căn
-     giữa). KHÔNG tạo card mới, KHÔNG dùng Spacer đẩy xuống đáy — khi 2
-     thẻ trên thu gọn thì khoảng trống còn lại đến đáy để sau này thêm
-     timer focus, share chỉ chảy tự nhiên sau bảng shortcut.
+     giữa). KHÔNG tạo card mới, KHÔNG dùng Spacer đẩy xuống đáy — khi
+     các thẻ trên thu gọn thì khoảng trống còn lại đến đáy.
 - Panel left KHÔNG ẩn bottom bar (icon mèo + version vẫn hiện).
 
 ### 10.4 Hàng chấm — mac vs Windows
@@ -421,6 +424,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
   vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
   placeholder như mac.
+- Nút pin (Manh 2026-11-20, 07:08 + 07:10, tạm thời) ở đầu trái hàng
+  chấm, trước chevron.left, gần mép trái panel với padding nhỏ 4pt
+  (chi tiết §10.7).
 
 ### 10.5 Đã làm trong 0.1.5 (19/11/2026, nhánh `feature/015-deferred-batch`)
 
@@ -467,8 +473,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 ### 10.6 Thẻ "Focus & Rest" ở panel left (20/11/2026, nhánh `feature/focus-timer-decor`)
 
-- Nằm **dưới bảng "Keyboard Shortcuts", trên dãy share** — đúng
-  khoảng trống share từng để lại cho nó (19/11). File riêng
+- Nằm **ngay dưới "How the icon works", trên bảng "Keyboard
+  Shortcuts"** (Manh 2026-11-20, 07:06 — dời lên từ dưới bảng
+  Shortcuts). File riêng
   `Sources/UI/PopupPanel/FocusTimerCard.swift`, dễ xoá sau này.
   Thu gọn được (header bấm toàn bộ, trạng thái lưu
   `focusTimerCollapsed), giống 2 thẻ trên.
@@ -478,7 +485,13 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   nghỉ dài 15 phút. 4 chấm tròn hiện số chu kỳ đã xong + dòng "Long
   break 15 min after 4 cycles". Nút Start/Pause/Resume + Reset.
   Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
-  nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp).
+  nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp) —
+  TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12):
+  toggle trong thẻ, mặc định TẮT; khi BẬT thì hết Rest / nghỉ dài tự
+  chạy focus tiếp (Work → Rest → Work …, nghỉ dài 15 phút sau 4 chu
+  kỳ rồi Work lại), lặp liên tục tới khi tắt toggle hoặc bấm
+  Reset/Dừng. Chuyển phiên tự động vẫn theo luật nhắc nghỉ (đang đọc
+  thì chỉ thông báo, không cướp màn hình — xem dưới).
 - **Rest eyes (20-20-20)** — mục riêng trong cùng thẻ: cứ 20 phút
   nhắc nghỉ mắt 20 giây (cố định, không picker — luật 20-20-20 là
   chính nó). Nút Start/Stop riêng, chạy độc lập với Pomodoro.
@@ -520,27 +533,31 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   demo là nút **"Read in panel"** (đọc text đang có ở tab dịch, ngay
   trong panel — luôn đọc trong panel, không theo setting dưới) và
   nút chọn **"Run FastRead in:"**.
-- **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn:
-  **"New Fast Read Window"** (mặc định — giữ hành vi hiện tại) và
-  **"Right Panel"**. Áp TOÀN CỤC cho mọi lần mở Fast Read (nút Fast
-  Read ở tab dịch, click icon, menubar, phím tắt): chọn 1 trong 2 thì
-  RSVP chỉ hiển thị theo lựa chọn đó. Một điểm vào duy nhất ở
-  `AppDelegate.showFastRead(text:)` — mọi đường mở đều qua đó nên
-  setting chỉ kiểm tra ở 1 chỗ. Riêng với "Run reminder in:" ở panel
-  trái (§10.6): 2 setting độc lập, không ảnh hưởng nhau.
+- **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
+  nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
+  dropdown): **"Right Panel"** và **"New Fast Read Window
+  (Recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
+  cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
+  menubar, phím tắt): chọn 1 trong 2 thì RSVP chỉ hiển thị theo lựa
+  chọn đó. Một điểm vào duy nhất ở `AppDelegate.showFastRead(text:)`
+  — mọi đường mở đều qua đó nên setting chỉ kiểm tra ở 1 chỗ. Riêng
+  với "Run reminder in:" ở panel trái (§10.6): 2 setting độc lập,
+  không ảnh hưởng nhau.
 - Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
   đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
   — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
   Read, KHÔNG copy 2 bộ; file Window Read `RSVPView.swift` để nguyên
-  không sửa, Manh 2026-11-20, 05:36). Cỡ chữ focus bị
-  chặn lại cho vừa panel (48pt ở cỡ mặc định, 64pt gần max) — setting
-  cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
+  không sửa, Manh 2026-11-20, 05:36). Cỡ chữ focus trong panel
+  KHÔNG bị chặn (Manh 2026-11-20, 07:02 — bỏ cap 48/64pt): vuốt
+  dọc đổi cỡ chữ bao nhiêu cũng được, user tự chỉnh cho vừa frame;
+  setting cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
 - **Hiển thị theo size (Manh 2026-11-20, 04:44):**
   - Đang chạy (play): CHỈ focus text + around text + dòng phím tắt.
   - Pause, panel bé: thêm speed (WPM) + nút Settings gọn ở góc phải
     trên (cùng tuỳ chọn như Window Read: cỡ chữ / màu nền / context /
-    auto-play / reset), thanh progress nhỏ, hàng nút Rewind / Play /
-    Forward / Maximize căn giữa dưới cùng.
+    auto-play / reset), thanh progress nhỏ, hàng nút X / Restart /
+    Rewind / Play / Forward / Maximize căn giữa dưới cùng (Manh
+    2026-11-20, 07:02 — X + Restart có cả khi panel bé).
   - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
     trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
     picker (Speed / Focus size / Context size / Words at once) +
@@ -550,11 +567,21 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (±16pt / 50pt, như cửa sổ — monitor riêng chỉ dọc, vuốt ngang vẫn
   chuyển panel 1/2/3 như cũ); phím tắt Space / ←/→ / ↑/↓ vẫn chạy
   (Shift+←/→ = theo câu); lùi/tiến slide bằng phím ←/→ hoặc nút
-  Rewind/Forward (KHÔNG vuốt ngang). Esc không bị view đọc nuốt —
-  panel vẫn ẩn như cũ.
-- **Nút pin ở panel phải:** khi bắt đầu đọc trong panel, panel tự
-  bật pin (click ra ngoài không làm mất bài đọc); nút pin ở hàng đầu
-  panel phải để user tắt. Đọc trong panel thì auto-fit bị đóng băng
+  Rewind/Forward (KHÔNG vuốt ngang).
+- **Nút X + Esc 2 nấc** (Manh 2026-11-20, 07:02): nút X đặt ngay
+  TRÁI nút Restart trong hàng nút (cả khi panel bé lẫn full), tooltip
+  "Close reading (Esc)" — bấm X đóng bài đọc, về lại panel phải mặc
+  định. Phím Esc làm đúng việc đó: Esc lần 1 (đang đọc) đóng bài đọc
+  về panel phải; Esc lần 2 (đã về mặc định) mới thoát cả panel. Làm
+  bằng hook `onEscape` trong `PopupDismissMonitor` — monitor chặn
+  Esc trước SwiftUI nên view đọc không bao giờ thấy phím Esc.
+- **Nút pin ở CẢ 3 panel (tạm thời)** (Manh 2026-11-20, 07:08 +
+  07:09 + 07:10): nằm ở hàng chấm (dotsRow, dùng chung cả 3 tab nên
+  hiện cả 3 panel), bên trái chevron.left, gần mép trái panel với
+  padding nhỏ 4pt cho đẹp (không dính sát mép, không padding lớn như
+  hàng thường). Chức năng không đổi: khi bắt đầu đọc trong panel,
+  panel tự bật pin (click ra ngoài không làm mất bài đọc); user bấm
+  nút để tắt. Đọc trong panel thì auto-fit bị đóng băng
   (cùng cơ chế manual-resize) để panel cao không bị co lại; hết đọc
   thì auto-fit chạy lại. Nút Maximize đổi panel giữa cỡ mặc định
   (420×450) và max (600×800), giữ mép trên cố định.

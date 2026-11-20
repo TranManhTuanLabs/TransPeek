@@ -174,6 +174,18 @@ final class FocusTimerStore: ObservableObject {
         pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
     }
 
+    /// Start the next focus interval on its own (continuous mode,
+    /// Manh 2026-11-20, 07:12): full work time, still running — the
+    /// ticker keeps ticking, so the new interval counts down at once.
+    /// The reminder flow is untouched: a work interval ending still
+    /// fires its reminder first (notify-if-reading, show-if-not),
+    /// and only then does the rest count down.
+    private func startNextFocus() {
+        pomodoroPhase = .focus
+        pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
+        pomodoroRunning = true
+    }
+
     // MARK: - Rest-eyes controls
 
     /// Start / stop the 20-20-20 reminders (independent of Pomodoro).
@@ -246,14 +258,25 @@ final class FocusTimerStore: ObservableObject {
             pomodoroPhase = isLongBreak ? .longBreak : .rest
             pomodoroRemainingSeconds = restMinutes * 60
         case .rest:
-            pomodoroPhase = .idle
-            pomodoroRunning = false
-            pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
+            // Continuous mode (Manh 2026-11-20, 07:12): the next
+            // focus starts on its own; OFF (default) waits for a
+            // manual start, as before.
+            if Defaults[.focusRepeatAutomatically] {
+                startNextFocus()
+            } else {
+                pomodoroPhase = .idle
+                pomodoroRunning = false
+                pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
+            }
         case .longBreak:
-            pomodoroPhase = .idle
-            pomodoroRunning = false
             completedFocusCycles = 0
-            pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
+            if Defaults[.focusRepeatAutomatically] {
+                startNextFocus()
+            } else {
+                pomodoroPhase = .idle
+                pomodoroRunning = false
+                pomodoroRemainingSeconds = Defaults[.focusWorkMinutes] * 60
+            }
         case .idle:
             break
         }

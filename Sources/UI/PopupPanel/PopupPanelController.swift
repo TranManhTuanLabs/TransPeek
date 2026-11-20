@@ -341,7 +341,17 @@ final class PopupPanelController {
         dismissMonitor = PopupDismissMonitor(
             panel: panel,
             popoverTracker: languagePopoverTracker,
-            isPinned: { [weak self] in self?.coordinator.isPinned ?? false }
+            isPinned: { [weak self] in self?.coordinator.isPinned ?? false },
+            // Two-stage Esc (Manh 2026-11-20, 07:02): while a read is
+            // running in panel right, the first Esc only closes the
+            // reading and returns to panel right; the next Esc dismisses
+            // the panel.
+            onEscape: { [weak self] in
+                guard let self else { return false }
+                guard self.focusTimerStore.panelReadingViewModel != nil else { return false }
+                self.focusTimerStore.stopPanelReading()
+                return true
+            }
         ) { [weak self] in
             self?.dismiss()
         }

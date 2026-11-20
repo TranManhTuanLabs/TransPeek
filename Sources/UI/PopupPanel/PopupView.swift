@@ -689,8 +689,6 @@ struct PopupView: View {
                     .help("Keyboard shortcuts")
                     .background { InteractiveMarker() }
 
-                    pinButton
-
                     Button {
                         onOpenSettings?()
                     } label: {
@@ -716,9 +714,10 @@ struct PopupView: View {
     }
 
     /// Panel left (panel 1, shortcuts — temporary content): the "How the
-    /// icon works" intro card on top, then the full shortcuts table as a
-    /// page — the same ShortcutsTableView that the "?" button embeds in
-    /// panel center, reused here (Manh 2026-11-17). The flow card moved
+    /// icon works" intro card on top, then the Focus & Rest timer card,
+    /// then the full shortcuts table as a page — the same
+    /// ShortcutsTableView that the "?" button embeds in panel center,
+    /// reused here (Manh 2026-11-17). The flow card moved
     /// here from panel center (Manh 2026-11-18 — it was put in panel
     /// center by mistake; panel center goes back to how it was). Run
     /// calls the same code path as the hotkey; closing the table (×, or
@@ -742,16 +741,26 @@ struct PopupView: View {
                         Defaults[.flowIntroCollapsed] = newValue
                     }
 
+                // Focus & Rest timer card (Manh 2026-11-20, focus timer
+                // + panel decor): Pomodoro + rest eyes + where the
+                // reminder shows. Directly under "How the icon works",
+                // above the shortcuts table (Manh 2026-11-20, 07:06 —
+                // moved up from under the shortcuts table).
+                FocusTimerCard(store: focusTimerStore, isCollapsed: $isFocusTimerCollapsed)
+                    .onChange(of: isFocusTimerCollapsed) { _, newValue in
+                        Defaults[.focusTimerCollapsed] = newValue
+                    }
+
                 // "Keyboard Shortcuts" card (Manh 2026-11-18, round 9):
                 // collapsible in panel left — the header toggles collapse
                 // (chevron) instead of closing the card, like the flow
-                // card above it, so both cards can stay collapsed and
-                // leave room for the future focus/tomato timer. The
-                // `onClose` still switches to the translate tab after a
-                // Run button, so the result is visible — only the header
-                // changed from close to collapse. (Panel center's "?"
-                // table does NOT pass isCollapsed: its header still
-                // hides the table, as before.)
+                // card above it, so the cards can stay collapsed and
+                // leave room. The `onClose` still switches to the
+                // translate tab after a Run button, so the result is
+                // visible — only the header changed from close to
+                // collapse. (Panel center's "?" table does NOT pass
+                // isCollapsed: its header still hides the table, as
+                // before.)
                 ShortcutsTableView(
                     onRunShortcut: onRunShortcut,
                     onClose: { selectedTab = .translate },
@@ -760,16 +769,6 @@ struct PopupView: View {
                 .onChange(of: isShortcutsCollapsed) { _, newValue in
                     Defaults[.shortcutsCollapsed] = newValue
                 }
-
-                // Focus & Rest timer card (Manh 2026-11-20, focus timer
-                // + panel decor): Pomodoro + rest eyes + where the
-                // reminder shows. Under the shortcuts table, above
-                // Share — the empty space the share row used to leave
-                // for it (Manh 2026-11-19).
-                FocusTimerCard(store: focusTimerStore, isCollapsed: $isFocusTimerCollapsed)
-                    .onChange(of: isFocusTimerCollapsed) { _, newValue in
-                        Defaults[.focusTimerCollapsed] = newValue
-                    }
 
                 // Share TransPeek — at the bottom of panel left
                 // (Manh 2026-11-19): the same share row as the Fast
@@ -824,8 +823,6 @@ struct PopupView: View {
         PanelFastReadView(
             store: focusTimerStore,
             sourceText: editableText,
-            isPinned: coordinator.isPinned,
-            onTogglePin: { coordinator.isPinned.toggle() },
             onStartReading: { coordinator.isPinned = true },
             onToggleMaximize: { togglePanelSize() }
         )
@@ -877,45 +874,59 @@ struct PopupView: View {
     /// previous / no next panel). The dots' position is UNCHANGED
     /// (Manh 2026-11-18: keep it as-is on both repos for comparison).
     private var dotsRow: some View {
-        HStack(spacing: 8) {
-            Button {
-                selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.caption)
-                    .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
-            }
-            .buttonStyle(.plain)
-            .disabled(selectedTab == .shortcut)
-            .help("Previous panel")
-            .background { InteractiveMarker() }
-
-            ForEach(PanelTab.allCases, id: \.self) { tab in
+        ZStack {
+            HStack(spacing: 8) {
                 Button {
-                    selectedTab = tab
+                    selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
                 } label: {
-                    Circle()
-                        .fill(selectedTab == tab ? Color.accentColor : Color.secondary.opacity(0.4))
-                        .frame(width: 8, height: 8)
+                    Image(systemName: "chevron.left")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
                 }
                 .buttonStyle(.plain)
-                .help(dotHelp(tab))
+                .disabled(selectedTab == .shortcut)
+                .help("Previous panel")
+                .background { InteractiveMarker() }
+
+                ForEach(PanelTab.allCases, id: \.self) { tab in
+                    Button {
+                        selectedTab = tab
+                    } label: {
+                        Circle()
+                            .fill(selectedTab == tab ? Color.accentColor : Color.secondary.opacity(0.4))
+                            .frame(width: 8, height: 8)
+                    }
+                    .buttonStyle(.plain)
+                    .help(dotHelp(tab))
+                    .background { InteractiveMarker() }
+                }
+
+                Button {
+                    selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedTab == .fastRead)
+                .help("Next panel")
                 .background { InteractiveMarker() }
             }
+            .frame(maxWidth: .infinity, alignment: .center)
 
-            Button {
-                selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+            // Pin button (Manh 2026-11-20, 07:08 + 07:10, temporary):
+            // at the left end of the dots row, near the panel's left
+            // edge with a small padding (4pt) so it looks neat — not
+            // flush to the edge (0), not the row's normal large
+            // padding. The dots row is shared across all 3 tabs, so
+            // the pin is on every tab.
+            HStack {
+                pinButton
+                Spacer()
             }
-            .buttonStyle(.plain)
-            .disabled(selectedTab == .fastRead)
-            .help("Next panel")
-            .background { InteractiveMarker() }
+            .padding(.leading, 4)
         }
-        .frame(maxWidth: .infinity, alignment: .center)
         .padding(.top, 2)
         .padding(.bottom, 4)
         .gesture(swipeGesture)
