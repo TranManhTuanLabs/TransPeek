@@ -376,7 +376,8 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Settings, Copy, loa, "Copy source/translation", nút hàng điều khiển
   Read lite, nút "Read in panel" / "Done" /
   Settings / "?" ở panel phải, loa + Copy phía nguồn, nút swap ngôn
-  ngữ). Không đổi style nút, không đổi viền 0.25, không kích hoạt app
+  ngữ). Không đổi style nút, không đổi viền 0.4 (tăng từ 0.25, Manh
+  2026-11-20 11:27 — thử nghiệm, 0.25 hơi nhạt), không kích hoạt app
   khi panel hiện. Ô nhập (source text) + 2 ô chọn ngôn ngữ (Source /
   Target) cũng có cùng highlight này (Manh 2026-11-20, 10:11).
   (Bảng đầy đủ mọi nút panel: §10.8.)
@@ -527,8 +528,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Panel chính: nút **Capture OCR** có viền xanh dương, nút **Fast Read**
   có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ "A+" của Fast Read);
   chỉ viền lining bao ngoài nút, không tô nền, không đổi màu chữ/icon
-  (Manh 2026-11-19 23:56); **làm nhạt hết cỡ, opacity 0.25** (Manh
-  2026-11-20: màu đầy quá nổi, mất tập trung).
+  (Manh 2026-11-19 23:56); **opacity 0.4** (Manh 2026-11-20 11:27 —
+  thử nghiệm: 0.25 hơi nhạt, tăng lên chút; trước đó 2026-11-20 làm
+  nhạt hết cỡ 0.25 vì màu đầy quá nổi, mất tập trung).
 - Window Read: thêm tuỳ chọn **"Run text automatically"** (on/off,
   mặc định ON) trong Settings của cửa sổ (Manh 2026-11-20 00:47) —
   khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần
@@ -734,7 +736,8 @@ Two rules apply to EVERY panel button:
   hit-testable `.overlay` Shape on top of a button swallows the click
   and the button never fires). It does not change the button style
   (`.plain` stays `.plain`, `.bordered` stays `.bordered`) and does
-  not touch the settled 0.25-opacity borders.
+  not touch the settled 0.4-opacity borders (0.25 → 0.4, Manh
+  2026-11-20 11:27 — experiment, 0.25 was a touch too pale).
 - **Cursor (see §10.5):** links → system pointing hand; plain buttons
   → system default arrow (+ the highlight above); text fields →
   I-beam; panel resize cursor untouched.
@@ -750,8 +753,8 @@ Two rules apply to EVERY panel button:
 |---|---|---|---|
 | Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned |
 | 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
-| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.25 opacity |
-| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.25 opacity |
+| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |
+| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |
 | "?" | Actions row, right (left of Settings) | Toggle the shortcuts table embedded at the top of the output | `.plain`; accent + filled icon while open |
 | Settings (gear) | Actions row, right end | Open Settings | `.plain` |
 | Copy / speaker (provider card) | Bottom of each provider card, fixed outside the scrolling text | Copy / speak that card's text | `.bordered` |
