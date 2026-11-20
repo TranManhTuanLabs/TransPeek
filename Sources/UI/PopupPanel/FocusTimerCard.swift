@@ -136,15 +136,20 @@ struct FocusTimerCard: View {
                 .monospacedDigit()
                 .frame(maxWidth: .infinity, alignment: .center)
 
-            // Work / Rest pickers. The label names the default (Manh
-            // 2026-11-20, 03:44 — any setting with a default shows it
-            // in its name, so the user knows what to set it back to);
-            // the value comes from the key's default, not hardcoded.
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 1) {
+            // Work / Rest pickers as INLINE rows (Manh 2026-11-20,
+            // 18:29 — "y như này nha"): label on the left, picker on the
+            // right, one row each — instead of the stacked label-above-
+            // picker layout, which read as two separate blocks. The
+            // label names the default (Manh 2026-11-20, 03:44 — any
+            // setting with a default shows it in its name, so the user
+            // knows what to set it back to); the value comes from the
+            // key's default, not hardcoded.
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
                     Text("Work (default: \(Defaults.Keys.focusWorkMinutes.defaultValue) min):")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Spacer()
                     Picker("", selection: $workMinutes) {
                         ForEach(Self.workMinuteOptions, id: \.self) { m in
                             Text("\(m) min").tag(m)
@@ -153,22 +158,23 @@ struct FocusTimerCard: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .frame(width: 80)
-                }
-                .background { InteractiveMarker() }
-                // Changing the work length while idle re-arms the next
-                // interval at once, so the timer shows the new length
-                // before Start. Mid-interval it only affects the next
-                // one — the running interval keeps its started length.
-                .onChange(of: workMinutes) { _, newValue in
-                    if store.pomodoroPhase == .idle {
-                        store.pomodoroRemainingSeconds = newValue * 60
+                    .background { InteractiveMarker() }
+                    // Changing the work length while idle re-arms the next
+                    // interval at once, so the timer shows the new length
+                    // before Start. Mid-interval it only affects the next
+                    // one — the running interval keeps its started length.
+                    .onChange(of: workMinutes) { _, newValue in
+                        if store.pomodoroPhase == .idle {
+                            store.pomodoroRemainingSeconds = newValue * 60
+                        }
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 1) {
+                HStack {
                     Text("Rest (default: \(Defaults.Keys.focusRestMinutes.defaultValue) min):")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Spacer()
                     Picker("", selection: $restMinutes) {
                         ForEach(Self.restMinuteOptions, id: \.self) { m in
                             Text("\(m) min").tag(m)
@@ -177,8 +183,8 @@ struct FocusTimerCard: View {
                     .pickerStyle(.menu)
                     .labelsHidden()
                     .frame(width: 80)
+                    .background { InteractiveMarker() }
                 }
-                .background { InteractiveMarker() }
             }
             .padding(.horizontal, 12)
 
@@ -226,12 +232,13 @@ struct FocusTimerCard: View {
             // after each rest / long break, looping until the user
             // turns it off or stops it. OFF: each session ends and
             // waits for a manual start.
-            // Explicit `.switch` style (Manh 2026-11-20, build 292):
-            // the plain Toggle rendered as a checkbox (✓ tick) in the
-            // app, so the sliding-switch look is forced here instead
-            // of trusting the default style.
+            // Plain Toggle (Manh 2026-11-20, 19:00): back to the
+            // checkbox look (✓ tick) — no `.toggleStyle`, so macOS
+            // renders the default checkbox. The switch look (explicit
+            // `.switch` + switch-left / text-right layout, Manh
+            // 2026-11-20, 18:29) is reverted: Manh prefers the
+            // checkbox here.
             Toggle("Repeat automatically", isOn: $repeatAutomatically)
-                .toggleStyle(.switch)
                 .help("When on, the next session starts automatically after each break — Work → Rest → Work …, until you turn it off or stop it")
                 .background { InteractiveMarker() }
                 .padding(.horizontal, 12)
@@ -242,12 +249,9 @@ struct FocusTimerCard: View {
             // every time the app launches, as if the user pressed
             // Start — no need to open the panel and press Start.
             // OFF waits for a manual start, as before.
-            // Same explicit `.switch` style as "Repeat automatically"
-            // above (Manh 2026-11-20, build 292): the plain Toggle
-            // rendered as a checkbox (✓ tick), so the switch look is
-            // forced here too.
+            // Plain Toggle, same checkbox revert as "Repeat
+            // automatically" above (Manh 2026-11-20, 19:00).
             Toggle("Auto start focus (default: \(Defaults.Keys.focusAutoStart.defaultValue ? "On" : "Off"))", isOn: $autoStartFocus)
-                .toggleStyle(.switch)
                 .help("When on, the focus timer starts automatically every time the app launches — no need to open the panel and press Start")
                 .background { InteractiveMarker() }
                 .padding(.horizontal, 12)
@@ -301,21 +305,23 @@ struct FocusTimerCard: View {
     /// rest-eyes reminder shows. Applies ONLY to the reminder: "New
     /// Fast Read Window" opens a separate Rest window; "Right Panel"
     /// shows the reminder inside panel right, no separate window.
+    /// Radio buttons (Manh 2026-11-20, 19:00): the same dot-selection
+    /// look as "Run FastRead in:" in panel right — the menu picker
+    /// (dropdown) hid the two destinations behind a click.
     private var reminderSection: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Run reminder in:")
-                    .font(.callout)
-                    .bold()
-                Picker("", selection: $reminderDestination) {
-                    ForEach(FocusReminderDestination.allCases, id: \.self) { destination in
-                        Text(destination.displayName).tag(destination)
-                    }
+            Text("Run reminder in:")
+                .font(.callout)
+                .bold()
+                .padding(.horizontal, 12)
+            Picker("", selection: $reminderDestination) {
+                ForEach(FocusReminderDestination.allCases, id: \.self) { destination in
+                    Text(destination.displayName).tag(destination)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
-                .background { InteractiveMarker() }
             }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            .background { InteractiveMarker() }
             .padding(.horizontal, 12)
 
             Text("Applies only to focus / rest-eyes reminders — not to Fast Read itself.")
@@ -325,4 +331,5 @@ struct FocusTimerCard: View {
         }
     }
 }
+
 

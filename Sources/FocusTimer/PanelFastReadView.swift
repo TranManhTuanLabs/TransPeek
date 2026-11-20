@@ -56,43 +56,33 @@ struct PanelFastReadView: View {
 
     private func readingState(viewModel: RSVPViewModel) -> some View {
         VStack(spacing: 0) {
-            HStack {
-                Text("Fast Read")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
-
-            CompactReadingView(
-                viewModel: viewModel,
-                onToggleMaximize: onToggleMaximize,
-                onCloseReading: { store.stopPanelReading() }
-            )
-            .onChange(of: viewModel.isFinished) { _, finished in
-                if finished { store.startPanelReminderCountdown() }
-            }
-
-            // Rest countdown after a reminder read finishes (Manh
-            // 2026-11-20): the panel returns to the demo at zero.
             if let remaining = store.panelReminderCountdown {
-                HStack(spacing: 8) {
-                    Text("Rest — \(FocusTimerStore.mmss(remaining))")
-                        .font(.callout)
-                        .monospacedDigit()
+                // Reminder countdown screen (Manh 2026-11-20, 18:32):
+                // after a reminder read finishes, the reader is hidden
+                // and this centered screen shows instead — same layout
+                // as the Rest window. At zero (or Done) the panel
+                // returns to the demo. Only for reminder reads; a
+                // normal read finishing still shows "Congratulations!"
+                // + share in the reader below.
+                reminderCountdownScreen(viewModel: viewModel, remaining: remaining)
+            } else {
+                HStack {
+                    Text("Fast Read")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Done") {
-                        store.stopPanelReading()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                    .help("End the rest early")
-                    .background { InteractiveMarker() }
-                    .panelHoverHighlight()
                 }
                 .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.top, 6)
+
+                CompactReadingView(
+                    viewModel: viewModel,
+                    onToggleMaximize: onToggleMaximize,
+                    onCloseReading: { store.stopPanelReading() }
+                )
+                .onChange(of: viewModel.isFinished) { _, finished in
+                    if finished { store.startPanelReminderCountdown() }
+                }
             }
         }
         .background {
@@ -128,6 +118,52 @@ struct PanelFastReadView: View {
                 viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
         }
+    }
+
+    /// Centered rest-countdown screen for panel right (Manh 2026-11-20,
+    /// 18:32) — shown after a REMINDER read finishes, replacing the
+    /// reader entirely (same layout as the Rest window: coffee icon +
+    /// title + big countdown + Done). The title comes from the reminder
+    /// kind the store kept (`FocusReminderKind.title`), so it always
+    /// matches the reminder that fired. The countdown itself still
+    /// ticks in the store (`panelReminderCountdown`); at zero the
+    /// store returns the panel to the demo, and "Done" returns early.
+    /// A normal Fast Read never reaches this screen — its
+    /// `panelReminderCountdown` stays `nil`, so it still shows
+    /// "Congratulations!" + share in the reader.
+    private func reminderCountdownScreen(viewModel: RSVPViewModel, remaining: Int) -> some View {
+        // Reading colors, same as the Rest window (an explicit
+        // override, so the countdown screen matches the reader it
+        // replaces — dark scheme is a black page, light is white).
+        let pageBackground: Color = viewModel.colorScheme == .dark ? .black : .white
+        let readingForeground: Color = viewModel.colorScheme == .dark ? .white : .black
+        let readingSecondary: Color = viewModel.colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
+        return VStack(spacing: 12) {
+            Image(systemName: "cup.and.saucer.fill")
+                .font(.system(size: 32))
+                .foregroundStyle(readingSecondary)
+            // The kind is always set when a countdown is running (kind
+            // and countdown are set together when the reminder read
+            // starts), so the empty fallback never shows.
+            Text(store.panelReadingReminderKind?.title ?? "")
+                .font(.title2)
+                .bold()
+                .foregroundStyle(readingForeground)
+            Text(FocusTimerStore.mmss(remaining))
+                .font(.system(size: 56, weight: .bold, design: .monospaced))
+                .monospacedDigit()
+                .foregroundStyle(readingForeground)
+            Button("Done") {
+                store.stopPanelReading()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding(.top, 4)
+            .help("End the rest early")
+            .background { InteractiveMarker() }
+            .panelHoverHighlight()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(pageBackground)
     }
 
     // MARK: - Demo (idle)
@@ -195,30 +231,69 @@ struct PanelFastReadView: View {
 
     // MARK: - Run location
 
-    /// "Run FastRead in:" (Manh 2026-11-20, 05:27; radio buttons since
-    /// 07:02) — where Fast Read runs, for EVERY launch (panel button,
-    /// float icon, menubar, shortcut). "New FastRead Window
-    /// (recommended)" opens the separate Window Read (default, the
-    /// current behavior); "FastRead Lite" reads here, in panel right,
-    /// no separate window. A one-line hint under the radios points at
-    /// the window (Manh 2026-11-20, 11:41). Separate from the
-    /// reminder's "Run reminder in:" — the two features must not share
-    /// a setting. The "Read in panel" button above always reads here,
-    /// whatever this says — it is the explicit panel action, not a
-    /// launch.
+    /// "Run FastRead in:" (Manh 2026-11-20, 05:27; radio buttons
+    /// 07:02–19:00, two toggles since 19:00) — where Fast Read runs,
+    /// for EVERY launch (panel button, float icon, menubar, shortcut).
+    /// "New FastRead Window (recommended)" opens the separate Window
+    /// Read (default, the current behavior); "FastRead Lite" reads
+    /// here, in panel right, no separate window. A one-line hint under
+    /// the toggles points at the window (Manh 2026-11-20, 11:41).
+    /// Separate from the reminder's "Run reminder in:" — the two
+    /// features must not share a setting. The "Read in panel" button
+    /// above always reads here, whatever this says — it is the
+    /// explicit panel action, not a launch.
     private var runLocationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Run FastRead in:")
                 .font(.callout)
                 .bold()
-            Picker("", selection: $runLocation) {
-                ForEach(FastReadRunLocation.allCases, id: \.self) { location in
-                    Text(location.displayName + (location == .newWindow ? " (recommended)" : "")).tag(location)
+            // Two mutually exclusive toggles (Manh 2026-11-20, 19:00):
+            // one switch per destination — turning one on turns the
+            // other off. Each Binding reads the single `runLocation`
+            // value, and its `set` only acts when turned ON (turning
+            // a toggle off is a no-op: it is already off when the
+            // other is on). Explicit `.switch` style: a plain Toggle
+            // renders as a checkbox on macOS, and Manh asked for
+            // switches ("gạt") here.
+            // Switch on the LEFT, text on the RIGHT (Manh 2026-11-20,
+            // 19:02): the standard Toggle puts the label left / switch
+            // right. A labels-hidden Toggle + a plain Button with the
+            // text flips them, and BOTH stay tappable — same layout as
+            // batch 2's Repeat / Auto start switches.
+            HStack(spacing: 8) {
+                Toggle("", isOn: Binding(
+                    get: { runLocation == .rightPanel },
+                    set: { on in if on { runLocation = .rightPanel } }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .accessibilityLabel("FastRead Lite")
+                .background { InteractiveMarker() }
+                Button {
+                    runLocation = .rightPanel
+                } label: {
+                    Text("FastRead Lite")
                 }
+                .buttonStyle(.plain)
+                .background { InteractiveMarker() }
             }
-            .pickerStyle(.radioGroup)
-            .labelsHidden()
-            .background { InteractiveMarker() }
+            HStack(spacing: 8) {
+                Toggle("", isOn: Binding(
+                    get: { runLocation == .newWindow },
+                    set: { on in if on { runLocation = .newWindow } }
+                ))
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .accessibilityLabel("New FastRead Window (recommended)")
+                .background { InteractiveMarker() }
+                Button {
+                    runLocation = .newWindow
+                } label: {
+                    Text("New FastRead Window (recommended)")
+                }
+                .buttonStyle(.plain)
+                .background { InteractiveMarker() }
+            }
             Text("For the full experience, choose New FastRead Window.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -335,6 +410,26 @@ struct CompactReadingView: View {
                     } else {
                         compactTopBar
                         readingAreaForCurrentState
+                        // Completion + share in COMPACT lite too (Manh
+                        // 2026-11-20, 18:38): a normal read finishing in
+                        // the compact panel showed neither
+                        // "Congratulations!" nor the share row — they
+                        // only existed in the full-size branch above.
+                        // Same text + row as full size, between the
+                        // reading area and the hint row. Reminder reads
+                        // never reach this — the parent hides the whole
+                        // reader and shows the cafe countdown screen
+                        // instead when `panelReminderCountdown` is set.
+                        if let completion = viewModel.completionText {
+                            Text(completion)
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 12)
+                                .padding(.bottom, 4)
+                            shareRow
+                                .padding(.bottom, 8)
+                        }
                         panelHint
                             .padding(.horizontal, 12)
                             .padding(.top, 4)
@@ -1193,3 +1288,4 @@ final class PanelReadTrackpadMonitor: ObservableObject {
         return event
     }
 }
+

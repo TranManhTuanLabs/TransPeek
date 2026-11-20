@@ -2,8 +2,10 @@ import Defaults
 import SwiftUI
 
 /// What kind of focus reminder fired (Manh 2026-11-20, focus timer +
-/// panel decor).
-enum FocusReminderKind {
+/// panel decor). `Equatable` so it can ride in `PanelRightRequest`
+/// (which is `Equatable`) — the panel needs the kind to show the right
+/// countdown-screen title after a reminder read.
+enum FocusReminderKind: Equatable {
     /// A Pomodoro work interval ended (carries the work minutes, so the
     /// message names the real duration, not a hardcoded 25).
     case workBreak(minutes: Int)
@@ -54,10 +56,14 @@ struct PendingReminder {
 /// Set by the timer when a reminder fires with destination Right Panel;
 /// `PopupView` observes it, switches to the Fast Read tab, and starts
 /// the read. `countdownSeconds` is the rest countdown shown after the
-/// read finishes (`nil` = a plain read, no countdown).
+/// read finishes (`nil` = a plain read, no countdown). `kind` is which
+/// reminder fired (`nil` = a plain read) — the countdown screen shows
+/// its title (`FocusReminderKind.title`), so the title always matches
+/// the reminder that fired, never a hardcoded string.
 struct PanelRightRequest: Equatable {
     let text: String
     let countdownSeconds: Int?
+    let kind: FocusReminderKind?
 }
 
 /// Pomodoro phase (STANDARD logic, Manh 2026-11-20, 04:08): Work /
@@ -146,6 +152,12 @@ final class FocusTimerStore: ObservableObject {
     @Published var panelReminderCountdown: Int?
     /// Rest seconds for the current panel read (`nil` = plain read).
     private var panelReadingCountdownSeconds: Int?
+    /// Which reminder the current panel read is (`nil` = plain read).
+    /// Set together with `panelReadingCountdownSeconds` when a
+    /// reminder read starts; the countdown screen shows this kind's
+    /// title (`FocusReminderKind.title`), so the title always matches
+    /// the reminder that fired — never a hardcoded string.
+    @Published var panelReadingReminderKind: FocusReminderKind?
 
     private let restWindowController = RestWindowController()
     private var tickerTask: Task<Void, Never>?
@@ -342,7 +354,8 @@ final class FocusTimerStore: ObservableObject {
         case .rightPanel:
             panelRightRequest = PanelRightRequest(
                 text: kind.message,
-                countdownSeconds: countdownSeconds
+                countdownSeconds: countdownSeconds,
+                kind: kind
             )
             onShowPanel?()
         }
@@ -387,8 +400,10 @@ final class FocusTimerStore: ObservableObject {
     /// must read itself, and a manual panel read is started by an
     /// explicit tap, so there is nothing to wait for. When the read
     /// finishes, the panel shows `countdownSeconds` (if any) and then
-    /// returns to the demo.
-    func startPanelReading(text: String, countdownSeconds: Int? = nil) {
+    /// returns to the demo. `kind` is which reminder fired (`nil` =
+    /// a plain read) — kept so the countdown screen can show its
+    /// title; a plain read has no kind and no countdown.
+    func startPanelReading(text: String, countdownSeconds: Int? = nil, kind: FocusReminderKind? = nil) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         // A new read replaces the old one — the user is still reading,
@@ -406,6 +421,10 @@ final class FocusTimerStore: ObservableObject {
             autoPlay: true
         )
         panelReadingCountdownSeconds = countdownSeconds
+        // The kind rides with the countdown (both set here, cleared
+        // together in `stopPanelReading`) — the countdown screen reads
+        // its title from here, so it always matches the reminder.
+        panelReadingReminderKind = kind
         panelReadingViewModel = viewModel
         viewModel.play()
     }
@@ -421,6 +440,7 @@ final class FocusTimerStore: ObservableObject {
         panelCountdownTask = nil
         panelReminderCountdown = nil
         panelReadingCountdownSeconds = nil
+        panelReadingReminderKind = nil
         panelRightRequest = nil
         panelReadingViewModel?.pause()
         panelReadingViewModel = nil
@@ -461,3 +481,4 @@ final class FocusTimerStore: ObservableObject {
         return "\(clamped / 60):\(String(format: "%02d", clamped % 60))"
     }
 }
+

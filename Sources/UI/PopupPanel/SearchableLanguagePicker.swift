@@ -103,6 +103,20 @@ struct SearchableLanguagePicker: View {
             isPresented.toggle()
         }
         .buttonStyle(.plain)
+        // Gray border so the picker reads as a BUTTON (Manh 2026-11-20,
+        // 18:29 — chosen over bigger padding like Capture OCR: the plain
+        // text looked like a label, not a control). Gray/secondary, NOT
+        // blue — blue is Capture OCR's border color. Same corner radius
+        // (6) as the hover tint, so the two line up. The stroke is
+        // visual only (allowsHitTesting false) — the build-285 lesson:
+        // a hit-testable overlay shape swallows clicks.
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .overlay {
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color.secondary.opacity(0.5), lineWidth: 1)
+                .allowsHitTesting(false)
+        }
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
             // An explicit TextField at the top of the popover — NOT
             // `.searchable`: `.searchable` puts its field in the
@@ -212,3 +226,4 @@ struct SearchableLanguagePicker: View {
         .buttonStyle(.plain)
     }
 }
+

@@ -435,7 +435,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (Manh 2026-11-19, 0.1.5) — bấm hiện popover với list tìm được (Popular
   20 đầu, rồi toàn bộ 249 ngôn ngữ + alias `pt` xếp A–Z theo tên tiếng Anh);
   bấm trong popover không ẩn panel (dismiss monitor coi popover là 1 phần
-  của panel). List trong popover CĂN GIỮA (hàng + tiêu đề section,
+  của panel). 2 ô chọn có VIỀN XÁM (Manh 2026-11-20, 18:29 — chọn viền
+  xám highlight giả nút thay vì padding to như Capture OCR: chữ thường
+  trông như nhãn, không như nút bấm; viền xám trung tính, khác viền xanh
+  của Capture OCR; cùng bo góc 6pt với highlight hover). List trong
+  popover CĂN GIỮA (hàng + tiêu đề section,
   Manh 2026-11-20 — left để hở khoảng trống bên phải trông buồn cười;
   dấu check ở mép phải, chữ vẫn căn giữa đúng).
 - **Hàng Actions:** nút "Fast Read" ở đầu trái (`book.pages` + chữ
@@ -531,10 +535,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - Panel chính: nút **Capture OCR** có viền xanh dương, nút **Fast Read**
   có viền nghệ (0.78 / 0.50 / 0.05 — cùng màu chữ "A+" của Fast Read);
   chỉ viền lining bao ngoài nút, không tô nền, không đổi màu chữ/icon
-  (Manh 2026-11-19 23:56); **opacity 0.6** (Manh 2026-11-20 17:20 —
-  nhẹ từ 0.4 lên 0.6 thử xem sao; trước đó 0.4 từ 11:27 — thử nghiệm:
-  0.25 hơi nhạt, tăng lên chút; trước nữa 2026-11-20 làm nhạt hết cỡ
-  0.25 vì màu đầy quá nổi, mất tập trung).
+  (Manh 2026-11-19 23:56); **opacity 0.5** (Manh 2026-11-20 18:45 —
+  back down from 0.6; before that 0.6 from 17:20 — gently up from 0.4,
+  let's try; before that 0.4 from 11:27 — experiment: 0.25 a touch too
+  pale, up a little; before that 2026-11-20 made it as pale as possible,
+  0.25 because the full color was too bright, distracting).
 - Window Read: thêm tuỳ chọn **"Run text automatically"** (on/off,
   mặc định ON) trong Settings của cửa sổ (Manh 2026-11-20 00:47) —
   khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần
@@ -568,11 +573,14 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   …", nút Start/Pause/Resume + Reset và nút "Start eye reminders"
   đều **căn center** (Manh 2026-11-20, 17:11 — cho đẹp): 4 chấm tròn
   hiện số chu kỳ đã xong ở 1 dòng riêng, dòng "Long break 15 min
-  after 4 cycles" ở dòng dưới (cũng center); Work/Rest picker giữ
-  nguyên căn trái. "Repeat automatically" + "Auto start focus" là
-  Toggle với `.toggleStyle(.switch)` ép kiểu nút gạt (Manh 2026-11-20,
-  17:11 — "thử để nút gạt"): Toggle mặc định hiện thành checkbox ✓ ở
-  bản 292 (v0.1.8) nên phải ép style, không tin mặc định.
+  after 4 cycles" ở dòng dưới (cũng center); Work/Rest picker thành
+  HÀNG INLINE (Manh 2026-11-20, 18:29 — "y như này nha"): mỗi hàng
+  nhãn trái + picker phải — "Work (default: 25 min)" + picker Work,
+  "Rest (default: 5 min)" + picker Rest. "Repeat automatically" +
+  "Auto start focus" là Toggle thường, hiện thành checkbox ✓ (Manh
+  2026-11-20, 19:00 — về lại tích v như lần trước; trước đó 18:29
+  đã đổi sang nút gạt `.toggleStyle(.switch)` + gạt trái / text phải,
+  và 17:11 "thử để nút gạt" — Manh đổi ý, muốn checkbox).
   Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
   nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp) —
   TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12;
@@ -599,7 +607,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   cho tới khi user bấm "Start eye reminders"; khi bật thì cứ 20 phút
   nhắc 1 lần, lặp lại. Nút Start/Stop riêng, chạy độc lập với
   Pomodoro. Icon: heart (focus) + footsteps (đi bộ / nghỉ).
-- **"Run reminder in:"** — 2 lựa chọn: **"New FastRead Window"**
+- **"Run reminder in:"** — 2 lựa chọn bằng nút chọn tròn **radio**
+  (Manh 2026-11-20, 19:00 — giống "Run FastRead in:" ở panel right;
+  trước đó là menu picker/dropdown): **"New FastRead Window"**
   (nhắc nghỉ mở cửa sổ Rest riêng) và **"FastRead Lite"** (nhắc nghỉ
   hiện ngay trong panel phải, không mở cửa sổ riêng). Nhãn đồng bộ
   với "Run FastRead in:" (Manh 2026-11-20, 17:28 — cùng từ "FastRead
@@ -644,16 +654,18 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   soon" không còn đúng; "Lite" là bản lite trong panel, khác Window
   Read đầy đủ.)
 - **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
-  nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
-  dropdown): **"FastRead Lite"** (lên trên, lựa chọn đầu tiên — Manh
-  2026-11-20, 17:11) và **"New FastRead Window
-  (recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
-  cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
+  2 nút gạt **toggle** bật 1 tắt 1 (Manh 2026-11-20, 19:00; trước đó
+  là nút chọn tròn radio từ 07:02), nút gạt ở BÊN TRÁI, text ở BÊN
+  PHẢI (Manh 2026-11-20, 19:02 — kiểu gạt-trái/text-phải như đợt 2,
+  cả gạt lẫn text đều bấm được): **"FastRead Lite"** (lên trên,
+  lựa chọn đầu tiên — Manh 2026-11-20, 17:11) và **"New FastRead
+  Window (recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN
+  CỤC cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
   menubar, phím tắt): chọn 1 trong 2 thì RSVP chỉ hiển thị theo lựa
   chọn đó. Một điểm vào duy nhất ở `AppDelegate.showFastRead(text:)`
   — mọi đường mở đều qua đó nên setting chỉ kiểm tra ở 1 chỗ. Riêng
   với "Run reminder in:" ở panel trái (§10.6): 2 setting độc lập,
-  không ảnh hưởng nhau. Dưới 2 radio có 1 dòng gợi ý: "For the full
+  không ảnh hưởng nhau. Dưới 2 nút gạt có 1 dòng gợi ý: "For the full
   experience, choose New FastRead Window." (Manh 2026-11-20 11:41 —
   giải thích vì sao Window là lựa chọn khuyên dùng). (Đổi tên 11:41:
   "Right Panel" → "FastRead Lite", khớp tên section "Fast Read Lite";
@@ -696,7 +708,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
     Focus size / Context size / Words at once, spacing gọn 6pt cho
     vừa panel 420pt) + Settings + "?" ở góc phải trên (Manh
     2026-11-20, 07:54 — frame nhỏ vẫn đủ ô; "?" đặt cạnh Settings),
-    rồi vùng đọc, rồi dòng phím tắt, rồi thanh progress nhỏ, hàng
+    rồi vùng đọc, rồi completion + share khi đọc xong (Manh
+    2026-11-20, 18:38 — trước đó chỉ có ở panel gần max: panel bé
+    đọc xong không hiện chúc mừng + share), rồi dòng phím tắt, rồi
+    thanh progress nhỏ, hàng
     nút X / Restart / Rewind / Play / Forward / Maximize căn giữa
     dưới cùng (Manh 2026-11-20, 07:02 — X + Restart có cả khi
     panel bé).
@@ -733,9 +748,14 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   nên không bao giờ che Dock / menu bar khi màn hình nhỏ.
 - **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "FastRead Lite"):
   hết khoảng Work / 20 phút mắt → panel hiện lên (nếu đang ẩn) ở tab
-  phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
-  20 giây) rồi về lại demo. Bấm nút Fast Read ở tab dịch (mở cửa sổ)
-  hoặc ẩn panel thì đọc trong panel dừng hẳn (không chạy ngầm).
+  phải và tự đọc câu nhắc; đọc xong ẨN hẳn view đọc và hiện màn đếm
+  ngược cafe ở giữa (Manh 2026-11-20, 18:32 — giống cửa sổ Rest:
+  icon cafe `cup.and.saucer.fill` 32pt + tiêu đề "Take a break" /
+  "Rest your eyes" + số đếm ngược lớn 56pt + nút Done; hết giờ về
+  lại demo, Done về sớm). Chỉ áp cho đọc nhắc nghỉ — đọc thường xong
+  vẫn hiện "Congratulations!" + share như cũ. Bấm nút Fast Read ở
+  tab dịch (mở cửa sổ) hoặc ẩn panel thì đọc trong panel dừng hẳn
+  (không chạy ngầm).
 - **Banner nhắc nghỉ chờ** (Manh 2026-11-20, 05:33): khi timer tới
   lúc đang đọc, banner hiện trên mọi tab (dưới hàng chấm) với 2 nút
   "Take a break" / "Snooze 5 min"; chấm cam ở thẻ Focus & Rest báo
@@ -745,7 +765,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **"Run FastRead in:" — technical logic, both launch paths
   (Manh 2026-11-20, 12:58 — developer reference, read this before
   touching any Fast Read entry point).**
-  - **The setting.** `FastReadRunLocation` (`Sources/Utilities/Constants.swift`): `.newWindow` (display "New FastRead Window"; the picker appends " (recommended)") / `.rightPanel` (display "FastRead Lite"). Stored under Defaults key `transpeek_fastReadRunLocation`, default `.newWindow`. The picker lives in the panel-right demo (`PanelFastReadView`, `@Default(.fastReadRunLocation)`). The setting is GLOBAL: every Fast Read launch must respect it. Single funnel — `AppDelegate.showFastRead(text:)` (`Sources/App/AppDelegate.swift`): `.newWindow` → `rsvpWindowController.show(text:)`; `.rightPanel` → set `focusTimerStore.panelRightRequest` (`PanelRightRequest(text:countdownSeconds:)`, `Sources/FocusTimer/FocusTimerStore.swift`) and `panelController.showAtCursor()`. Distinct from "Run reminder in:" (`FocusReminderDestination`, panel left) — two features, two settings, never shared.
+  - **The setting.** `FastReadRunLocation` (`Sources/Utilities/Constants.swift`): `.newWindow` (display "New FastRead Window"; the toggle label appends " (recommended)") / `.rightPanel` (display "FastRead Lite"). Stored under Defaults key `transpeek_fastReadRunLocation`, default `.newWindow`. The toggles live in the panel-right demo (`PanelFastReadView`, `@Default(.fastReadRunLocation)`). The setting is GLOBAL: every Fast Read launch must respect it. Single funnel — `AppDelegate.showFastRead(text:)` (`Sources/App/AppDelegate.swift`): `.newWindow` → `rsvpWindowController.show(text:)`; `.rightPanel` → set `focusTimerStore.panelRightRequest` (`PanelRightRequest(text:countdownSeconds:kind:)`, `Sources/FocusTimer/FocusTimerStore.swift` — the kind carries the countdown-screen title, `FocusReminderKind.title`) and `panelController.showAtCursor()`. Distinct from "Run reminder in:" (`FocusReminderDestination`, panel left) — two features, two settings, never shared.
   - **Logic 1 — panel-center "Fast Read" button.** `PopupView` Actions row → `onFastRead?(coordinator.sourceText)` → `PopupPanelController.onFastRead` → `AppDelegate.panelController.onFastRead` → `performFastRead(text:)` → `showFastRead`. Window: hide the panel temporarily first, then open the Window Read. Lite: the request is consumed by `PopupView.consumePanelRightRequest` — `.onReceive(focusTimerStore.$panelRightRequest)` when the panel is already visible, `.onAppear` when it was hidden — which switches `selectedTab` to `.fastRead`, calls `focusTimerStore.startPanelReading(text:countdownSeconds:)` and pins the panel. The `.onReceive` (not `.onChange`) matters: `PopupView` holds the store as a plain `let` so `.onChange` only fired when some other state re-rendered the body; pressing the button while the panel was visible set the request but the tab never switched (Manh 2026-11-20, build 286; fixed in v0.1.8, commit `1136c88`).
   - **Logic 2 — float-icon click (A+).** `TriggerIconController.performRead()` (`Sources/UI/TriggerIcon/TriggerIconController.swift`) → `onReadRequested?(currentText)` → `AppDelegate.showFastRead(text:)` — the SAME funnel as Logic 1, no second routing. Window: opens the Window Read (unchanged). Lite: the same `panelRightRequest` mechanism as Logic 1 (`.onAppear` consume — the panel is hidden at click time). The setting check itself was already correct; the defect was the render gate (Manh 2026-11-20, 12:55): hovering the icon hides it (`TriggerIconController.triggerTranslation` closes the icon panel), so a click can only happen before any hover, when `coordinator.phase` is still `.idle` — and `PopupView.body` rendered `EmptyView()` for `.idle`, so the panel opened empty and the requested read played invisibly. Fix: `PopupView.hasPanelContent` renders `activeContent` when `phase == .active` OR `selectedTab == .fastRead` OR `panelReadingViewModel != nil`. The `selectedTab` clause keeps the Fast Read demo visible after the read ends (the view model is nil then, but the tab is still `.fastRead`); the view-model clause covers a read running while the user is on another tab. The gate reads the store's @Published values without subscribing (plain `let` on purpose) — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes.
   - **Shared engine, two presentations.** Both paths share `RSVPEngine` + `RSVPViewModel`; only the presentation differs — `CompactReadingView` inside `PanelFastReadView.swift` (panel lite) vs the Window Read in `Sources/FastRead/RSVPView.swift` (untouched, stable — do not edit). `FocusTimerStore.startPanelReading` / `stopPanelReading` own the panel read lifecycle. The focus reminder with destination Right Panel reuses the same `panelRightRequest` mechanism (`FocusTimerStore.showReminder` → `onShowPanel`), so the render gate above also covers a reminder firing while no translation is active.
@@ -768,8 +788,8 @@ Two rules apply to EVERY panel button:
   hit-testable `.overlay` Shape on top of a button swallows the click
   and the button never fires). It does not change the button style
   (`.plain` stays `.plain`, `.bordered` stays `.bordered`) and does
-  not touch the settled 0.6-opacity borders (0.25 → 0.4 → 0.6, Manh
-  2026-11-20 17:20 — gently up from 0.4, let's try; 0.25 was a touch
+  not touch the settled 0.5-opacity borders (0.25 → 0.4 → 0.6 → 0.5,
+  Manh 2026-11-20 18:45 — back down from 0.6; 0.25 was a touch
   too pale).
 - **Cursor (see §10.5):** links → system pointing hand; plain buttons
   → system default arrow (+ the highlight above); text fields →
@@ -784,11 +804,11 @@ Two rules apply to EVERY panel button:
 
 | Button | Where | Action | Style / notes |
 |---|---|---|---|
-| Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned |
+| Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned; icon rotated -45° (tilted left like a pinned pushpin, Manh 2026-11-20) |
 | chevron.left / chevron.right | dotsRow, flanking the 3 dots | Previous / next tab; disabled + dimmed (secondary 0.3) at the ends | `.plain`, `.caption` |
 | 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
-| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.6 opacity (0.25 → 0.4 → 0.6, Manh 2026-11-20 17:20 — gently up from 0.4) |
-| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.6 opacity (0.25 → 0.4 → 0.6, Manh 2026-11-20 17:20 — gently up from 0.4) |
+| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.5 opacity (0.25 → 0.4 → 0.6 → 0.5, Manh 2026-11-20 18:45 — back down from 0.6) |
+| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.5 opacity (0.25 → 0.4 → 0.6 → 0.5, Manh 2026-11-20 18:45 — back down from 0.6) |
 | "?" | Actions row, right (left of Settings) | Toggle the shortcuts table embedded at the top of the output | `.plain`; accent + filled icon while open |
 | Settings (gear) | Actions row, right end | Open Settings | `.plain` |
 | Copy / speaker (provider card) | Bottom of each provider card, fixed outside the scrolling text | Copy / speak that card's text | `.bordered` |
@@ -802,7 +822,7 @@ Two rules apply to EVERY panel button:
 | Rewind / Play-Pause / Forward | Read lite control row | Step back / toggle play-pause / step forward | `.bordered` (Play = `.borderedProminent`) |
 | Maximize | Read lite control row, right end | Toggle panel default (420×450) ↔ max, clamped to the visible frame (never covers the Dock) | `.bordered` |
 | "Read in panel" | Panel-right demo state | Read the translate-tab text right here in the panel — always in-panel, ignores "Run FastRead in:" | `.bordered` |
-| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: FastRead Lite (first, on top) / New FastRead Window (recommended), default Window (Manh 2026-11-20 17:11) | `.radioGroup` Picker |
+| "Run FastRead in:" toggles | Panel-right demo state | Global Fast Read destination: FastRead Lite (first, on top) / New FastRead Window (recommended), default Window (Manh 2026-11-20 17:11); 2 toggles, mutually exclusive (Manh 2026-11-20 19:00 — was `.radioGroup` Picker); switch LEFT, text RIGHT (Manh 2026-11-20 19:02 — same layout as batch 2) | 2 `Toggle` (labels-hidden) + `Button` text in `HStack`, `.toggleStyle(.switch)` + `Binding(get:set:)` |
 | "?" / Settings (Read lite top bar) | Panel-right paused top bar, top-right | Open the hotkeys table / Settings popover | `.plain` |
 | GitHub link | bottomBar, centered | Open the repo in the browser | Link — system pointing hand on hover |
 | [×] / Run (shortcuts table) | Embedded shortcuts table ("?") and panel-left table | [×] hides the table; Run runs that shortcut's code path, then back to the translate tab | Both carry `InteractiveMarker` |
@@ -897,9 +917,11 @@ picker applies ONLY to the reminder — Fast Read has its own separate
   Read window. A new reminder closes any previous Rest window first.
 - "FastRead Lite": the panel is brought forward at the cursor, switches
   to the Fast Read tab (panel right), and RSVP-reads the reminder text
-  there (`CompactReadingView`, auto-play); after the read it shows the
-  rest countdown (5 min / 20 s) and then returns to the demo (see §10.7
-  for the Read lite layout).
+  there (`CompactReadingView`, auto-play); after the read it HIDES the
+  reader and shows the centered cafe countdown screen (Manh 2026-11-20,
+  18:32 — coffee icon + title "Take a break" / "Rest your eyes" + 56pt
+  countdown + "Done"; 5 min for a work break / 20 s for eye rest) and
+  then returns to the demo (see §10.7 for the Read lite layout).
 
 **Reading — conflict (Manh 2026-11-20, 05:33):** "reading" means a
 panel-right read is running OR the Fast Read window is open
