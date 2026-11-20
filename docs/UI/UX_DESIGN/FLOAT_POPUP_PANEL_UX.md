@@ -633,18 +633,24 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Read đầy đủ.)
 - **"Run FastRead in:"** (Manh 2026-11-20, 05:27) — 2 lựa chọn bằng
   nút chọn tròn **radio** (Manh 2026-11-20, 07:02, không phải
-  dropdown): **"Right Panel"** và **"New Fast Read Window
-  (Recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
+  dropdown): **"FastRead Lite"** và **"New FastRead Window
+  (recommended)"** (mặc định — giữ hành vi hiện tại). Áp TOÀN CỤC
   cho mọi lần mở Fast Read (nút Fast Read ở tab dịch, click icon,
   menubar, phím tắt): chọn 1 trong 2 thì RSVP chỉ hiển thị theo lựa
   chọn đó. Một điểm vào duy nhất ở `AppDelegate.showFastRead(text:)`
   — mọi đường mở đều qua đó nên setting chỉ kiểm tra ở 1 chỗ. Riêng
   với "Run reminder in:" ở panel trái (§10.6): 2 setting độc lập,
-  không ảnh hưởng nhau.
+  không ảnh hưởng nhau. Dưới 2 radio có 1 dòng gợi ý: "For the full
+  experience, choose New FastRead Window." (Manh 2026-11-20 11:41 —
+  giải thích vì sao Window là lựa chọn khuyên dùng). (Đổi tên 11:41:
+  "Right Panel" → "FastRead Lite", khớp tên section "Fast Read Lite";
+  "New Fast Read Window (Recommended)" → "New FastRead Window
+  (recommended)" — "FastRead" 1 từ, "(recommended)" chữ thường.)
 - **Nút "Fast Read" ở panel center — hành vi CHỐT:** bấm nút thì chạy
-  theo "Run FastRead in:" — chọn "New Fast Read Window" thì mở cửa sổ
-  Window Read và chạy chữ ở đó; chọn "Right Panel" thì **tự chuyển tab
-  sang panel phải VÀ chạy chữ ngay trong panel** (cùng engine RSVP;
+  theo "Run FastRead in:" — chọn "New FastRead Window (recommended)"
+  thì mở cửa sổ Window Read và chạy chữ ở đó; chọn "FastRead Lite" thì
+  **tự chuyển tab sang panel phải VÀ chạy chữ ngay trong panel** (cùng
+  engine RSVP;
   `AppDelegate.showFastRead(text:)` là điểm vào duy nhất cho mọi đường
   mở). (Manh 2026-11-20, 11:00, bản build 286: bấm nút khi chọn Right
   Panel chưa tự chuyển tab — phải swipe tay sang phải mới thấy chữ chạy.
@@ -774,7 +780,7 @@ Two rules apply to EVERY panel button:
 | Rewind / Play-Pause / Forward | Read lite control row | Step back / toggle play-pause / step forward | `.bordered` (Play = `.borderedProminent`) |
 | Maximize | Read lite control row, right end | Toggle panel default (420×450) ↔ max, clamped to the visible frame (never covers the Dock) | `.bordered` |
 | "Read in panel" | Panel-right demo state | Read the translate-tab text right here in the panel — always in-panel, ignores "Run FastRead in:" | `.bordered` |
-| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: Right Panel / New Fast Read Window (Recommended), default Window | `.radioGroup` Picker |
+| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: FastRead Lite / New FastRead Window (recommended), default Window | `.radioGroup` Picker |
 | "?" / Settings (Read lite top bar) | Panel-right paused top bar, top-right | Open the hotkeys table / Settings popover | `.plain` |
 | GitHub link | bottomBar, centered | Open the repo in the browser | Link — system pointing hand on hover |
 | [×] / Run (shortcuts table) | Embedded shortcuts table ("?") and panel-left table | [×] hides the table; Run runs that shortcut's code path, then back to the translate tab | Both carry `InteractiveMarker` |

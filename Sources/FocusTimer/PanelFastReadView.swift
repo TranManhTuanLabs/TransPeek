@@ -197,13 +197,15 @@ struct PanelFastReadView: View {
 
     /// "Run FastRead in:" (Manh 2026-11-20, 05:27; radio buttons since
     /// 07:02) — where Fast Read runs, for EVERY launch (panel button,
-    /// float icon, menubar, shortcut). "New Fast Read Window" opens the
-    /// separate Window Read (default, the current behavior — marked
-    /// "(Recommended)"); "Right Panel" reads here, in panel right, no
-    /// separate window. Separate from the reminder's "Run reminder in:"
-    /// — the two features must not share a setting. The "Read in panel"
-    /// button above always reads here, whatever this says — it is the
-    /// explicit panel action, not a launch.
+    /// float icon, menubar, shortcut). "New FastRead Window
+    /// (recommended)" opens the separate Window Read (default, the
+    /// current behavior); "FastRead Lite" reads here, in panel right,
+    /// no separate window. A one-line hint under the radios points at
+    /// the window (Manh 2026-11-20, 11:41). Separate from the
+    /// reminder's "Run reminder in:" — the two features must not share
+    /// a setting. The "Read in panel" button above always reads here,
+    /// whatever this says — it is the explicit panel action, not a
+    /// launch.
     private var runLocationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Run FastRead in:")
@@ -211,12 +213,15 @@ struct PanelFastReadView: View {
                 .bold()
             Picker("", selection: $runLocation) {
                 ForEach(FastReadRunLocation.allCases, id: \.self) { location in
-                    Text(location.displayName + (location == .newWindow ? " (Recommended)" : "")).tag(location)
+                    Text(location.displayName + (location == .newWindow ? " (recommended)" : "")).tag(location)
                 }
             }
             .pickerStyle(.radioGroup)
             .labelsHidden()
             .background { InteractiveMarker() }
+            Text("For the full experience, choose New FastRead Window.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             Text("Applies to the Fast Read button, the float icon, and the keyboard shortcut.")
                 .font(.caption)
                 .foregroundStyle(.secondary)

@@ -628,10 +628,14 @@ enum FastReadRunLocation: String, CaseIterable, Defaults.Serializable {
     /// Fast Read runs inside panel right, no separate window.
     case rightPanel
 
+    /// Labels (Manh 2026-11-20, 11:41): "FastRead" one word, matching
+    /// the setting name; the picker appends " (recommended)" (lowercase)
+    /// to the window option; "FastRead Lite" matches the panel-right
+    /// section title "Fast Read Lite".
     var displayName: String {
         switch self {
-        case .newWindow: return "New Fast Read Window"
-        case .rightPanel: return "Right Panel"
+        case .newWindow: return "New FastRead Window"
+        case .rightPanel: return "FastRead Lite"
         }
     }
 }
