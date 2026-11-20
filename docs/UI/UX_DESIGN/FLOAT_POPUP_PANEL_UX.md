@@ -2,6 +2,8 @@
 
 > **Trạng thái: CHỐT — 17/11/2026, theo build #200 (commit `3bad511`) + các đổi mới sau đó trên main (slogan 16, loa/Copy cố định từng card, bỏ Remember Last Popup Position). Panel center + Panel left CHỐT thêm 19/11/2026, theo v0.1.4 (build 248) — xem §10.**
 >
+> **FINALIZED 2026-11-20 (Manh): the panel UX/UI + button / scroll / position logic in this doc (§3, §10, §10.1–§10.10) is the LOCKED-IN official design — 3 tabs, Read lite, hover + pressed, swipe rules, panel-vs-window. Do not re-decide or change any locked number or behaviour without Manh's approval. Open items are listed separately in §10.10 — do not treat them as settled.**
+>
 > Các con số trong doc này là **spec**. Đổi bất kỳ số đã chốt nào cũng cần Manh duyệt trước.
 >
 > Spec đã bao gồm: size 420×450 / min 400×450 / max 600×800 (#198) + nút "?" bảng
@@ -43,7 +45,7 @@ Panel mac là một `VStack` (padding ngang 14), các hàng theo thứ tự từ
 | Hàng ngôn ngữ | **Source ⇄ Target + Capture OCR.** Pickers ngôn ngữ trái, nút Swap ⇄ giữa, nút "Capture OCR" (icon + chữ) phải | |
 | Divider | Đường kẻ ngang | |
 | Kết quả | **ScrollView chứa các ProviderResultCard** (1 card / provider). Mỗi card: header (tên provider + trạng thái) / text kết quả (chọn được, báo selection cho DictionaryBar) — text **cuộn trong card** (cap 260, xem §6) / hàng loa + Copy **cố định ở đáy card**, dưới ô text cuộn (xem §6) | Cap text 260; text dài cuộn trong card, nút luôn thấy |
-| Actions | **"Fast Read" + "?" + Pin + Settings.** Căn phải, Spacing 4. "Fast Read" (icon `book.pages` + chữ, mở cửa sổ đọc RSVP với text đang dịch) ở đầu trái của hàng; "?" (nút `questionmark.circle`) đứng ngay bên trái Pin; Pin trước, Settings sau (như Windows) | Xem §7 |
+| Actions | **"Fast Read" + "?" + Settings.** Căn phải, Spacing 4. "Fast Read" (icon `book.pages` + chữ, chạy Fast Read theo setting "Run FastRead in:", xem §10.7) ở đầu trái của hàng; "?" (nút `questionmark.circle`) + Settings ở đầu phải. **Pin KHÔNG còn ở hàng này — đã dời lên hàng chấm (dotsRow, đầu trái), xem §10.1** | Xem §7, §10.8 |
 | DictionaryBar | **DictionaryBarView** — link tra từ điển theo text đang chọn (trong ô nhập hoặc trong kết quả) | |
 | Footer | **Link GitHub căn giữa + text version căn phải** ("Version 0.1.3 (Build CI #200)" — ẩn số build khi = 1) | |
 
@@ -125,7 +127,7 @@ toán nhiều provider.)
 
 ## 7. Nút "?" bảng shortcut + nút "Fast Read" (Manh 17/11, build #204 → đổi ở bản sau #204 / nhánh `feature/fast-read-rsvp`)
 
-- Nút `?` (`questionmark.circle`) đứng ngay bên trái nút Pin ở hàng Actions.
+- Nút `?` (`questionmark.circle`) ở đầu phải hàng Actions, bên trái nút Settings (Pin đã dời lên hàng chấm — xem §10.1).
 - **Đổi từ popover sang NHÚNG (Manh 17/11 ~11:50, từ test build #204):**
   bấm "?" thì panel tự ẩn nên không bấm được bảng; pin panel cũng không ổn
   vì chụp OCR sẽ bị panel che mất nội dung chụp. Popover là cửa sổ riêng —
@@ -344,10 +346,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Read (phải, 3)**. Panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần.
 - Top bar + bottom bar giống nhau trên mọi tab; chỉ nội dung giữa đổi
   theo tab. Đổi tab có animation fade 0.15s ease-out.
-- **Hàng chấm nằm ngay dưới top bar (TẠM THỜI, Manh 2026-11-18, vòng
-  5):** dời lên từ dưới nội dung tab để Manh thử — vị trí cuối cùng vẫn
-  chờ Manh quyết. (Mục §9 ghi hàng chấm dưới nội dung tab là vị trí cũ
-  17/11, đã lỗi thời.)
+- **Hàng chấm nằm ngay dưới top bar (CHỐT, Manh 2026-11-19 19:36 —
+  không còn tạm thời, không dời nữa).** Pin ở đầu trái hàng chấm
+  (`.padding(.leading, 10)`, xem §10.8), rồi chevron.left + 3 chấm +
+  chevron.right căn giữa. (Mục §9 ghi hàng chấm dưới nội dung tab là vị
+  trí cũ 17/11, đã lỗi thời.)
 - Hàng chấm gồm: nút `chevron.left` + 3 chấm tròn 8pt (cách nhau 8pt,
   căn giữa) + nút `chevron.right`. Chấm đang chọn màu accent, còn lại
   mờ. Chevron bị mờ + không bấm được ở 2 đầu. Bấm chấm / chevron để đổi
@@ -367,6 +370,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   ngữ). Không đổi style nút, không đổi viền 0.25, không kích hoạt app
   khi panel hiện. Ô nhập (source text) + 2 ô chọn ngôn ngữ (Source /
   Target) cũng có cùng highlight này (Manh 2026-11-20, 10:11).
+  (Bảng đầy đủ mọi nút panel: §10.8.)
   - **Lỗi bấm không ăn, build 285 (Manh 2026-11-20, 10:11) — NGUYÊN
     NHÂN GỐC:** bản đầu vẽ tint bằng `.overlay` Shape thường — Shape
     đó nằm TRÊN nút và bắt được hit-test, nên thành hit view của cú
@@ -394,9 +398,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   như `InteractiveMarkerView`); nếu có thì nhường toàn bộ gesture cho
   ScrollView. (Bản trước, "Làm cả 2", chỉ nhường khi link tràn —
   nội dung rộng hơn khung nhìn — còn link vừa khung thì vuốt trên đó
-  vẫn đổi tab; Manh đổi thành vùng cấm cứng.)
-- Panel phải là placeholder ("Fast Read — coming soon") cho tới khi
-  Fast Read window ship.
+  vẫn đổi tab; Manh đổi thành vùng cấm cứng.) (Luật swipe đầy đủ: §10.9.)
+- Panel phải là **Read lite** — đọc trong panel (§10.7), không còn là
+  placeholder. "Fast Read — coming soon" chỉ còn là tiêu đề của trạng
+  thái chưa đọc trong §10.7.
 
 ### 10.2 Panel center (dịch, tab mặc định)
 
@@ -421,7 +426,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 - **Hàng Actions:** nút "Fast Read" ở đầu trái (`book.pages` + chữ
   "Fast Read", HStack spacing 4 — icon và chữ cách nhau 4pt, Manh
   2026-11-19, 0.1.5: spacing 0 trước đó vẫn quá dính, gấp đôi lên) +
-  Spacer + nút "?" + Pin + Settings ở đầu phải.
+  Spacer + nút "?" + Settings ở đầu phải. **Pin KHÔNG ở hàng này** —
+  đã dời lên hàng chấm (đầu trái, §10.1). Nút Fast Read chạy theo
+  setting "Run FastRead in:" (§10.7).
 - **Bảng "?" :** nhúng ở đầu ô output (trong ScrollView kết quả, ngay
   trên các card provider), tiêu đề "Keyboard Shortcuts" + nút đóng [×].
   Liệt kê 10 shortcut + nút Run (bấm Run thì chạy đúng code path phím
@@ -432,10 +439,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   "GitHub" căn giữa, text version ("Version X (Build CI #N)", ẩn số
   build khi = 1) mờ ở bên phải. Khoảng trên/dưới đều 12pt.
 
-### 10.3 Panel left (shortcut, tab tạm thời)
+### 10.3 Panel left (tab 1 — Shortcuts + Focus-Rest + Share)
 
-- Tab này là **TẠM THỜI** — sau này dành cho timer focus / tomato /
-  rest-eyes. Hiện tại nó chứa bảng shortcut.
+- Panel left là **tab 1** với nội dung đã chốt: Shortcuts + Focus-Rest
+  + Share. (Nhãn "tạm thời" cũ bỏ — thẻ Focus-Rest đã ở đây, §10.6.)
 - Nội dung nằm trong ScrollView (để auto-fit vẫn tính đúng chiều cao),
   theo thứ tự từ trên xuống:
   1. **Thẻ "How the icon works" (`FlowIntroCard`)** — ĐỘNG: các dòng
@@ -612,6 +619,15 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   — mọi đường mở đều qua đó nên setting chỉ kiểm tra ở 1 chỗ. Riêng
   với "Run reminder in:" ở panel trái (§10.6): 2 setting độc lập,
   không ảnh hưởng nhau.
+- **Nút "Fast Read" ở panel center — hành vi CHỐT:** bấm nút thì chạy
+  theo "Run FastRead in:" — chọn "New Fast Read Window" thì mở cửa sổ
+  Window Read và chạy chữ ở đó; chọn "Right Panel" thì **tự chuyển tab
+  sang panel phải VÀ chạy chữ ngay trong panel** (cùng engine RSVP;
+  `AppDelegate.showFastRead(text:)` là điểm vào duy nhất cho mọi đường
+  mở). (Manh 2026-11-20, 11:00: bản build 286 bấm nút khi chọn Right
+  Panel chưa tự chuyển tab — phải swipe tay sang phải mới thấy chữ
+  chạy; đây là lỗi đang sửa riêng, spec là hành vi tự chuyển + chạy
+  như trên.)
 - Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
   đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
   — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
@@ -682,6 +698,110 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   "Take a break" / "Snooze 5 min"; chấm cam ở thẻ Focus & Rest báo
   có nhắc chờ. Banner là view riêng (tự observe store) nên panel
   không re-render theo từng giây của timer.
+
+### 10.8 Buttons — official inventory (finalized 2026-11-20)
+
+Two rules apply to EVERY panel button:
+
+- **`InteractiveMarker` (background) is mandatory.** Without it,
+  `PopupPanel` treats the click as a window drag and the button never
+  fires (build #207). Every button added to the panel must carry one.
+- **`.panelHoverHighlight()` is mandatory** (modifier in
+  `Sources/UI/PopupPanel/PanelHoverHighlight.swift`). The panel is
+  `.nonactivatingPanel`, so the system hover never draws — the
+  highlight is drawn by hand: a rounded translucent tint on
+  `.onHover` (hover = `Color.primary` 0.08, pressed = clearly deeper
+  0.18, tracked by a simultaneous zero-distance `DragGesture` that
+  never blocks the tap). The tint has `.allowsHitTesting(false)` —
+  purely visual, never intercepts clicks (build 285 lesson: a
+  hit-testable `.overlay` Shape on top of a button swallows the click
+  and the button never fires). It does not change the button style
+  (`.plain` stays `.plain`, `.bordered` stays `.bordered`) and does
+  not touch the settled 0.25-opacity borders.
+- **Cursor (see §10.5):** links → system pointing hand; plain buttons
+  → system default arrow (+ the highlight above); text fields →
+  I-beam; panel resize cursor untouched.
+
+| Button | Where | Action | Style / notes |
+|---|---|---|---|
+| Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned |
+| chevron.left / chevron.right | dotsRow, flanking the 3 dots | Previous / next tab; disabled + dimmed (secondary 0.3) at the ends | `.plain`, `.caption` |
+| 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
+| Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.25 opacity |
+| Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.25 opacity |
+| "?" | Actions row, right (left of Settings) | Toggle the shortcuts table embedded at the top of the output | `.plain`; accent + filled icon while open |
+| Settings (gear) | Actions row, right end | Open Settings | `.plain` |
+| Copy / speaker (provider card) | Bottom of each provider card, fixed outside the scrolling text | Copy / speak that card's text | `.bordered` |
+| Copy source / Copy translation | Result area | Copy the source / translated text | `.bordered` |
+| Speaker / Copy (source row) | Under the input box, right side | Speak / copy the source text | Same hover/pressed tint |
+| Swap ⇄ | Language bar, between Source and Target pickers | Swap source/target languages | Same hover/pressed tint |
+| Source input box | Panel center, top | Editable input (Enter = re-translate, Shift+Enter = newline; max 6 lines) | TextEditor — same hover/pressed tint as buttons |
+| Source / Target pickers | Language bar | Open the searchable language popover (Popular 20 first, then all 249 + `pt`) | Dropdown — same hover/pressed tint |
+| X (Close reading) | Read lite control row, immediately left of Restart (panel only) | Close the reading, back to panel-right default (= first Esc) | `.bordered` |
+| Restart | Read lite control row | Back to slide 0, reset the timer, play from the start | `.bordered` |
+| Rewind / Play-Pause / Forward | Read lite control row | Step back / toggle play-pause / step forward | `.bordered` (Play = `.borderedProminent`) |
+| Maximize | Read lite control row, right end | Toggle panel default (420×450) ↔ max, clamped to the visible frame (never covers the Dock) | `.bordered` |
+| "Read in panel" | Panel-right demo state | Read the translate-tab text right here in the panel — always in-panel, ignores "Run FastRead in:" | `.bordered` |
+| "Run FastRead in:" radios | Panel-right demo state | Global Fast Read destination: Right Panel / New Fast Read Window (Recommended), default Window | `.radioGroup` Picker |
+| "?" / Settings (Read lite top bar) | Panel-right paused top bar, top-right | Open the hotkeys table / Settings popover | `.plain` |
+| GitHub link | bottomBar, centered | Open the repo in the browser | Link — system pointing hand on hover |
+| [×] / Run (shortcuts table) | Embedded shortcuts table ("?") and panel-left table | [×] hides the table; Run runs that shortcut's code path, then back to the translate tab | Both carry `InteractiveMarker` |
+
+### 10.9 Scroll / swipe — official rules (finalized 2026-11-20)
+
+- **Trackpad 2-finger horizontal swipe → switch tabs.** Works
+  anywhere on the panel EXCEPT the dictionary link bar (hard zone
+  below). Local `NSEvent` `.scrollWheel` monitor
+  (`TrackpadSwipeMonitor`): only trackpad-phase events
+  (`phase != []`), momentum ignored; horizontal must dominate
+  (`|X| > |Y| × 1.5`); 50pt accumulated = 1 tab (1 swipe = 1 tab).
+  Direction is FLIPPED vs the mouse drag: fingers left → previous
+  (left) tab, fingers right → next (right) tab. Vertical 2-finger
+  swipes pass through (the result ScrollView scrolls normally).
+- **Mouse-drag swipe → dots row ONLY.** `DragGesture`
+  (minDistance 20) on the dotsRow: a clear horizontal drag (>50pt,
+  wider than tall) switches tabs — drag left → next (right) tab, drag
+  right → previous (left) tab. Never on tab content: dragging on
+  results/input is text selection.
+- **Dictionary link bar = HARD no-switch zone.** A swipe beginning
+  over the bar NEVER switches tabs: it scrolls the links (horizontal
+  ScrollView) when they overflow, and does nothing when they fit.
+  The bar carries a `DictionaryBarMarkerView` background; the monitor
+  checks rect containment on `.began` (same pattern as
+  `InteractiveMarkerView`). Swipes anywhere else still switch tabs.
+- **Panel right vertical swipe → font size.** In panel right, a
+  vertical trackpad swipe changes the focus font size (±16pt / 50pt,
+  no cap); horizontal swipe still switches panels (except over the
+  dictionary bar). Keyboard in the panel: Space play/pause, ←/→ step,
+  ↑/↓ speed; the hint row reads "Space play/pause • ←/→ step •
+  ↑/↓ speed • Swipe ↑/↓ font size".
+- **Other scrolling:** provider results scroll vertically (text
+  scrolls inside each card, cap 260, speaker/Copy fixed at the card
+  bottom); the language popover list scrolls vertically (search via an
+  explicit TextField at the top — `.searchable` does not work in
+  popovers, they have no toolbar); panel left scrolls vertically in
+  its own ScrollView; the "?" shortcuts table scrolls with the
+  results.
+
+### 10.10 Open items (NOT settled — do not treat as final)
+
+- **Name unification (Manh to decide later):** "Context size"
+  (picker label, `contextSizeRatio`) vs "Around text size" (the size
+  of the text around the focus word) name the same setting; other
+  names may also differ between Window Read and Read lite. One name
+  will be chosen and applied to UI labels + docs together. Do NOT
+  rename anything until Manh approves. (Recorded 2026-11-20.)
+- **Tooltip delay (300ms):** the hover hint/tooltip (`.help()`)
+  currently appears after the macOS default ~1s. Approved to shorten
+  to 300ms (`NSInitialToolTipDelay`, app-domain only, does not affect
+  other apps) — to be implemented after v0.1.7. Not yet in the app.
+- **Language-list centering:** the language list in the searchable
+  picker is currently left-aligned; approved to center it (left leaves
+  an empty gap on the right) — to be implemented after v0.1.7.
+- **Share buttons pointing hand (open question, 2026-11-20):** Share
+  buttons (`ShareRowView`) open share URLs — should they also show the
+  system pointing hand like other links? Currently NOT included.
+  Undecided.
 
 ## Liên kết
 
