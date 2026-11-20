@@ -123,6 +123,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupShortcuts()
         setupSelectionMonitor()
 
+        // Auto start focus (Manh 2026-11-20, 09:47): if the
+        // "Auto start focus" toggle is ON, the focus timer starts on
+        // its own at launch, as if the user pressed Start. Called
+        // last — the store's reminder callbacks (onShowPanel,
+        // onNotifyReminder, isFastReadWindowOpen) are all wired above,
+        // so a reminder fired by this session routes correctly. The
+        // store itself guards against double-starting.
+        focusTimerStore.autoStartFocusIfEnabled()
+
         // Show onboarding on first launch; returning users start silently as a menu bar app.
         if !Defaults[.hasCompletedOnboarding] {
             // Delay to let SwiftUI finish scene setup; async alone is insufficient.

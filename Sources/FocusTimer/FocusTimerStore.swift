@@ -166,6 +166,22 @@ final class FocusTimerStore: ObservableObject {
         if pomodoroRunning { ensureTicker() }
     }
 
+    /// Auto start focus (Manh 2026-11-20, 09:47): when the
+    /// "Auto start focus" toggle is ON, the focus timer starts on
+    /// its own at app launch — exactly as if the user pressed Start
+    /// (same full Work interval, same ticker). Only starts from idle:
+    /// if a session is already running (or paused mid-interval) it
+    /// does nothing, so it can never restart or double-start a
+    /// session. Called once from `AppDelegate` at launch; turning
+    /// the toggle on later does not start a session by itself.
+    func autoStartFocusIfEnabled() {
+        guard Defaults[.focusAutoStart],
+              pomodoroPhase == .idle,
+              !pomodoroRunning
+        else { return }
+        togglePomodoro()
+    }
+
     /// Back to idle — a fresh start, so the cycle count resets too.
     func resetPomodoro() {
         pomodoroRunning = false

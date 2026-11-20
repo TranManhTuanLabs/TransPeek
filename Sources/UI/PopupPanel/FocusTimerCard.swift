@@ -34,6 +34,10 @@ struct FocusTimerCard: View {
     /// Manh 2026-11-20, 07:25): when ON, the next session starts
     /// automatically after each rest / long break. Default ON.
     @Default(.focusRepeatAutomatically) private var repeatAutomatically
+    /// Auto start focus (Manh 2026-11-20, 09:47; default OFF): when
+    /// ON, the focus timer starts on its own at app launch — no need
+    /// to open the panel and press Start.
+    @Default(.focusAutoStart) private var autoStartFocus
 
     /// Work-minute picker options (Manh 2026-11-20): the standard
     /// Pomodoro choices, default 25.
@@ -214,6 +218,17 @@ struct FocusTimerCard: View {
             // waits for a manual start.
             Toggle("Repeat automatically", isOn: $repeatAutomatically)
                 .help("When on, the next session starts automatically after each break — Work → Rest → Work …, until you turn it off or stop it")
+                .background { InteractiveMarker() }
+                .padding(.horizontal, 12)
+
+            // "Auto start focus" (Manh 2026-11-20, 09:47; default
+            // OFF — the label names the default, Manh 2026-11-20,
+            // 03:44): when ON, the focus timer starts on its own
+            // every time the app launches, as if the user pressed
+            // Start — no need to open the panel and press Start.
+            // OFF waits for a manual start, as before.
+            Toggle("Auto start focus (default: \(Defaults.Keys.focusAutoStart.defaultValue ? "On" : "Off"))", isOn: $autoStartFocus)
+                .help("When on, the focus timer starts automatically every time the app launches — no need to open the panel and press Start")
                 .background { InteractiveMarker() }
                 .padding(.horizontal, 12)
         }

@@ -808,6 +808,12 @@ extension Defaults.Keys {
     /// user turns it off or stops it. OFF = each session ends and
     /// waits for a manual start.
     static let focusRepeatAutomatically = Key<Bool>("transpeek_focusRepeatAutomatically", default: true)
+    /// Auto start focus (Manh 2026-11-20, 09:47; default OFF): when
+    /// ON, the focus timer starts on its own every time the app
+    /// launches — as if the user pressed Start — so there is no need
+    /// to open the panel and press Start. OFF = the timer waits for
+    /// a manual start, as before. Toggled in the Focus & Rest card.
+    static let focusAutoStart = Key<Bool>("transpeek_focusAutoStart", default: false)
     /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
     /// FastRead in:" picker in panel right. Default is the window, so
     /// current behavior is preserved until the user picks otherwise.

@@ -504,6 +504,17 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   tới khi tắt toggle hoặc bấm Reset/Dừng; TẮT toggle thì hết phiên
   chờ bấm Start như cũ. Chuyển phiên tự động vẫn theo luật nhắc nghỉ
   (đang đọc thì chỉ thông báo, không cướp màn hình — xem dưới).
+  **"Auto start focus"** (Manh 2026-11-20, 09:47; toggle trong thẻ,
+  mặc định TẮT, nhãn ghi "Auto start focus (default: Off)"): khi BẬT,
+  focus tự chạy ngay mỗi lần mở app — như thể user bấm Start (đủ 1
+  khoảng Work, rồi nhắc nghỉ / chạy tiếp theo "Repeat automatically"
+  như bình thường); không cần mở panel bấm Start. Chỉ chạy từ idle —
+  đang chạy thì không khởi động lại. Bật toggle giữa chừng (app đang
+  chạy) không tự chạy phiên mới — chỉ có tác dụng từ lần mở app sau.
+  Key `focusAutoStart` (`transpeek_focusAutoStart`, mặc định false);
+  AppDelegate gọi `focusTimerStore.autoStartFocusIfEnabled()` cuối
+  `applicationDidFinishLaunching`, sau khi đã nối xong callback nhắc
+  nghỉ.
 - **Rest eyes (20-20-20)** — mục riêng trong cùng thẻ: cứ 20 phút
   nhắc nghỉ mắt 20 giây (cố định, không picker — luật 20-20-20 là
   chính nó). Mặc định TẮT (Manh 2026-11-20, 07:25): không nhắc gì
