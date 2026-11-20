@@ -373,10 +373,13 @@ struct CompactReadingView: View {
     /// buttons. The Settings popover is the same one as the window
     /// (color scheme, context display, auto-play, reset) — same
     /// options, compact. The row uses tight spacing (6pt) so the four
-    /// pickers + gear + "?" fit the default 420pt panel width.
+    /// pickers + gear + "?" fit the default 420pt panel width. The
+    /// top-row HStack is bottom-aligned (Manh 2026-11-20, 09:06) so
+    /// the gear + "?" sit at the same height as the picker menus, not
+    /// centered against the taller label + menu stacks.
     private var compactPausedChrome: some View {
         VStack(spacing: 6) {
-            HStack(spacing: 6) {
+            HStack(alignment: .bottom, spacing: 6) {
                 wpmPicker
                 focusSizePicker
                 contextSizePicker
@@ -487,9 +490,12 @@ struct CompactReadingView: View {
     /// size / Words at once) + Settings + "?", but no version text (the
     /// panel footer already shows it) and no centered subtitle (the
     /// panel's own top bar already names the app) — the window's full
-    /// top bar is ~100pt too wide for the 600pt panel.
+    /// top bar is ~100pt too wide for the 600pt panel. The HStack is
+    /// bottom-aligned (Manh 2026-11-20, 09:06) so the gear + "?" sit
+    /// at the same height as the picker menus, not centered against
+    /// the taller label + menu stacks.
     private var panelTopBar: some View {
-        HStack(spacing: 12) {
+        HStack(alignment: .bottom, spacing: 12) {
             wpmPicker
             focusSizePicker
             contextSizePicker

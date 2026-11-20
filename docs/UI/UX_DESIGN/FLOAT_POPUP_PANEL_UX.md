@@ -573,7 +573,11 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
     2026-11-20, 07:54 — frame nhỏ vẫn đủ ô; "?" đặt cạnh Settings),
     thanh progress nhỏ, hàng nút X / Restart / Rewind / Play /
     Forward / Maximize căn giữa dưới cùng (Manh 2026-11-20, 07:02
-    — X + Restart có cả khi panel bé).
+    — X + Restart có cả khi panel bé). Hàng top (cả 2 size) căn
+    dưới (`.bottom`, Manh 2026-11-20, 09:06) để Settings + "?"
+    ngang hàng với menu picker, không bị đẩy lên cao hơn bản cũ
+    (picker là cột 2 tầng nhãn + menu, nút icon chỉ 1 tầng nên
+    căn giữa làm nút nổi lên trên).
   - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
     trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
     picker (Speed / Focus size / Context size / Words at once) +
