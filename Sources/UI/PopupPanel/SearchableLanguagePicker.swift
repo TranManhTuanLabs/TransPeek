@@ -47,10 +47,11 @@ private final class WindowCaptureNSView: NSView {
 
 /// A searchable language dropdown: a button showing the current language,
 /// opening a floating popover with a searchable list (Manh 2026-11-19,
-/// 0.1.5). Native SwiftUI Popover + List + `.searchable` — no custom
-/// dropdown, no NSComboBox (which only auto-completes, it does not filter
-/// the list). The panel stays 420×450; the popover floats separately
-/// (~300pt × ~380pt), the list scrolls inside, search sits on top.
+/// 0.1.5). Native SwiftUI Popover + List + an explicit search TextField —
+/// no custom dropdown, no NSComboBox (which only auto-completes, it does
+/// not filter the list). The panel stays 420×450; the popover floats
+/// separately (~300pt × ~380pt), the list scrolls inside, search sits on
+/// top.
 struct SearchableLanguagePicker: View {
     @Binding var selection: String
     /// Leading option shown at the very top (e.g. "Auto Detect" for the
@@ -65,6 +66,7 @@ struct SearchableLanguagePicker: View {
 
     @State private var isPresented = false
     @State private var searchText = ""
+    @FocusState private var searchFieldFocused: Bool
 
     private var popular: [(code: String, nativeName: String, englishName: String)] {
         SupportedLanguages.popularLanguages
@@ -102,13 +104,38 @@ struct SearchableLanguagePicker: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            // NavigationStack is REQUIRED for `.searchable` to show its
-            // search field: without a navigation container macOS shows
-            // no search field at all (Manh testing CI258 — the list
-            // worked but there was no text input at the top). The stack
-            // adds no visible title bar here; the search field sits at
-            // the top of the list.
-            NavigationStack {
+            // An explicit TextField at the top of the popover — NOT
+            // `.searchable`: `.searchable` puts its field in the
+            // toolbar, and a popover window has no toolbar, so even
+            // inside a NavigationStack (the CI258 fix) macOS shows no
+            // search field at all (Manh testing v0.1.5 / CI264 — the
+            // list worked but there was still no text input at the top).
+            // A real TextField in the content always renders. It takes
+            // focus when the popover opens, so the user can type right
+            // away.
+            VStack(spacing: 0) {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                    TextField("Search languages", text: $searchText)
+                        .textFieldStyle(.plain)
+                        .focused($searchFieldFocused)
+                    if !searchText.isEmpty {
+                        Button {
+                            searchText = ""
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .padding([.horizontal, .top], 8)
+                .padding(.bottom, 4)
+                Divider()
                 List {
                     if isSearching {
                         ForEach(searchResults, id: \.code) { entry in
@@ -132,11 +159,11 @@ struct SearchableLanguagePicker: View {
                         }
                     }
                 }
-                .searchable(text: $searchText, prompt: "Search languages")
                 .listStyle(.plain)
             }
             .frame(width: 300, height: 380)
             .background { WindowCaptureView(tracker: popoverTracker) }
+            .onAppear { searchFieldFocused = true }
             .onDisappear {
                 searchText = ""
             }

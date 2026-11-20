@@ -62,6 +62,12 @@ struct DictionaryBarView: View {
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
         .help(link.name)
+        .onHover { hovering in
+            // Dictionary entries open a website, so they are links:
+            // system pointing-hand cursor on hover (Manh 2026-11-20),
+            // same as the GitHub links in the bottom bar.
+            if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+        }
         .background { InteractiveMarker() }
     }
 

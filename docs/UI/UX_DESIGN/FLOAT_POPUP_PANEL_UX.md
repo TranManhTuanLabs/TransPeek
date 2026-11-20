@@ -443,9 +443,12 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (trước đó phải vuốt 2–3 lần mới tới cỡ muốn).
 - Ngôn ngữ: mở rộng 20 → 249 + alias `pt` (Popular 20 đầu đúng thứ tự
   Manh chốt, rồi toàn bộ A–Z); 2 ô chọn ngôn ngữ thành dropdown tìm kiếm
-  (Popover + List + `.searchable`, native — không NSComboBox, không tự
-  chế); List phải bọc trong `NavigationStack` thì ô tìm mới hiện ở đầu
-  list (Manh test CI258 thấy thiếu ô tìm, sửa 2026-11-20); map Google bỏ
+  (Popover + List + ô tìm TextField riêng, native — không NSComboBox,
+  không tự chế); `.searchable` KHÔNG dùng được ở đây: nó đặt ô tìm vào
+  toolbar mà cửa sổ popover không có toolbar — bọc `NavigationStack`
+  (sửa vụ CI258) vẫn không hiện ô tìm, Manh test v0.1.5 / CI264 vẫn
+  thấy thiếu; sửa 2026-11-20 bằng TextField thật đặt đầu popover
+  (kèm kính lúp + nút xoá, tự focus khi mở popover). Map Google bỏ
   `pt-BR → pt` (mã biến thể giữ nguyên, không cắt ở "-"); dismiss
   monitor coi popover ngôn ngữ là 1 phần của panel.
 - Icon float (Manh 2026-11-20, duyệt 02:41): icon lúc thường LUÔN là A
@@ -466,10 +469,18 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   khi ON, text gửi vào từ icon chọn text tự chạy đọc luôn, không cần
   bấm Space; khi OFF, cửa sổ mở ra ở trạng thái dừng như trước.
   "Reset to default" cũng trả auto-play về ON.
-- Con trỏ chuột: **theo đúng hệ thống, KHÔNG tự chế bàn tay**
-  (Manh 2026-11-20 00:14). File `PointingHandCursor.swift` và mọi
-  `.pointingHandCursor()` (About, share, link từ điển, link GitHub ở
-  panel) đã gỡ bỏ — nút bấm và link dùng con trỏ mặc định của macOS.
+- Con trỏ chuột: **theo đúng hệ thống — hệ thống quyết định hình con trỏ
+  theo từng loại tương tác, không ép một loại cố định cho một loại tương
+  tác** (Manh 2026-11-20 06:45, sửa quy tắc 00:14). File
+  `PointingHandCursor.swift` và mọi tay chỉ tự chế đã gỡ bỏ từ 00:14.
+  Link mở URL (GitHub ở bottom bar, link từ điển) hiện tay chỉ
+  `NSCursor.pointingHand` của hệ thống khi di chuột lên (đó là chuẩn
+  macOS cho link, không phải tay tự chế); nút bấm thường KHÔNG ép đổi
+  con trỏ — giữ mặc định hệ thống (mũi tên + nút sáng lên khi hover);
+  ô nhập text hiện I-beam (mặc định). Con trỏ resize panel đã ổn định
+  và đã chốt, KHÔNG động vào nữa (không nối lại
+  `PopupResizeCursorMonitor`; `PopupPanelController.swift` giữ nguyên
+  như main).
 
 ### 10.6 Thẻ "Focus & Rest" ở panel left (20/11/2026, nhánh `feature/focus-timer-decor`)
 
