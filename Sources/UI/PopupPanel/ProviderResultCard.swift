@@ -69,6 +69,7 @@ struct ProviderResultCard: View {
             }
             .buttonStyle(.plain)
             .background { InteractiveMarker() }
+            .panelHoverHighlight()
 
             // Body — visible when expanded
             if isExpanded {
@@ -160,6 +161,7 @@ struct ProviderResultCard: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.mini)
+                    .panelHoverHighlight()
                 }
             }
             .background { InteractiveMarker() }
@@ -190,6 +192,7 @@ struct ProviderResultCard: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
+                        .panelHoverHighlight()
                     }
                 }
             }
@@ -287,6 +290,7 @@ struct ProviderResultCard: View {
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
                         .help("Speak")
+                        .panelHoverHighlight()
                     }
 
                     if let onCopy {
@@ -302,6 +306,7 @@ struct ProviderResultCard: View {
                         .tint(isCopyFeedbackActive ? .green : nil)
                         .scaleEffect(isCopyPulsing ? 1.08 : 1)
                         .animation(.easeInOut(duration: 0.12), value: isCopyFeedbackActive)
+                        .panelHoverHighlight()
                     }
                 }
             }

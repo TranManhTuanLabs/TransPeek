@@ -353,6 +353,23 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   hơn dọc); vuốt 2 ngón trackpad cũng đổi tab (50pt = 1 tab, bỏ momentum).
   Gesture vuốt đặt trên hàng chấm, KHÔNG đặt trên nội dung tab — vì kéo
   chuột trên kết quả/input là bôi chọn text.
+- **Hover sáng nút (Manh 2026-11-20, "Làm cả 2"):** panel là
+  `.nonactivatingPanel` nên app không bao giờ active khi panel hiện —
+  macOS chỉ vẽ hiệu ứng hover khi app active, và nút `.plain` vốn không
+  có gì để sáng. Nên tự vẽ hover bằng modifier chung
+  `PanelHoverHighlight` (`.onHover`): nền mờ nhẹ bo tròn khi trỏ chuột
+  lên nút — áp cho mọi nút panel (Pin, Capture OCR, Fast Read, "?",
+  Settings, Copy, loa, "Copy source/translation", nút hàng điều khiển
+  Read lite, chevron hàng chấm, nút "Read in panel" / "Done" /
+  Settings / "?" ở panel phải). Không đổi style nút, không đổi viền
+  0.25, không kích hoạt app khi panel hiện.
+- **Vuốt ngang trên thanh link từ điển (Manh 2026-11-20, "Làm cả
+  2"):** vuốt 2 ngón bắt đầu trên thanh link từ điển thì cuộn link
+  (khi link tràn — nội dung rộng hơn khung nhìn) thay vì đổi tab; vuốt
+  ở chỗ khác vẫn đổi tab như cũ. `TrackpadSwipeMonitor` hit-test vị
+  trí bắt đầu vuốt (`.began`) xem có nằm trên `NSScrollView` cuộn
+  ngang được không; nếu có thì nhường toàn bộ gesture cho ScrollView.
+  Khi link vừa khung (không cuộn được) thì vuốt trên thanh vẫn đổi tab.
 - Panel phải là placeholder ("Fast Read — coming soon") cho tới khi
   Fast Read window ship.
 

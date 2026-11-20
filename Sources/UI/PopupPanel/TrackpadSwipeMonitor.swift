@@ -40,6 +40,16 @@ enum TrackpadSwipeDirection {
 ///   50pt, it fires once per gesture, and momentum events are drained
 ///   (ignored) until the gesture fully ends, so a single swipe never
 ///   flips two tabs.
+/// - A swipe that begins over a horizontally-scrollable view is yielded
+///   to it (Manh 2026-11-20, "Làm cả 2"): the dictionary link bar is a
+///   horizontal ScrollView at the panel bottom, and the monitor runs
+///   before view dispatch, so without this the bar could never scroll —
+///   every swipe over it switched tabs. On `.began` the monitor
+///   hit-tests the swipe position; over a scroll view whose content is
+///   wider than its viewport (links overflow), the whole gesture passes
+///   through and the bar scrolls. When the links fit, a swipe on the bar
+///   still switches tabs. The vertical results ScrollView never counts
+///   (its content is no wider than its viewport).
 /// - Only horizontal-dominant swipes count (|deltaX| > |deltaY| × 1.5);
 ///   a vertical-dominant swipe passes through untouched so the results
 ///   ScrollView scrolls normally. Text selection is a mouse drag, not a
@@ -52,6 +62,10 @@ final class TrackpadSwipeMonitor: ObservableObject {
     private var accumulatedX: CGFloat = 0
     /// Whether this gesture already fired a switch (one swipe = one switch).
     private var firedForGesture = false
+    /// Whether the current gesture began over a horizontally-scrollable
+    /// view (the dictionary link bar) — if so, the whole gesture is
+    /// yielded to that view and never switches tabs (Manh 2026-11-20).
+    private var yieldingToScrollableView = false
     /// The local monitor token (nil when not installed).
     private var monitor: Any?
 
@@ -79,6 +93,7 @@ final class TrackpadSwipeMonitor: ObservableObject {
         panel = nil
         accumulatedX = 0
         firedForGesture = false
+        yieldingToScrollableView = false
     }
 
     deinit {
@@ -104,7 +119,17 @@ final class TrackpadSwipeMonitor: ObservableObject {
         case .began:
             accumulatedX = 0
             firedForGesture = false
+            // A swipe that begins over a horizontally-scrollable view
+            // (the dictionary link bar when its links overflow) belongs
+            // to that view: yield the whole gesture to it (Manh
+            // 2026-11-20). A local monitor runs before view dispatch,
+            // so this hit-test is the only place the swipe can be
+            // yielded to the ScrollView.
+            yieldingToScrollableView = eventBeginsOverHorizontallyScrollableView(event)
         case .changed:
+            // Yielded gesture: pass every event through untouched so the
+            // scroll view scrolls, and never switch tabs.
+            guard !yieldingToScrollableView else { return event }
             // Only a horizontal-dominant swipe counts; a vertical one
             // passes through so the results ScrollView scrolls normally.
             guard abs(deltaX) > abs(deltaY) * 1.5 else { return event }
@@ -121,9 +146,34 @@ final class TrackpadSwipeMonitor: ObservableObject {
         case .ended, .cancelled:
             accumulatedX = 0
             firedForGesture = false
+            yieldingToScrollableView = false
         default:
             break
         }
         return event
+    }
+
+    /// Whether the gesture began over a view that can scroll horizontally
+    /// — the dictionary link bar (`DictionaryBarView`, a horizontal
+    /// ScrollView at the panel bottom). Hit-test the event location, then
+    /// walk up the view hierarchy: a scroll view counts only when its
+    /// content is wider than its viewport (links overflow), so when the
+    /// links fit, a swipe on the bar still switches tabs. The vertical
+    /// results ScrollView never counts: its content is no wider than its
+    /// viewport.
+    private func eventBeginsOverHorizontallyScrollableView(_ event: NSEvent) -> Bool {
+        guard let panel, let contentView = panel.contentView else { return false }
+        let location = contentView.convert(event.locationInWindow, from: nil)
+        guard let hitView = contentView.hitTest(location) else { return false }
+        var view: NSView? = hitView
+        while let current = view {
+            if let scrollView = current as? NSScrollView,
+               let documentWidth = scrollView.documentView?.frame.width,
+               documentWidth > scrollView.contentSize.width + 1 {
+                return true
+            }
+            view = current.superview
+        }
+        return false
     }
 }

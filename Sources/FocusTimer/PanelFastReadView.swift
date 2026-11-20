@@ -89,6 +89,7 @@ struct PanelFastReadView: View {
                     .controlSize(.small)
                     .help("End the rest early")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -162,6 +163,7 @@ struct PanelFastReadView: View {
                 .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 .help("Read the text in the translate tab, right here in the panel")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 runLocationSection
             }
@@ -413,6 +415,7 @@ struct CompactReadingView: View {
                 .controlSize(.small)
                 .help("Reading settings")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
                 .popover(isPresented: $showingSettings) {
                     settingsPopover
                 }
@@ -424,6 +427,7 @@ struct CompactReadingView: View {
                 .controlSize(.small)
                 .help("Hotkeys")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
                 .popover(isPresented: $showingHotkeys) {
                     hotkeysPopover
                 }
@@ -457,6 +461,7 @@ struct CompactReadingView: View {
                     .buttonStyle(.bordered)
                     .help("Close reading (Esc)")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
 
                 // Restart (Manh 2026-11-20, 07:02): shown even at the
@@ -470,6 +475,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Restart (read from the beginning)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.stepBack()
@@ -479,6 +485,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Rewind (←)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.togglePlayPause()
@@ -489,6 +496,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.borderedProminent)
                 .help("Play / Pause (Space)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.stepForward()
@@ -498,6 +506,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Fast-forward (→)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     onToggleMaximize?()
@@ -507,6 +516,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Toggle size")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.bottom, 10)
@@ -539,6 +549,7 @@ struct CompactReadingView: View {
             .buttonStyle(.bordered)
             .help("Settings")
             .background { InteractiveMarker() }
+            .panelHoverHighlight()
             .popover(isPresented: $showingSettings) {
                 settingsPopover
             }
@@ -549,6 +560,7 @@ struct CompactReadingView: View {
             .buttonStyle(.bordered)
             .help("Hotkeys")
             .background { InteractiveMarker() }
+            .panelHoverHighlight()
             .popover(isPresented: $showingHotkeys) {
                 hotkeysPopover
             }
@@ -757,6 +769,7 @@ struct CompactReadingView: View {
             .buttonStyle(.bordered)
             .padding(.top, 4)
             .help("Reset speed, focus size, context size, context display and auto-play to their defaults")
+            .panelHoverHighlight()
         }
         .padding(12)
         .frame(width: 260)
@@ -969,6 +982,7 @@ struct CompactReadingView: View {
                     .buttonStyle(.bordered)
                     .help("Close reading (Esc)")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
 
                 // Restart (Manh 2026-11-19, round 10): read from the
@@ -983,6 +997,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Restart (read from the beginning)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.stepBack()
@@ -992,6 +1007,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Rewind (←)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.togglePlayPause()
@@ -1002,6 +1018,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.borderedProminent)
                 .help("Play / Pause (Space)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     viewModel.stepForward()
@@ -1011,6 +1028,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Fast-forward (→)")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 Button {
                     onToggleMaximize?()
@@ -1020,6 +1038,7 @@ struct CompactReadingView: View {
                 .buttonStyle(.bordered)
                 .help("Toggle size")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
             .frame(maxWidth: .infinity, alignment: .center)
 

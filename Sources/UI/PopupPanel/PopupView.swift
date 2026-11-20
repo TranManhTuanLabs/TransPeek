@@ -285,6 +285,7 @@ struct PopupView: View {
         .buttonStyle(.plain)
         .help(coordinator.isPinned ? "Unpin Popup" : "Pin Popup")
         .background { InteractiveMarker() }
+        .panelHoverHighlight()
     }
 
     private var appVersion: String {
@@ -495,6 +496,7 @@ struct PopupView: View {
                     )
                     .help("OCR Screen Translate")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
                 .padding(.horizontal, contentHorizontalPadding)
                 .padding(.vertical, 4)
@@ -604,6 +606,7 @@ struct PopupView: View {
                                 .controlSize(.small)
                                 .help("Copy recognized text")
                                 .background { InteractiveMarker() }
+                                .panelHoverHighlight()
                         }
                         if let ocrTranslation = coordinator.ocrTranslationText, !ocrTranslation.isEmpty {
                             HStack(alignment: .top, spacing: 8) {
@@ -616,6 +619,7 @@ struct PopupView: View {
                                     .controlSize(.small)
                                     .help("Copy translation")
                                     .background { InteractiveMarker() }
+                                    .panelHoverHighlight()
                             }
                         }
                     }
@@ -675,6 +679,7 @@ struct PopupView: View {
                     )
                     .help("Fast Read (RSVP)")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
 
                     Spacer()
 
@@ -688,6 +693,7 @@ struct PopupView: View {
                     .buttonStyle(.plain)
                     .help("Keyboard shortcuts")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
 
                     Button {
                         onOpenSettings?()
@@ -699,6 +705,7 @@ struct PopupView: View {
                     .buttonStyle(.plain)
                     .help("Open Settings")
                     .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
                 .padding(.horizontal, contentHorizontalPadding)
                 .padding(.vertical, 4)
@@ -896,6 +903,7 @@ struct PopupView: View {
                 .disabled(selectedTab == .shortcut)
                 .help("Previous panel")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
 
                 ForEach(PanelTab.allCases, id: \.self) { tab in
                     Button {
@@ -921,6 +929,7 @@ struct PopupView: View {
                 .disabled(selectedTab == .fastRead)
                 .help("Next panel")
                 .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
             .frame(maxWidth: .infinity, alignment: .center)
 
