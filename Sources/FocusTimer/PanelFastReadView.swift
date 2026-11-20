@@ -291,9 +291,11 @@ struct CompactReadingView: View {
                         .padding(.top, 6)
                         .padding(.bottom, 8)
                 } else {
-                    // Paused (Manh 2026-11-20, 09:16): top-to-bottom is
-                    // [top bar: pickers + Settings + ?] → [reading area]
-                    // → [progressRow: "X / total" + bar] → [control
+                    // Paused (Manh 2026-11-20, 09:16; hint row above
+                    // the progress, Manh 2026-11-20, 09:41): top-to-
+                    // bottom is [top bar: pickers + Settings + ?] →
+                    // [reading area] → [hint row: shortcut keys] →
+                    // [progressRow: "X / total" + bar] → [control
                     // row]. The picker top bar moved above the reading
                     // area; the progress stays BELOW it (Manh's "180"
                     // was the build number CI280, not the page number
@@ -311,6 +313,10 @@ struct CompactReadingView: View {
                             shareRow
                                 .padding(.bottom, 8)
                         }
+                        panelHint
+                            .padding(.horizontal, 12)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
                         progressRow
                             .padding(.horizontal, 12)
                             .padding(.bottom, 8)
@@ -320,6 +326,10 @@ struct CompactReadingView: View {
                     } else {
                         compactTopBar
                         readingAreaForCurrentState
+                        panelHint
+                            .padding(.horizontal, 12)
+                            .padding(.top, 4)
+                            .padding(.bottom, 4)
                         compactBottomChrome
                     }
                 }
@@ -361,10 +371,11 @@ struct CompactReadingView: View {
         }
     }
 
-    /// Keyboard shortcut hint shown under the focus line while playing
-    /// (same text as the window's control-row hint, Manh 2026-11-18):
-    /// the only control affordance while playing — the buttons stay
-    /// hidden until pause.
+    /// Keyboard shortcut hint (Manh 2026-11-18): the keyboard shortcuts
+    /// + the trackpad swipe for font size. Shown under the focus line
+    /// while playing (the only control affordance while playing — the
+    /// buttons stay hidden until pause) and, when paused, as its own
+    /// row directly above the progress bar (Manh 2026-11-20, 09:41).
     private var panelHint: some View {
         Text("Space play/pause • ←/→ step • ↑/↓ speed • Swipe ↑/↓ font size")
             .font(.caption)
@@ -937,11 +948,12 @@ struct CompactReadingView: View {
     // MARK: - Controls
 
     /// Five buttons centered at the bottom, with "Reading time" at the
-    /// left end and the shortcut hints at the right end of the same row
-    /// (Manh 2026-11-18). The buttons stay truly centered (their own
-    /// HStack, centered on the full width) and the two side texts
-    /// overlay at the leading / trailing edges, so they don't push the
-    /// buttons off-center.
+    /// left end (Manh 2026-11-18). The buttons stay truly centered
+    /// (their own HStack, centered on the full width) and the
+    /// "Reading time" text overlays at the leading edge, so it doesn't
+    /// push the buttons off-center. The shortcut hint used to sit at
+    /// the right end of this row — it moved to its own row above the
+    /// progress bar (Manh 2026-11-20, 09:41).
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
@@ -1020,14 +1032,6 @@ struct CompactReadingView: View {
                 .help("Estimated reading time")
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Hint at the right end of the controls row (Manh
-            // 2026-11-18): the keyboard shortcuts + the trackpad swipe
-            // for font size.
-            Text("Space play/pause • ←/→ step • ↑/↓ speed • Swipe ↑/↓ font size")
-                .font(.caption)
-                .foregroundStyle(readingSecondary)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
         }
     }
 }
