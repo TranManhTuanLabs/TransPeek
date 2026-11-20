@@ -125,10 +125,11 @@ struct PopupView: View {
         )
     }
 
-    /// Whether the panel has anything to show (Manh 2026-11-20, icon-click Fast Read bug): a translation is active, OR the user is on the Fast Read tab (a panel read was requested there), OR a panel read is running. The Fast Read tab must stay rendered even with no translation — hovering the float icon hides it, so an icon click can only happen before any hover, when the coordinator is still `.idle`; without this the panel opened empty and the requested read played invisibly. The store is held as a plain `let` on purpose (so the panel never re-renders on timer ticks), so this reads its @Published values without subscribing — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes, so the gate is always evaluated with fresh values.
+    /// Whether the panel has anything to show (Manh 2026-11-20, icon-click Fast Read bug): a translation is active, OR the user is on the Fast Read tab (a panel read was requested there), OR the user is on the left tab (the menubar "Focus & Rest" item opened it there — Manh 2026-11-20, 19:22), OR a panel read is running. The Fast Read tab must stay rendered even with no translation — hovering the float icon hides it, so an icon click can only happen before any hover, when the coordinator is still `.idle`; without this the panel opened empty and the requested read played invisibly. The same holds for the left tab: it is opened from the menubar with no translation running, so without the `selectedTab == .shortcut` arm it would open empty too. The store is held as a plain `let` on purpose (so the panel never re-renders on timer ticks), so this reads its @Published values without subscribing — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes, so the gate is always evaluated with fresh values.
     private var hasPanelContent: Bool {
         coordinator.phase == .active
             || selectedTab == .fastRead
+            || selectedTab == .shortcut
             || focusTimerStore.panelReadingViewModel != nil
     }
 
@@ -219,6 +220,10 @@ struct PopupView: View {
             // Right Panel): the store holds the request; open on the
             // Fast Read tab and start the read (Manh 2026-11-20).
             consumePanelRightRequest(focusTimerStore.panelRightRequest)
+            // The menubar "Focus & Rest" item was clicked while the
+            // panel was hidden (Manh 2026-11-20, 19:22): the store holds
+            // the request; open on the left tab.
+            consumePanelLeftRequest()
         }
         // A 2-finger trackpad swipe switches tabs (Manh 2026-11-17): next
         // is the panel on the right, previous the one on the left.
@@ -265,6 +270,18 @@ struct PopupView: View {
         .onReceive(focusTimerStore.$panelRightRequest) { request in
             consumePanelRightRequest(request)
         }
+        // The menubar "Focus & Rest" item was clicked while the panel
+        // was already visible (Manh 2026-11-20, 19:22): `.onAppear`
+        // above only fires on a fresh show, so subscribe to the
+        // publisher too — same two-path pattern as `panelRightRequest`.
+        // `.onReceive` on the @Published publisher — NOT `.onChange`:
+        // this view holds the store as a plain `let` on purpose, so
+        // `.onChange` only fires when some OTHER state re-renders the
+        // body (see the `panelRightRequest` comment above).
+        .onReceive(focusTimerStore.$panelLeftRequest) { requested in
+            guard requested else { return }
+            consumePanelLeftRequest()
+        }
         // While a read runs in the panel, freeze auto-fit (Manh
         // 2026-11-20): the reading view fills the panel, so its content
         // height would otherwise shrink a tall panel back to the fitted
@@ -293,6 +310,19 @@ struct PopupView: View {
         // read shows the right title (`FocusReminderKind.title`).
         focusTimerStore.startPanelReading(text: request.text, countdownSeconds: request.countdownSeconds, kind: request.kind)
         coordinator.isPinned = true
+    }
+
+    /// Open the panel on the LEFT tab, requested by the menubar
+    /// "Focus & Rest" item (Manh 2026-11-20, 19:22): the left tab
+    /// holds the "Focus & Rest" card, so that is where the item leads.
+    /// Unlike `consumePanelRightRequest` there is no text to read and
+    /// no pin — just the tab switch. Consumed once: the flag is
+    /// cleared here, so a later `.onAppear` / `.onReceive` sees
+    /// `false` and returns.
+    private func consumePanelLeftRequest() {
+        guard focusTimerStore.panelLeftRequest else { return }
+        focusTimerStore.panelLeftRequest = false
+        selectedTab = .shortcut
     }
 
     private var pinButton: some View {

@@ -5,6 +5,9 @@ import SwiftUI
 /// Reddit, LinkedIn, Mail) — the same row as the Fast Read completion
 /// window (Manh 2026-11-18) and the About tab (Manh 2026-11-19).
 /// Each opens its share URL in the browser (Mail opens the mail app).
+/// They are `Link`s, not `Button`s (Manh 2026-11-20, 19:16): a share
+/// button opens a URL, so it is a link and shows the pointing-hand
+/// cursor on hover, like the GitHub link — not the button arrow.
 /// The link shared is always the TransPeek repo; `text` is the message
 /// shared with it — the real stats of the finished read in the
 /// completion window, the app tagline in About.
@@ -42,15 +45,26 @@ struct ShareRowView: View {
     var body: some View {
         HStack(spacing: 10) {
             ForEach(RSVPSharePlatform.allCases, id: \.self) { platform in
-                Button {
-                    if let url = platform.shareURL(text: text) {
-                        NSWorkspace.shared.open(url)
+                if let url = platform.shareURL(text: text) {
+                    // Link, not Button (Manh 2026-11-20, 19:16): these
+                    // open share URLs, so they ARE links — the
+                    // pointing-hand cursor on hover, like the GitHub
+                    // link, instead of the button arrow. `Link` opens
+                    // the URL the same way `NSWorkspace` did (browser
+                    // for http(s), mail app for mailto:). The explicit
+                    // `.onHover` sets the cursor because the panel is a
+                    // nonactivating panel: the system link cursor does
+                    // not fire there on its own — same pattern as the
+                    // GitHub link in PopupView.
+                    Link(destination: url) {
+                        shareIcon(for: platform)
                     }
-                } label: {
-                    shareIcon(for: platform)
+                    .buttonStyle(.plain)
+                    .help("Share on \(platform.displayName)")
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+                    }
                 }
-                .buttonStyle(.plain)
-                .help("Share on \(platform.displayName)")
             }
         }
     }
@@ -108,3 +122,4 @@ struct ShareRowView: View {
         }
     }
 }
+

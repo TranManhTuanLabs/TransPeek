@@ -80,6 +80,11 @@ struct FlowIntroCard: View {
             // build #207). Every other clickable control in this panel
             // carries one — see ShortcutsTableView / ProviderResultCard.
             .background { InteractiveMarker() }
+            // Hover + pressed tint (Manh 2026-11-20, 19:16): the header
+            // felt dead when clicked — no feedback, unlike the provider
+            // card's header. Same `.panelHoverHighlight()` as
+            // ProviderResultCard (hover 0.08, pressed 0.18).
+            .panelHoverHighlight()
 
             if !isCollapsed {
                 Text("Not just a translator — it improves your learning experience.")
@@ -117,3 +122,4 @@ struct FlowIntroCard: View {
         .padding(.vertical, 1)
     }
 }
+

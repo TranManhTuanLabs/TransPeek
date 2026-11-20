@@ -63,7 +63,11 @@ struct PendingReminder {
 struct PanelRightRequest: Equatable {
     let text: String
     let countdownSeconds: Int?
-    let kind: FocusReminderKind?
+    // Default `nil` (Manh 2026-11-20, CI #297 fix): a plain read has no
+    // reminder kind, so call sites that launch a plain read (e.g.
+    // `AppDelegate.showFastRead`) must not have to pass `kind:` — and a
+    // future call site can never hit the missing-argument trap again.
+    let kind: FocusReminderKind? = nil
 }
 
 /// Pomodoro phase (STANDARD logic, Manh 2026-11-20, 04:08): Work /
@@ -126,6 +130,12 @@ final class FocusTimerStore: ObservableObject {
 
     /// Pending request to read in panel right (consumed by `PopupView`).
     @Published var panelRightRequest: PanelRightRequest?
+    /// Pending request to open the panel on the LEFT tab (consumed by
+    /// `PopupView`; set by the menubar "Focus & Rest" item, Manh
+    /// 2026-11-20, 19:22). Same pattern as `panelRightRequest`, but no
+    /// payload — there is no text to read, just the tab to show. The
+    /// view clears it when it consumes it.
+    @Published var panelLeftRequest = false
     /// A break reminder that fired while the user was reading and is
     /// waiting (Manh 2026-11-20, 05:33). Shown as a banner + system
     /// notification + dot on the Focus-Rest card; shows automatically

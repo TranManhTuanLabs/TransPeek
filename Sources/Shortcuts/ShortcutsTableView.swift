@@ -123,6 +123,13 @@ struct ShortcutsTableView: View {
             // nothing). Every other clickable control in this panel
             // carries one — see PopupView / ProviderResultCard.
             .background { InteractiveMarker() }
+            // Hover + pressed tint (Manh 2026-11-20, 19:16): the header
+            // felt dead when clicked — no feedback, unlike the provider
+            // card's header. Same `.panelHoverHighlight()` as
+            // ProviderResultCard (hover 0.08, pressed 0.18). Applies in
+            // both modes (panel-left collapse and panel-center close) —
+            // it is the same Button.
+            .panelHoverHighlight()
 
             if !collapsed {
                 Divider()
@@ -165,3 +172,4 @@ struct ShortcutsTableView: View {
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
     }
 }
+

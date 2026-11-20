@@ -791,6 +791,11 @@ Two rules apply to EVERY panel button:
   not touch the settled 0.5-opacity borders (0.25 → 0.4 → 0.6 → 0.5,
   Manh 2026-11-20 18:45 — back down from 0.6; 0.25 was a touch
   too pale).
+- **Left-panel card headers carry it too (Manh 2026-11-20, 19:16):**
+  the FlowIntroCard / FocusTimerCard / ShortcutsTableView collapse
+  headers had no press feedback when clicked — now the same
+  `.panelHoverHighlight()` as the provider card header (hover 0.08,
+  pressed 0.18). Headers only, not the card bodies.
 - **Cursor (see §10.5):** links → system pointing hand; plain buttons
   → system default arrow (+ the highlight above); text fields →
   I-beam; panel resize cursor untouched.
@@ -874,9 +879,12 @@ Two rules apply to EVERY panel button:
 
 ### 10.10a Decided 2026-11-20 (Manh 17:28) — settled, no longer open
 
-- **Share buttons pointing hand — NO:** Share buttons (`ShareRowView`)
-  keep the default arrow cursor like other plain buttons; they do NOT
-  show the system pointing hand.
+- **Share buttons pointing hand — YES (reversed 2026-11-20, 19:16):**
+  Share buttons (`ShareRowView`) ARE links (they open share URLs), so
+  they show the pointing hand like the GitHub link — `Link` + explicit
+  `NSCursor.pointingHand` on hover. (Was NO on 2026-11-20 17:28: plain
+  buttons keep the arrow. Manh 19:16 asked why the share links did not
+  show the hand like the GitHub cat — they are links, not buttons.)
 - **Reminder / notification language — ENGLISH:** reminder text, banner
   and system notification stay English, per the UI-language decision
   (English first, Vietnamese later, Manh 2026-11-11). Do not translate
@@ -971,4 +979,5 @@ trigger it (the user is still reading, so the reminder keeps waiting).
 - [Trạng thái dự án](../../PROJECT_STATE.md)
 - [Chỉ mục UX](../../UI_DESIGN.md)
 - [Panel UX Windows (đã chốt)](https://github.com/TranManhTuanLabs/TransPeek-Windows/blob/main/docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
+
 

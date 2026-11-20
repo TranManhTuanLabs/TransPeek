@@ -87,6 +87,11 @@ struct FocusTimerCard: View {
             .buttonStyle(.plain)
             .help(isCollapsed ? "Show focus timer" : "Hide focus timer")
             .background { InteractiveMarker() }
+            // Hover + pressed tint (Manh 2026-11-20, 19:16): the header
+            // felt dead when clicked — no feedback, unlike the provider
+            // card's header. Same `.panelHoverHighlight()` as
+            // ProviderResultCard (hover 0.08, pressed 0.18).
+            .panelHoverHighlight()
 
             if !isCollapsed {
                 pomodoroSection
@@ -331,5 +336,6 @@ struct FocusTimerCard: View {
         }
     }
 }
+
 
 
