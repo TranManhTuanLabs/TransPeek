@@ -350,23 +350,25 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   theo tab. Đổi tab có animation fade 0.15s ease-out.
 - **Hàng chấm nằm ngay dưới top bar (CHỐT, Manh 2026-11-19 19:36 —
   không còn tạm thời, không dời nữa).** Pin ở đầu trái hàng chấm
-  (`.padding(.leading, 10)`, xem §10.8), rồi 3 chấm căn giữa —
-  KHÔNG còn nút chevron (Manh 2026-11-20, 11:21, xem dưới). (Mục §9 ghi hàng chấm dưới nội dung tab là vị
+  (`.padding(.leading, 10)`, xem §10.8), rồi chevron.left + 3 chấm +
+  chevron.right căn giữa. (Mục §9 ghi hàng chấm dưới nội dung tab là vị
   trí cũ 17/11, đã lỗi thời.)
-- Hàng chấm gồm: 3 chấm tròn 8pt (cách nhau 8pt,
-  căn giữa). Chấm đang chọn màu accent, còn lại
-  mờ. Bấm chấm để đổi
+- Hàng chấm gồm: nút `chevron.left` + 3 chấm tròn 8pt (cách nhau 8pt,
+  căn giữa) + nút `chevron.right`. Chấm đang chọn màu accent, còn lại
+  mờ. Chevron bị mờ + không bấm được ở 2 đầu. Bấm chấm / chevron để đổi
   tab; vuốt ngang trên hàng chấm cũng đổi tab (vuốt rõ ràng >50pt, ngang
   hơn dọc); vuốt 2 ngón trackpad cũng đổi tab (50pt = 1 tab, bỏ momentum).
   Gesture vuốt đặt trên hàng chấm, KHÔNG đặt trên nội dung tab — vì kéo
   chuột trên kết quả/input là bôi chọn text.
-  **KHÔNG có nút chevron trái/phải (Manh 2026-11-20, 11:21):** 2 nút
-  `chevron.left` / `chevron.right` 2 bên chấm (Manh 2026-11-18, round 8)
-  đã BỎ — mũi tên trái/phải chuyển tab dễ nhầm với nút Rewind /
-  Forward của Read lite (mũi tên trái/phải bước slide đọc), nhất là ở
-  panel phải, nơi phím ←/→ đã dùng để bước slide chứ không chuyển tab.
-  Chuyển tab bằng: bấm trực tiếp chấm, vuốt trackpad ngang, kéo chuột
-  trên hàng chấm. KHÔNG bỏ các cách đó; chỉ bỏ 2 nút chevron.
+- **KHÔNG có phím tắt bàn phím ←/→ để chuyển tab (Manh 2026-11-20 11:21,
+  làm rõ 11:30):** phím ←/→ ở panel phải (Read lite) đã dùng để bước
+  slide, nên không dùng để chuyển tab được — phím tắt ←/→ chuyển tab vốn
+  là fallback cho vuốt ngang, nhưng vì trùng nên không có. Nút chevron
+  ‹ › GIỮ NGUYÊN: vừa là chỉ báo tab có thể chuyển, vừa là cách bấm để
+  chuyển tab khi không vuốt. (Đã kiểm chứng code 11:31: mac chưa từng
+  gán ←/→ chuyển tab — không có `onKeyPress`/`keyDown`/arrow-key nào đổi
+  tab, chỉ có swipe/drag/chấm/chevron — nên không có gì để gỡ, chỉ ghi
+  docs.)
 - **Hover sáng nút (Manh 2026-11-20, "Làm cả 2"):** panel là
   `.nonactivatingPanel` nên app không bao giờ active khi panel hiện —
   macOS chỉ vẽ hiệu ứng hover khi app active, và nút `.plain` vốn không
@@ -374,7 +376,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   `PanelHoverHighlight` (`.onHover`): nền mờ nhẹ bo tròn khi trỏ chuột
   lên nút — áp cho mọi nút panel (Pin, Capture OCR, Fast Read, "?",
   Settings, Copy, loa, "Copy source/translation", nút hàng điều khiển
-  Read lite, nút "Read in panel" / "Done" /
+  Read lite, chevron hàng chấm, nút "Read in panel" / "Done" /
   Settings / "?" ở panel phải, loa + Copy phía nguồn, nút swap ngôn
   ngữ). Không đổi style nút, không đổi viền 0.4 (tăng từ 0.25, Manh
   2026-11-20 11:27 — thử nghiệm, 0.25 hơi nhạt), không kích hoạt app
@@ -484,14 +486,14 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 | Hạng mục | mac | Windows |
 |---|---|---|
-| Vị trí hàng chấm | Ngay dưới top bar (**CHỐT**, Manh 2026-11-19 19:36 — giữ như hiện tại); KHÔNG nút chevron (Manh 2026-11-20, 11:21 — dễ nhầm với Rewind/Forward của Read lite) | Ở bottom bar, dưới icon GitHub (tạm thời) |
+| Vị trí hàng chấm | Ngay dưới top bar (**CHỐT**, Manh 2026-11-19 19:36 — giữ như hiện tại) + nút chevron 2 bên | Ở bottom bar, dưới icon GitHub (tạm thời) |
 | Sau này | Đã chốt ở top bar, không dời nữa | Có thể dời lên top bar như mac (Manh 19/11) — hiện tại để tạm |
 
-- Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm,
+- Hàng chấm là bộ chuyển tab trên cả 2 nền tảng (bấm chấm/chevron,
   vuốt trên hàng chấm, vuốt trackpad). Panel phải bên Windows cũng là
   placeholder như mac.
 - Nút pin (Manh 2026-11-20, 07:08 + 07:10 + 07:54, tạm thời) ở đầu trái hàng
-  chấm, gần mép trái panel với padding nhỏ 10pt
+  chấm, trước chevron.left, gần mép trái panel với padding nhỏ 10pt
   (chi tiết §10.7).
 
 ### 10.5 Đã làm trong 0.1.5 (19/11/2026, nhánh `feature/015-deferred-batch`)
@@ -697,7 +699,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Esc trước SwiftUI nên view đọc không bao giờ thấy phím Esc.
 - **Nút pin ở CẢ 3 panel (tạm thời)** (Manh 2026-11-20, 07:08 +
   07:09 + 07:10 + 07:54): nằm ở hàng chấm (dotsRow, dùng chung cả 3 tab nên
-  hiện cả 3 panel), ở đầu trái hàng chấm, gần mép trái panel với
+  hiện cả 3 panel), bên trái chevron.left, gần mép trái panel với
   padding nhỏ 10pt cho đẹp (was 4pt, dịch phải 6pt, Manh 2026-11-20,
   07:54; không dính sát mép, không padding lớn như hàng thường). Chức năng không đổi: khi bắt đầu đọc trong panel,
   panel tự bật pin (click ra ngoài không làm mất bài đọc); user bấm
@@ -752,6 +754,7 @@ Two rules apply to EVERY panel button:
 | Button | Where | Action | Style / notes |
 |---|---|---|---|
 | Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned |
+| chevron.left / chevron.right | dotsRow, flanking the 3 dots | Previous / next tab; disabled + dimmed (secondary 0.3) at the ends | `.plain`, `.caption` |
 | 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
 | Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |
 | Fast Read | Actions row, left end | Run Fast Read per "Run FastRead in:" (§10.7) | `.plain`, turmeric border 0.4 opacity (0.25 → 0.4, Manh 2026-11-20 11:27 — experiment) |

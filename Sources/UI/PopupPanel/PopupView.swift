@@ -899,16 +899,28 @@ struct PopupView: View {
     /// moved up from below the tab content so Manh can try it. The row
     /// is compact here (2pt top padding) so it reads as part of the
     /// top bar, not as a gap before the content.
-    /// NO chevron arrows (Manh 2026-11-20, 11:21): the `<` / `>` arrows
-    /// beside the dots (Manh 2026-11-18, round 8) were removed — they
-    /// are easily confused with the Read lite control-row Rewind /
-    /// Forward buttons (left/right arrows that step through reading
-    /// slides), especially in panel right where the ←/→ keys already
-    /// step slides, not tabs. Tab switching is by tapping a dot, the
-    /// trackpad swipe, or the drag on this row.
+    /// The `<` / `>` arrows beside the dots (Manh 2026-11-18, round 8)
+    /// are a visible affordance that the row is clickable — the dots
+    /// alone did not look tappable. Both arrows are the same width, so
+    /// the dots stay centered; an arrow is dimmed at its end (no
+    /// previous / no next panel). The dots' position is UNCHANGED
+    /// (Manh 2026-11-18: keep it as-is on both repos for comparison).
     private var dotsRow: some View {
         ZStack {
             HStack(spacing: 8) {
+                Button {
+                    selectedTab = PanelTab(rawValue: max(selectedTab.rawValue - 1, PanelTab.shortcut.rawValue)) ?? selectedTab
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .shortcut ? Color.secondary.opacity(0.3) : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedTab == .shortcut)
+                .help("Previous panel")
+                .background { InteractiveMarker() }
+                .panelHoverHighlight()
+
                 ForEach(PanelTab.allCases, id: \.self) { tab in
                     Button {
                         selectedTab = tab
@@ -921,6 +933,19 @@ struct PopupView: View {
                     .help(dotHelp(tab))
                     .background { InteractiveMarker() }
                 }
+
+                Button {
+                    selectedTab = PanelTab(rawValue: min(selectedTab.rawValue + 1, PanelTab.fastRead.rawValue)) ?? selectedTab
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(selectedTab == .fastRead ? Color.secondary.opacity(0.3) : Color.secondary)
+                }
+                .buttonStyle(.plain)
+                .disabled(selectedTab == .fastRead)
+                .help("Next panel")
+                .background { InteractiveMarker() }
+                .panelHoverHighlight()
             }
             .frame(maxWidth: .infinity, alignment: .center)
 
