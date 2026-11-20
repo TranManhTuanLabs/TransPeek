@@ -342,8 +342,10 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
 
 ### 10.1 Khung 3 tab (hub) — thứ tự và hàng chấm
 
-- Thứ tự: **shortcut (trái, 1) / translate (giữa, 2, mặc định) / Fast
-  Read (phải, 3)**. Panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần.
+- Thứ tự: **panel left (1) / translate (giữa, 2, mặc định) / Fast
+  Read (phải, 3)**. Panel left chứa đúng 4 mục: Instructions ("How
+  the icon works") + Focus-Rest + Keyboard Shortcuts + Share (xem
+  §10.3). Panel dịch ở giữa thì vuốt sang 2 bên đều 1 lần.
 - Top bar + bottom bar giống nhau trên mọi tab; chỉ nội dung giữa đổi
   theo tab. Đổi tab có animation fade 0.15s ease-out.
 - **Hàng chấm nằm ngay dưới top bar (CHỐT, Manh 2026-11-19 19:36 —
@@ -439,10 +441,13 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   "GitHub" căn giữa, text version ("Version X (Build CI #N)", ẩn số
   build khi = 1) mờ ở bên phải. Khoảng trên/dưới đều 12pt.
 
-### 10.3 Panel left (tab 1 — Shortcuts + Focus-Rest + Share)
+### 10.3 Panel left (tab 1 — Instructions + Focus-Rest + Shortcuts + Share)
 
-- Panel left là **tab 1** với nội dung đã chốt: Shortcuts + Focus-Rest
-  + Share. (Nhãn "tạm thời" cũ bỏ — thẻ Focus-Rest đã ở đây, §10.6.)
+- Panel left là **tab 1** với nội dung đã chốt, đúng 4 mục theo thứ
+  tự từ trên xuống: (1) **Instructions — "How the icon works"**,
+  (2) **Focus-Rest**, (3) **Keyboard Shortcuts**, (4) **Share** — không
+  thêm, không bớt. (Nhãn "tạm thời" cũ bỏ — thẻ Focus-Rest đã ở đây,
+  §10.6.)
 - Nội dung nằm trong ScrollView (để auto-fit vẫn tính đúng chiều cao),
   theo thứ tự từ trên xuống:
   1. **Thẻ "How the icon works" (`FlowIntroCard`)** — ĐỘNG: các dòng
