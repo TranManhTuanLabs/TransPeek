@@ -565,24 +565,29 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   KHÔNG bị chặn (Manh 2026-11-20, 07:02 — bỏ cap 48/64pt): vuốt
   dọc đổi cỡ chữ bao nhiêu cũng được, user tự chỉnh cho vừa frame;
   setting cỡ chữ không đổi, cửa sổ vẫn mở đúng cỡ user chọn.
-- **Hiển thị theo size (Manh 2026-11-20, 04:44):**
+- **Hiển thị theo size (Manh 2026-11-20, 04:44; thứ tự khi pause,
+  Manh 2026-11-20, 09:16):** khi pause, đọc từ trên xuống là
+  [top bar: 4 picker + Settings + "?"] → [vùng đọc] →
+  [progress: "X / tổng" + thanh] → [hàng nút ở dưới cùng].
+  Hàng top (cả 2 size) căn dưới (`.bottom`, Manh 2026-11-20,
+  09:06) để Settings + "?" ngang hàng với menu picker, không bị
+  đẩy lên cao hơn bản cũ (picker là cột 2 tầng nhãn + menu, nút
+  icon chỉ 1 tầng nên căn giữa làm nút nổi lên trên). Progress
+  vẫn ở DƯỚI vùng đọc, không lên top ("180" của Manh là số build
+  CI280, không phải số trang).
   - Đang chạy (play): CHỈ focus text + around text + dòng phím tắt.
   - Pause, panel bé: top row có đủ 4 picker như top bar (Speed /
     Focus size / Context size / Words at once, spacing gọn 6pt cho
     vừa panel 420pt) + Settings + "?" ở góc phải trên (Manh
     2026-11-20, 07:54 — frame nhỏ vẫn đủ ô; "?" đặt cạnh Settings),
-    thanh progress nhỏ, hàng nút X / Restart / Rewind / Play /
-    Forward / Maximize căn giữa dưới cùng (Manh 2026-11-20, 07:02
-    — X + Restart có cả khi panel bé). Hàng top (cả 2 size) căn
-    dưới (`.bottom`, Manh 2026-11-20, 09:06) để Settings + "?"
-    ngang hàng với menu picker, không bị đẩy lên cao hơn bản cũ
-    (picker là cột 2 tầng nhãn + menu, nút icon chỉ 1 tầng nên
-    căn giữa làm nút nổi lên trên).
+    rồi vùng đọc, rồi thanh progress nhỏ, hàng nút X / Restart /
+    Rewind / Play / Forward / Maximize căn giữa dưới cùng (Manh
+    2026-11-20, 07:02 — X + Restart có cả khi panel bé).
   - Pause, panel gần max (rộng nội dung ≥ 540pt, tức panel ≈ 580+
     trên max 600): đủ nút + mô tả như Window Fast Read — top bar 4
     picker (Speed / Focus size / Context size / Words at once) +
-    Settings + "?", progress, hàng 5 nút + Reading time + hint,
-    completion + share khi đọc xong.
+    Settings + "?", rồi vùng đọc, completion + share khi đọc xong,
+    progress, hàng 5 nút + Reading time + hint.
 - **Tương tác trong panel phải:** vuốt dọc trackpad đổi cỡ chữ
   (±16pt / 50pt, như cửa sổ — monitor riêng chỉ dọc, vuốt ngang vẫn
   chuyển panel 1/2/3 như cũ); phím tắt Space / ←/→ / ↑/↓ vẫn chạy

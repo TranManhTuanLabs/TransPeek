@@ -291,8 +291,16 @@ struct CompactReadingView: View {
                         .padding(.top, 6)
                         .padding(.bottom, 8)
                 } else {
-                    readingAreaForCurrentState
+                    // Paused (Manh 2026-11-20, 09:16): top-to-bottom is
+                    // [top bar: pickers + Settings + ?] → [reading area]
+                    // → [progressRow: "X / total" + bar] → [control
+                    // row]. The picker top bar moved above the reading
+                    // area; the progress stays BELOW it (Manh's "180"
+                    // was the build number CI280, not the page number
+                    // — moving the progress to the top was cancelled).
                     if isFullSize {
+                        panelTopBar
+                        readingAreaForCurrentState
                         if let completion = viewModel.completionText {
                             Text(completion)
                                 .font(.callout)
@@ -303,7 +311,6 @@ struct CompactReadingView: View {
                             shareRow
                                 .padding(.bottom, 8)
                         }
-                        panelTopBar
                         progressRow
                             .padding(.horizontal, 12)
                             .padding(.bottom, 8)
@@ -311,7 +318,9 @@ struct CompactReadingView: View {
                             .padding(.horizontal, 12)
                             .padding(.bottom, 12)
                     } else {
-                        compactPausedChrome
+                        compactTopBar
+                        readingAreaForCurrentState
+                        compactBottomChrome
                     }
                 }
             }
@@ -364,22 +373,21 @@ struct CompactReadingView: View {
             .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    /// Compact paused chrome (Manh 2026-11-20, 04:44; pickers on the
-    /// top row even at the small size, Manh 2026-11-20, 07:54 — the
-    /// small frame still has room): the same four pickers as the top
-    /// bar (Speed / Focus size / Context size / Words at once) +
-    /// Settings + "?" at the top-right, a small progress bar above
-    /// bottom-center X / Restart / Rewind / Play / Forward / Maximize
-    /// buttons. The Settings popover is the same one as the window
-    /// (color scheme, context display, auto-play, reset) — same
-    /// options, compact. The row uses tight spacing (6pt) so the four
-    /// pickers + gear + "?" fit the default 420pt panel width. The
-    /// top-row HStack is bottom-aligned (Manh 2026-11-20, 09:06) so
-    /// the gear + "?" sit at the same height as the picker menus, not
-    /// centered against the taller label + menu stacks.
-    private var compactPausedChrome: some View {
-        VStack(spacing: 6) {
-            HStack(alignment: .bottom, spacing: 6) {
+    /// Compact top bar (Manh 2026-11-20, 04:44; pickers on the top
+    /// row even at the small size, Manh 2026-11-20, 07:54 — the small
+    /// frame still has room; moved ABOVE the reading area, Manh
+    /// 2026-11-20, 09:16): the same four pickers as the top bar
+    /// (Speed / Focus size / Context size / Words at once) +
+    /// Settings + "?" at the top-right. The Settings popover is the
+    /// same one as the window (color scheme, context display,
+    /// auto-play, reset) — same options, compact. The row uses tight
+    /// spacing (6pt) so the four pickers + gear + "?" fit the default
+    /// 420pt panel width. The HStack is bottom-aligned (Manh
+    /// 2026-11-20, 09:06) so the gear + "?" sit at the same height
+    /// as the picker menus, not centered against the taller label +
+    /// menu stacks.
+    private var compactTopBar: some View {
+        HStack(alignment: .bottom, spacing: 6) {
                 wpmPicker
                 focusSizePicker
                 contextSizePicker
@@ -408,10 +416,19 @@ struct CompactReadingView: View {
                 .popover(isPresented: $showingHotkeys) {
                     hotkeysPopover
                 }
-            }
-            .padding(.horizontal, 12)
-            .padding(.top, 6)
+        }
+        .padding(.horizontal, 12)
+        .padding(.top, 6)
+        .padding(.bottom, 6)
+    }
 
+    /// Compact bottom chrome: the small progress bar ("X / total" +
+    /// bar) + bottom-center X / Restart / Rewind / Play / Forward /
+    /// Maximize buttons, shown BELOW the reading area (split out of
+    /// the old compactPausedChrome, Manh 2026-11-20, 09:16 — the top
+    /// bar moved above the reading area; the progress stays below it).
+    private var compactBottomChrome: some View {
+        VStack(spacing: 6) {
             progressRow
                 .padding(.horizontal, 12)
 
@@ -493,7 +510,9 @@ struct CompactReadingView: View {
     /// top bar is ~100pt too wide for the 600pt panel. The HStack is
     /// bottom-aligned (Manh 2026-11-20, 09:06) so the gear + "?" sit
     /// at the same height as the picker menus, not centered against
-    /// the taller label + menu stacks.
+    /// the taller label + menu stacks. Shown ABOVE the reading area
+    /// (Manh 2026-11-20, 09:16); the progress bar stays BELOW the
+    /// reading area, the control row stays at the bottom.
     private var panelTopBar: some View {
         HStack(alignment: .bottom, spacing: 12) {
             wpmPicker
