@@ -424,7 +424,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (Manh 2026-11-19, 0.1.5) — bấm hiện popover với list tìm được (Popular
   20 đầu, rồi toàn bộ 249 ngôn ngữ + alias `pt` xếp A–Z theo tên tiếng Anh);
   bấm trong popover không ẩn panel (dismiss monitor coi popover là 1 phần
-  của panel).
+  của panel). List trong popover CĂN GIỮA (hàng + tiêu đề section,
+  Manh 2026-11-20 — left để hở khoảng trống bên phải trông buồn cười;
+  dấu check ở mép phải, chữ vẫn căn giữa đúng).
 - **Hàng Actions:** nút "Fast Read" ở đầu trái (`book.pages` + chữ
   "Fast Read", HStack spacing 4 — icon và chữ cách nhau 4pt, Manh
   2026-11-19, 0.1.5: spacing 0 trước đó vẫn quá dính, gấp đôi lên) +
@@ -630,10 +632,12 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   Window Read và chạy chữ ở đó; chọn "Right Panel" thì **tự chuyển tab
   sang panel phải VÀ chạy chữ ngay trong panel** (cùng engine RSVP;
   `AppDelegate.showFastRead(text:)` là điểm vào duy nhất cho mọi đường
-  mở). (Manh 2026-11-20, 11:00: bản build 286 bấm nút khi chọn Right
-  Panel chưa tự chuyển tab — phải swipe tay sang phải mới thấy chữ
-  chạy; đây là lỗi đang sửa riêng, spec là hành vi tự chuyển + chạy
-  như trên.)
+  mở). (Manh 2026-11-20, 11:00, bản build 286: bấm nút khi chọn Right
+  Panel chưa tự chuyển tab — phải swipe tay sang phải mới thấy chữ chạy.
+  Nguyên nhân: `PopupView` giữ store bằng `let` thường nên `.onChange`
+  của `panelRightRequest` chỉ chạy khi có state khác re-render body;
+  sửa bằng `.onReceive` trực tiếp trên publisher của store — tab tự
+  chuyển ngay khi bấm, không cần re-render. Đã sửa sau v0.1.7.)
 - Khi đọc trong panel: ẩn hẳn "coming soon" + quyển sách, hiện view
   đọc gọn riêng (`CompactReadingView` trong `PanelFastReadView.swift`
   — chỉ dùng chung LOGIC đọc `RSVPViewModel` + `RSVPEngine` với Window
@@ -727,6 +731,13 @@ Two rules apply to EVERY panel button:
 - **Cursor (see §10.5):** links → system pointing hand; plain buttons
   → system default arrow (+ the highlight above); text fields →
   I-beam; panel resize cursor untouched.
+- **Tooltip delay (settled, Manh 2026-11-20):** hover hints (`.help()`)
+  appear after **300 ms**, not the macOS default ~1 s. Set once at
+  launch in `AppDelegate` (`UserDefaults.standard.register(defaults:
+  ["NSInitialToolTipDelay": 300])`) — `register` keeps a hand-set
+  value, and it writes to TransPeek's own defaults domain only, so
+  other apps and the system-wide setting are untouched. No Settings
+  UI for it (fixed 300 ms); all ~80 `.help()` tooltips use it.
 
 | Button | Where | Action | Style / notes |
 |---|---|---|---|
@@ -797,13 +808,6 @@ Two rules apply to EVERY panel button:
   names may also differ between Window Read and Read lite. One name
   will be chosen and applied to UI labels + docs together. Do NOT
   rename anything until Manh approves. (Recorded 2026-11-20.)
-- **Tooltip delay (300ms):** the hover hint/tooltip (`.help()`)
-  currently appears after the macOS default ~1s. Approved to shorten
-  to 300ms (`NSInitialToolTipDelay`, app-domain only, does not affect
-  other apps) — to be implemented after v0.1.7. Not yet in the app.
-- **Language-list centering:** the language list in the searchable
-  picker is currently left-aligned; approved to center it (left leaves
-  an empty gap on the right) — to be implemented after v0.1.7.
 - **Share buttons pointing hand (open question, 2026-11-20):** Share
   buttons (`ShareRowView`) open share URLs — should they also show the
   system pointing hand like other links? Currently NOT included.

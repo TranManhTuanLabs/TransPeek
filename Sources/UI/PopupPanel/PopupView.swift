@@ -242,8 +242,22 @@ struct PopupView: View {
         }
         // A focus / rest-eyes reminder fired with destination Right
         // Panel (Manh 2026-11-20): the store holds the request; switch
-        // to the Fast Read tab and start the read.
-        .onChange(of: focusTimerStore.panelRightRequest) { _, request in
+        // to the Fast Read tab and start the read. `.onReceive` on the
+        // @Published publisher — NOT `.onChange`: this view holds the
+        // store as a plain `let` on purpose (the banner observes the
+        // store itself so the panel does not re-render every second of
+        // the timer), so `.onChange` only fires when some OTHER state
+        // re-renders the body. Pressing Fast Read with "Right Panel"
+        // while the panel was already visible set the request but
+        // nothing re-rendered, so the tab never switched and the read
+        // only started when a later swipe re-rendered the body (Manh
+        // 2026-11-20 bug report, build 286). `.onReceive` subscribes
+        // directly to the publisher, so it fires the moment the
+        // request is set, with no re-render needed. The `.onAppear`
+        // consume above stays as the path for a request set while the
+        // panel was hidden; either path consumes it once (the second
+        // call sees nil and returns).
+        .onReceive(focusTimerStore.$panelRightRequest) { request in
             consumePanelRightRequest(request)
         }
         // While a read runs in the panel, freeze auto-fit (Manh

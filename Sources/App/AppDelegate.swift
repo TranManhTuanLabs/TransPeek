@@ -34,6 +34,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var smartTranslationTaskID: UUID?
 
     func applicationDidFinishLaunching(_: Notification) {
+        // Hover tooltips (.help) appear after the macOS default ~1 s;
+        // 300 ms feels responsive without flashing on every mouse pass
+        // (Manh 2026-11-20). `register` only sets a fallback default —
+        // a value Manh set by hand for this app is still respected.
+        // App-domain only: this writes into TransPeek's own defaults,
+        // it does NOT touch the system-wide setting or other apps.
+        UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 300])
         applyLanguageOverride()
 
         // Migrate old settings to new namespaced keys (one-time)

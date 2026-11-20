@@ -147,15 +147,24 @@ struct SearchableLanguagePicker: View {
                                 languageRow((code: leading.code, nativeName: leading.label, englishName: ""))
                             }
                         }
-                        Section("Popular") {
+                        Section {
                             ForEach(popular, id: \.code) { entry in
                                 languageRow(entry)
                             }
+                        } header: {
+                            // Centered like the rows (Manh 2026-11-20):
+                            // a left header over centered rows leaves the
+                            // same lopsided gap the centering removes.
+                            Text("Popular")
+                                .frame(maxWidth: .infinity, alignment: .center)
                         }
-                        Section("All languages") {
+                        Section {
                             ForEach(others, id: \.code) { entry in
                                 languageRow(entry)
                             }
+                        } header: {
+                            Text("All languages")
+                                .frame(maxWidth: .infinity, alignment: .center)
                         }
                     }
                 }
@@ -172,21 +181,27 @@ struct SearchableLanguagePicker: View {
 
     /// One language row: native name + English name/code dimmed, checkmark
     /// on the selected one. Tapping picks the language and closes the popover.
+    /// Content is CENTERED (Manh 2026-11-20): left-aligned rows left an
+    /// empty gap on the right that looked odd in the 300pt popover.
+    /// The checkmark rides in a trailing overlay so the text stays
+    /// exactly centered whether or not it shows.
     private func languageRow(_ entry: (code: String, nativeName: String, englishName: String)) -> some View {
         Button {
             selection = entry.code
             isPresented = false
         } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(entry.nativeName)
-                    if !entry.englishName.isEmpty {
-                        Text("\(entry.englishName) · \(entry.code)")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+            VStack(alignment: .center, spacing: 0) {
+                Text(entry.nativeName)
+                    .multilineTextAlignment(.center)
+                if !entry.englishName.isEmpty {
+                    Text("\(entry.englishName) · \(entry.code)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 }
-                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .overlay(alignment: .trailing) {
                 if entry.code == selection {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.secondary)
