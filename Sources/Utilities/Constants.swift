@@ -607,10 +607,16 @@ enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
     /// The reminder shows inside panel right, no separate window.
     case rightPanel
 
+    /// Labels synced to the Fast Read names (Manh 2026-11-20, 17:28):
+    /// "FastRead Lite" / "New FastRead Window" — same words as the
+    /// "Run FastRead in:" picker, so the two pickers read as one
+    /// vocabulary. NO "(recommended)" suffix here: that nudge belongs
+    /// to Fast Read only, not to the reminder. Labels only — the
+    /// setting key, values and default are unchanged.
     var displayName: String {
         switch self {
-        case .newWindow: return "New Fast Read Window"
-        case .rightPanel: return "Right Panel"
+        case .newWindow: return "New FastRead Window"
+        case .rightPanel: return "FastRead Lite"
         }
     }
 }

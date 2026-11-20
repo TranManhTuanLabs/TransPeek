@@ -599,9 +599,12 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   cho tới khi user bấm "Start eye reminders"; khi bật thì cứ 20 phút
   nhắc 1 lần, lặp lại. Nút Start/Stop riêng, chạy độc lập với
   Pomodoro. Icon: heart (focus) + footsteps (đi bộ / nghỉ).
-- **"Run reminder in:"** — 2 lựa chọn: **"New Fast Read Window"**
-  (nhắc nghỉ mở cửa sổ Rest riêng) và **"Right Panel"** (nhắc nghỉ
-  hiện ngay trong panel phải, không mở cửa sổ riêng). Setting này
+- **"Run reminder in:"** — 2 lựa chọn: **"New FastRead Window"**
+  (nhắc nghỉ mở cửa sổ Rest riêng) và **"FastRead Lite"** (nhắc nghỉ
+  hiện ngay trong panel phải, không mở cửa sổ riêng). Nhãn đồng bộ
+  với "Run FastRead in:" (Manh 2026-11-20, 17:28 — cùng từ "FastRead
+  Lite" / "New FastRead Window", KHÔNG thêm "(recommended)" vì đó là
+  gợi ý riêng của Fast Read). Setting này
   **CHỈ áp cho reminder** — Fast Read có nút chọn RIÊNG ("Run
   FastRead in:" ở panel phải, §10.7); 2 tính năng không dùng chung
   1 setting (Manh 2026-11-20, 05:27).
@@ -728,7 +731,7 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   (420×450) và max (600×800), giữ mép trên cố định — max bị chặn
   thêm bởi khung hiển thị (visible frame, Manh 2026-11-20, 08:11)
   nên không bao giờ che Dock / menu bar khi màn hình nhỏ.
-- **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "Right Panel"):
+- **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "FastRead Lite"):
   hết khoảng Work / 20 phút mắt → panel hiện lên (nếu đang ẩn) ở tab
   phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
   20 giây) rồi về lại demo. Bấm nút Fast Read ở tab dịch (mở cửa sổ)
@@ -848,15 +851,18 @@ Two rules apply to EVERY panel button:
   names may also differ between Window Read and Read lite. One name
   will be chosen and applied to UI labels + docs together. Do NOT
   rename anything until Manh approves. (Recorded 2026-11-20.)
-- **Share buttons pointing hand (open question, 2026-11-20):** Share
-  buttons (`ShareRowView`) open share URLs — should they also show the
-  system pointing hand like other links? Currently NOT included.
-  Undecided.
-- **Reminder / notification language (open question):** the reminder
-  text, banner and system notification are English, per the UI-language
-  decision (English first, Vietnamese later, Manh 2026-11-11). Manh has
-  NOT confirmed whether he wants Vietnamese there. Do not translate
-  until he approves.
+
+### 10.10a Decided 2026-11-20 (Manh 17:28) — settled, no longer open
+
+- **Share buttons pointing hand — NO:** Share buttons (`ShareRowView`)
+  keep the default arrow cursor like other plain buttons; they do NOT
+  show the system pointing hand.
+- **Reminder / notification language — ENGLISH:** reminder text, banner
+  and system notification stay English, per the UI-language decision
+  (English first, Vietnamese later, Manh 2026-11-11). Do not translate
+  to Vietnamese.
+- **Settings/OCR options — NOT hidden:** all OCR settings stay visible;
+  nothing is hidden.
 
 ### 10.11 Focus reminder — where it shows + what happens while reading (finalized 2026-11-20)
 
@@ -881,7 +887,7 @@ window, and only when the setting says so.
 **Not reading — shows directly, per "Run reminder in:"** (§10.6; this
 picker applies ONLY to the reminder — Fast Read has its own separate
 "Run FastRead in:", §10.7):
-- "New Fast Read Window": a separate Rest window (`RestWindowController`,
+- "New FastRead Window": a separate Rest window (`RestWindowController`,
   title "TransPeek — Rest", 560×400 centered on screen, min 480×320).
   It RSVP-reads the reminder text (same engine + view model as Window
   Read, rendered by `CompactReadingView`; `RSVPView.swift` untouched),
@@ -889,7 +895,7 @@ picker applies ONLY to the reminder — Fast Read has its own separate
   rest) and closes itself at zero; "Done" closes early, Esc closes. Its
   own window with its own view model — it never touches an open Fast
   Read window. A new reminder closes any previous Rest window first.
-- "Right Panel": the panel is brought forward at the cursor, switches
+- "FastRead Lite": the panel is brought forward at the cursor, switches
   to the Fast Read tab (panel right), and RSVP-reads the reminder text
   there (`CompactReadingView`, auto-play); after the read it shows the
   rest countdown (5 min / 20 s) and then returns to the demo (see §10.7
