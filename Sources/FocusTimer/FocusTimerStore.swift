@@ -258,9 +258,9 @@ final class FocusTimerStore: ObservableObject {
             pomodoroPhase = isLongBreak ? .longBreak : .rest
             pomodoroRemainingSeconds = restMinutes * 60
         case .rest:
-            // Continuous mode (Manh 2026-11-20, 07:12): the next
-            // focus starts on its own; OFF (default) waits for a
-            // manual start, as before.
+            // Continuous mode (Manh 2026-11-20, 07:12; default ON,
+            // Manh 2026-11-20, 07:25): the next focus starts on its
+            // own; OFF waits for a manual start, as before.
             if Defaults[.focusRepeatAutomatically] {
                 startNextFocus()
             } else {

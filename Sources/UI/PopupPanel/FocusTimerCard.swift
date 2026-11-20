@@ -30,9 +30,9 @@ struct FocusTimerCard: View {
     /// has its OWN separate setting ("Run FastRead in:", panel right,
     /// Manh 2026-11-20, 05:27).
     @Default(.focusReminderDestination) private var reminderDestination
-    /// Continuous Pomodoro (Manh 2026-11-20, 07:12): when ON, the
-    /// next session starts automatically after each rest / long
-    /// break. Default OFF.
+    /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
+    /// Manh 2026-11-20, 07:25): when ON, the next session starts
+    /// automatically after each rest / long break. Default ON.
     @Default(.focusRepeatAutomatically) private var repeatAutomatically
 
     /// Work-minute picker options (Manh 2026-11-20): the standard
@@ -105,8 +105,9 @@ struct FocusTimerCard: View {
     /// Pomodoro — STANDARD logic (Manh 2026-11-20, 04:08): Work 25 /
     /// Rest 5 by default, long break 15 after 4 focus cycles.
     /// Continuous mode ("Repeat automatically", Manh 2026-11-20,
-    /// 07:12): when ON, the next session starts on its own after
-    /// each break; OFF (default) waits for a manual start.
+    /// 07:12; default ON, Manh 2026-11-20, 07:25): when ON, the next
+    /// session starts on its own after each break; OFF waits for a
+    /// manual start.
     private var pomodoroSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
@@ -205,11 +206,12 @@ struct FocusTimerCard: View {
             }
             .padding(.horizontal, 12)
 
-            // "Repeat automatically" (Manh 2026-11-20, 07:12):
-            // continuous Pomodoro — when ON, the next session starts
-            // on its own after each rest / long break, looping until
-            // the user turns it off or stops it. Default OFF: each
-            // session ends and waits for a manual start.
+            // "Repeat automatically" (Manh 2026-11-20, 07:12;
+            // default ON, Manh 2026-11-20, 07:25): continuous
+            // Pomodoro — when ON, the next session starts on its own
+            // after each rest / long break, looping until the user
+            // turns it off or stops it. OFF: each session ends and
+            // waits for a manual start.
             Toggle("Repeat automatically", isOn: $repeatAutomatically)
                 .help("When on, the next session starts automatically after each break — Work → Rest → Work …, until you turn it off or stop it")
                 .background { InteractiveMarker() }

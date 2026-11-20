@@ -801,12 +801,13 @@ extension Defaults.Keys {
     static let focusRestMinutes = Key<Int>("transpeek_focusRestMinutes", default: 5)
     static let focusLongBreakMinutes = Key<Int>("transpeek_focusLongBreakMinutes", default: 15)
     static let focusReminderDestination = Key<FocusReminderDestination>("transpeek_focusReminderDestination", default: .newWindow)
-    /// Continuous Pomodoro (Manh 2026-11-20, 07:12): when ON, the
-    /// next session starts automatically after a rest / long break
-    /// (Work → Rest → Work …, long break after 4 focus cycles),
-    /// looping until the user turns it off or stops it. Default OFF
-    /// — each session ends and waits for a manual start.
-    static let focusRepeatAutomatically = Key<Bool>("transpeek_focusRepeatAutomatically", default: false)
+    /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
+    /// Manh 2026-11-20, 07:25): when ON, the next session starts
+    /// automatically after a rest / long break (Work → Rest →
+    /// Work …, long break after 4 focus cycles), looping until the
+    /// user turns it off or stops it. OFF = each session ends and
+    /// waits for a manual start.
+    static let focusRepeatAutomatically = Key<Bool>("transpeek_focusRepeatAutomatically", default: true)
     /// Where Fast Read runs (Manh 2026-11-20, 05:27): the "Run
     /// FastRead in:" picker in panel right. Default is the window, so
     /// current behavior is preserved until the user picks otherwise.

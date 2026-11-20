@@ -486,16 +486,19 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   break 15 min after 4 cycles". Nút Start/Pause/Resume + Reset.
   Hết 1 khoảng Work → nhắc nghỉ theo "Run reminder in:"; hết Rest /
   nghỉ dài → về idle, chờ bấm Start (không tự chạy focus tiếp) —
-  TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12):
-  toggle trong thẻ, mặc định TẮT; khi BẬT thì hết Rest / nghỉ dài tự
-  chạy focus tiếp (Work → Rest → Work …, nghỉ dài 15 phút sau 4 chu
-  kỳ rồi Work lại), lặp liên tục tới khi tắt toggle hoặc bấm
-  Reset/Dừng. Chuyển phiên tự động vẫn theo luật nhắc nghỉ (đang đọc
-  thì chỉ thông báo, không cướp màn hình — xem dưới).
+  TRỪ khi bật **"Repeat automatically"** (Manh 2026-11-20, 07:12;
+  mặc định BẬT, Manh 2026-11-20, 07:25): toggle trong thẻ, mặc định
+  BẬT nên hết Rest / nghỉ dài tự chạy focus tiếp (Work → Rest →
+  Work …, nghỉ dài 15 phút sau 4 chu kỳ rồi Work lại), lặp liên tục
+  tới khi tắt toggle hoặc bấm Reset/Dừng; TẮT toggle thì hết phiên
+  chờ bấm Start như cũ. Chuyển phiên tự động vẫn theo luật nhắc nghỉ
+  (đang đọc thì chỉ thông báo, không cướp màn hình — xem dưới).
 - **Rest eyes (20-20-20)** — mục riêng trong cùng thẻ: cứ 20 phút
   nhắc nghỉ mắt 20 giây (cố định, không picker — luật 20-20-20 là
-  chính nó). Nút Start/Stop riêng, chạy độc lập với Pomodoro.
-  Icon: heart (focus) + footsteps (đi bộ / nghỉ).
+  chính nó). Mặc định TẮT (Manh 2026-11-20, 07:25): không nhắc gì
+  cho tới khi user bấm "Start eye reminders"; khi bật thì cứ 20 phút
+  nhắc 1 lần, lặp lại. Nút Start/Stop riêng, chạy độc lập với
+  Pomodoro. Icon: heart (focus) + footsteps (đi bộ / nghỉ).
 - **"Run reminder in:"** — 2 lựa chọn: **"New Fast Read Window"**
   (nhắc nghỉ mở cửa sổ Rest riêng) và **"Right Panel"** (nhắc nghỉ
   hiện ngay trong panel phải, không mở cửa sổ riêng). Setting này

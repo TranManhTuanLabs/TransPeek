@@ -27,7 +27,10 @@ final class PopupDismissMonitor {
         panel: NSPanel,
         popoverTracker: LanguagePopoverTracker? = nil,
         isPinned: @escaping @MainActor () -> Bool = { false },
-        onEscape: (@escaping @MainActor () -> Bool)? = nil,
+        // NOTE: no @escaping here — an Optional closure is already
+        // escaping; @escaping inside the Optional type is a compile
+        // error ("closure is already escaping", CI 273).
+        onEscape: (@MainActor () -> Bool)? = nil,
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.panel = panel
