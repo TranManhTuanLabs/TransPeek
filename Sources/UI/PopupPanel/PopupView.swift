@@ -908,10 +908,21 @@ struct PopupView: View {
                 }
                 .buttonStyle(.plain)
                 .help("View TransPeek on GitHub")
+                .onHover { hovering in
+                    // System pointing-hand cursor for links (Manh
+                    // 2026-11-20): NSCursor.pointingHand IS the macOS
+                    // system cursor for links, not a custom hand image.
+                    // Plain buttons do NOT get this — macOS buttons
+                    // highlight instead of changing the cursor.
+                    if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+                }
 
                 Link("GitHub", destination: Self.repoURL)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .onHover { hovering in
+                        if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
+                    }
             }
             .background { InteractiveMarker() }
         }

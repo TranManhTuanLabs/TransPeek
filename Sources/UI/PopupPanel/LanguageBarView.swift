@@ -6,7 +6,7 @@ import SwiftUI
 /// a button showing the current language, opening a floating popover
 /// with a searchable list (Popular 20 first, then all languages A-Z).
 /// The old native `Picker` showed all 249 languages as one long menu —
-/// unusable at this size. Native Popover + List + `.searchable`, no
+/// unusable at this size. Native Popover + List + an explicit search TextField, no
 /// NSComboBox, no custom dropdown.
 struct LanguageBarView: View {
     @Binding var sourceLanguage: String
