@@ -226,7 +226,12 @@ struct FocusTimerCard: View {
             // after each rest / long break, looping until the user
             // turns it off or stops it. OFF: each session ends and
             // waits for a manual start.
+            // Explicit `.switch` style (Manh 2026-11-20, build 292):
+            // the plain Toggle rendered as a checkbox (✓ tick) in the
+            // app, so the sliding-switch look is forced here instead
+            // of trusting the default style.
             Toggle("Repeat automatically", isOn: $repeatAutomatically)
+                .toggleStyle(.switch)
                 .help("When on, the next session starts automatically after each break — Work → Rest → Work …, until you turn it off or stop it")
                 .background { InteractiveMarker() }
                 .padding(.horizontal, 12)
@@ -237,7 +242,12 @@ struct FocusTimerCard: View {
             // every time the app launches, as if the user pressed
             // Start — no need to open the panel and press Start.
             // OFF waits for a manual start, as before.
+            // Same explicit `.switch` style as "Repeat automatically"
+            // above (Manh 2026-11-20, build 292): the plain Toggle
+            // rendered as a checkbox (✓ tick), so the switch look is
+            // forced here too.
             Toggle("Auto start focus (default: \(Defaults.Keys.focusAutoStart.defaultValue ? "On" : "Off"))", isOn: $autoStartFocus)
+                .toggleStyle(.switch)
                 .help("When on, the focus timer starts automatically every time the app launches — no need to open the panel and press Start")
                 .background { InteractiveMarker() }
                 .padding(.horizontal, 12)

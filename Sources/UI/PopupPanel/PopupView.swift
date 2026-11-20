@@ -502,8 +502,8 @@ struct PopupView: View {
                         // too bright and distracting) proved a touch
                         // too pale, so 0.4 (Manh 2026-11-20, 11:27 —
                         // experiment, still light, just easier to
-                        // see); 0.5 now (Manh 2026-11-20, 17:15 —
-                        // just a touch stronger). No fill, no
+                        // see); 0.6 now (Manh 2026-11-20, 17:20 —
+                        // gently up from 0.4, let's try). No fill, no
                         // text/icon color change. The small padding
                         // is just so the border doesn't touch the text.
                         .padding(.horizontal, 6)
@@ -512,7 +512,7 @@ struct PopupView: View {
                     .buttonStyle(.plain)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.blue.opacity(0.5), lineWidth: 1)
+                            .stroke(Color.blue.opacity(0.6), lineWidth: 1)
                             .allowsHitTesting(false)
                     )
                     .help("OCR Screen Translate")
@@ -688,16 +688,17 @@ struct PopupView: View {
                         // was too bright and distracting) proved a touch
                         // too pale, so 0.4 (Manh 2026-11-20, 11:27 —
                         // experiment, still light, just easier to
-                        // see); 0.5 now (Manh 2026-11-20, 17:15 —
-                        // just a touch stronger). The small padding
-                        // is just so the border doesn't touch the text.
+                        // see); 0.6 now (Manh 2026-11-20, 17:20 —
+                        // gently up from 0.4, let's try). The small
+                        // padding is just so the border doesn't touch
+                        // the text.
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                     }
                     .buttonStyle(.plain)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color(red: 0.78, green: 0.50, blue: 0.05).opacity(0.5), lineWidth: 1)
+                            .stroke(Color(red: 0.78, green: 0.50, blue: 0.05).opacity(0.6), lineWidth: 1)
                             .allowsHitTesting(false)
                     )
                     .help("Fast Read (RSVP)")
