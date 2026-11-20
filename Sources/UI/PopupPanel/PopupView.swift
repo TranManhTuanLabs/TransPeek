@@ -833,22 +833,31 @@ struct PopupView: View {
     /// reading chrome. Keeps the top edge fixed and clamps to the
     /// visible frame; marks the size as a manual resize so auto-fit
     /// does not fight it for this generation (same as a drag — see
-    /// `finishPanelResize`).
+    /// `finishPanelResize`). The maximum is the panel's own max
+    /// CLAMPED to the visible frame (Manh 2026-11-20, 08:11): when
+    /// the visible height is under 800 (Dock / menu bar), the
+    /// maximized panel is only as tall as the visible frame, so it
+    /// never covers the Dock — and the toggle still works, because
+    /// "is max" is measured against that same clamped maximum.
     private func togglePanelSize() {
         guard let panel else { return }
+        guard let screen = panel.screen ?? NSScreen.main else { return }
+        let visible = screen.visibleFrame
+        let effectiveMax = CGSize(
+            width: min(PopupPanel.maximumSize.width, visible.width),
+            height: min(PopupPanel.maximumSize.height, visible.height)
+        )
         let current = panel.frame.size
-        let isMax = current.width >= PopupPanel.maximumSize.width - 1
-            && current.height >= PopupPanel.maximumSize.height - 1
+        let isMax = current.width >= effectiveMax.width - 1
+            && current.height >= effectiveMax.height - 1
         let target: CGSize = isMax
             ? CGSize(
                 width: CGFloat(Defaults[.popupDefaultWidth]),
                 height: CGFloat(Defaults[.popupDefaultHeight])
             )
-            : PopupPanel.maximumSize
-        guard let screen = panel.screen ?? NSScreen.main else { return }
-        let visible = screen.visibleFrame
-        let width = min(max(target.width, PopupPanel.minimumSize.width), PopupPanel.maximumSize.width)
-        let height = min(max(target.height, PopupPanel.minimumSize.height), PopupPanel.maximumSize.height)
+            : effectiveMax
+        let width = min(max(target.width, PopupPanel.minimumSize.width), effectiveMax.width)
+        let height = min(max(target.height, PopupPanel.minimumSize.height), effectiveMax.height)
         let x = min(max(panel.frame.minX, visible.minX), visible.maxX - width)
         let y = min(max(panel.frame.maxY - height, visible.minY), visible.maxY - height)
         panel.manualResizeGeneration = coordinator.translationGeneration

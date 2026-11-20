@@ -589,7 +589,9 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   nút để tắt. Đọc trong panel thì auto-fit bị đóng băng
   (cùng cơ chế manual-resize) để panel cao không bị co lại; hết đọc
   thì auto-fit chạy lại. Nút Maximize đổi panel giữa cỡ mặc định
-  (420×450) và max (600×800), giữ mép trên cố định.
+  (420×450) và max (600×800), giữ mép trên cố định — max bị chặn
+  thêm bởi khung hiển thị (visible frame, Manh 2026-11-20, 08:11)
+  nên không bao giờ che Dock / menu bar khi màn hình nhỏ.
 - **Nhắc nghỉ ở panel phải** ("Run reminder in:" = "Right Panel"):
   hết khoảng Work / 20 phút mắt → panel hiện lên (nếu đang ẩn) ở tab
   phải và tự đọc câu nhắc; đọc xong hiện countdown nghỉ (5 phút /
