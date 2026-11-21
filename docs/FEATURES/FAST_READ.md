@@ -107,7 +107,12 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   can select a word in the context to translate it on the spot (the float
   icon appears on the selection), instead of only reading it. The focus
   line itself is not selectable — it is a single chunk rendered with a
-  custom ORP layout.
+  custom ORP layout. **No scroll on the context text (Manh 2026-11-21,
+  tightened 2026-11-22):** a selectable Text is backed by a scrollable
+  text view, so `.scrollDisabled(true)` sits on the Group AND on the Text
+  itself — with a large font the context overflows the half and the text
+  view scrolls unless the modifier is on it (the Group-only version still
+  scrolled at large sizes).
 - **Context display setting** ("Show context around focus word",
   SwiftRead's `contextDisplayStyle`, in Settings under Color Scheme):
   **Always** (book page even while playing) / **Only show when paused**

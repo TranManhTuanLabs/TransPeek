@@ -1359,6 +1359,13 @@ struct RSVPView: View {
                             .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
+                            // No scroll on the text itself too (Manh
+                            // 2026-11-22): with a large font the context
+                            // overflows the half and the selectable text
+                            // view scrolls, even with .scrollDisabled on
+                            // the Group — the modifier has to sit on the
+                            // scrollable text view itself.
+                            .scrollDisabled(true)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     } else {
                         Color.clear
@@ -1386,6 +1393,11 @@ struct RSVPView: View {
                             .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
                             .foregroundStyle(readingSecondary)
                             .textSelection(.enabled)
+                            // No scroll on the text itself too (Manh
+                            // 2026-11-22): same as the before-text above
+                            // — with a large font the selectable text
+                            // view scrolls unless the modifier sits on it.
+                            .scrollDisabled(true)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     } else {
                         Color.clear
