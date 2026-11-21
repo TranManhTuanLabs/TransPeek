@@ -132,7 +132,7 @@ enum HoverBlockText {
         var current: AXUIElement? = element
         for _ in 0...maxParentLevels {
             guard let el = current else { return nil }
-            let role = stringAttribute(el, kAXRoleAttribute)
+            let role = stringAttribute(el, kAXRoleAttribute as CFString)
             // A control or chrome is never a text block, and neither is
             // anything above it — stop here instead of walking up into
             // a container that might hold the whole document.
@@ -181,9 +181,12 @@ enum HoverBlockText {
     /// static text, text areas), then its title, then its description.
     /// The first non-empty one wins.
     private static func readableText(of element: AXUIElement) -> String? {
-        if let value = stringAttribute(element, kAXValueAttribute) { return value }
-        if let title = stringAttribute(element, kAXTitleAttribute) { return title }
-        if let description = stringAttribute(element, kAXDescriptionAttribute) { return description }
+        // `as CFString`: stringAttribute takes CFString, and these
+        // kAX*Attribute constants are String in Swift (same cast as
+        // the position/size/parent reads elsewhere in this file).
+        if let value = stringAttribute(element, kAXValueAttribute as CFString) { return value }
+        if let title = stringAttribute(element, kAXTitleAttribute as CFString) { return title }
+        if let description = stringAttribute(element, kAXDescriptionAttribute as CFString) { return description }
         return nil
     }
 
