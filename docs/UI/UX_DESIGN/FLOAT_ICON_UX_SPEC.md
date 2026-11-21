@@ -7,9 +7,20 @@
 
 ## 1. Shape
 
-- A **32×32** window, truly transparent, no bubble. A circle (fill
-  `controlBackgroundColor`, border `separatorColor`) with one glyph centered
-  at 14pt, weight medium.
+- A floating window, truly transparent, no bubble. A circle (fill
+  `controlBackgroundColor`, border `separatorColor`) with one glyph
+  centered inside. The glyph scales with the circle ("A" = half the
+  diameter, speaker ~44%, "+" badge a quarter), so a smaller circle
+  still shows a proportional letter.
+- **Sizes are user-adjustable (Manh 2026-11-21, default changed
+  2026-11-22):** the selection icon defaults to **24 pt** (Picker
+  18/20/22/24/26/28/30/32 — recommend 20-24pt) and the block-text
+  hover icon defaults to **24 pt** (Picker 18/20/22/24 — recommend
+  20, 22pt). The hover icon appears on every text block, so it is
+  smaller by default and stays out of the mouse's way. Both sizes are
+  read live at each show, so a Settings change applies to the next
+  icon. (Before 2026-11-22 the selection icon was a fixed 32 pt and
+  the hover icon a fixed 24 pt.)
 - The icon appears near the selected text (offset 8pt right and below the
   cursor, clamped to the visible screen frame) and fades in over 0.15s.
 
@@ -201,6 +212,10 @@ re-reads the key state directly (see below).
   changed from Slider 2026-11-20, Manh).
 - `autoHideDelaySec`: default 5 (Picker: 3–10 s — changed from Slider
   2026-11-20, Manh).
+- `floatIconSize`: default 24 (Picker: 18 / 20 / 22 / 24 / 26 / 28 / 30 /
+  32 pt — recommend 20-24pt; default was 26 before 2026-11-22, Manh).
+- `autoShowFloatIconSize`: default 24 (Picker: 18 / 20 / 22 / 24 pt —
+  recommend 20, 22pt; Manh 2026-11-21).
 
 ## References
 
