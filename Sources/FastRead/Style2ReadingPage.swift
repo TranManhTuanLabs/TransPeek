@@ -44,6 +44,14 @@ struct Style2ReadingPage: View {
                             // 80 reads as a comfortable 32pt body.
                             .font(.system(size: viewModel.fontSize * 0.4))
                             .foregroundStyle(readingForeground)
+                            // Selectable (Manh 2026-11-22): the reader
+                            // can select a word in Basic Reading to
+                            // translate it (the alternative icon appears
+                            // on the selection). Selection is a
+                            // click-drag, so it never conflicts with the
+                            // trackpad swipe (font size) — the page
+                            // stays a ScrollView and scrolls the same.
+                            .textSelection(.enabled)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             // The focused line gets a soft highlight when
                             // highlighting is on; other lines stay plain.

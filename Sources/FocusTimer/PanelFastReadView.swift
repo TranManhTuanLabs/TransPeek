@@ -465,6 +465,15 @@ struct CompactReadingView: View {
                 // while this view lives.
                 viewModel.ttsCoordinator = ttsCoordinator
             }
+            // Re-take focus whenever a read starts playing (Manh
+            // 2026-11-22): a reminder read that starts in an
+            // already-visible panel never fires onAppear again, so the
+            // SwiftUI focus stays lost from the previous read and
+            // Space never reaches the reader. Grabbing focus on play
+            // makes Space work at once for the new read.
+            .onChange(of: viewModel.isPlaying) { _, isPlaying in
+                if isPlaying { isFocused = true }
+            }
             .onKeyPress(action: handleKeyPress)
         }
     }

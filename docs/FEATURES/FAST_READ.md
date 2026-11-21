@@ -70,6 +70,11 @@ Top to bottom:
   `transpeek_rsvpHighlightCurrentLine`, default OFF): highlights the
   line the focus is on. While TTS is playing the highlight turns itself
   on (computed in the view, not stored).
+- **Text is selectable (Manh 2026-11-22):** each line has
+  `.textSelection(.enabled)`, so the reader can select a word to
+  translate it (the alternative icon appears on the selection).
+  Selection is a click-drag, so it never conflicts with the trackpad
+  swipe (font size) — the page stays a ScrollView and scrolls the same.
 - **Setting:** key `transpeek_rsvpReadingStyle`, default `.style1`
   ("RSVP Focus"). A mode preference like the color scheme, so "Reset to
   default" does NOT reset it.
@@ -247,7 +252,12 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   also opens keyed, so Space pauses at once. The translate quick-peek
   stays non-activating. **And the keys are focused-only (see §5):**
   once the user clicks into another app, Space goes to that app and
-  the panel read is untouched.** The panel auto-pins when a panel read starts
+  the panel read is untouched. **Focus is re-taken when a read starts
+  playing (Manh 2026-11-22):** a reminder read that starts in an
+  already-visible panel never fires `onAppear` again, so the SwiftUI
+  focus stays lost from the previous read and Space never reaches the
+  reader — `CompactReadingView` sets `isFocused = true` on every
+  `isPlaying` → true, so Space works at once for the new read.** The panel auto-pins when a panel read starts
   (pin button in the panel-right header toggles it off); auto-fit
   freezes while reading; Maximize toggles default (420×450) ↔ max
   (600×800).
