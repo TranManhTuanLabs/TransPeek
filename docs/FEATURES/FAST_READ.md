@@ -52,6 +52,31 @@ Top to bottom:
   time" stays at the top bar left, and the pickers move to the bottom-left.
   Try as a separate variant later.
 
+### Style 2 — Basic Reading (full-page scroll, Manh 2026-11-21)
+
+- **What it is:** a second reading style, picked in the Window Read /
+  Lite Settings popover alongside the color scheme. Style 1 is the RSVP
+  focus window (§2 above); Style 2 is a scrollable page where the focus
+  advances line by line. The two styles are independent of the Theme
+  (color scheme) — any style works with any theme. Picker shows the
+  names ("RSVP Focus" / "Basic Reading"), never "Style 1" / "Style 2".
+- **Lines:** paragraphs are split into short logical lines of at most
+  **12 words** (`RSVPViewModel.lines(for:maxWordsPerLine:)`), long
+  enough to read as a phrase, short enough that the highlight moves at
+  a readable pace. This is a logical split, not the visual wrap (which
+  depends on font size and window width); matching visual lines is a
+  later refinement.
+- **"Highlight current line" toggle** (Settings, key
+  `transpeek_rsvpHighlightCurrentLine`, default OFF): highlights the
+  line the focus is on. While TTS is playing the highlight turns itself
+  on (computed in the view, not stored).
+- **Setting:** key `transpeek_rsvpReadingStyle`, default `.style1`
+  ("RSVP Focus"). A mode preference like the color scheme, so "Reset to
+  default" does NOT reset it.
+- **Trackpad in Style 2:** horizontal swipe is a slow page flip — one
+  line per 100pt of accumulated horizontal movement (see §5); Style 1
+  keeps one step per event.
+
 ## 3. The reading view — focus line pinned at the center (SwiftRead behavior)
 
 This is the core of the design (Manh 2026-11-18, from SwiftRead):
@@ -84,6 +109,11 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   (default, as before) / **Never** (focus line only, even when paused).
   Defaults key `rsvpContextDisplayStyle`.
 - **Context:** ±150 words around the current chunk (SwiftRead).
+- **Known nit — clicking in the reading area still zooms the text
+  (Manh 2026-11-21):** clicking around the text triggers the trackpad
+  font-size gesture, so the text grows. The scroll itself is already
+  disabled (§3, `.scrollDisabled`), but do NOT deep-disable scrolling
+  to fix this — it could affect future styles. Current look approved.
 
 ## 4. Engine logic (`Sources/FastRead/RSVPEngine.swift`)
 
@@ -101,8 +131,10 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
 
 ## 5. Controls, keyboard, and trackpad
 
-- **Buttons (bottom, centered):** Rewind (←), Play/Pause (Space,
-  prominent), Fast-forward (→), Maximize (zoom).
+- **Buttons (bottom, centered, in order):** Restart (read from the
+  beginning), Speaker (TTS on/off, §10), Play/Pause (Space, prominent),
+  Rewind (←), Fast-forward (→), Maximize (zoom). Lite adds a close (X)
+  button first.
 - **Keyboard (window focused):** Space = play/pause; ←/→ = step one slide
   (Shift+←/→ = step one sentence); ↑/↓ = speed ±50 WPM (Manh 2026-11-18,
   round 7 — was ±10, matching the picker's 50-step); Esc = close.

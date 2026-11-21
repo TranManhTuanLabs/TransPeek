@@ -809,7 +809,7 @@ Two rules apply to EVERY panel button:
 
 | Button | Where | Action | Style / notes |
 |---|---|---|---|
-| Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned; icon rotated -45° (tilted left like a pinned pushpin, Manh 2026-11-20) |
+| Pin | dotsRow, left end (`.padding(.leading, 10)`), all 3 tabs | Toggle pin — pinned = outside click does NOT dismiss; auto-pins when a panel read starts | `.plain`; `pin` / `pin.fill`, accent when pinned; icon rotated -30° (tilted left like a pinned pushpin, Manh 2026-11-20; was -45°, changed 2026-11-21) |
 | chevron.left / chevron.right | dotsRow, flanking the 3 dots | Previous / next tab; disabled + dimmed (secondary 0.3) at the ends | `.plain`, `.caption` |
 | 3 dots | dotsRow, centered (8pt, spacing 8) | Tap = jump to that tab (selected = accent, others secondary 0.4) | `.plain`, Circle 8pt — **no hover tint** (indicators, not buttons) |
 | Capture OCR | Language-bar row, right | Capture screen OCR → panel with the result | `.plain`, blue border 0.5 opacity (0.25 → 0.4 → 0.6 → 0.5, Manh 2026-11-20 18:45 — back down from 0.6) |

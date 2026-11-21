@@ -18,6 +18,10 @@
   điều khiển nhanh từ submenu menubar mà không cần mở panel). Lưu ý: tray
   Windows cũng mở được submenu tương tự — khi làm Windows thì giữ cùng
   pattern.
+- **Sections (Manh 2026-11-21):** "Focus & Rest" nằm TRONG section
+  "Reading" (không phải section riêng) — bấm vào mở panel ở tab TRÁI
+  (tab Focus & Rest), vì nó thuộc về việc đọc/nghỉ. Xem
+  `Sources/UI/MenuBar/MenuItemView.swift`.
 
 ## 2. Cửa sổ Settings
 
