@@ -108,3 +108,13 @@
   tiếng Việt đơn giản, ví dụ từ chính dự án, không dạy dồn dập. Vừa làm vừa dạy dần.
 - Trả lời bằng tiếng Việt, ngắn, trực tiếp, cụ thể. Lần đầu nhắc thuật ngữ thì viết đủ,
   giữ nguyên từ kỹ thuật tiếng Anh (hash, certificate, ...), không dịch gượng.
+
+## 8. Doc mới phải được lập chỉ mục + liên kết, không để lẻ loi (Manh 21/11/2026)
+
+- **Mỗi lần tạo doc mới, cập nhật ngay trong cùng đợt:** (1) thêm doc vào
+  `docs/STRUCTURE_MAP.md` (bảng + cây docs + mục Liên kết), và vào
+  `docs/UI_DESIGN.md` nếu là doc UX; (2) thêm mục liên kết ở cuối doc mới
+  trỏ sang các doc liên quan; (3) thêm link ngược từ các doc liên quan
+  trỏ về doc mới.
+- **Không để doc lẻ loi, mất liên kết.** Trước khi gọi là xong, kiểm tra lại
+  mọi link mới đều trỏ tới file có thật trong repo.
