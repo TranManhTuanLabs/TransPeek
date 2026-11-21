@@ -988,6 +988,10 @@ struct CompactReadingView: View {
                 }
                 .frame(maxHeight: .infinity)
                 .clipped()
+                // No scroll (Manh 2026-11-21): a selectable Text is
+                // backed by a scrollable text view, so without this
+                // the context text scrolls and defeats the clip above.
+                .scrollDisabled(true)
                 // The focus line: fixed height, always at the vertical
                 // center (the two halves above/below share the rest).
                 if let slide {
@@ -1011,6 +1015,10 @@ struct CompactReadingView: View {
                 }
                 .frame(maxHeight: .infinity)
                 .clipped()
+                // No scroll (Manh 2026-11-21): same as the before-text
+                // above — the selectable Text would otherwise scroll
+                // here, right above the Play/Pause controls.
+                .scrollDisabled(true)
             }
         }
         .padding(.horizontal, 12)

@@ -75,6 +75,12 @@ struct DictionaryBarView: View {
             if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
         }
         .background { InteractiveMarker() }
+        // Hover highlight (Manh 2026-11-21): the whole button — icon +
+        // text — lights up, like every other panel button. (Manh let
+        // me choose text-only vs icon+text; the whole button is the
+        // consistent choice — the tint wraps the button, and a text-only
+        // tint would look off next to the icon.)
+        .panelHoverHighlight()
     }
 
     @ViewBuilder
