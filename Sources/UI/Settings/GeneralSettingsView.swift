@@ -179,8 +179,8 @@ struct GeneralSettingsView: View {
                     // delay pickers above. The "A" glyph scales with the
                     // circle, so a smaller circle still shows a
                     // proportional letter. Defaults in the labels.
-                    Picker("Float icon size (default: \(Defaults.Keys.floatIconSize.defaultValue)pt):", selection: $floatIconSize) {
-                        ForEach([24, 26, 28, 30, 32], id: \.self) { pt in
+                    Picker("Float icon size (default: \(Defaults.Keys.floatIconSize.defaultValue)pt — recommend 20-24pt):", selection: $floatIconSize) {
+                        ForEach([18, 20, 22, 24, 26, 28, 30, 32], id: \.self) { pt in
                             Text("\(pt) pt").tag(pt)
                         }
                     }
@@ -188,7 +188,7 @@ struct GeneralSettingsView: View {
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
-                    Picker("Auto-show float icon size (default: \(Defaults.Keys.autoShowFloatIconSize.defaultValue)pt):", selection: $autoShowFloatIconSize) {
+                    Picker("Auto-show float icon size (default: \(Defaults.Keys.autoShowFloatIconSize.defaultValue)pt — recommend 20, 22pt):", selection: $autoShowFloatIconSize) {
                         ForEach([18, 20, 22, 24], id: \.self) { pt in
                             Text("\(pt) pt").tag(pt)
                         }

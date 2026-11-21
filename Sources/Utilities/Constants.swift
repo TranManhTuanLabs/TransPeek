@@ -754,7 +754,7 @@ extension Defaults.Keys {
     // (auto-show, compact) each get their own picker; the "A" glyph
     // scales with the circle, so a smaller circle still shows a
     // proportional letter. Defaults 26pt / 24pt.
-    static let floatIconSize = Key<Int>("transpeek_floatIconSize", default: 26)
+    static let floatIconSize = Key<Int>("transpeek_floatIconSize", default: 24)
     static let autoShowFloatIconSize = Key<Int>("transpeek_autoShowFloatIconSize", default: 24)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
