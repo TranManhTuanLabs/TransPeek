@@ -108,6 +108,20 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   round 7 — was ±10, matching the picker's 50-step); Esc = close.
   (The blue focus ring is hidden with `.focusEffectDisabled()` — the view
   stays focusable so the keys work, just without the ring.)
+- **Keyboard is focused-only — never global (Manh 2026-11-22, safe
+  direction):** the keys above only work while the reading surface
+  (window or panel) is the key/focused window. When the user clicks
+  into another app (Chrome, Word, Notepad), the read surface loses
+  focus and every keystroke goes to that app — the read keeps running
+  in the background but receives no keys and never pauses/resumes.
+  This is standard macOS key-window behaviour. A global key capture
+  (polling Space system-wide, as Windows' `GlobalSpaceTracker` does)
+  is NOT used: typing a Space in another app would also toggle the
+  read, which is annoying — Manh asked Windows to switch to this same
+  safe direction. The window/panel becomes key when a read opens
+  (window: `makeKeyAndOrderFront`; panel: `showAtCursor(makeKey:
+  true)`), so Space works at once without a first click — and focus
+  returns to the other app as soon as the user clicks away.
 - **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
   scroll event** (page-turn convention, SwiftRead-style; a longer swipe
   moves more words); **Style 2 (Basic Reading, Manh 2026-11-21): the
@@ -199,7 +213,9 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   first. The same fix applies to a reminder that opens the panel
   (`onShowPanel`, Manh 2026-11-21): a reminder read in panel right
   also opens keyed, so Space pauses at once. The translate quick-peek
-  stays non-activating.** The panel auto-pins when a panel read starts
+  stays non-activating. **And the keys are focused-only (see §5):**
+  once the user clicks into another app, Space goes to that app and
+  the panel read is untouched.** The panel auto-pins when a panel read starts
   (pin button in the panel-right header toggles it off); auto-fit
   freezes while reading; Maximize toggles default (420×450) ↔ max
   (600×800).
