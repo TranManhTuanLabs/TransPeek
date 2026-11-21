@@ -1,4 +1,5 @@
 import AppKit
+import Defaults
 import os
 
 enum ScreenCaptureOCR {
@@ -82,10 +83,33 @@ enum ScreenCaptureOCR {
         return try await recognizeText(in: cgImage)
     }
 
-    /// Recognition is owned by `VisionOCRProvider`; this keeps the capture flow
-    /// (temp file, `screencapture -i`, cancellation) unchanged.
+    /// Whether to skip Vision and go straight to Tesseract: true when
+    /// Vision supports NONE of the requested languages. Without this
+    /// check Vision would silently fall back to en-US and misread the
+    /// requested language (e.g. Vietnamese as English) instead of
+    /// failing, so the fallback would never trigger. Pure logic, so it
+    /// is tested directly (no Vision calls).
+    static func shouldSkipVision(requested: [String], visionSupported: [String]) -> Bool {
+        Set(visionSupported).isDisjoint(with: requested)
+    }
+
+    /// Recognition: Vision first (primary), Tesseract as fallback
+    /// (Manh 2026-11-20). Tesseract runs when Vision can't handle the
+    /// request — either Vision supports none of the requested languages
+    /// (skip straight to Tesseract), or Vision throws (e.g. no text
+    /// found — Tesseract gets a chance before giving up). The capture
+    /// flow (temp file, `screencapture -i`, cancellation) is unchanged.
     private static func recognizeText(in image: CGImage) async throws -> String {
-        try await VisionOCRProvider().recognizeText(in: image)
+        let vision = VisionOCRProvider()
+        let requested = Defaults[.ocrLanguages]
+        if !shouldSkipVision(requested: requested, visionSupported: vision.supportedLanguages) {
+            do {
+                return try await vision.recognizeText(in: image)
+            } catch {
+                // Vision failed — try Tesseract before giving up.
+            }
+        }
+        return try await TesseractOCRProvider().recognizeText(in: image)
     }
 }
 

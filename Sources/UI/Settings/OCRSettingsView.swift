@@ -42,6 +42,20 @@ struct OCRSettingsView: View {
             } footer: {
                 Text("Vietnamese support depends on the macOS version and is checked at runtime: if the system does not support Vietnamese, Vision will only use the remaining languages.")
             }
+
+            // Tesseract fallback (Manh 2026-11-20): runs when Vision
+            // can't recognise the requested language. English and
+            // Vietnamese are built into the app; the other languages
+            // download automatically the first time they are needed.
+            Section {
+                Text(tesseractStatusText)
+                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Tesseract fallback")
+            } footer: {
+                Text("Tesseract runs only when Vision can't handle the request. Languages not listed above download automatically when needed.")
+            }
         }
         // Same grouped look as the General tab: the plain form style
         // stretches the rows across the whole window, which is what made
@@ -52,6 +66,21 @@ struct OCRSettingsView: View {
 
     private func languageName(for code: String) -> String {
         Locale.current.localizedString(forIdentifier: code) ?? code
+    }
+
+    /// Which of the 8 OCR languages Tesseract can already recognise
+    /// (bundled eng + vie, or already downloaded). The rest download
+    /// on demand the first time they are needed.
+    private var tesseractStatusText: String {
+        let ready = Self.availableLanguages.filter { code in
+            guard let tess = TesseractLanguageDataManager.tessCode(forBCP47: code) else { return false }
+            return TesseractLanguageDataManager.availableCodes().contains(tess)
+        }
+        if ready.isEmpty {
+            return String(localized: "No Tesseract language data installed yet.")
+        }
+        let names = ready.map { languageName(for: $0) }.joined(separator: ", ")
+        return String(localized: "Ready: \(names).")
     }
 
     private func binding(for code: String) -> Binding<Bool> {
