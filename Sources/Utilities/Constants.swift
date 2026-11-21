@@ -667,6 +667,27 @@ enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
     }
 }
 
+/// Fast Read reading style (Manh 2026-11-21): which way the text is
+/// presented. Style 1 is the RSVP focus window; Style 2 is the "basic
+/// reading" scrollable page. Picked in the Window Read / Lite Settings
+/// popover; persists across opens. The two are independent of the Theme
+/// (color scheme) — any style works with any theme.
+enum ReadingStyle: String, CaseIterable, Defaults.Serializable {
+    /// RSVP focus — one chunk centred, focus line fixed (the current design).
+    case style1
+    /// Basic reading — a scrollable page, focus line advances line by line.
+    case style2
+
+    /// Display names, not numbers (Manh 2026-11-21): the picker shows
+    /// these names, never "Style 1" / "Style 2".
+    var displayName: String {
+        switch self {
+        case .style1: return "RSVP Focus"
+        case .style2: return "Basic Reading"
+        }
+    }
+}
+
 /// Fast Read (RSVP) — when the context around the focus word shows
 /// (Manh 2026-11-18, from SwiftRead's `contextDisplayStyle`):
 /// picked in the window's Settings button; persists across opens.
@@ -804,6 +825,14 @@ extension Defaults.Keys {
     static let rsvpContextSizeRatio = Key<Double>("transpeek_rsvpContextSizeRatio", default: 0.40)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
     static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
+    /// Reading style (Manh 2026-11-21): Style 1 = RSVP focus (default),
+    /// Style 2 = basic reading page. A mode preference like the color
+    /// scheme, so "Reset to default" does NOT reset it.
+    static let rsvpReadingStyle = Key<ReadingStyle>("transpeek_rsvpReadingStyle", default: .style1)
+    /// Highlight the current line in Style 2 (Manh 2026-11-21): a toggle
+    /// in Settings, default OFF. While TTS is playing the highlight
+    /// turns itself on (computed in the view, not stored here).
+    static let rsvpHighlightCurrentLine = Key<Bool>("transpeek_rsvpHighlightCurrentLine", default: false)
     /// Whether text starts reading automatically when it is sent in
     /// (Manh 2026-11-20): when ON (default), every time text arrives
     /// from the select-text icon the Fast Read window starts reading
