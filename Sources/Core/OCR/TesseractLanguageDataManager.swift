@@ -5,12 +5,11 @@ import Foundation
 ///
 /// Languages download on demand from tessdata_best (most accurate) into
 /// `~/Library/Application Support/TransPeek/tessdata`. Since 2026-11-20
-/// (Manh) eng + vie are BUNDLED with the app (tessdata_fast — the small
-/// variant, ~4.5 MB total — so the app only grows ~5 MB instead of the
-/// ~27 MB tessdata_best would add), so OCR works out of the box — the
-/// provider copies a bundled file into the local dir on first use, no
-/// download. Extra languages still download on demand to the local dir
-/// (from tessdata_best, like Windows).
+/// (Manh) eng + vie are BUNDLED with the app as tessdata_best (~27 MB
+/// total, app grows from ~15 MB to ~43 MB) so OCR works out of the box
+/// with the best accuracy — the provider copies a bundled file into the
+/// local dir on first use, no download. Extra languages still download
+/// on demand to the local dir (from tessdata_best, like Windows).
 ///
 /// The manager is generic: every operation takes a Tesseract language
 /// code (`eng`, `vie`, `chi_sim`, ...), so the full 8-language OCR list
@@ -33,8 +32,29 @@ enum TesseractLanguageDataManager {
     /// here directly — a bundled file is copied into
     /// `tessdataDirectory` on first use (see `ensureLanguageAvailable`),
     /// so the engine always has one directory to read from.
+    /// In a test run `Bundle.main` is the test host/runner, not the
+    /// bundle holding the resources — the test target's tessdata lands
+    /// in the test bundle instead. So check `Bundle.main` first, then
+    /// every other loaded bundle, and return the first directory that
+    /// actually holds `.traineddata` files: a `tessdata` subfolder, or
+    /// the bundle's Resources root (the files may be copied flat
+    /// instead of keeping the subfolder).
     static var bundledTessdataDirectory: URL? {
-        Bundle.main.resourceURL?.appendingPathComponent("tessdata")
+        let fileManager = FileManager.default
+        let bundles = [Bundle.main] + Bundle.allBundles.filter { $0 != Bundle.main }
+        for bundle in bundles {
+            guard let resources = bundle.resourceURL else { continue }
+            // Preferred: a "tessdata" subfolder.
+            let tessdata = resources.appendingPathComponent("tessdata")
+            if fileManager.fileExists(atPath: tessdata.path) {
+                return tessdata
+            }
+            // Fallback: files copied flat into the Resources root.
+            if fileManager.fileExists(atPath: resources.appendingPathComponent("eng.traineddata").path) {
+                return resources
+            }
+        }
+        return nil
     }
 
     /// Language codes bundled with the app (tessdata in the bundle).
