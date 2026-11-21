@@ -102,10 +102,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             self.performFastRead(text: text)
         }
-        // The panel-right "Read in FastRead Window" button (Manh
+        // The panel-right "FastRead Full Window" button (Manh
         // 2026-11-22): an explicit window read — it always opens the
         // Window Read, whatever "Run FastRead in:" says (the sibling of
-        // the "Read in panel" button, which always reads in the panel).
+        // the "FastRead Lite" button, which always reads in the panel).
         // Hide the translate panel first so it does not cover the
         // screen while reading, and stop any panel read (same text
         // read two ways — the window replaces the panel one).

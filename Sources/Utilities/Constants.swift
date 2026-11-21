@@ -602,10 +602,13 @@ enum SwapLanguagesShortcut {
 /// FastRead in:" picker in panel right, Manh 2026-11-20, 05:27: the
 /// two features must not share one setting).
 enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
+    /// The reminder shows inside panel right, no separate window.
+    /// Case order = picker order (Manh 2026-11-22): "FastRead Lite"
+    /// first, "FastRead Full Window" second — Lite on top, matching
+    /// the "Run FastRead in:" picker in panel right.
+    case rightPanel
     /// The reminder opens a separate Rest window (the original design).
     case newWindow
-    /// The reminder shows inside panel right, no separate window.
-    case rightPanel
 
     /// Labels synced to the Fast Read names (Manh 2026-11-20, 17:28):
     /// "FastRead Lite" / "FastRead Full Window" — same words as the

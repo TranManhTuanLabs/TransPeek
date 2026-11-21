@@ -44,10 +44,10 @@ struct PopupView: View {
     /// opens the RSVP reading window with the text being translated
     /// (Manh 2026-11-17).
     var onFastRead: ((String) -> Void)?
-    /// Called when the "Read in FastRead Window" button in panel right
+    /// Called when the "FastRead Full Window" button in panel right
     /// is clicked (Manh 2026-11-22): opens the Window Read with the
     /// text being translated, whatever "Run FastRead in:" says — the
-    /// explicit window action, sibling of the "Read in panel" button.
+    /// explicit window action, sibling of the "FastRead Lite" button.
     var onReadInWindow: ((String) -> Void)?
     /// Called when the visible tab changes (Manh 2026-11-21): the
     /// controller stores the tab so the alternative icon's selection
@@ -903,9 +903,10 @@ struct PopupView: View {
     /// Panel Fast Read (right tab): in-panel reading + focus demo
     /// (Manh 2026-11-20, focus timer + panel decor). The placeholder
     /// is gone as the idle state — `PanelFastReadView` shows the demo
-    /// ("reading", yellow "a", half-bars) and a "Read in panel"
-    /// button, and swaps in the reading view (same RSVP engine / view
-    /// model / view as the Fast Read window) when a read starts.
+    /// ("reading", yellow "a", half-bars) and a "Read in:" section
+    /// ("FastRead Lite" / "FastRead Full Window"), and swaps in the
+    /// reading view (same RSVP engine / view model / view as the Fast
+    /// Read window) when a read starts.
     /// The panel stays at its minimum height on this tab when idle;
     /// while reading, auto-fit is frozen (see the
     /// `panelReadingViewModel` onChange below) so the reading view

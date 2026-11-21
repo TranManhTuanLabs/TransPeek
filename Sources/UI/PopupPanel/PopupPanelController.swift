@@ -18,7 +18,7 @@ final class PopupPanelController {
     /// AppDelegate): opens the RSVP reading window with the text being
     /// translated (Manh 2026-11-17).
     var onFastRead: ((String) -> Void)?
-    /// Called when the "Read in FastRead Window" button in panel right
+    /// Called when the "FastRead Full Window" button in panel right
     /// is clicked (set by AppDelegate, Manh 2026-11-22): opens the
     /// Window Read with the text being translated, whatever "Run
     /// FastRead in:" says.
@@ -276,7 +276,7 @@ final class PopupPanelController {
                     self?.onFastRead?(text)
                 },
                 // Same call-time forwarding for the explicit window read
-                // (Manh 2026-11-22): the "Read in FastRead Window"
+                // (Manh 2026-11-22): the "FastRead Full Window"
                 // button in panel right.
                 onReadInWindow: { [weak self] text in
                     self?.onReadInWindow?(text)

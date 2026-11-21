@@ -407,7 +407,7 @@ final class FocusTimerStore: ObservableObject {
 
     /// Start reading `text` in panel right (called by `PopupView`
     /// when it consumes a `panelRightRequest`, and by the panel-right
-    /// "Read in panel" button). Starts playing at once — a reminder
+    /// "FastRead Lite" button). Starts playing at once — a reminder
     /// must read itself, and a manual panel read is started by an
     /// explicit tap, so there is nothing to wait for. When the read
     /// finishes, the panel shows `countdownSeconds` (if any) and then

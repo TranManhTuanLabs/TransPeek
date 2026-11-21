@@ -307,9 +307,11 @@ struct FocusTimerCard: View {
     // MARK: - Reminder destination
 
     /// "Run reminder in:" (Manh 2026-11-20, 04:44) — where a focus /
-    /// rest-eyes reminder shows. Applies ONLY to the reminder: "New
-    /// Fast Read Window" opens a separate Rest window; "Right Panel"
-    /// shows the reminder inside panel right, no separate window.
+    /// rest-eyes reminder shows. Applies ONLY to the reminder:
+    /// "FastRead Lite" shows the reminder inside panel right, no
+    /// separate window; "FastRead Full Window" opens a separate Rest
+    /// window. Order (Manh 2026-11-22): Lite on top, window below —
+    /// same order as "Run FastRead in:" in panel right.
     /// Radio buttons (Manh 2026-11-20, 19:00): the same dot-selection
     /// look as "Run FastRead in:" in panel right — the menu picker
     /// (dropdown) hid the two destinations behind a click.

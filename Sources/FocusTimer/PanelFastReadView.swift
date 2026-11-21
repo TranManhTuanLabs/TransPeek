@@ -9,10 +9,10 @@ import SwiftUI
 /// Two states:
 /// - Idle: the "Fast Read Lite" placeholder, the focus demo
 ///   ("reading" — the "a" in yellow, half-bars above and below), a
-///   "Read in panel" button and a "Read in FastRead Window" button
-///   (Manh 2026-11-22) for the text in the translate tab, and the
-///   "Run FastRead in:" radio buttons (Manh 2026-11-20, 05:27;
-///   radio since 07:02).
+///   "Read in:" section with "FastRead Lite" and "FastRead Full
+///   Window" buttons (Manh 2026-11-22) for the text in the translate
+///   tab, and the "Run FastRead in:" radio buttons (Manh 2026-11-20,
+///   05:27; radio since 07:02).
 /// - Reading: `CompactReadingView` below — the panel's OWN lite reading
 ///   view (Manh 2026-11-20, 05:36: the Window Fast Read file
 ///   `RSVPView.swift` stays untouched). It shares ONLY the reading
@@ -29,10 +29,10 @@ struct PanelFastReadView: View {
     var sourceText: String
     /// Called when a panel read starts (the host pins the panel).
     var onStartReading: (() -> Void)?
-    /// Called by the "Read in FastRead Window" button (Manh 2026-11-22):
+    /// Called by the "FastRead Full Window" button (Manh 2026-11-22):
     /// the host opens the Window Read with this text, whatever "Run
     /// FastRead in:" says — the explicit window action, sibling of the
-    /// "Read in panel" button (which always reads in the panel).
+    /// "FastRead Lite" button (which always reads in the panel).
     var onReadInWindow: ((String) -> Void)?
     /// Called by the Maximize button in the reading chrome (the host
     /// toggles the panel between its default and maximum size).
@@ -178,8 +178,8 @@ struct PanelFastReadView: View {
 
     // MARK: - Demo (idle)
 
-    /// Placeholder + focus demo + "Read in panel" / "Read in FastRead
-    /// Window" + "Run FastRead in:" picker (Manh 2026-11-20). The header is "Fast Read Lite" (Manh
+    /// Placeholder + focus demo + "Read in:" buttons + "Run FastRead
+    /// in:" picker (Manh 2026-11-20). The header is "Fast Read Lite" (Manh
     /// 2026-11-20, 11:35 — the in-panel reading works, so "coming soon"
     /// is no longer true; "Lite" names the in-panel version, distinct
     /// from the full Window Read). The subtitle no longer claims the
@@ -206,7 +206,10 @@ struct PanelFastReadView: View {
                 // in:" below — "Read in:" is the immediate action (read
                 // THIS text now, here or in a window), "Run FastRead
                 // in:" is the default for future launches. Both buttons
-                // ignore the setting.
+                // ignore the setting. The buttons carry only the
+                // destination name ("FastRead Lite" / "FastRead Full
+                // Window") — the "Read in" is already in the title
+                // above, so repeating it on the buttons is redundant.
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Read in:")
                         .font(.callout)
@@ -216,7 +219,7 @@ struct PanelFastReadView: View {
                             store.startPanelReading(text: sourceText)
                             onStartReading?()
                         } label: {
-                            Label("Read in panel", systemImage: "book.pages")
+                            Label("FastRead Lite", systemImage: "book.pages")
                         }
                         .buttonStyle(.bordered)
                         .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -227,7 +230,7 @@ struct PanelFastReadView: View {
                         Button {
                             onReadInWindow?(sourceText)
                         } label: {
-                            Label("Read in FastRead Window", systemImage: "macwindow")
+                            Label("FastRead Full Window", systemImage: "macwindow")
                         }
                         .buttonStyle(.bordered)
                         .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -279,10 +282,10 @@ struct PanelFastReadView: View {
     /// here, in panel right, no separate window. A one-line hint under
     /// the toggles points at the window (Manh 2026-11-20, 11:41).
     /// Separate from the reminder's "Run reminder in:" — the two
-    /// features must not share a setting. The "Read in panel" button
+    /// features must not share a setting. The "FastRead Lite" button
     /// above always reads here, whatever this says — it is the
-    /// explicit panel action, not a launch. Its sibling, "Read in
-    /// FastRead Window" (Manh 2026-11-22), always opens the Window
+    /// explicit panel action, not a launch. Its sibling, "FastRead
+    /// Full Window" (Manh 2026-11-22), always opens the Window
     /// Read the same way.
     private var runLocationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
