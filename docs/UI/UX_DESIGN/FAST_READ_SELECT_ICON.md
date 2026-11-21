@@ -65,3 +65,10 @@ off while the panel or the icon is visible.
 - No Read action from a Fast Read selection.
 - No icon in the translate input or Settings.
 - TTS word-sync is a separate, later Style 2 follow-up, not part of this.
+
+## Related docs
+
+- [Float Icon (feature)](../../FEATURES/FLOAT_ICON.md) — the real float icon this fake icon delegates to.
+- [Float Icon UX spec](FLOAT_ICON_UX_SPEC.md) — glyphs, hover = translate, click = listen.
+- [Fast Read — Theme & Reading Style](FAST_READ_THEME_STYLE.md) — Style 1 / Style 2, Theme = colours only.
+- [Fast Read (feature)](../../FEATURES/FAST_READ.md) — the Fast Read surfaces this icon lives in.

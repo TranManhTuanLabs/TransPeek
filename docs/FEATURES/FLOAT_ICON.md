@@ -49,5 +49,6 @@
 ## Liên kết
 
 - [Icon float UX](../UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md)
+- [Fast Read: icon giả khi bôi đen trong Read](../UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
 - [Speech Player](SPEECH_PLAYER.md)
 - [Tổng quan UX](../UI/UX_DESIGN/APP_UX_OVERVIEW.md)
