@@ -134,17 +134,11 @@ struct MenuItemView: View {
         }
         .globalKeyboardShortcut(.fastRead)
 
-        Divider()
-
-        // Open the panel on the LEFT tab (Manh 2026-11-20, 19:22):
-        // the left tab holds the "Focus & Rest" card, so this item
-        // leads there. A lone item on purpose — no "Focus" headline:
-        // one item does not need its own section, and it is not a
-        // Reading action (the left tab is the panel's home tab, not a
-        // read), so it does not belong under "Reading". It sits next
-        // to Fast Read, the other panel destination (right tab).
-        // `cancelSmartTranslation` first (same as the other panel
-        // openers): an in-flight smart translation would reset the
+        // "Focus & Rest" (Manh 2026-11-21): moved into the Reading
+        // section — it opens the panel on the LEFT tab (the "Focus &
+        // Rest" card), the other panel destination next to Fast Read
+        // (right tab). `cancelSmartTranslation` first (same as the other
+        // panel openers): an in-flight smart translation would reset the
         // tab to center when its source text arrives.
         Button {
             guard let panelController = appDelegate.panelController else { return }

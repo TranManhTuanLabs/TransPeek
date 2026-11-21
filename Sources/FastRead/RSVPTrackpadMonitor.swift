@@ -62,6 +62,18 @@ final class RSVPTrackpadMonitor: ObservableObject {
     /// Accumulated vertical delta for the current gesture (points).
     /// Horizontal needs no accumulator — it steps once per event.
     private var accumulatedY: CGFloat = 0
+    /// Accumulated horizontal delta for a Style 2 gesture (points) —
+    /// Style 2 steps once per threshold (see below), not once per event.
+    private var accumulatedX: CGFloat = 0
+    /// Style 2 (Basic Reading, Manh 2026-11-21): the horizontal swipe
+    /// is a slow page flip, not the fast one-step-per-event of Style 1.
+    /// Set by the window controller from the view model's reading style;
+    /// Style 1 keeps the fast behavior and is unaffected.
+    var isStyle2: Bool = false
+    /// Style 2 page-flip threshold (points): one line per 100pt of
+    /// horizontal swipe, so a swipe has to travel to turn the page —
+    /// a slow flip, not a flick through many lines.
+    static let style2StepThreshold: CGFloat = 100
     /// The local monitor token (nil when not installed).
     private var monitor: Any?
 
@@ -89,6 +101,7 @@ final class RSVPTrackpadMonitor: ObservableObject {
         }
         window = nil
         accumulatedY = 0
+        accumulatedX = 0
     }
 
     deinit {
@@ -113,6 +126,7 @@ final class RSVPTrackpadMonitor: ObservableObject {
         switch event.phase {
         case .began:
             accumulatedY = 0
+            accumulatedX = 0
         case .changed:
             // Only a dominant axis counts; a diagonal swipe passes
             // through untouched.
@@ -120,10 +134,23 @@ final class RSVPTrackpadMonitor: ObservableObject {
             let verticalDominant = abs(deltaY) > abs(deltaX) * 1.5
             guard horizontalDominant || verticalDominant else { return event }
             if horizontalDominant {
-                // SwiftRead-style: one slide per scroll event, so the
-                // word keeps up with the fingers as long as they move.
-                // Page-turn convention: fingers left (positive deltaX)
-                // = next slide; fingers right = previous.
+                // Style 2 (Manh 2026-11-21): a slow page flip — accumulate
+                // and step once per 100pt, so a swipe travels to turn the
+                // page instead of flicking through many lines. The
+                // remainder carries over to the next event, like vertical.
+                if isStyle2 {
+                    accumulatedX += deltaX
+                    if abs(accumulatedX) >= Self.style2StepThreshold {
+                        let forward = accumulatedX > 0
+                        accumulatedX -= Self.style2StepThreshold * (forward ? 1 : -1)
+                        actionPublisher.send(forward ? .stepForward : .stepBack)
+                    }
+                    return nil
+                }
+                // Style 1 (SwiftRead-style): one slide per scroll event,
+                // so the word keeps up with the fingers as long as they
+                // move. Page-turn convention: fingers left (positive
+                // deltaX) = next slide; fingers right = previous.
                 actionPublisher.send(deltaX > 0 ? .stepForward : .stepBack)
                 return nil
             }
@@ -144,6 +171,7 @@ final class RSVPTrackpadMonitor: ObservableObject {
             return nil
         case .ended, .cancelled:
             accumulatedY = 0
+            accumulatedX = 0
         default:
             break
         }

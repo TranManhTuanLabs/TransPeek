@@ -110,7 +110,12 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   stays focusable so the keys work, just without the ring.)
 - **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
   scroll event** (page-turn convention, SwiftRead-style; a longer swipe
-  moves more words); vertical swipe = **font ±16pt** per 50pt of accumulated
+  moves more words); **Style 2 (Basic Reading, Manh 2026-11-21): the
+  horizontal swipe is a slow page flip — one line per 100pt of
+  accumulated horizontal movement, so a swipe has to travel to turn the
+  page. Style 1 keeps the fast one-step-per-event and is unaffected; the
+  monitor follows the view model's reading style live.** Vertical swipe
+  = **font ±16pt** per 50pt of accumulated
   vertical movement (Manh 2026-11-19, 0.1.5 — was ±8pt, which still felt
   too slow; 8pt was the 2026-11-18 round-7 value, ±2pt before that);
   remainder carries;
@@ -187,9 +192,14 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   font size (±16pt / 50pt, vertical-only monitor so horizontal swipes
   still switch panels); Space / ←/→ / ↑/↓ work (Shift+←/→ = sentence);
   Esc is ignored by the reading view so the panel's Esc-to-dismiss
-  still works. The panel auto-pins when a panel read starts (pin
-  button in the panel-right header toggles it off); auto-fit freezes
-  while reading; Maximize toggles default (420×450) ↔ max (600×800).
+  still works. **Space works at once when the Lite opens from the float
+  icon (Manh 2026-11-21): the panel opens keyed for a Fast Read
+  (`showAtCursor(makeKey: true)`) — a non-activating open would not
+  route keystrokes to the reader until the user clicked into the panel
+  first. The translate quick-peek stays non-activating.** The panel
+  auto-pins when a panel read starts (pin button in the panel-right
+  header toggles it off); auto-fit freezes while reading; Maximize
+  toggles default (420×450) ↔ max (600×800).
 - **Rest window** (`Sources/FocusTimer/RestWindowController.swift`,
   "TransPeek — Rest", 560×400, min 480×320): opens when a work /
   eye-rest interval ends and "Run reminder in:" is "New Fast Read
@@ -207,7 +217,8 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   Fast Read launch (panel button, float icon, menubar, shortcut).
   A reminder to panel right opens the panel on the Fast Read tab and
   starts reading; after the read, the panel shows the rest countdown
-  and returns to the demo. If a reminder fires while reading (window
+  and returns to the demo. **The countdown screen's Done button has a
+  blue border (Manh 2026-11-21) so it is easy to see and tap.** If a reminder fires while reading (window
   or panel), it does NOT interrupt — it waits as a banner + system
   notification ("Take a break" / "Snooze 5 min", orange dot on the
   Focus-Rest card) and shows when the read stops (Manh 2026-11-20,

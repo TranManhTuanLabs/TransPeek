@@ -23,6 +23,10 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
     /// size. Created with the window, stopped when it closes.
     private var trackpadMonitor: RSVPTrackpadMonitor?
     private var trackpadCancellable: AnyCancellable?
+    /// Keeps the trackpad monitor's Style 2 flag in sync with the view
+    /// model's reading style (Manh 2026-11-21): the style can change
+    /// while the window is open, so the monitor must follow it.
+    private var styleCancellable: AnyCancellable?
     /// The shared TTS coordinator (Manh 2026-11-21): set by AppDelegate
     /// so the Window Read speaker button can read the text aloud. The
     /// window reads it from the environment, so it is injected when the
@@ -127,6 +131,14 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
             case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
+        }
+        // Style 2 slow page-flip swipe (Manh 2026-11-21): the monitor
+        // only throttles the horizontal swipe when the reader is in
+        // Style 2 — Style 1 keeps the fast one-step-per-event. The
+        // style can change while the window is open, so follow it.
+        monitor.isStyle2 = viewModel.readingStyle == .style2
+        styleCancellable = viewModel.$readingStyle.sink { [weak monitor] style in
+            monitor?.isStyle2 = style == .style2
         }
         monitor.start(window: window)
 

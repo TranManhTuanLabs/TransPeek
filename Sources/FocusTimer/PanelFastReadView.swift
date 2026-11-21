@@ -157,6 +157,10 @@ struct PanelFastReadView: View {
                 store.stopPanelReading()
             }
             .buttonStyle(.borderedProminent)
+            // Blue border (Manh 2026-11-21): the Done button on the cafe
+            // waiting screen was hard to spot — a blue outline makes its
+            // edge crisp so it is easy to see and tap.
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 2))
             .padding(.top, 4)
             .help("End the rest early")
             .background { InteractiveMarker() }

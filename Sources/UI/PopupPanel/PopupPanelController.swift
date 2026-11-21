@@ -63,13 +63,23 @@ final class PopupPanelController {
         resizeTask?.cancel()
     }
 
-    func showAtCursor() {
+    /// `makeKey` (Manh 2026-11-21): when the panel opens for Fast Read
+    /// (Lite), make it the key window so Space play/pause works at once
+    /// — `showAtCursor` is non-activating by default, so a panel opened
+    /// from the float icon would not receive keystrokes until the user
+    /// clicked into it. The translate quick-peek keeps the default
+    /// (non-activating, no focus steal).
+    func showAtCursor(makeKey: Bool = false) {
         let initialSize = setupPanel()
         guard let panel else { return }
 
         // Coordinator auto-unpins on non-nil globalError via didSet, so checking isPinned alone is safe.
         if coordinator.isPinned, panel.isVisible {
             panel.orderFront(nil)
+            if makeKey {
+                NSApp.activate(ignoringOtherApps: true)
+                panel.makeKeyAndOrderFront(nil)
+            }
             startDismissMonitor()
             return
         }
@@ -94,6 +104,13 @@ final class PopupPanelController {
         // The panel will accept key events (and ⌘1...⌘9 copy shortcuts) once the user clicks
         // into it, since PopupPanel.canBecomeKey is true.
         panel.orderFront(nil)
+        // Fast Read (Lite) opens keyed (see the makeKey note above):
+        // without this, Space play/pause would not reach the reader
+        // until the user clicked into the panel first.
+        if makeKey {
+            NSApp.activate(ignoringOtherApps: true)
+            panel.makeKeyAndOrderFront(nil)
+        }
         scheduleResultResize()
 
         startDismissMonitor()

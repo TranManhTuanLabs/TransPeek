@@ -485,7 +485,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // `= nil` broke the reminder call site, CI #298).
                 kind: nil
             )
-            panelController.showAtCursor()
+            // Open keyed (Manh 2026-11-21): the Lite reader needs
+            // keyboard input at once (Space play/pause) — a
+            // non-activating open would not route keystrokes to it
+            // until the user clicked into the panel first.
+            panelController.showAtCursor(makeKey: true)
         }
     }
 
