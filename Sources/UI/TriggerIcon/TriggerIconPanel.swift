@@ -3,6 +3,12 @@ import AppKit
 /// A tiny floating panel that hosts the trigger icon near the cursor.
 final class TriggerIconPanel: NSPanel {
     static let size: CGFloat = 32
+    /// Compact size for the block-text hover icon (Manh 2026-11-21):
+    /// the hover icon appears often (every text block), so it is smaller
+    /// than the selection icon — less in the way of the mouse and the
+    /// text, still easy to see and click. The glyphs (15pt "A", 14pt
+    /// speaker) still fit inside.
+    static let compactSize: CGFloat = 24
 
     init() {
         let rect = NSRect(x: 0, y: 0, width: Self.size, height: Self.size)

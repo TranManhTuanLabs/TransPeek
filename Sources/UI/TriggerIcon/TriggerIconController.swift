@@ -333,15 +333,22 @@ final class TriggerIconController: NSObject {
 
     /// Show the trigger icon near the given screen point.
     /// If already visible, silently replace without triggering suppress.
-    func show(text: String, near point: CGPoint) {
+    /// `compact` (Manh 2026-11-21): the block-text hover icon is smaller
+    /// than the selection icon — it appears often (every text block), so
+    /// a compact icon stays out of the mouse's way. The selection icon
+    /// keeps the full size.
+    func show(text: String, near point: CGPoint, compact: Bool = false) {
         // Silently close any existing icon (no dismiss callback)
         dismissSilently()
 
         currentText = text
         isSpeaking = false
 
+        // The panel size: compact for the hover icon, full for selection.
+        let size = compact ? TriggerIconPanel.compactSize : TriggerIconPanel.size
+
         let panel = TriggerIconPanel()
-        let trackingView = TriggerTrackingView(frame: NSRect(x: 0, y: 0, width: TriggerIconPanel.size, height: TriggerIconPanel.size))
+        let trackingView = TriggerTrackingView(frame: NSRect(x: 0, y: 0, width: size, height: size))
         trackingView.clickAction = Defaults[.triggerClickAction]
 
         // The icon is always hover (Manh 2026-11-20): the old upstream
@@ -372,7 +379,6 @@ final class TriggerIconController: NSObject {
 
         // Position: offset to the right and below the cursor
         let offset: CGFloat = 8
-        let size = TriggerIconPanel.size
         var x = point.x + offset
         var y = point.y - offset - size
 

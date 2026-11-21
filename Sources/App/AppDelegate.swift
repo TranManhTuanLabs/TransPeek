@@ -761,7 +761,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         hoverTextDetector.onBlockHovered = { [weak self] text, point in
             guard let self else { return }
-            self.triggerIconController.show(text: text, near: point)
+            // Compact icon for hover (Manh 2026-11-21): the hover icon
+            // appears on every text block, so it is smaller than the
+            // selection icon — less in the way of the mouse.
+            self.triggerIconController.show(text: text, near: point, compact: true)
         }
 
         // The hovered block scrolled away or vanished — dismiss the

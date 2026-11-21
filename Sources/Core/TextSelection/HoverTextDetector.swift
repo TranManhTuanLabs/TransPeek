@@ -235,10 +235,13 @@ final class HoverTextDetector {
     /// panel is already up, so a hover never yanks another flow's icon).
     var shouldDetect: (() -> Bool)?
 
-    /// Debounce between the last mouse move and the hit-test (ms). Long
-    /// enough that sweeping the mouse across text does not flicker the
-    /// icon or burn CPU; short enough that the icon feels instant.
-    static let debounceMs = 150
+    /// Debounce between the last mouse move and the hit-test (ms) — from
+    /// Settings (Manh 2026-11-21, `hoverBlockDelayMs`): how long the
+    /// mouse must stay still over a text block before the icon appears.
+    /// Long enough that sweeping the mouse across text does not flicker
+    /// the icon or burn CPU; short enough that a deliberate pause feels
+    /// instant. Default 400 ms.
+    static var debounceMs: Int { Defaults[.hoverBlockDelayMs] }
     /// How often the hovered block's frame is re-read while the icon is
     /// up (seconds).
     static let followIntervalSec = 0.3
@@ -339,7 +342,7 @@ final class HoverTextDetector {
         guard !Defaults[.excludedAppBundleIDs].contains(frontApp.bundleIdentifier ?? "") else { return }
 
         lastMousePoint = point
-        // Debounce: only the last position in a 150 ms window is
+        // Debounce: only the last position in the debounce window is
         // hit-tested, so sweeping the mouse costs one AX call, not one
         // per mouse-move event.
         debounceTask?.cancel()
@@ -353,7 +356,7 @@ final class HoverTextDetector {
 
     private func hitTest(at point: CGPoint) {
         // Second drag guard (the first is at event time): a drag can
-        // start during the 150 ms debounce, before the mouse-down
+        // start during the debounce, before the mouse-down
         // handler cancels the pending task — never hit-test mid-drag.
         guard NSEvent.pressedMouseButtons == 0 else { return }
 
@@ -368,7 +371,7 @@ final class HoverTextDetector {
         // No delivery while the icon or the panel is already up — a
         // hover must never yank another flow's icon. Checked here (not
         // only at event time) because the icon/panel state can change
-        // during the 150 ms debounce.
+        // during the debounce.
         guard shouldDetect?() != false else { return }
 
         guard let hit = HoverBlockText.element(at: axPoint),

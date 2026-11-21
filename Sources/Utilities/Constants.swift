@@ -743,6 +743,12 @@ extension Defaults.Keys {
     // icon when hovering a block of text, without selecting it first.
     // Default ON — the hover icon auto-appears by default.
     static let isHoverBlockDetectionEnabled = Key<Bool>("transpeek_isHoverBlockDetectionEnabled", default: true)
+    // Hover delay for block-text detection (Manh 2026-11-21): how long
+    // the mouse must stay still over a text block before the icon
+    // appears. Longer = the icon only shows on a deliberate pause, not
+    // while sweeping the mouse across text. Tunable in Settings, next to
+    // the block-text toggle. Default 400 ms.
+    static let hoverBlockDelayMs = Key<Int>("transpeek_hoverBlockDelayMs", default: 400)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
 

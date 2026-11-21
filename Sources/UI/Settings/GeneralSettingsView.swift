@@ -8,6 +8,7 @@ import UniformTypeIdentifiers
 struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
     @Default(.isHoverBlockDetectionEnabled) private var isHoverBlockDetectionEnabled
+    @Default(.hoverBlockDelayMs) private var hoverBlockDelayMs
     @Default(.textDetectionMode) private var textDetectionMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
@@ -148,6 +149,22 @@ struct GeneralSettingsView: View {
                     // the detector only runs while auto-detect is on.
                     Toggle("Show icon when hovering text (default: on)", isOn: $isHoverBlockDetectionEnabled)
                     Text("Hovering a block of text shows the icon without selecting it first. Only apps that expose their text work; other apps are unaffected.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
+
+                    // Picker, not Slider (Manh 2026-11-21): same style as
+                    // "Hover delay" above — a dropdown of preset values.
+                    // This is how long the mouse must stay still over a
+                    // text block before the icon appears; longer only
+                    // shows it on a deliberate pause, not while sweeping
+                    // the mouse across text. Default in the label, same
+                    // reason as above.
+                    Picker("Hover text delay (default: \(Defaults.Keys.hoverBlockDelayMs.defaultValue)ms):", selection: $hoverBlockDelayMs) {
+                        ForEach([200, 300, 400, 500, 700], id: \.self) { ms in
+                            Text("\(ms) ms").tag(ms)
+                        }
+                    }
+                    Text("How long the mouse must stay still over a text block before the icon appears.")
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 
