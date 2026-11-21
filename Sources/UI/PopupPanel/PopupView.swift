@@ -1085,6 +1085,9 @@ struct PopupView: View {
                     // highlight instead of changing the cursor.
                     if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
                 }
+                // Hover highlight (Manh 2026-11-21): the GitHub cat
+                // (Octocat) lights up like the other panel buttons.
+                .panelHoverHighlight()
 
                 Link("GitHub", destination: Self.repoURL)
                     .font(.caption)
@@ -1092,6 +1095,9 @@ struct PopupView: View {
                     .onHover { hovering in
                         if hovering { NSCursor.pointingHand.set() } else { NSCursor.arrow.set() }
                     }
+                    // Hover highlight (Manh 2026-11-21): the "GitHub"
+                    // repo link text lights up with the cat icon above.
+                    .panelHoverHighlight()
             }
             .background { InteractiveMarker() }
         }
