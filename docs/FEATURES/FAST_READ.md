@@ -75,12 +75,41 @@ Top to bottom:
   translate it (the alternative icon appears on the selection).
   Selection is a click-drag, so it never conflicts with the trackpad
   swipe (font size) — the page stays a ScrollView and scrolls the same.
+- **Swipe contract — one gesture, one action (Manh 2026-11-22):**
+  vertical swipe = font size ONLY, horizontal swipe = turn the page.
+  - **Reason:** a vertical swipe that both changes the font AND scrolls
+    the page is a conflict — the user gets two actions at once (the font
+    jumps and the page moves), which feels broken. One gesture must do
+    exactly one thing.
+  - **Logic:** a trackpad swipe arrives as scroll-wheel events. The
+    monitors classify by dominant axis — vertical-dominant
+    (|deltaY| > |deltaX| × 1.5) → font size, ±16pt per 50pt of movement
+    (fingers up = bigger, down = smaller); horizontal-dominant
+    (|deltaX| > |deltaY| × 1.5) → turn the page, one line per 100pt of
+    movement (the slow page flip; see the lẻ gộp note below). A diagonal
+    swipe (neither axis dominant) passes through untouched.
+  - **Behaviour:** swiping up/down changes only the font size — the page
+    does NOT move. Swiping left/right turns the page (next/previous
+    line). The focused line stays centered by auto-scroll (see below);
+    the reader never scrolls the page by hand with a vertical swipe.
+  - **Handling:** the page's `ScrollView` has user scrolling disabled
+    (`.scrollDisabled(true)`) — it only scrolls programmatically, when
+    Play advances the focus line (`ScrollViewReader.scrollTo`). The
+    trackpad monitors consume the swipe events (return nil), so a swipe
+    never reaches the ScrollView: Window uses `RSVPTrackpadMonitor`
+    (vertical → font, horizontal → step), Lite uses
+    `PanelReadTrackpadMonitor` (vertical → font, horizontal passes to
+    the panel tab switch). The font-size step (16pt/50pt) matches Style 1
+    and the window.
+  - **Lẻ gộp (pending):** the Style 2 horizontal flip (1 line/100pt)
+    feels slow — when the batch is big enough, lower the threshold to
+    ~50pt/line. Style 1 keeps 1 step/event.
 - **Setting:** key `transpeek_rsvpReadingStyle`, default `.style1`
   ("RSVP Focus"). A mode preference like the color scheme, so "Reset to
   default" does NOT reset it.
-- **Trackpad in Style 2:** horizontal swipe is a slow page flip — one
-  line per 100pt of accumulated horizontal movement (see §5); Style 1
-  keeps one step per event.
+- **Trackpad in Style 2:** the swipe contract above (vertical = font
+  size only, never scroll; horizontal = turn the page, one line per
+  100pt). Style 1 keeps one step per event.
 
 ## 3. The reading view — focus line pinned at the center (SwiftRead behavior)
 
@@ -107,12 +136,27 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   can select a word in the context to translate it on the spot (the float
   icon appears on the selection), instead of only reading it. The focus
   line itself is not selectable — it is a single chunk rendered with a
-  custom ORP layout. **No scroll on the context text (Manh 2026-11-21,
-  tightened 2026-11-22):** a selectable Text is backed by a scrollable
-  text view, so `.scrollDisabled(true)` sits on the Group AND on the Text
-  itself — with a large font the context overflows the half and the text
-  view scrolls unless the modifier is on it (the Group-only version still
-  scrolled at large sizes).
+  custom ORP layout. **No scroll on the context text — custom component
+  (Manh 2026-11-22):**
+  - **Reason:** a selectable SwiftUI `Text` is backed by an NSTextView
+    inside a scroll view. `.scrollDisabled(true)` (on the Group, then
+    also on the Text) did NOT stop it: as soon as the user clicks into
+    the text, the text view becomes the focused editor and turns into a
+    scroll box for the above/below text. Native SwiftUI has no
+    "selectable but never scrollable" text — so this needs a custom
+    component (Manh was told before building it).
+  - **Logic:** `NonScrollingSelectableText` wraps an `NSTextView`
+    directly, with NO scroll view around it (`isSelectable = true`,
+    `isEditable = false`, not vertically resizable). Without a scroll
+    view there is nothing to scroll — overflow is clipped, exactly like
+    the old `.clipped()` book page.
+  - **Behaviour:** the reader can click-drag to select a word (the
+    alternative icon appears on the selection, as before), but the
+    context text never becomes a scroll box and never moves — the focus
+    line stays pinned at the center.
+  - **Handling:** the component replaces the 4 context `Text` views
+    (Window + Lite, before + after). Font, color and alignment are
+    passed in, so the look is unchanged.
 - **Context display setting** ("Show context around focus word",
   SwiftRead's `contextDisplayStyle`, in Settings under Color Scheme):
   **Always** (book page even while playing) / **Only show when paused**
@@ -166,20 +210,23 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   returns to the other app as soon as the user clicks away. (The 3 entry
   paths, the current fragmented focus code, and the planned shared
   component are in §11.)
-- **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
-  scroll event** (page-turn convention, SwiftRead-style; a longer swipe
-  moves more words); **Style 2 (Basic Reading, Manh 2026-11-21): the
-  horizontal swipe is a slow page flip — one line per 100pt of
-  accumulated horizontal movement, so a swipe has to travel to turn the
-  page. Style 1 keeps the fast one-step-per-event and is unaffected; the
-  monitor follows the view model's reading style live.** Vertical swipe
-  = **font ±16pt** per 50pt of accumulated
+- **Trackpad (`RSVPTrackpadMonitor` window, `PanelReadTrackpadMonitor`
+  Lite):** horizontal swipe = **one word per scroll event** (page-turn
+  convention, SwiftRead-style; a longer swipe moves more words);
+  **Style 2 (Basic Reading): the swipe contract in §2 — vertical =
+  font size ONLY (never scroll), horizontal = turn the page, one line
+  per 100pt of accumulated horizontal movement, so a swipe has to travel
+  to turn the page. Style 1 keeps the fast one-step-per-event and is
+  unaffected; the monitor follows the view model's reading style live.**
+  Vertical swipe = **font ±16pt** per 50pt of accumulated
   vertical movement (Manh 2026-11-19, 0.1.5 — was ±8pt, which still felt
   too slow; 8pt was the 2026-11-18 round-7 value, ±2pt before that);
   remainder carries;
-  momentum-phase events are ignored; mouse-wheel events pass through. **While paused, a vertical
-  swipe ONLY changes the text size and NEVER scrolls the block text** (all
-  dominant-vertical `.changed` events are consumed).
+  momentum-phase events are ignored; mouse-wheel events pass through. **A vertical
+  swipe ONLY changes the text size and NEVER scrolls anything** (all
+  dominant-vertical `.changed` events are consumed; in Style 2 the page's
+  ScrollView also has user scrolling disabled, so a swipe can never
+  scroll it — see §2).
 - **Pickers (menu style, show the nearest option):** Speed **50–2000 in
   steps of 50** (Manh 2026-11-18, round 7 — was 17 uneven values);
   **Focus size 40–450** (default 80; was 40–110, default 64; steps grow
