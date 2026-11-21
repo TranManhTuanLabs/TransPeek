@@ -216,11 +216,10 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   is NOT used: typing a Space in another app would also toggle the
   read, which is annoying — Manh asked Windows to switch to this same
   safe direction. The window/panel becomes key when a read opens
-  (window: `makeKeyAndOrderFront`; panel: `showAtCursor(makeKey:
-  true)`), so Space works at once without a first click — and focus
-  returns to the other app as soon as the user clicks away. (The 3 entry
-  paths, the current fragmented focus code, and the planned shared
-  component are in §11.)
+  (window: `makeKeyAndOrderFront`; panel: `showForFastRead()`), so Space
+  works at once without a first click — and focus returns to the other
+  app as soon as the user clicks away. (The 3 entry paths and the shared
+  focus component are in §11.)
 - **Trackpad (`RSVPTrackpadMonitor` window, `PanelReadTrackpadMonitor`
   Lite):** horizontal swipe = **one word per scroll event** (page-turn
   convention, SwiftRead-style; a longer swipe moves more words);
@@ -444,21 +443,50 @@ window file `RSVPView.swift` is never edited for panel work (Manh
    focus timer. Only the message text and the countdown differ; the code
    path is shared.
 
-**Current state — Space/focus handling is fragmented, not shared:**
+**Shared component — implemented on branch `feature/shared-read-focus`
+(Manh 2026-11-22, after the v0.1.11 release):** the rule "read starts
+playing → its surface becomes key + focused → Space works at once" now
+lives in ONE place, `ReadKeyboardFocus` (`Sources/FastRead/
+ReadKeyboardFocus.swift`, a SwiftUI `ViewModifier` + the
+`.readKeyboardFocus(viewModel:onEscape:)` helper). It owns, once:
 
-- Window (Full): `RSVPView` owns `.focusable()` + `.focused($isFocused)`
-  + `onAppear { isFocused = true }` + `.onKeyPress` (Space, ←/→, ↑/↓);
-  the window becomes key in `RSVPWindowController.show`.
-- Lite (panel): `CompactReadingView` owns its own `@FocusState` +
-  `onAppear` + `.onChange(of: viewModel.isPlaying)` (re-takes focus when
-  a read starts playing, Manh 2026-11-22) + `.onKeyPress`; the panel
-  becomes key via `PopupPanelController.showAtCursor(makeKey:)` — and
-  every entry path has to remember to pass `makeKey: true`.
-- So every entry path has to remember the focus dance itself. When a
-  path forgets, Space breaks — that is what happened twice: the reminder
-  path forgot `makeKey` (fixed `b6388f20`), and a reminder read starting
-  in an already-visible panel never fired `onAppear` again, so the focus
-  stayed lost from the previous read (fixed `1ca40268`).
+- the focus state (`@FocusState`, no longer one copy per view);
+- focus on appear AND on every play start (`.onChange(of:
+  viewModel.isPlaying)` — the 2026-11-22 reminder fix, which used to
+  live only in Lite; the Window gets it too now, so a reused window
+  re-takes focus on a new read);
+- the key handling (Space play/pause, ←/→ step, Shift+←/→ sentence,
+  ↑/↓ speed ±50). Esc is the one surface difference, passed as
+  `onEscape`: the Window closes on Esc; Lite leaves it `nil` so Esc
+  propagates to its host (panel dismiss monitor / Rest window closer).
+
+**Wiring:** `RSVPView` applies `.readKeyboardFocus(viewModel:,
+onEscape: { onClose?() })`; `CompactReadingView` applies
+`.readKeyboardFocus(viewModel:)` (Esc `nil`). Both views deleted their
+own `@FocusState` / `.onKeyPress` copies (Lite also deleted its
+`handleKeyPress` and its own `.onChange(isPlaying)`); each kept only
+its `onAppear` TTS-coordinator handoff. The Rest window's own
+`.onKeyPress(.escape)` closer is untouched — it relies on Lite
+ignoring Esc.
+
+**Window keying (the AppKit half):** the Window always opens keyed in
+`RSVPWindowController.show`, the Rest window in
+`RestWindowController.show`; the panel opens keyed through the one
+opener `PopupPanelController.showForFastRead()` (a thin wrapper over
+`showAtCursor(makeKey: true)`), which both Lite entry paths use —
+`AppDelegate.showFastRead` (`.rightPanel`) and the reminder's
+`onShowPanel`. No entry path passes `makeKey: true` itself any more,
+so a future path cannot forget the flag (the `b6388f20` bug).
+`showAtCursor(makeKey:)` itself is unchanged — the translate
+quick-peek keeps its non-activating default.
+
+**The 3 entry paths now:** user opens Fast Read → `showFastRead` →
+window `show` / `showForFastRead` + `panelRightRequest` →
+`startPanelReading` → `play()` → `isPlaying` → the modifier re-takes
+focus; Pomodoro / rest-eyes reminder → `fireReminder` → `showReminder`
+→ Rest window `show` / `panelRightRequest` + `onShowPanel` →
+`showForFastRead` → same modifier. Every path funnels through the
+same focus rule; no path remembers the focus dance on its own.
 
 **Why Space must work at once (Manh 2026-11-22):** a read can auto-start
 (reminder / rest-eyes) and play the speaker out loud. If Manh is in a
@@ -475,6 +503,12 @@ Every entry path goes through it; no path has to remember the focus dance
 on its own. It keeps the safe direction (§5, focused-only, never global):
 the component only makes the focus RELIABLE when a read is playing; it
 never captures Space while the user types in another app.
+
+**Done — see "Shared component" above (branch
+`feature/shared-read-focus`).** The fragmented state described in the
+earlier version of this section is gone: both views use
+`ReadKeyboardFocus`, and the panel's keyed opener is
+`showForFastRead()`.
 
 ## References
 
