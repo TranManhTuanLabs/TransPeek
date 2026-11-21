@@ -148,20 +148,31 @@ full page, Lite gets the compact page).
 - **Style 1 is pixel-identical** when Style 2 is not selected (the Style
   1 body path is untouched; Style 2 branches before it).
 
-### Speaker button (shipped 2026-11-21, both surfaces)
+### Speaker button (shipped 2026-11-21, both surfaces; synced 2026-11-21)
 
 - One shared component (`Sources/FastRead/SpeakerButton.swift`), in the
   Window Read control row and in both Lite control rows (compact and
   full-size): Restart, **Speaker**, Play, **Rewind**, Forward, Maximize
   (Lite: X first). Rewind moved left of Forward (mirroring a media
   player's ◀ ▶ pair).
-- Click speaks the reading text at once via `TTSCoordinator.speak`
-  (language via `AppDelegate.speakLanguage` — the same rule as
-  click-to-speak); click again stops it. Icon: `speaker.wave.2.fill`
-  while speaking, `speaker.slash.fill` while muted/stopped.
+- The speaker is a **TTS on/off toggle for the read-along** (Manh
+  2026-11-21, CI314 fix — it is NOT a separate "speak the whole text"
+  action): when TTS is on, Play/Space speaks each slide (Style 1) or
+  line (Style 2) as it shows, and the reader advances ONLY when that
+  unit finishes speaking — the speech is the clock, so audio and text
+  stay in sync (SwiftRead / Speechify read-along model). When TTS is
+  off, the read is silent (WPM timer). Persisted
+  (`transpeek_rsvpTTSEnabled`, default OFF). Icon:
+  `speaker.wave.2.fill` while TTS is on, `speaker.slash.fill` while
+  off. Pausing, restarting or switching style stops the audio, so it
+  never keeps running after the reader stops.
 - Hovering the speaker shows a voice picker (installed EN/VI system
   voices, same source and same stored keys `ttsVoiceEN` / `ttsVoiceVI`
-  as Settings → TTS).
+  as Settings → TTS). The picker is a **non-modal overlay attached to
+  the button, not a popover** (Manh 2026-11-21, CI314 fix): a popover
+  swallowed the first click to dismiss itself, so the user had to click
+  the speaker twice. Clicking the speaker now toggles sound at once
+  while the picker stays open.
 - Hidden in the Rest window (no TTS coordinator is wired there), so it
   never shows a dead button.
 

@@ -21,6 +21,12 @@ final class TTSCoordinator {
     @ObservationIgnored var onPlaybackEnded: (() -> Void)?
     private var speakTask: Task<Void, Never>?
     private var activePlaybackProvider: (any TTSProvider)?
+    /// Generation counter for read-along chunk speech (Manh 2026-11-21,
+    /// CI314 fix): incremented by `stop()`, so a chunk can tell whether
+    /// its utterance was cut short from outside (e.g. another speech
+    /// started elsewhere) instead of finishing on its own. The Fast Read
+    /// read-along stops advancing when a chunk is interrupted this way.
+    private var speechGeneration = 0
 
     private let registry: TTSProviderRegistry
 
@@ -74,6 +80,41 @@ final class TTSCoordinator {
         activePlaybackProvider = nil
         currentText = nil
         playbackState = .idle
+        // Any in-flight chunk speech is interrupted by this stop, so
+        // its caller must not treat it as finished (see speakChunk).
+        speechGeneration += 1
+    }
+
+    /// Speak ONE chunk/line and return when it finishes (Manh 2026-11-21,
+    /// CI314 fix — the Fast Read read-along): the RSVP reader speaks
+    /// each slide/line in turn and advances only when that unit finishes
+    /// speaking, so the audio and the visible text stay in sync
+    /// (SwiftRead / Speechify read-along model). Returns true when the
+    /// utterance finished on its own, false when it was cut short by a
+    /// `stop()` from elsewhere. Deliberately does NOT touch
+    /// `onPlaybackEnded`, `currentText` or `playbackState` — those belong
+    /// to the trigger icon's whole-text speech, and a chunk must not trip
+    /// its "speech ended" cleanup. Cancellation is delivered through
+    /// `stop()` (which stops the provider, so its delegate resumes the
+    /// continuation via didCancel) — the caller checks the return value
+    /// and `Task.isCancelled` after the await.
+    @MainActor func speakChunk(_ text: String, language: String) async -> Bool {
+        let generation = speechGeneration
+        let provider = registry.activeProvider
+        activePlaybackProvider = provider
+        do {
+            try await provider.speak(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language))
+        } catch {
+            // Same Apple fallback as speak(): a cloud provider failing
+            // on one chunk must not stall the read — try Apple TTS,
+            // and if that fails too the chunk is skipped (the caller
+            // still advances, so one bad chunk never stalls the read).
+            if provider.id != AppleTTSProvider.providerID,
+               let apple = registry.provider(withID: AppleTTSProvider.providerID) {
+                try? await apple.speak(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language))
+            }
+        }
+        return generation == speechGeneration
     }
 
     var isPlaying: Bool {

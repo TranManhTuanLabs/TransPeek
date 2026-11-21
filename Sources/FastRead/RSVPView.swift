@@ -97,6 +97,36 @@ final class RSVPViewModel: ObservableObject {
     @Published var highlightCurrentLine: Bool {
         didSet { Defaults[.rsvpHighlightCurrentLine] = highlightCurrentLine }
     }
+    /// TTS (speech) on/off for this read (Manh 2026-11-21, CI314 fix):
+    /// the speaker button toggles whether the RSVP read-along speaks.
+    /// Persisted, default OFF — a reader who never touches the speaker
+    /// keeps the silent WPM reading they already have. A mode
+    /// preference like the color scheme, so "Reset to default" does
+    /// NOT reset it.
+    @Published var ttsEnabled: Bool {
+        didSet { Defaults[.rsvpTTSEnabled] = ttsEnabled }
+    }
+    /// The shared TTS coordinator (Manh 2026-11-21, CI314 fix): set by
+    /// the reading view from the SwiftUI environment (the Window and
+    /// the Lite both inject it; the Rest window has none). The
+    /// read-along speaks through it. Nil means no TTS is available,
+    /// so the speaker stays off and playback always uses the WPM
+    /// timer. Not @Published — a service dependency, not UI state.
+    var ttsCoordinator: TTSCoordinator? {
+        didSet {
+            // The Lite starts playing (auto-play) before its view
+            // appears and hands the coordinator over — and the Window
+            // calls play() before its view appears too. If the speaker
+            // is on, the WPM task that started first must switch to
+            // the TTS-driven task at once, or the audio would never
+            // start. Only when the coordinator arrives fresh (nil →
+            // set); re-setting the same one must not restart the read.
+            if isPlaying, ttsEnabled, ttsCoordinator != nil, oldValue == nil {
+                pause()
+                play()
+            }
+        }
+    }
     /// Style 2: index of the line the focus is on (the line Play
     /// advances). Not persisted — a new text starts at the first line.
     @Published var style2CurrentLineIndex: Int = 0
@@ -127,7 +157,8 @@ final class RSVPViewModel: ObservableObject {
         contextDisplayStyle: RSVPContextDisplayStyle = .onPause,
         autoPlay: Bool = true,
         readingStyle: ReadingStyle = .style1,
-        highlightCurrentLine: Bool = false
+        highlightCurrentLine: Bool = false,
+        ttsEnabled: Bool = Defaults[.rsvpTTSEnabled]
     ) {
         self.text = text
         self.wpm = wpm
@@ -139,6 +170,7 @@ final class RSVPViewModel: ObservableObject {
         self.autoPlay = autoPlay
         self.readingStyle = readingStyle
         self.highlightCurrentLine = highlightCurrentLine
+        self.ttsEnabled = ttsEnabled
         self.engine = RSVPEngine(text: text, wpm: wpm, chunkSize: chunkSize)
     }
 
@@ -146,8 +178,8 @@ final class RSVPViewModel: ObservableObject {
     /// round 7 — the Settings popover's "Reset to default" button):
     /// speed 500, focus font 80, context size 40%, context display
     /// "Only show when paused", auto-play ON (Manh 2026-11-20).
-    /// Color scheme, reading style and the line highlight are mode
-    /// preferences, so they are NOT reset here.
+    /// Color scheme, reading style, the line highlight and the TTS
+    /// toggle are mode preferences, so they are NOT reset here.
     func resetToDefaults() {
         wpm = RSVPEngine.defaultWPM
         fontSize = 80
@@ -293,7 +325,7 @@ final class RSVPViewModel: ObservableObject {
             isFinished = false
             isPlaying = true
             playStartDate = Date()
-            startStyle2PlaybackTask()
+            startStyle2Playback()
             return
         }
         guard slideCount > 0 else { return }
@@ -306,18 +338,75 @@ final class RSVPViewModel: ObservableObject {
         isFinished = false
         isPlaying = true
         playStartDate = Date()
-        startPlaybackTask()
+        startPlayback()
+    }
+
+    /// Start the playback task for the current mode (Manh 2026-11-21,
+    /// CI314 fix): the TTS-driven task when the speaker is on and a
+    /// coordinator is wired, otherwise the WPM timer task (unchanged).
+    /// Centralised here so every play() path — Play button, Space,
+    /// auto-play, restart, seek, style switch — picks the right clock.
+    private func startPlayback() {
+        if ttsEnabled, ttsCoordinator != nil {
+            startTTSPlaybackTask()
+        } else {
+            startPlaybackTask()
+        }
+    }
+
+    /// Style 2 version of startPlayback(): same routing, but the unit
+    /// is a line, so the TTS-driven task speaks lines, not slides.
+    private func startStyle2Playback() {
+        if ttsEnabled, ttsCoordinator != nil {
+            startStyle2TTSPlaybackTask()
+        } else {
+            startStyle2PlaybackTask()
+        }
+    }
+
+    /// Toggle TTS (speech) for this read (Manh 2026-11-21, CI314 fix):
+    /// the speaker button. If the read is playing, playback restarts
+    /// at once in the new mode so the toggle takes effect immediately
+    /// — turning TTS on starts speaking the current slide/line,
+    /// turning it off stops the audio and falls back to the WPM timer.
+    /// If the read is paused, only the flag flips; the next play()
+    /// picks the right clock.
+    func toggleTTS() {
+        ttsEnabled.toggle()
+        if !ttsEnabled {
+            // Turning TTS off stops the audio now, not at the next
+            // slide — the reader asked for silence.
+            ttsCoordinator?.stop()
+        }
+        if isPlaying {
+            pause()
+            play()
+        }
     }
 
     func pause() {
-        // Bank the time played so far; the clock resumes on play().
+        bankElapsedTime()
+        isPlaying = false
+        playbackTask?.cancel()
+        playbackTask = nil
+        // Stop read-along speech, but only if this read owns it (TTS
+        // is on) — otherwise a pause here would cut off speech started
+        // elsewhere (e.g. the translate tab's auto-play).
+        if ttsEnabled {
+            ttsCoordinator?.stop()
+        }
+    }
+
+    /// Bank the elapsed playing time into accumulatedSeconds (the clock
+    /// resumes on play()). Shared by pause() and the read-along
+    /// interruption path, which must stop advancing without stopping
+    /// the TTS coordinator (that would cut off the speech that just
+    /// interrupted us).
+    private func bankElapsedTime() {
         if let start = playStartDate {
             accumulatedSeconds += Date().timeIntervalSince(start)
             playStartDate = nil
         }
-        isPlaying = false
-        playbackTask?.cancel()
-        playbackTask = nil
     }
 
     /// Restart reading from the beginning (Manh 2026-11-19, round 10):
@@ -469,6 +558,77 @@ final class RSVPViewModel: ObservableObject {
         }
     }
 
+    /// TTS-driven playback (Manh 2026-11-21, CI314 fix — the read-along):
+    /// the same loop shape as `startPlaybackTask`, but the speech is the
+    /// clock. Each slide is spoken through the coordinator, and the
+    /// reader advances ONLY when that slide finishes speaking, so the
+    /// audio and the visible text stay in sync (SwiftRead / Speechify
+    /// read-along model). The WPM timer is not used here at all — the
+    /// speaking pace is the TTS rate, not the WPM setting. Reaching the
+    /// last slide finishes the read (completion line + elapsed time),
+    /// exactly like the WPM finish.
+    private func startTTSPlaybackTask() {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                // Snapshot the current slide on the main actor.
+                let (slideText, isLast) = await MainActor.run { () -> (String?, Bool) in
+                    guard self.engine.slides.indices.contains(self.currentSlideIndex) else {
+                        return (nil, true)
+                    }
+                    return (
+                        self.engine.slides[self.currentSlideIndex].joinedText,
+                        self.currentSlideIndex >= self.engine.slides.count - 1
+                    )
+                }
+                guard let slideText, !slideText.isEmpty else { break }
+                // Speak this slide; advance only when it finishes.
+                // If the speech was cut short from outside (another
+                // speech started elsewhere) do not advance — stop the
+                // read-along, but do NOT call stop() again (that would
+                // cut off the speech that just interrupted us).
+                // Snapshot the coordinator + language on the main actor
+                // first (speakChunk is @MainActor, so the await hops
+                // there); the snapshot keeps the call out of a
+                // MainActor.run async closure.
+                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
+                let finished: Bool
+                if let tts {
+                    finished = await tts.speakChunk(slideText, language: language)
+                } else {
+                    finished = false
+                }
+                guard !Task.isCancelled else { break }
+                guard finished else {
+                    await MainActor.run {
+                        self.bankElapsedTime()
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                if isLast {
+                    // Finished: stop the clock and show the completion line.
+                    await MainActor.run {
+                        self.elapsedSeconds = self.accumulatedSeconds
+                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                        self.playStartDate = nil
+                        self.isFinished = true
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                await MainActor.run {
+                    if self.currentSlideIndex < self.engine.slides.count - 1 {
+                        self.currentSlideIndex += 1
+                    } else {
+                        self.isPlaying = false
+                    }
+                }
+            }
+        }
+    }
+
     /// Style 2 line playback (Manh 2026-11-21): same shape as the RSVP
     /// `startPlaybackTask`, but the unit is a line, not a slide. Each
     /// line gets its own delay from its word count and the WPM setting,
@@ -514,6 +674,75 @@ final class RSVPViewModel: ObservableObject {
         }
     }
 
+    /// Style 2 TTS-driven playback (Manh 2026-11-21, CI314 fix — the
+    /// read-along): the same shape as `startTTSPlaybackTask`, but the
+    /// unit is a line, not a slide. Each line is spoken through the
+    /// coordinator, and the focus advances ONLY when that line finishes
+    /// speaking, so the audio and the highlighted line stay in sync.
+    /// The WPM timer is not used here at all. Reaching the last line
+    /// finishes the read (completion line + elapsed time), exactly like
+    /// the WPM finish.
+    private func startStyle2TTSPlaybackTask() {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                // Snapshot the current line on the main actor.
+                let (lineText, isLast) = await MainActor.run { () -> (String?, Bool) in
+                    let lines = self.style2Lines
+                    guard lines.indices.contains(self.style2CurrentLineIndex) else {
+                        return (nil, true)
+                    }
+                    return (
+                        lines[self.style2CurrentLineIndex],
+                        self.style2CurrentLineIndex >= lines.count - 1
+                    )
+                }
+                guard let lineText, !lineText.isEmpty else { break }
+                // Speak this line; advance only when it finishes.
+                // If the speech was cut short from outside, stop the
+                // read-along without calling stop() again (that would
+                // cut off the speech that just interrupted us).
+                // Snapshot the coordinator + language on the main actor
+                // first (speakChunk is @MainActor, so the await hops
+                // there); the snapshot keeps the call out of a
+                // MainActor.run async closure.
+                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
+                let finished: Bool
+                if let tts {
+                    finished = await tts.speakChunk(lineText, language: language)
+                } else {
+                    finished = false
+                }
+                guard !Task.isCancelled else { break }
+                guard finished else {
+                    await MainActor.run {
+                        self.bankElapsedTime()
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                if isLast {
+                    await MainActor.run {
+                        self.elapsedSeconds = self.accumulatedSeconds
+                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                        self.playStartDate = nil
+                        self.isFinished = true
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                await MainActor.run {
+                    if self.style2CurrentLineIndex < self.style2Lines.count - 1 {
+                        self.style2CurrentLineIndex += 1
+                    } else {
+                        self.isPlaying = false
+                    }
+                }
+            }
+        }
+    }
+
     /// Rebuild the engine after a setting change, keeping the reading
     /// position at the same word (so a WPM/chunk change mid-read does not
     /// jump the reader back to the start).
@@ -546,6 +775,11 @@ struct RSVPView: View {
     var onToggleMaximize: (() -> Void)?
     /// Called when the user closes the window (Esc / close button).
     var onClose: (() -> Void)?
+    /// The shared TTS coordinator, injected by the window controller
+    /// (Manh 2026-11-21, CI314 fix): handed to the view model on
+    /// appear so the read-along can speak through it. Nil in the Rest
+    /// window (no TTS there).
+    @Environment(\.ttsCoordinator) private var ttsCoordinator
 
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
@@ -693,7 +927,17 @@ struct RSVPView: View {
         // at full width. The view stays focusable — Space / arrows / Esc
         // still work — just without the ring.
         .focusEffectDisabled()
-        .onAppear { isFocused = true }
+        .onAppear {
+            isFocused = true
+            // Hand the TTS coordinator to the view model (Manh
+            // 2026-11-21, CI314 fix): the read-along speaks through it.
+            // The controller calls play() before this view appears, so
+            // the view model switches to the TTS-driven task itself
+            // when the coordinator arrives (see its didSet). No
+            // onChange needed — the coordinator is one shared instance
+            // that never changes while this view lives.
+            viewModel.ttsCoordinator = ttsCoordinator
+        }
         .onKeyPress { press in
             switch press.key {
             case .space:
@@ -1179,9 +1423,11 @@ struct RSVPView: View {
                 .help("Restart (read from the beginning)")
                 .hoverTooltip("Restart (read from the beginning)")
 
-                // Speaker (Manh 2026-11-21): hear the reading text
-                // read aloud now. Shared component — the icon, the
-                // voice picker and the stop-on-second-press all live
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off for
+                // the read-along — when on, Play/Space speaks each
+                // slide as it shows (TTS drives the advance); when off
+                // the read is silent (WPM timer). Shared component —
+                // the icon, the voice picker and the toggle all live
                 // there, so Window and Lite can never drift apart.
                 SpeakerButton(viewModel: viewModel)
 

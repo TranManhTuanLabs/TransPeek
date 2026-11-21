@@ -10,16 +10,19 @@ import SwiftUI
 /// only difference is the horizontal padding.
 struct Style2ReadingPage: View {
     @ObservedObject var viewModel: RSVPViewModel
-    @Environment(\.ttsCoordinator) private var ttsCoordinator
     /// Horizontal padding (Window 32, Lite 12) — matches each surface's
     /// book page, so the page lines up with the Style 1 text.
     var horizontalPadding: CGFloat = 32
 
     /// The line highlight is on when the toggle is on, or automatically
-    /// while TTS is reading this text (so the spoken line stays visible
-    /// without the reader having to turn the toggle on first).
+    /// while the TTS read-along is speaking (so the spoken line stays
+    /// visible without the reader having to turn the toggle on first).
+    /// TTS here means the read-along toggle is on AND the read is
+    /// playing (Manh 2026-11-21, CI314 fix) — the chunk speech does
+    /// not register as "playing this text" on the coordinator, so the
+    /// view model owns the state, not the coordinator.
     private var isHighlightVisible: Bool {
-        viewModel.highlightCurrentLine || (ttsCoordinator?.isPlaying(viewModel.text) ?? false)
+        viewModel.highlightCurrentLine || (viewModel.ttsEnabled && viewModel.isPlaying)
     }
 
     /// Reading colors for the chosen scheme (same mapping as the Style 1

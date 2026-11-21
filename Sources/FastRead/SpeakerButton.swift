@@ -4,14 +4,17 @@ import SwiftUI
 
 /// Speaker (TTS) button for the Fast Read control rows (Window Read and
 /// Fast Read Lite). One shared component so the behaviour is identical on
-/// both surfaces: click speaks the reading text aloud right away (via the
-/// shared TTSCoordinator), click again stops it. The icon shows the
-/// state — speaker with waves while speaking, speaker with a slash while
-/// muted/stopped. Hovering shows a voice picker (English / Vietnamese
-/// system voices, the same lists as Settings → TTS) so the reader can
-/// pick a voice without leaving the read. Hidden entirely when no TTS
-/// coordinator is available (the Rest window does not wire one), so it
-/// never shows a dead button.
+/// both surfaces. The speaker is a TTS on/off toggle FOR the RSVP
+/// read-along (Manh 2026-11-21, CI314 fix) — NOT a separate "speak the
+/// whole text" action: when TTS is on, Play/Space speaks each slide/line
+/// as it shows (the speech drives the advance, so audio and text stay
+/// in sync); when off, the read is silent (WPM timer). The icon shows
+/// the toggle state — speaker with waves while TTS is on, speaker with
+/// a slash while off. Hovering shows a voice picker (English /
+/// Vietnamese system voices, the same lists as Settings → TTS) so the
+/// reader can pick a voice without leaving the read. Hidden entirely
+/// when no TTS coordinator is available (the Rest window does not wire
+/// one), so it never shows a dead button.
 struct SpeakerButton: View {
     @ObservedObject var viewModel: RSVPViewModel
     @Environment(\.ttsCoordinator) private var ttsCoordinator
@@ -23,47 +26,50 @@ struct SpeakerButton: View {
     @State private var showingVoicePicker = false
     @State private var dismissTask: Task<Void, Never>?
 
-    /// True while this exact text is being spoken (scoped per-button, so
-    /// speech started elsewhere — e.g. the translate tab auto-play —
-    /// does not light this button up).
-    private var isSpeaking: Bool {
-        guard let tts = ttsCoordinator else { return false }
-        return tts.isPlaying(viewModel.text)
-    }
-
     var body: some View {
         // No coordinator (Rest window) — no button at all, rather than a
         // button that does nothing.
-        if let tts = ttsCoordinator {
+        if ttsCoordinator != nil {
             Button {
-                toggleSpeak(using: tts)
+                // Toggle TTS for the read-along (Manh 2026-11-21, CI314
+                // fix): the view model restarts playback in the new mode
+                // at once, so turning sound on starts speaking the
+                // current slide/line and turning it off stops the audio.
+                viewModel.toggleTTS()
             } label: {
-                Image(systemName: isSpeaking ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                Image(systemName: viewModel.ttsEnabled ? "speaker.wave.2.fill" : "speaker.slash.fill")
             }
             .buttonStyle(.bordered)
-            .help(isSpeaking ? "Stop speaking" : "Speak (read aloud)")
-            .hoverTooltip(isSpeaking ? "Stop speaking" : "Speak (read aloud)")
+            .help(viewModel.ttsEnabled ? "Turn sound off" : "Turn sound on (read aloud)")
+            .hoverTooltip(viewModel.ttsEnabled ? "Turn sound off" : "Turn sound on (read aloud)")
             .onHover { hovering in
                 isHoveringButton = hovering
                 updateVoicePickerVisibility()
             }
-            .popover(isPresented: $showingVoicePicker) {
-                voicePickerContent
-                    .onHover { hovering in
-                        isHoveringPopover = hovering
-                        updateVoicePickerVisibility()
-                    }
+            // Voice picker as a non-modal overlay, NOT a popover (Manh
+            // 2026-11-21, CI314 fix): a popover is a separate window
+            // that swallows the first click to dismiss itself, so the
+            // user had to click the speaker twice (once to dismiss,
+            // once to toggle sound). An overlay lives in this same
+            // view hierarchy, so it never swallows the button's click
+            // — clicking the speaker toggles sound at once while the
+            // picker stays open, and the picker never covers the
+            // button (it sits above it), so the button stays clickable.
+            .overlay(alignment: .bottom) {
+                if showingVoicePicker {
+                    voicePickerContent
+                        .onHover { hovering in
+                            isHoveringPopover = hovering
+                            updateVoicePickerVisibility()
+                        }
+                        // Above the button (the control rows sit at the
+                        // bottom, so below would fall off the window).
+                        // The picker's bottom edge sits just above the
+                        // button's top edge; it grows upward, never over
+                        // the button, so the button stays clickable.
+                        .offset(y: -40)
+                }
             }
-        }
-    }
-
-    /// Click toggles speech for this read: stop if this text is already
-    /// being spoken, otherwise speak the whole text at once.
-    private func toggleSpeak(using tts: TTSCoordinator) {
-        if tts.isPlaying(viewModel.text) {
-            tts.stop()
-        } else {
-            tts.speak(viewModel.text, language: viewModel.speakLanguage)
         }
     }
 
@@ -87,7 +93,9 @@ struct SpeakerButton: View {
 
     /// Voice picker (English / Vietnamese), the same lists and the same
     /// stored keys as Settings → TTS, so picking here changes the voice
-    /// everywhere Apple TTS is used.
+    /// everywhere Apple TTS is used. Drawn as a floating panel (a
+    /// material background + border + shadow) because it is an overlay
+    /// now, not a popover — the system no longer draws the panel chrome.
     private var voicePickerContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Voice")
@@ -110,6 +118,12 @@ struct SpeakerButton: View {
         }
         .padding(12)
         .frame(width: 260)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5)
+        )
+        .shadow(radius: 8)
     }
 
     /// Installed system voices for a language prefix, in system order —

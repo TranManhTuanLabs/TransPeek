@@ -39,6 +39,10 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             viewModel.pause()
             viewModel.text = trimmed
             viewModel.currentSlideIndex = 0
+            // The read-along speaks through the coordinator (Manh
+            // 2026-11-21, CI314 fix) — re-assert it here, so a reused
+            // window always has it before play() runs.
+            viewModel.ttsCoordinator = ttsCoordinator
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             trackpadMonitor?.start(window: window)
@@ -67,6 +71,10 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             highlightCurrentLine: Defaults[.rsvpHighlightCurrentLine]
         )
         self.viewModel = viewModel
+        // The read-along speaks through the coordinator (Manh 2026-11-21,
+        // CI314 fix) — set it before play() runs, so auto-play starts in
+        // the right mode at once (the view re-asserts it on appear too).
+        viewModel.ttsCoordinator = ttsCoordinator
 
         let contentView = RSVPView(
             viewModel: viewModel,

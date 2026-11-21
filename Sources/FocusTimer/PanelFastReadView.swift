@@ -346,6 +346,11 @@ struct CompactReadingView: View {
     /// reading and returns to panel right. Only the panel sets it (the
     /// Rest window has no X button — it closes itself on Esc / Done).
     var onCloseReading: (() -> Void)? = nil
+    /// The shared TTS coordinator, injected by the panel controller
+    /// (Manh 2026-11-21, CI314 fix): handed to the view model on
+    /// appear so the read-along can speak through it. Nil in the Rest
+    /// window (no TTS there).
+    @Environment(\.ttsCoordinator) private var ttsCoordinator
 
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
@@ -446,6 +451,15 @@ struct CompactReadingView: View {
             .focusEffectDisabled()
             .onAppear {
                 isFocused = true
+                // Hand the TTS coordinator to the view model (Manh
+                // 2026-11-21, CI314 fix): the read-along speaks through
+                // it. The store calls play() before this view appears
+                // (auto-play), so the view model switches to the
+                // TTS-driven task itself when the coordinator arrives
+                // (see its didSet). No onChange needed — the
+                // coordinator is one shared instance that never changes
+                // while this view lives.
+                viewModel.ttsCoordinator = ttsCoordinator
             }
             .onKeyPress(action: handleKeyPress)
         }
@@ -594,10 +608,12 @@ struct CompactReadingView: View {
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
-                // Speaker (Manh 2026-11-21): hear the reading text
-                // read aloud now. Shared component — the icon, the
-                // voice picker and the stop-on-second-press all live
-                // there, so Window and Lite can never drift apart.
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off
+                // for the read-along — when on, Play/Space speaks each
+                // slide/line as it shows (TTS drives the advance);
+                // when off the read is silent (WPM timer). Shared
+                // component — the icon, the voice picker and the toggle
+                // all live there, so Window and Lite can never drift apart.
                 SpeakerButton(viewModel: viewModel)
 
                 Button {
@@ -1163,10 +1179,12 @@ struct CompactReadingView: View {
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
-                // Speaker (Manh 2026-11-21): hear the reading text
-                // read aloud now. Shared component — the icon, the
-                // voice picker and the stop-on-second-press all live
-                // there, so Window and Lite can never drift apart.
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off
+                // for the read-along — when on, Play/Space speaks each
+                // slide/line as it shows (TTS drives the advance);
+                // when off the read is silent (WPM timer). Shared
+                // component — the icon, the voice picker and the toggle
+                // all live there, so Window and Lite can never drift apart.
                 SpeakerButton(viewModel: viewModel)
 
                 Button {

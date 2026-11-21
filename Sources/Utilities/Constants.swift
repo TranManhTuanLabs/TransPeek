@@ -839,6 +839,13 @@ extension Defaults.Keys {
     /// at once — no Space press needed. Toggled in the window's
     /// Settings popover.
     static let rsvpAutoPlay = Key<Bool>("transpeek_rsvpAutoPlay", default: true)
+    /// TTS (speech) on/off for Fast Read playback (Manh 2026-11-21,
+    /// CI314 fix): the speaker button toggles whether the RSVP
+    /// read-along speaks. Default OFF — a reader who never touches
+    /// the speaker keeps the silent WPM reading they already have.
+    /// A mode preference like the color scheme, so "Reset to default"
+    /// does NOT reset it.
+    static let rsvpTTSEnabled = Key<Bool>("transpeek_rsvpTTSEnabled", default: false)
 
     // Focus timer + rest eyes (Manh 2026-11-20, focus timer + panel
     // decor — the Focus & Rest card in panel left). Pomodoro STANDARD
