@@ -2,6 +2,7 @@ import AppKit
 import CoreGraphics
 import Defaults
 import Foundation
+import SwiftUI
 import Testing
 @testable import TransPeek
 
@@ -75,15 +76,18 @@ import Testing
         #expect(text.localizedCaseInsensitiveContains("Việt"))
     }
 
-    /// The provider supports the full 8-language OCR list.
+    /// The provider supports the full OCR language list — the same list
+    /// Settings offers (`OCRSettingsView.availableLanguages`, 34 languages
+    /// since Manh 2026-11-21). Comparing against the Settings list (not a
+    /// hardcoded copy) means expanding the list can't silently drift the
+    /// test out of date again: if the provider and Settings ever disagree,
+    /// this test fails.
     @Test func supportsFullLanguageList() {
         let provider = TesseractOCRProvider()
         #expect(provider.id == OcrProviderID.tesseract.rawValue)
         #expect(provider.needsNetwork == false)
         #expect(provider.needsAPIKey == false)
-        #expect(Set(provider.supportedLanguages) == Set([
-            "vi-VN", "en-US", "zh-Hans", "zh-Hant", "ja-JP", "ko-KR", "fr-FR", "de-DE",
-        ]))
+        #expect(Set(provider.supportedLanguages) == Set(OCRSettingsView.availableLanguages))
     }
 }
 #endif
