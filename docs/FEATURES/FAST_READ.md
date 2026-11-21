@@ -163,7 +163,9 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   safe direction. The window/panel becomes key when a read opens
   (window: `makeKeyAndOrderFront`; panel: `showAtCursor(makeKey:
   true)`), so Space works at once without a first click — and focus
-  returns to the other app as soon as the user clicks away.
+  returns to the other app as soon as the user clicks away. (The 3 entry
+  paths, the current fragmented focus code, and the planned shared
+  component are in §11.)
 - **Trackpad (`RSVPTrackpadMonitor`):** horizontal swipe = **one word per
   scroll event** (page-turn convention, SwiftRead-style; a longer swipe
   moves more words); **Style 2 (Basic Reading, Manh 2026-11-21): the
@@ -342,6 +344,61 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   "this is a Pro feature" note — so the user hears the feature before
   buying.
 - The speaker is hidden where there is no coordinator (Rest window).
+
+## 11. Read entry paths + keyboard focus (Manh 2026-11-22)
+
+**The 3 paths that open a read** (user-visible triggers):
+
+1. **User opens Fast Read** — Option+Click on the float icon, right-click
+   the icon → "Fast Read", the "Fast Read" button in the translate panel,
+   menubar → "Reading" section, or the global shortcut. Entry code:
+   `AppDelegate.showFastRead` → window `RSVPWindowController.show`
+   (`makeKeyAndOrderFront` + `NSApp.activate`) or panel
+   `showAtCursor(makeKey: true)`, depending on Settings ("Run FastRead
+   in:").
+2. **Focus timer (Pomodoro) reminder** — when a focus interval ends,
+   `FocusTimerStore.fireReminder(.workBreak(minutes:), countdownSeconds:
+   rest minutes × 60)` → `showReminder` → if nothing is reading, opens a
+   read in the panel right (`panelRightRequest` + `onShowPanel`) or a new
+   Rest window, per `focusReminderDestination`. If a read is already
+   running, the reminder waits (banner + system notification + orange
+   dot) and never interrupts it.
+3. **Rest-eyes (20-20-20) reminder** — the same `fireReminder`, with kind
+   `.eyeRest` and a 20s countdown → the same `showReminder` path as the
+   focus timer. Only the message text and the countdown differ; the code
+   path is shared.
+
+**Current state — Space/focus handling is fragmented, not shared:**
+
+- Window (Full): `RSVPView` owns `.focusable()` + `.focused($isFocused)`
+  + `onAppear { isFocused = true }` + `.onKeyPress` (Space, ←/→, ↑/↓);
+  the window becomes key in `RSVPWindowController.show`.
+- Lite (panel): `CompactReadingView` owns its own `@FocusState` +
+  `onAppear` + `.onChange(of: viewModel.isPlaying)` (re-takes focus when
+  a read starts playing, Manh 2026-11-22) + `.onKeyPress`; the panel
+  becomes key via `PopupPanelController.showAtCursor(makeKey:)` — and
+  every entry path has to remember to pass `makeKey: true`.
+- So every entry path has to remember the focus dance itself. When a
+  path forgets, Space breaks — that is what happened twice: the reminder
+  path forgot `makeKey` (fixed `b6388f20`), and a reminder read starting
+  in an already-visible panel never fired `onAppear` again, so the focus
+  stayed lost from the previous read (fixed `1ca40268`).
+
+**Why Space must work at once (Manh 2026-11-22):** a read can auto-start
+(reminder / rest-eyes) and play the speaker out loud. If Manh is in a
+crowded place or at the company and forgot to turn the speaker off, it
+disturbs the people around him — he must be able to press Space
+immediately to pause. That is the emergency-mute requirement: every read,
+from every path, must accept Space the moment it starts playing.
+
+**Planned direction — one shared component (AFTER the v0.1.11 release,
+Manh 2026-11-22):** build a single shared read-keyboard/focus component
+that both Full and Lite use, so the rule "read starts playing → its
+surface becomes key + focused → Space works at once" lives in ONE place.
+Every entry path goes through it; no path has to remember the focus dance
+on its own. It keeps the safe direction (§5, focused-only, never global):
+the component only makes the focus RELIABLE when a read is playing; it
+never captures Space while the user types in another app.
 
 ## References
 
