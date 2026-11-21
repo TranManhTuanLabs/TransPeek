@@ -40,7 +40,8 @@
 | `docs/UI/UX_DESIGN/MAIN_NAVIGATION_UX.md` | Menu bar + Settings | Bản nháp |
 | `docs/AGENTS.md` | Quy tắc làm việc cho AI trong repo | Đang dùng |
 | `docs/AI_CONTEXT.md` | Bối cảnh cho AI | Đang dùng |
-| `docs/PROJECT_STATE.md` | Trạng thái dự án hiện tại | Đang dùng |
+| `docs/PROJECT_STATE.md` | Trạng thái dự án hiện tại (ảnh chụp nhanh) | Đang dùng |
+| `docs/CHANGELOG.md` | Log thay đổi theo ngày (mới nhất lên đầu) | Đang dùng |
 | `docs/BUILD_FROM_ZERO.md` | Build app từ máy trắng | Đang dùng |
 | `docs/RESEARCH/README.md` | Chỉ mục research | Đang dùng |
 | `docs/RESEARCH/transpeek-panel-sizing/report.md` | Research panel co dãn | Đang dùng |
@@ -63,7 +64,8 @@ docs/
 ├── APP-SIGN-KEY-PERMISSIONS.md
 ├── AGENTS.md                     # quy tắc làm việc cho AI
 ├── AI_CONTEXT.md                 # bối cảnh cho AI
-├── PROJECT_STATE.md              # trạng thái dự án hiện tại
+├── PROJECT_STATE.md              # trạng thái dự án hiện tại (ảnh chụp nhanh)
+├── CHANGELOG.md                  # log thay đổi theo ngày (mới nhất lên đầu)
 ├── BUILD_FROM_ZERO.md            # build app từ máy trắng
 ├── RESEARCH/
 │   ├── README.md                     # chỉ mục research
@@ -103,6 +105,7 @@ docs/
 - [Quy tắc làm việc](AGENTS.md)
 - [Bối cảnh AI](AI_CONTEXT.md)
 - [Trạng thái dự án](PROJECT_STATE.md)
+- [Log thay đổi theo ngày](CHANGELOG.md)
 - [Panel UX (chưa viết)](UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
 - [Fast Read: Theme & Style](UI/UX_DESIGN/FAST_READ_THEME_STYLE.md)
 - [Fast Read: icon giả khi bôi đen trong Read](UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
