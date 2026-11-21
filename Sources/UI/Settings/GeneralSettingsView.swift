@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 
 struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
+    @Default(.isHoverBlockDetectionEnabled) private var isHoverBlockDetectionEnabled
     @Default(.textDetectionMode) private var textDetectionMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
@@ -139,6 +140,17 @@ struct GeneralSettingsView: View {
                 Toggle("Show floating icon on text selection", isOn: $isAutoDetectEnabled)
 
                 if isAutoDetectEnabled {
+                    // Hover block detection (Manh 2026-11-21): hovering a
+                    // block of text shows the icon without selecting it
+                    // first. Default ON — the label says so (Manh
+                    // 2026-11-20: a setting with a default shows it in
+                    // its name). Lives inside the master toggle because
+                    // the detector only runs while auto-detect is on.
+                    Toggle("Show icon when hovering text (default: on)", isOn: $isHoverBlockDetectionEnabled)
+                    Text("Hovering a block of text shows the icon without selecting it first. Only apps that expose their text work; other apps are unaffected.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
+
                     // No "Floating Icon Activation" picker: the icon is
                     // always hover (Manh 2026-11-20) — the old upstream
                     // hover/click activation setting was removed.
