@@ -49,10 +49,12 @@
   (the user needs it to stop playback).
 - Settings (General → Translation, inside "Show floating icon on text
   selection"): "Show icon when hovering text (default: on)". Default ON.
-  Below it, "Hover text delay (default: 400ms)" — a Picker
-  (200/300/400/500/700 ms) for how long the mouse must stay still
-  before the hover icon appears. Uses the same Accessibility permission
-  as text selection — no new permission is needed.
+  Below it, "Hover text delay (default: 0.4s)" — a Picker
+  (0.2/0.3/0.4/0.5/0.7 s) for how long the mouse must stay still
+  before the hover icon appears. Values are shown in seconds (Manh
+  2026-11-21) because 0.4s is easier to picture than 400ms; the
+  stored value is still milliseconds. Uses the same Accessibility
+  permission as text selection — no new permission is needed.
 - Limits (v1): a block must be ≥ 4 chars and ≤ 2000 chars; buttons,
   links and other controls never summon the icon; TransPeek's own
   windows are skipped; the excluded-apps list applies, same as selection.

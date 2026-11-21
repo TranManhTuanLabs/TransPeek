@@ -158,10 +158,12 @@ struct GeneralSettingsView: View {
                     // text block before the icon appears; longer only
                     // shows it on a deliberate pause, not while sweeping
                     // the mouse across text. Default in the label, same
-                    // reason as above.
-                    Picker("Hover text delay (default: \(Defaults.Keys.hoverBlockDelayMs.defaultValue)ms):", selection: $hoverBlockDelayMs) {
+                    // reason as above. Values shown in seconds (Manh
+                    // 2026-11-21): 0.4s is easier to picture than 400ms;
+                    // the stored value is still milliseconds.
+                    Picker("Hover text delay (default: \(Double(Defaults.Keys.hoverBlockDelayMs.defaultValue) / 1000, specifier: "%.1f")s):", selection: $hoverBlockDelayMs) {
                         ForEach([200, 300, 400, 500, 700], id: \.self) { ms in
-                            Text("\(ms) ms").tag(ms)
+                            Text("\(Double(ms) / 1000, specifier: "%.1f") s").tag(ms)
                         }
                     }
                     Text("How long the mouse must stay still over a text block before the icon appears.")
@@ -186,10 +188,12 @@ struct GeneralSettingsView: View {
                     // saved value is lost. The default is in the label
                     // itself (Manh 2026-11-20: a setting with a default
                     // should show it in its name, so the user knows what
-                    // value to set it back to).
-                    Picker("Hover delay (default: \(Defaults.Keys.hoverDelayMs.defaultValue)ms):", selection: $hoverDelayMs) {
+                    // value to set it back to). Values shown in seconds
+                    // (Manh 2026-11-21): 0.5s is easier to picture than
+                    // 500ms; the stored value is still milliseconds.
+                    Picker("Hover delay (default: \(Double(Defaults.Keys.hoverDelayMs.defaultValue) / 1000, specifier: "%.1f")s):", selection: $hoverDelayMs) {
                         ForEach([300, 400, 500, 600, 700, 800], id: \.self) { ms in
-                            Text("\(ms) ms").tag(ms)
+                            Text("\(Double(ms) / 1000, specifier: "%.1f") s").tag(ms)
                         }
                     }
                     Text("How long to wait before the panel opens when you hover the icon.")
