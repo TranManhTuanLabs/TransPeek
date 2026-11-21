@@ -498,11 +498,22 @@ struct CompactReadingView: View {
         if viewModel.readingStyle == .style2 {
             Style2ReadingPage(viewModel: viewModel, horizontalPadding: 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // No window drag over the reading page (Manh 2026-11-22):
+                // a click-drag here is text selection, not a panel move.
+                // Without this marker PopupPanel.sendEvent treats the
+                // drag as a window drag, so the panel moves instead of
+                // selecting text (and the cursor flickers between
+                // I-beam and arrow).
+                .background { InteractiveMarker() }
         } else {
             switch viewModel.contextDisplayStyle {
             case .always:
                 bookPage
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    // No window drag over the book page (Manh 2026-11-22):
+                    // same as the Style 2 page above — a drag here is
+                    // text selection, not a panel move.
+                    .background { InteractiveMarker() }
             case .never:
                 readingArea
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -513,6 +524,9 @@ struct CompactReadingView: View {
                 } else {
                     bookPage
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // No window drag over the book page (Manh
+                        // 2026-11-22): same as above.
+                        .background { InteractiveMarker() }
                 }
             }
         }

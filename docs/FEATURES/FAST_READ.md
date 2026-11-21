@@ -157,6 +157,17 @@ This is the core of the design (Manh 2026-11-18, from SwiftRead):
   - **Handling:** the component replaces the 4 context `Text` views
     (Window + Lite, before + after). Font, color and alignment are
     passed in, so the look is unchanged.
+  - **Verified (Manh 2026-11-22, CI342):** Full read works in BOTH
+    styles — the context text is selectable and never becomes a scroll
+    box. **Lite fix (same build round):** in the Lite panel the reading
+    area also needs an `InteractiveMarker` (`.background` on the book
+    page + the Style 2 page) — without it `PopupPanel.sendEvent`
+    treats a click-drag over the text as a window drag, so the panel
+    moves instead of selecting text (selection works only sometimes,
+    and the cursor flickers between I-beam and arrow). The marker is
+    the established pattern for "this area handles its own drag". The
+    container also sets an I-beam cursor rect over the whole read
+    half, so the cursor stays an I-beam throughout.
 - **Context display setting** ("Show context around focus word",
   SwiftRead's `contextDisplayStyle`, in Settings under Color Scheme):
   **Always** (book page even while playing) / **Only show when paused**
@@ -353,7 +364,14 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   TTSCoordinator path, so it never disturbs RSVP playback). No Read
   action. Only in Fast Read surfaces (Window Read open, or the panel
   on its Fast Read tab) — never for the translate input or Settings.
-  Design: `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md`.
+  **Speech delegate lifetime (crash fix, Manh 2026-11-22, build 342):**
+  the delegate must stay alive until the framework's didFinish/didCancel
+  fires — stopping (`stopSpeaking`) must NOT nil it at once, because
+  Apple's TextToSpeech delivers didCancel asynchronously and retains
+  the delegate in the pending callback; freeing it early crashes with
+  EXC_BAD_ACCESS in objc_retain. Retired delegates are kept in
+  `retiredDelegates` until their own callback fires. Design:
+  `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md`.
 
 ## 10. Speaker button — read-along (continuous, word-sync)
 

@@ -46,6 +46,14 @@ final class AlternativeIconController {
     /// speaks the selected text and never touches RSVP playback state.
     private let synthesizer = AVSpeechSynthesizer()
     private var speechDelegate: AlternativeIconSpeechDelegate?
+    /// Delegates whose speech was stopped (or replaced) but whose
+    /// didFinish/didCancel callback has not fired yet. Kept alive so
+    /// Apple's TextToSpeech framework never retains a freed delegate
+    /// (crash 2026-11-22, build 342: EXC_BAD_ACCESS in objc_retain —
+    /// the delegate was nil-ed on stop while the framework's didCancel
+    /// was still pending). Each delegate leaves this list when its own
+    /// callback fires (speechDidFinish).
+    private var retiredDelegates: [AlternativeIconSpeechDelegate] = []
 
     /// Show the icon near the given screen point. Replaces any icon
     /// already visible (silently, no dismiss callback).
@@ -222,10 +230,16 @@ final class AlternativeIconController {
         let utterance = AVSpeechUtterance(string: text)
         let lang = speakLanguageProvider?(text) ?? "en-US"
         utterance.voice = AVSpeechSynthesisVoice(language: lang)
-        let delegate = AlternativeIconSpeechDelegate { [weak self] in
+        let delegate = AlternativeIconSpeechDelegate { [weak self] finished in
             Task { @MainActor in
-                self?.speechDidFinish()
+                self?.speechDidFinish(finished)
             }
+        }
+        // Retire the previous delegate (if its didCancel is still
+        // pending, keep it alive in retiredDelegates until its callback
+        // fires — see the property comment for the crash this prevents).
+        if let old = speechDelegate {
+            retiredDelegates.append(old)
         }
         speechDelegate = delegate
         synthesizer.delegate = delegate
@@ -237,15 +251,25 @@ final class AlternativeIconController {
         guard isSpeaking else { return }
         synthesizer.stopSpeaking(at: .immediate)
         isSpeaking = false
-        speechDelegate = nil
+        // Do NOT nil speechDelegate here — the framework's didCancel
+        // callback is still pending (it runs later on the main queue)
+        // and retains the delegate; freeing it now is the crash
+        // (2026-11-22, build 342). speechDidFinish (from didCancel)
+        // clears it once the framework has confirmed the speech ended.
         if panel != nil {
             startAutoDismissTimer()
         }
     }
 
-    private func speechDidFinish() {
+    private func speechDidFinish(_ finished: AlternativeIconSpeechDelegate) {
+        // Drop the finished delegate from the retired list (if it was
+        // retired) or clear the current one — its speech is done, so
+        // the framework holds no more callbacks for it.
+        retiredDelegates.removeAll { $0 === finished }
+        if speechDelegate === finished {
+            speechDelegate = nil
+        }
         isSpeaking = false
-        speechDelegate = nil
         if panel != nil {
             startAutoDismissTimer()
         }
@@ -274,18 +298,21 @@ final class AlternativeIconController {
 /// AVSpeechSynthesizerDelegate that reports when the utterance ends
 /// (finished or cancelled) so the icon can clear its speaking state.
 /// A tiny class because AVSpeechSynthesizer takes a delegate object.
+/// The callback passes the delegate itself, so the controller can drop
+/// exactly that delegate from its retired list (see
+/// AlternativeIconController.retiredDelegates).
 private final class AlternativeIconSpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-    private let onFinish: () -> Void
+    private let onFinish: (AlternativeIconSpeechDelegate) -> Void
 
-    init(onFinish: @escaping () -> Void) {
+    init(onFinish: @escaping (AlternativeIconSpeechDelegate) -> Void) {
         self.onFinish = onFinish
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        onFinish()
+        onFinish(self)
     }
 
     func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        onFinish()
+        onFinish(self)
     }
 }

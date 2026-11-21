@@ -83,6 +83,16 @@ final class NonScrollingTextContainerView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    /// I-beam cursor over the whole read half (Manh 2026-11-22): the
+    /// text view only covers the text itself, so without this the
+    /// cursor flips to an arrow over the empty part of the half. The
+    /// whole area is reading text, so the cursor stays an I-beam
+    /// throughout (the text view's own I-beam rect covers the text).
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .iBeam)
+    }
+
     func setText(_ string: String, font: NSFont, color: NSColor) {
         // Only touch the string/font/color when they changed, so an
         // in-progress selection is not reset by a re-render.
