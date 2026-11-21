@@ -9,6 +9,8 @@ struct GeneralSettingsView: View {
     @Default(.isAutoDetectEnabled) private var isAutoDetectEnabled
     @Default(.isHoverBlockDetectionEnabled) private var isHoverBlockDetectionEnabled
     @Default(.hoverBlockDelayMs) private var hoverBlockDelayMs
+    @Default(.floatIconSize) private var floatIconSize
+    @Default(.autoShowFloatIconSize) private var autoShowFloatIconSize
     @Default(.textDetectionMode) private var textDetectionMode
     @Default(.triggerClickAction) private var triggerClickAction
     @Default(.hoverDelayMs) private var hoverDelayMs
@@ -167,6 +169,31 @@ struct GeneralSettingsView: View {
                         }
                     }
                     Text("How long the mouse must stay still over a text block before the icon appears.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
+
+                    // Float icon sizes (Manh 2026-11-21): the user picks
+                    // both icon sizes here — the selection icon (full
+                    // size) and the block-text hover icon (auto-show,
+                    // compact). Pickers, not sliders, same style as the
+                    // delay pickers above. The "A" glyph scales with the
+                    // circle, so a smaller circle still shows a
+                    // proportional letter. Defaults in the labels.
+                    Picker("Float icon size (default: \(Defaults.Keys.floatIconSize.defaultValue)pt):", selection: $floatIconSize) {
+                        ForEach([24, 26, 28, 30, 32], id: \.self) { pt in
+                            Text("\(pt) pt").tag(pt)
+                        }
+                    }
+                    Text("Size of the icon that appears when you select text.")
+                        .font(.settingsCaption(appTextSize: appTextSize))
+                        .foregroundStyle(.secondary)
+
+                    Picker("Auto-show float icon size (default: \(Defaults.Keys.autoShowFloatIconSize.defaultValue)pt):", selection: $autoShowFloatIconSize) {
+                        ForEach([18, 20, 22, 24], id: \.self) { pt in
+                            Text("\(pt) pt").tag(pt)
+                        }
+                    }
+                    Text("Size of the icon that appears on its own when you hover a block of text.")
                         .font(.settingsCaption(appTextSize: appTextSize))
                         .foregroundStyle(.secondary)
 

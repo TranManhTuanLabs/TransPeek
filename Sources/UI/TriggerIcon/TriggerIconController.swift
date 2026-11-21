@@ -156,13 +156,22 @@ final class TriggerTrackingView: NSView {
         drawPlainAGlyph(in: bounds)
     }
 
+    /// Glyph sizes scale with the circle (Manh 2026-11-21): the "A" is
+    /// half the circle diameter, the speaker ~44%, the "+" badge a
+    /// quarter — so a smaller circle (picked in Settings) still shows a
+    /// proportional glyph. At the old 32pt circle this gives the same
+    /// 15/14/8pt glyphs as before (A 16pt at 32, near-identical).
+    private var aFontSize: CGFloat { bounds.width * 0.5 }
+    private var speakerPointSize: CGFloat { bounds.width * 0.44 }
+    private var plusFontSize: CGFloat { bounds.width * 0.25 }
+
     /// Draw the speaker glyph (`speaker.wave.2.fill`, accent color) —
     /// used both while TTS is playing (click again to stop) and as the
     /// Speak preview (Manh 2026-11-19, 0.1.5).
     private func drawSpeakerGlyph(in bounds: NSRect) {
         let symbolName = "speaker.wave.2.fill"
         let symbolColor = NSColor.controlAccentColor
-        let sizeConfig = NSImage.SymbolConfiguration(pointSize: 14, weight: .medium)
+        let sizeConfig = NSImage.SymbolConfiguration(pointSize: speakerPointSize, weight: .medium)
         let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
         if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Speak")?
             .withSymbolConfiguration(sizeConfig.applying(colorConfig))
@@ -182,8 +191,9 @@ final class TriggerTrackingView: NSView {
     /// blue (Style 1, Manh 2026-11-19, 0.1.5). Drawn as text into the
     /// current graphics context — there is no plain-A SF Symbol.
     /// The blue is the color of the letter A itself.
+    /// The font scales with the circle (see aFontSize above).
     private func drawPlainAGlyph(in bounds: NSRect) {
-        let aFont = NSFont.systemFont(ofSize: 15)
+        let aFont = NSFont.systemFont(ofSize: aFontSize)
         let aAttrs: [NSAttributedString.Key: Any] = [
             .font: aFont,
             .foregroundColor: NSColor.systemBlue,
@@ -205,10 +215,11 @@ final class TriggerTrackingView: NSView {
     /// Draw the Fast Read glyph: a bold "A" with a small "+" badge at its
     /// top-right corner (Manh 2026-11-18: "chữ A+ có dấu + góc trên phải").
     /// Drawn as text into the current graphics context — there is no A+
-    /// SF Symbol.
+    /// SF Symbol. Both fonts scale with the circle (see aFontSize /
+    /// plusFontSize above).
     private func drawFastReadGlyph(in bounds: NSRect) {
         let turmeric = Self.fastReadTurmeric
-        let aFont = NSFont.boldSystemFont(ofSize: 15)
+        let aFont = NSFont.boldSystemFont(ofSize: aFontSize)
         let aAttrs: [NSAttributedString.Key: Any] = [
             .font: aFont,
             .foregroundColor: turmeric
@@ -222,7 +233,7 @@ final class TriggerTrackingView: NSView {
         aString.draw(at: aOrigin)
 
         // Small "+" badge, centred on the A’s top-right corner.
-        let plusFont = NSFont.boldSystemFont(ofSize: 8)
+        let plusFont = NSFont.boldSystemFont(ofSize: plusFontSize)
         let plusAttrs: [NSAttributedString.Key: Any] = [
             .font: plusFont,
             .foregroundColor: turmeric

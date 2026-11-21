@@ -749,6 +749,13 @@ extension Defaults.Keys {
     // while sweeping the mouse across text. Tunable in Settings, next to
     // the block-text toggle. Default 400 ms.
     static let hoverBlockDelayMs = Key<Int>("transpeek_hoverBlockDelayMs", default: 400)
+    // Float icon sizes (Manh 2026-11-21): user-adjustable in Settings.
+    // The selection icon (full size) and the block-text hover icon
+    // (auto-show, compact) each get their own picker; the "A" glyph
+    // scales with the circle, so a smaller circle still shows a
+    // proportional letter. Defaults 26pt / 24pt.
+    static let floatIconSize = Key<Int>("transpeek_floatIconSize", default: 26)
+    static let autoShowFloatIconSize = Key<Int>("transpeek_autoShowFloatIconSize", default: 24)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
 
