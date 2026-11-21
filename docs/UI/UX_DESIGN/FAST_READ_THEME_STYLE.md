@@ -253,3 +253,10 @@ is a clean, style-safe way; otherwise leave it.
   `bookPage`).
 - TTS read-along research:
   `docs/RESEARCH/tts-speechify-naturalreader/`.
+
+## Related docs
+
+- [Fast Read — Select Shows Icon](FAST_READ_SELECT_ICON.md) — the fake
+  icon that appears when selecting text inside Fast Read.
+- [Fast Read (feature)](../../FEATURES/FAST_READ.md) — the reading
+  surfaces this theme/style spec applies to.

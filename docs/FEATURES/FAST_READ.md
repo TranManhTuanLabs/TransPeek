@@ -229,3 +229,7 @@ window file `RSVPView.swift` is never edited for panel work (Manh
 - Icon (entries + glyph): `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md`.
 - Panel (the "Fast Read" button):
   `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md` §9.
+- Theme vs Style (Theme = colours, Style = reading mode + layout):
+  `docs/UI/UX_DESIGN/FAST_READ_THEME_STYLE.md`.
+- Select shows icon in Read mode (fake icon, speaker + hover, no Read):
+  `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md`.
