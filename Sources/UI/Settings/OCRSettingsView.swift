@@ -48,6 +48,13 @@ struct OCRSettingsView: View {
             // Vietnamese are built into the app; the other languages
             // download automatically the first time they are needed.
             Section {
+                // Prompt (Manh 2026-11-21): ask which languages the
+                // user usually uses OCR for, so they tick them in
+                // Recognition languages above — missing data then
+                // downloads automatically on first use.
+                Text("Which languages do you usually use OCR for? Tick them in Recognition languages above — missing language data downloads automatically.")
+                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .foregroundStyle(.secondary)
                 Text(tesseractStatusText)
                     .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)

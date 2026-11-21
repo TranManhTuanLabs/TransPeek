@@ -55,12 +55,16 @@ struct TesseractOCRProvider: OcrProvider {
         let codes = await effectiveTessCodes()
         let language = codes.joined(separator: "+")
 
-        // Tesseract's datapath is the PARENT of the tessdata folder
-        // (it appends "tessdata" itself) — see the tesseract-Apple
-        // README. The manager's tessdata dir holds the .traineddata
-        // files; its parent is what the engine wants.
-        let dataPath = TesseractLanguageDataManager.tessdataDirectory
-            .deletingLastPathComponent().path
+        // The datapath is the directory that DIRECTLY holds the
+        // .traineddata files — NOT its parent. The tesseract-Apple
+        // demo proves this: it passes Bundle.main.resourcePath as the
+        // datapath with eng.traineddata sitting flat in Resources
+        // (no "tessdata" subfolder), and Tesseract finds it there.
+        // The earlier code passed the PARENT of the tessdata folder
+        // (assuming Tesseract appends "tessdata" itself) — that is
+        // why init failed even though the files were present
+        // (CI #304/#306: `.initializationFailed(-1)`).
+        let dataPath = TesseractLanguageDataManager.tessdataDirectory.path
 
         let nsImage = NSImage(
             cgImage: cgImage,
