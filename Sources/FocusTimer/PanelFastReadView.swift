@@ -201,35 +201,40 @@ struct PanelFastReadView: View {
                 FocusDemoView()
                     .padding(.top, 12)
 
-                // Two explicit actions, side by side (Manh 2026-11-22):
-                // "Read in panel" always reads here, whatever "Run
-                // FastRead in:" says; "Read in FastRead Window" always
-                // opens the Window Read. Both ignore the setting — the
-                // setting only decides where a LAUNCH (float icon,
-                // menubar, shortcut, reminder) goes.
-                HStack(spacing: 8) {
-                    Button {
-                        store.startPanelReading(text: sourceText)
-                        onStartReading?()
-                    } label: {
-                        Label("Read in panel", systemImage: "book.pages")
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .help("Read the text in the translate tab, right here in the panel")
-                    .background { InteractiveMarker() }
-                    .panelHoverHighlight()
+                // "Read in:" title + two explicit actions, side by side
+                // (Manh 2026-11-22): the title mirrors "Run FastRead
+                // in:" below — "Read in:" is the immediate action (read
+                // THIS text now, here or in a window), "Run FastRead
+                // in:" is the default for future launches. Both buttons
+                // ignore the setting.
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Read in:")
+                        .font(.callout)
+                        .bold()
+                    HStack(spacing: 8) {
+                        Button {
+                            store.startPanelReading(text: sourceText)
+                            onStartReading?()
+                        } label: {
+                            Label("Read in panel", systemImage: "book.pages")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .help("Read the text in the translate tab, right here in the panel")
+                        .background { InteractiveMarker() }
+                        .panelHoverHighlight()
 
-                    Button {
-                        onReadInWindow?(sourceText)
-                    } label: {
-                        Label("Read in FastRead Window", systemImage: "macwindow")
+                        Button {
+                            onReadInWindow?(sourceText)
+                        } label: {
+                            Label("Read in FastRead Window", systemImage: "macwindow")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .help("Read the text in the translate tab, in a separate Fast Read window")
+                        .background { InteractiveMarker() }
+                        .panelHoverHighlight()
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .help("Read the text in the translate tab, in a separate Fast Read window")
-                    .background { InteractiveMarker() }
-                    .panelHoverHighlight()
                 }
 
                 runLocationSection
