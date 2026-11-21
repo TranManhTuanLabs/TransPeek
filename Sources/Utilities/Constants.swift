@@ -718,6 +718,10 @@ extension Defaults.Keys {
 
     // Auto-detect text selection
     static let isAutoDetectEnabled = Key<Bool>("isAutoDetectEnabled", default: true)
+    // Block text detection on hover (Manh 2026-11-21): show the float
+    // icon when hovering a block of text, without selecting it first.
+    // Default ON — the hover icon auto-appears by default.
+    static let isHoverBlockDetectionEnabled = Key<Bool>("transpeek_isHoverBlockDetectionEnabled", default: true)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
 
