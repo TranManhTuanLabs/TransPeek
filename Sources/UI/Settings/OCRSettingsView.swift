@@ -9,22 +9,26 @@ struct OCRSettingsView: View {
     @Default(.ocrAutoCopyTranslation) private var autoCopyTranslation
     @Default(.ocrLanguages) private var ocrLanguages
 
-    /// Languages offered for OCR recognition (BCP 47 codes) — the full
-    /// Vision set on macOS 15+ (Manh 2026-11-21): Vietnamese and English
-    /// first (the defaults), then the rest alphabetically. One list drives
-    /// BOTH engines: Vision reads all 18; Tesseract reads the 15 it has a
-    /// code for. Arabic (Najdi), Cantonese (Simplified) and Cantonese
-    /// (Traditional) are Vision-only — Tesseract has no model for them, so
-    /// the fallback skips them and reads English instead if Vision fails.
+    /// Languages offered for OCR recognition (BCP 47 codes) — every
+    /// language either engine can read (Manh 2026-11-21): Vietnamese and
+    /// English first (the defaults), then the rest alphabetically. One
+    /// list drives BOTH engines: Vision reads 18 of them, Tesseract reads
+    /// 31 (all except Arabic (Najdi) and the two Cantonese variants, which
+    /// are Vision-only — Tesseract has no model for them, so the fallback
+    /// skips them and reads English instead if Vision fails). A language
+    /// Vision doesn't support is still readable: when Vision supports none
+    /// of the selected languages, the capture skips straight to Tesseract.
     static let availableLanguages: [String] = [
         "vi-VN", "en-US",
-        "ar-SA", "ars-SA", "de-DE", "es-ES", "fr-FR", "it-IT", "ja-JP",
-        "ko-KR", "pt-BR", "ru-RU", "th-TH", "uk-UA", "yue-Hans", "yue-Hant",
-        "zh-Hans", "zh-Hant",
+        "ar-SA", "ars-SA", "bg-BG", "cs-CZ", "da-DK", "de-DE", "el-GR",
+        "es-ES", "fi-FI", "fr-FR", "he-IL", "hi-IN", "hu-HU", "id-ID",
+        "it-IT", "ja-JP", "ko-KR", "ms-MY", "nb-NO", "nl-NL", "pl-PL",
+        "pt-BR", "ro-RO", "ru-RU", "sv-SE", "th-TH", "tr-TR", "uk-UA",
+        "yue-Hans", "yue-Hant", "zh-Hans", "zh-Hant",
     ]
 
     /// Whether the Recognition languages list is expanded. Collapsed by
-    /// default so 18 languages don't stretch the Settings tab (Manh
+    /// default so 34 languages don't stretch the Settings tab (Manh
     /// 2026-11-21); the collapsed row still shows which languages are
     /// selected.
     @State private var isLanguagesExpanded = false
@@ -137,7 +141,7 @@ struct OCRSettingsView: View {
         ocrLanguages.map { languageName(for: $0) }.joined(separator: ", ")
     }
 
-    /// Which of the 18 OCR languages Tesseract can already recognise
+    /// Which of the 34 OCR languages Tesseract can already recognise
     /// (bundled eng + vie, or already downloaded). The rest download
     /// on demand the first time they are needed. Apple Silicon only
     /// (the Tesseract fallback section is hidden on Intel).

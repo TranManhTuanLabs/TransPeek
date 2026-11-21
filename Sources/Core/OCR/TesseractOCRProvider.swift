@@ -26,16 +26,17 @@ struct TesseractOCRProvider: OcrProvider {
     let needsNetwork = false
     let needsAPIKey = false
 
-    /// All 18 OCR languages the app offers (`OCRSettingsView.availableLanguages`).
-    /// Tesseract can recognise 15 of them: eng + vie are bundled, the
-    /// other 13 download on demand, so the full list is supported except
-    /// Arabic (Najdi) and the two Cantonese variants, which are Vision-only
-    /// (no Tesseract model for them — `tessCode` returns nil and the
-    /// provider skips them).
+    /// All 34 OCR languages the app offers (`OCRSettingsView.availableLanguages`).
+    /// Tesseract can recognise 31 of them: eng + vie are bundled, the
+    /// other 29 download on demand. Arabic (Najdi) and the two Cantonese
+    /// variants are Vision-only (no Tesseract model for them — `tessCode`
+    /// returns nil and the provider skips them).
     var supportedLanguages: [String] {
-        ["vi-VN", "en-US", "ar-SA", "ars-SA", "de-DE", "es-ES", "fr-FR",
-         "it-IT", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "th-TH", "uk-UA",
-         "yue-Hans", "yue-Hant", "zh-Hans", "zh-Hant"]
+        ["vi-VN", "en-US", "ar-SA", "ars-SA", "bg-BG", "cs-CZ", "da-DK",
+         "de-DE", "el-GR", "es-ES", "fi-FI", "fr-FR", "he-IL", "hi-IN",
+         "hu-HU", "id-ID", "it-IT", "ja-JP", "ko-KR", "ms-MY", "nb-NO",
+         "nl-NL", "pl-PL", "pt-BR", "ro-RO", "ru-RU", "sv-SE", "th-TH",
+         "tr-TR", "uk-UA", "yue-Hans", "yue-Hant", "zh-Hans", "zh-Hant"]
     }
 
     var status: String { String(localized: "Ready") }

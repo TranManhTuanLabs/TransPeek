@@ -12,7 +12,7 @@ import Foundation
 /// on demand to the local dir (from tessdata_best, like Windows).
 ///
 /// The manager is generic: every operation takes a Tesseract language
-/// code (`eng`, `vie`, `chi_sim`, ...), so the full 18-language OCR list
+/// code (`eng`, `vie`, `chi_sim`, ...), so the full 34-language OCR list
 /// works — adding a language is just adding its code to the list, no
 /// new logic.
 enum TesseractLanguageDataManager {
@@ -232,6 +232,8 @@ enum TesseractLanguageDataManager {
     }
 
     /// Tesseract code -> BCP 47, for display / supportedLanguages.
+    /// Covers every code `tessCode` can return, so download results and
+    /// status lines always show a real language name, never a raw code.
     static func bcp47(forTessCode code: String) -> String {
         switch code {
         case "vie": "vi-VN"
@@ -248,6 +250,23 @@ enum TesseractLanguageDataManager {
         case "ara": "ar-SA"
         case "ita": "it-IT"
         case "tha": "th-TH"
+        case "nld": "nl-NL"
+        case "swe": "sv-SE"
+        case "dan": "da-DK"
+        case "fin": "fi-FI"
+        case "nor": "nb-NO"
+        case "pol": "pl-PL"
+        case "ces": "cs-CZ"
+        case "hun": "hu-HU"
+        case "ron": "ro-RO"
+        case "bul": "bg-BG"
+        case "ell": "el-GR"
+        case "heb": "he-IL"
+        case "hin": "hi-IN"
+        case "ind": "id-ID"
+        case "msa": "ms-MY"
+        case "tur": "tr-TR"
+        case "ukr": "uk-UA"
         default: code
         }
     }

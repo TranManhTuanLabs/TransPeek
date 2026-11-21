@@ -36,20 +36,28 @@
   (`lexiaoyao20/tesseract-Apple`, Tesseract 5.5.2, arm64, tĩnh, kèm
   Leptonica), dùng qua lớp phủ Swift `TesseractSwift`.
   Provider: `TesseractOCRProvider` (theo protocol `OcrProvider`).
-- **Ngôn ngữ: đủ 18 thứ tiếng trong `OCRSettingsView.availableLanguages`**
-  (đủ bộ Vision trên macOS 15+: vi-VN, en-US, ar-SA, ars-SA, de-DE, es-ES,
-  fr-FR, it-IT, ja-JP, ko-KR, pt-BR, ru-RU, th-TH, uk-UA, yue-Hans,
-  yue-Hant, zh-Hans, zh-Hant) → mã tessdata: vie, eng, ara, deu, spa, fra,
-  ita, jpn, kor, por, rus, tha, ukr, chi_sim, chi_tra. **3 thứ tiếng chỉ
-  Vision đọc được** (ars-SA, yue-Hans, yue-Hant — Tesseract không có model
-  cho chúng, fallback sẽ bỏ qua và đọc tiếng Anh nếu Vision lỗi).
+- **Ngôn ngữ: đủ 34 thứ tiếng trong `OCRSettingsView.availableLanguages`**
+  (mọi ngôn ngữ mà 1 trong 2 engine đọc được, Manh 2026-11-21: vi-VN,
+  en-US, ar-SA, ars-SA, bg-BG, cs-CZ, da-DK, de-DE, el-GR, es-ES, fi-FI,
+  fr-FR, he-IL, hi-IN, hu-HU, id-ID, it-IT, ja-JP, ko-KR, ms-MY, nb-NO,
+  nl-NL, pl-PL, pt-BR, ro-RO, ru-RU, sv-SE, th-TH, tr-TR, uk-UA, yue-Hans,
+  yue-Hant, zh-Hans, zh-Hant). Vision đọc 18 trong số đó; Tesseract đọc
+  31 (mã tessdata: vie, eng, ara, deu, spa, fra, ita, jpn, kor, por, rus,
+  tha, ukr, chi_sim, chi_tra, nld, swe, dan, fin, nor, pol, ces, hun, ron,
+  bul, ell, heb, hin, ind, msa, tur). **3 thứ tiếng chỉ Vision đọc được**
+  (ars-SA, yue-Hans, yue-Hant — Tesseract không có model cho chúng,
+  fallback sẽ bỏ qua và đọc tiếng Anh nếu Vision lỗi). Ngược lại, 16 thứ
+  tiếng chỉ Tesseract đọc được (Hà Lan, Thụy Điển, Đan Mạch, Phần Lan,
+  Na Uy, Ba Lan, Séc, Hungary, Romania, Bulgaria, Hy Lạp, Hebrew, Hindi,
+  Indonesia, Malay, Thổ Nhĩ Kỳ) — Vision không hỗ trợ chúng nên lần chụp
+  sẽ bỏ qua Vision, đi thẳng sang Tesseract.
 - **Danh sách gạt ngôn ngữ trong Settings là card thu gọn** (bấm để
   ẩn/mở, mặc định thu gọn cho đỡ tốn diện tích — dòng thu gọn vẫn hiện
   các ngôn ngữ đang chọn, vd "Vietnamese, English").
 - **Dữ liệu ngôn ngữ:** eng + vie nhúng sẵn trong app (tessdata_best,
   ~27 MB — eng 15.4 MB + vie 12.4 MB; Manh chốt 23:32 "nhúng best luôn",
-  chấp nhận app tăng từ ~15 MB lên ~43 MB để chính xác nhất); 13 thứ
-  còn lại download on-demand từ tessdata_best
+  chấp nhận app tăng từ ~15 MB lên ~43 MB để chính xác nhất); 29 thứ
+  tiếng còn lại của Tesseract download on-demand từ tessdata_best
   (`https://github.com/tesseract-ocr/tessdata_best/raw/main/<mã>.traineddata`)
   vào `~/Library/Application Support/TransPeek/tessdata`.
   Quản lý bởi `TesseractLanguageDataManager` (port từ Windows).
