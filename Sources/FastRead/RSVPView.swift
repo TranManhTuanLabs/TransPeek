@@ -8,7 +8,12 @@ import SwiftUI
 final class RSVPViewModel: ObservableObject {
     /// Source text being read.
     @Published var text: String {
-        didSet { rebuildEngine(keepingWordAt: currentWordIndex) }
+        didSet {
+            // A new text starts Style 2 at the first line too (the RSVP
+            // slide index is reset inside rebuildEngine).
+            style2CurrentLineIndex = 0
+            rebuildEngine(keepingWordAt: currentWordIndex)
+        }
     }
     /// Reading speed in words per minute (default 500, range 50–2000,
     /// step 50 — Manh 2026-11-18, round 7).
@@ -55,6 +60,76 @@ final class RSVPViewModel: ObservableObject {
     @Published var autoPlay: Bool {
         didSet { Defaults[.rsvpAutoPlay] = autoPlay }
     }
+    /// Reading style (Manh 2026-11-21): Style 1 = RSVP focus (default),
+    /// Style 2 = basic reading page. Picked in the Settings popover;
+    /// persisted, so the reader picks it once. A mode preference like
+    /// the color scheme, so "Reset to default" does NOT reset it.
+    @Published var readingStyle: ReadingStyle {
+        didSet {
+            Defaults[.rsvpReadingStyle] = readingStyle
+            // Switching style mid-read restarts playback in the new
+            // style's unit (slide vs line) — the old task advances the
+            // wrong unit, so the page would freeze while "playing".
+            // Keep the fractional position so the read resumes where
+            // it was, in the new unit.
+            if isPlaying, oldValue != readingStyle {
+                let oldProgress: Double
+                if oldValue == .style2 {
+                    oldProgress = style2Lines.count > 1
+                        ? Double(style2CurrentLineIndex) / Double(style2Lines.count - 1) : 0
+                } else {
+                    oldProgress = slideCount > 1
+                        ? Double(currentSlideIndex) / Double(slideCount - 1) : 0
+                }
+                pause()
+                if readingStyle == .style2 {
+                    style2CurrentLineIndex = Int((Double(style2Lines.count - 1) * oldProgress).rounded())
+                } else {
+                    currentSlideIndex = Int((Double(slideCount - 1) * oldProgress).rounded())
+                }
+                play()
+            }
+        }
+    }
+    /// Highlight the current line in Style 2 (Manh 2026-11-21): a toggle
+    /// in Settings, default OFF. While TTS is playing the highlight
+    /// turns itself on (computed in the view, not stored here).
+    @Published var highlightCurrentLine: Bool {
+        didSet { Defaults[.rsvpHighlightCurrentLine] = highlightCurrentLine }
+    }
+    /// TTS (speech) on/off for this read (Manh 2026-11-21, CI314 fix):
+    /// the speaker button toggles whether the RSVP read-along speaks.
+    /// Persisted, default OFF — a reader who never touches the speaker
+    /// keeps the silent WPM reading they already have. A mode
+    /// preference like the color scheme, so "Reset to default" does
+    /// NOT reset it.
+    @Published var ttsEnabled: Bool {
+        didSet { Defaults[.rsvpTTSEnabled] = ttsEnabled }
+    }
+    /// The shared TTS coordinator (Manh 2026-11-21, CI314 fix): set by
+    /// the reading view from the SwiftUI environment (the Window and
+    /// the Lite both inject it; the Rest window has none). The
+    /// read-along speaks through it. Nil means no TTS is available,
+    /// so the speaker stays off and playback always uses the WPM
+    /// timer. Not @Published — a service dependency, not UI state.
+    var ttsCoordinator: TTSCoordinator? {
+        didSet {
+            // The Lite starts playing (auto-play) before its view
+            // appears and hands the coordinator over — and the Window
+            // calls play() before its view appears too. If the speaker
+            // is on, the WPM task that started first must switch to
+            // the TTS-driven task at once, or the audio would never
+            // start. Only when the coordinator arrives fresh (nil →
+            // set); re-setting the same one must not restart the read.
+            if isPlaying, ttsEnabled, ttsCoordinator != nil, oldValue == nil {
+                pause()
+                play()
+            }
+        }
+    }
+    /// Style 2: index of the line the focus is on (the line Play
+    /// advances). Not persisted — a new text starts at the first line.
+    @Published var style2CurrentLineIndex: Int = 0
     /// Index of the slide currently on screen.
     @Published var currentSlideIndex: Int = 0
     /// True while slides advance automatically.
@@ -80,7 +155,10 @@ final class RSVPViewModel: ObservableObject {
         contextSizeRatio: Double = 0.40,
         colorScheme: RSVPColorScheme = .light,
         contextDisplayStyle: RSVPContextDisplayStyle = .onPause,
-        autoPlay: Bool = true
+        autoPlay: Bool = true,
+        readingStyle: ReadingStyle = .style1,
+        highlightCurrentLine: Bool = false,
+        ttsEnabled: Bool = Defaults[.rsvpTTSEnabled]
     ) {
         self.text = text
         self.wpm = wpm
@@ -90,6 +168,9 @@ final class RSVPViewModel: ObservableObject {
         self.colorScheme = colorScheme
         self.contextDisplayStyle = contextDisplayStyle
         self.autoPlay = autoPlay
+        self.readingStyle = readingStyle
+        self.highlightCurrentLine = highlightCurrentLine
+        self.ttsEnabled = ttsEnabled
         self.engine = RSVPEngine(text: text, wpm: wpm, chunkSize: chunkSize)
     }
 
@@ -97,7 +178,8 @@ final class RSVPViewModel: ObservableObject {
     /// round 7 — the Settings popover's "Reset to default" button):
     /// speed 500, focus font 80, context size 40%, context display
     /// "Only show when paused", auto-play ON (Manh 2026-11-20).
-    /// Color scheme is a theme preference, so it is NOT reset here.
+    /// Color scheme, reading style, the line highlight and the TTS
+    /// toggle are mode preferences, so they are NOT reset here.
     func resetToDefaults() {
         wpm = RSVPEngine.defaultWPM
         fontSize = 80
@@ -119,10 +201,63 @@ final class RSVPViewModel: ObservableObject {
         return engine.slides[currentSlideIndex]
     }
 
-    /// Fraction read, for the progress bar.
+    /// Fraction read, for the progress bar. Style 2 measures it in
+    /// lines instead of slides (same 0…1 range, so the shared progress
+    /// bar and seek work unchanged).
     var progress: Double {
+        if readingStyle == .style2 {
+            guard style2Lines.count > 1 else { return 0 }
+            return Double(style2CurrentLineIndex) / Double(style2Lines.count - 1)
+        }
         guard slideCount > 1 else { return 0 }
         return Double(currentSlideIndex) / Double(slideCount - 1)
+    }
+
+    /// Position label for the progress bar ("3 / 42"). Style 2 counts
+    /// lines instead of slides, so the same label works in both styles.
+    var progressLabel: String {
+        if readingStyle == .style2 {
+            return "\(style2CurrentLineIndex + 1) / \(max(style2Lines.count, 1))"
+        }
+        return "\(currentSlideIndex + 1) / \(slideCount)"
+    }
+
+    /// Language to speak this text in (Manh 2026-11-21, the Fast Read
+    /// speaker button): the same rule as the click-to-speak path, so the
+    /// two never disagree on language. Shared via AppDelegate.
+    var speakLanguage: String {
+        AppDelegate.speakLanguage(for: text)
+    }
+
+    /// Style 2 lines of the text (Manh 2026-11-21): paragraphs split
+    /// into short lines so the focus can advance line by line. A line
+    /// is at most 12 words — long enough to read as a phrase, short
+    /// enough that the highlight moves at a readable pace. This is a
+    /// logical split, not the visual wrap (which depends on font size
+    /// and window width); matching visual lines is a later refinement.
+    var style2Lines: [String] {
+        Self.lines(for: text)
+    }
+
+    static func lines(for text: String, maxWordsPerLine: Int = 12) -> [String] {
+        var lines: [String] = []
+        for paragraph in text.components(separatedBy: .newlines) {
+            let trimmed = paragraph.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty else { continue }
+            let words = trimmed.split(separator: " ").map(String.init)
+            var current: [String] = []
+            for word in words {
+                current.append(word)
+                if current.count >= maxWordsPerLine {
+                    lines.append(current.joined(separator: " "))
+                    current = []
+                }
+            }
+            if !current.isEmpty {
+                lines.append(current.joined(separator: " "))
+            }
+        }
+        return lines
     }
 
     /// Words around the current slide (the book-page context). Shown
@@ -178,6 +313,21 @@ final class RSVPViewModel: ObservableObject {
     }
 
     func play() {
+        // Style 2 (Manh 2026-11-21): Play advances the focus line one
+        // line at a time instead of stepping RSVP slides — same button,
+        // same timer bookkeeping, different unit.
+        if readingStyle == .style2 {
+            guard !style2Lines.isEmpty else { return }
+            if style2CurrentLineIndex >= style2Lines.count - 1 {
+                style2CurrentLineIndex = 0
+                accumulatedSeconds = 0
+            }
+            isFinished = false
+            isPlaying = true
+            playStartDate = Date()
+            startStyle2Playback()
+            return
+        }
         guard slideCount > 0 else { return }
         // Restart from the beginning when the last slide is on screen;
         // a restart is a new reading session, so the timer resets too.
@@ -188,25 +338,92 @@ final class RSVPViewModel: ObservableObject {
         isFinished = false
         isPlaying = true
         playStartDate = Date()
-        startPlaybackTask()
+        startPlayback()
+    }
+
+    /// Start the playback task for the current mode (Manh 2026-11-21,
+    /// CI314 fix): the TTS-driven task when the speaker is on and a
+    /// coordinator is wired, otherwise the WPM timer task (unchanged).
+    /// Centralised here so every play() path — Play button, Space,
+    /// auto-play, restart, seek, style switch — picks the right clock.
+    private func startPlayback() {
+        if ttsEnabled, ttsCoordinator != nil {
+            startTTSPlaybackTask()
+        } else {
+            startPlaybackTask()
+        }
+    }
+
+    /// Style 2 version of startPlayback(): same routing, but the unit
+    /// is a line, so the TTS-driven task speaks lines, not slides.
+    private func startStyle2Playback() {
+        if ttsEnabled, ttsCoordinator != nil {
+            startStyle2TTSPlaybackTask()
+        } else {
+            startStyle2PlaybackTask()
+        }
+    }
+
+    /// Toggle TTS (speech) for this read (Manh 2026-11-21, CI314 fix):
+    /// the speaker button. If the read is playing, playback restarts
+    /// at once in the new mode so the toggle takes effect immediately
+    /// — turning TTS on starts speaking the current slide/line,
+    /// turning it off stops the audio and falls back to the WPM timer.
+    /// If the read is paused, only the flag flips; the next play()
+    /// picks the right clock.
+    func toggleTTS() {
+        ttsEnabled.toggle()
+        if !ttsEnabled {
+            // Turning TTS off stops the audio now, not at the next
+            // slide — the reader asked for silence.
+            ttsCoordinator?.stop()
+        }
+        if isPlaying {
+            pause()
+            play()
+        }
     }
 
     func pause() {
-        // Bank the time played so far; the clock resumes on play().
+        bankElapsedTime()
+        isPlaying = false
+        playbackTask?.cancel()
+        playbackTask = nil
+        // Stop read-along speech, but only if this read owns it (TTS
+        // is on) — otherwise a pause here would cut off speech started
+        // elsewhere (e.g. the translate tab's auto-play).
+        if ttsEnabled {
+            ttsCoordinator?.stop()
+        }
+    }
+
+    /// Bank the elapsed playing time into accumulatedSeconds (the clock
+    /// resumes on play()). Shared by pause() and the read-along
+    /// interruption path, which must stop advancing without stopping
+    /// the TTS coordinator (that would cut off the speech that just
+    /// interrupted us).
+    private func bankElapsedTime() {
         if let start = playStartDate {
             accumulatedSeconds += Date().timeIntervalSince(start)
             playStartDate = nil
         }
-        isPlaying = false
-        playbackTask?.cancel()
-        playbackTask = nil
     }
 
     /// Restart reading from the beginning (Manh 2026-11-19, round 10):
     /// jump to slide 0, reset the timer, and start playing — a new
     /// reading session, like pressing Play on the last slide. Wired to
-    /// the Restart button left of Rewind in the control row.
+    /// the Restart button left of Rewind in the control row. Style 2
+    /// restarts at the first line instead of the first slide.
     func restart() {
+        if readingStyle == .style2 {
+            guard !style2Lines.isEmpty else { return }
+            pause()
+            style2CurrentLineIndex = 0
+            accumulatedSeconds = 0
+            isFinished = false
+            play()
+            return
+        }
         guard slideCount > 0 else { return }
         pause()
         currentSlideIndex = 0
@@ -216,6 +433,15 @@ final class RSVPViewModel: ObservableObject {
     }
 
     func stepForward() {
+        // Style 2: step one line forward instead of one slide.
+        if readingStyle == .style2 {
+            pause()
+            isFinished = false
+            if style2CurrentLineIndex < style2Lines.count - 1 {
+                style2CurrentLineIndex += 1
+            }
+            return
+        }
         pause()
         isFinished = false
         if currentSlideIndex < slideCount - 1 {
@@ -224,6 +450,15 @@ final class RSVPViewModel: ObservableObject {
     }
 
     func stepBack() {
+        // Style 2: step one line back instead of one slide.
+        if readingStyle == .style2 {
+            pause()
+            isFinished = false
+            if style2CurrentLineIndex > 0 {
+                style2CurrentLineIndex -= 1
+            }
+            return
+        }
         pause()
         isFinished = false
         if currentSlideIndex > 0 {
@@ -232,7 +467,18 @@ final class RSVPViewModel: ObservableObject {
     }
 
     /// Jump to the slide at `fraction` of the text (progress bar seek).
+    /// Style 2 seeks by line instead of by slide.
     func seek(to fraction: Double) {
+        if readingStyle == .style2 {
+            guard !style2Lines.isEmpty else { return }
+            let wasPlaying = isPlaying
+            pause()
+            isFinished = false
+            let clamped = max(0, min(1, fraction))
+            style2CurrentLineIndex = Int((Double(style2Lines.count - 1) * clamped).rounded())
+            if wasPlaying { play() }
+            return
+        }
         let wasPlaying = isPlaying
         pause()
         isFinished = false
@@ -242,8 +488,19 @@ final class RSVPViewModel: ObservableObject {
     }
 
     /// Move one slide forward/backward by sentence (Shift+←/→): the next /
-    /// previous slide whose last word ends a sentence.
+    /// previous slide whose last word ends a sentence. In Style 2 there
+    /// is no sentence stepping (the unit is a line), so Shift+←/→ steps
+    /// one line — the same as ←/→.
     func stepSentence(forward: Bool) {
+        // Style 2: step one line (no sentence model in the line view).
+        if readingStyle == .style2 {
+            if forward {
+                stepForward()
+            } else {
+                stepBack()
+            }
+            return
+        }
         pause()
         isFinished = false
         let step = forward ? 1 : -1
@@ -301,6 +558,191 @@ final class RSVPViewModel: ObservableObject {
         }
     }
 
+    /// TTS-driven playback (Manh 2026-11-21, CI314 fix — the read-along):
+    /// the same loop shape as `startPlaybackTask`, but the speech is the
+    /// clock. Each slide is spoken through the coordinator, and the
+    /// reader advances ONLY when that slide finishes speaking, so the
+    /// audio and the visible text stay in sync (SwiftRead / Speechify
+    /// read-along model). The WPM timer is not used here at all — the
+    /// speaking pace is the TTS rate, not the WPM setting. Reaching the
+    /// last slide finishes the read (completion line + elapsed time),
+    /// exactly like the WPM finish.
+    private func startTTSPlaybackTask() {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                // Snapshot the current slide on the main actor.
+                let (slideText, isLast) = await MainActor.run { () -> (String?, Bool) in
+                    guard self.engine.slides.indices.contains(self.currentSlideIndex) else {
+                        return (nil, true)
+                    }
+                    return (
+                        self.engine.slides[self.currentSlideIndex].joinedText,
+                        self.currentSlideIndex >= self.engine.slides.count - 1
+                    )
+                }
+                guard let slideText, !slideText.isEmpty else { break }
+                // Speak this slide; advance only when it finishes.
+                // If the speech was cut short from outside (another
+                // speech started elsewhere) do not advance — stop the
+                // read-along, but do NOT call stop() again (that would
+                // cut off the speech that just interrupted us).
+                // Snapshot the coordinator + language on the main actor
+                // first (speakChunk is @MainActor, so the await hops
+                // there); the snapshot keeps the call out of a
+                // MainActor.run async closure.
+                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
+                let finished: Bool
+                if let tts {
+                    finished = await tts.speakChunk(slideText, language: language)
+                } else {
+                    finished = false
+                }
+                guard !Task.isCancelled else { break }
+                guard finished else {
+                    await MainActor.run {
+                        self.bankElapsedTime()
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                if isLast {
+                    // Finished: stop the clock and show the completion line.
+                    await MainActor.run {
+                        self.elapsedSeconds = self.accumulatedSeconds
+                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                        self.playStartDate = nil
+                        self.isFinished = true
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                await MainActor.run {
+                    if self.currentSlideIndex < self.engine.slides.count - 1 {
+                        self.currentSlideIndex += 1
+                    } else {
+                        self.isPlaying = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Style 2 line playback (Manh 2026-11-21): same shape as the RSVP
+    /// `startPlaybackTask`, but the unit is a line, not a slide. Each
+    /// line gets its own delay from its word count and the WPM setting,
+    /// so a long line lingers longer than a short one. Reaching the
+    /// last line finishes the read (completion line + elapsed time),
+    /// exactly like the RSVP finish.
+    private func startStyle2PlaybackTask() {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                let isPlaying = await MainActor.run { self.isPlaying }
+                guard isPlaying else { break }
+                let (delayMs, isLast) = await MainActor.run { () -> (Double, Bool) in
+                    let lines = self.style2Lines
+                    guard lines.indices.contains(self.style2CurrentLineIndex) else {
+                        return (0, true)
+                    }
+                    let words = lines[self.style2CurrentLineIndex].split(separator: " ").count
+                    let delay = Double(words) / Double(max(self.wpm, 1)) * 60_000
+                    return (delay, self.style2CurrentLineIndex >= lines.count - 1)
+                }
+                if isLast {
+                    await MainActor.run {
+                        self.elapsedSeconds = self.accumulatedSeconds
+                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                        self.playStartDate = nil
+                        self.isFinished = true
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                try? await Task.sleep(nanoseconds: UInt64(delayMs * 1_000_000))
+                guard !Task.isCancelled else { break }
+                await MainActor.run {
+                    if self.style2CurrentLineIndex < self.style2Lines.count - 1 {
+                        self.style2CurrentLineIndex += 1
+                    } else {
+                        self.isPlaying = false
+                    }
+                }
+            }
+        }
+    }
+
+    /// Style 2 TTS-driven playback (Manh 2026-11-21, CI314 fix — the
+    /// read-along): the same shape as `startTTSPlaybackTask`, but the
+    /// unit is a line, not a slide. Each line is spoken through the
+    /// coordinator, and the focus advances ONLY when that line finishes
+    /// speaking, so the audio and the highlighted line stay in sync.
+    /// The WPM timer is not used here at all. Reaching the last line
+    /// finishes the read (completion line + elapsed time), exactly like
+    /// the WPM finish.
+    private func startStyle2TTSPlaybackTask() {
+        playbackTask?.cancel()
+        playbackTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                // Snapshot the current line on the main actor.
+                let (lineText, isLast) = await MainActor.run { () -> (String?, Bool) in
+                    let lines = self.style2Lines
+                    guard lines.indices.contains(self.style2CurrentLineIndex) else {
+                        return (nil, true)
+                    }
+                    return (
+                        lines[self.style2CurrentLineIndex],
+                        self.style2CurrentLineIndex >= lines.count - 1
+                    )
+                }
+                guard let lineText, !lineText.isEmpty else { break }
+                // Speak this line; advance only when it finishes.
+                // If the speech was cut short from outside, stop the
+                // read-along without calling stop() again (that would
+                // cut off the speech that just interrupted us).
+                // Snapshot the coordinator + language on the main actor
+                // first (speakChunk is @MainActor, so the await hops
+                // there); the snapshot keeps the call out of a
+                // MainActor.run async closure.
+                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
+                let finished: Bool
+                if let tts {
+                    finished = await tts.speakChunk(lineText, language: language)
+                } else {
+                    finished = false
+                }
+                guard !Task.isCancelled else { break }
+                guard finished else {
+                    await MainActor.run {
+                        self.bankElapsedTime()
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                if isLast {
+                    await MainActor.run {
+                        self.elapsedSeconds = self.accumulatedSeconds
+                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                        self.playStartDate = nil
+                        self.isFinished = true
+                        self.isPlaying = false
+                    }
+                    break
+                }
+                await MainActor.run {
+                    if self.style2CurrentLineIndex < self.style2Lines.count - 1 {
+                        self.style2CurrentLineIndex += 1
+                    } else {
+                        self.isPlaying = false
+                    }
+                }
+            }
+        }
+    }
+
     /// Rebuild the engine after a setting change, keeping the reading
     /// position at the same word (so a WPM/chunk change mid-read does not
     /// jump the reader back to the start).
@@ -333,6 +775,11 @@ struct RSVPView: View {
     var onToggleMaximize: (() -> Void)?
     /// Called when the user closes the window (Esc / close button).
     var onClose: (() -> Void)?
+    /// The shared TTS coordinator, injected by the window controller
+    /// (Manh 2026-11-21, CI314 fix): handed to the view model on
+    /// appear so the read-along can speak through it. Nil in the Rest
+    /// window (no TTS there).
+    @Environment(\.ttsCoordinator) private var ttsCoordinator
 
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
@@ -412,20 +859,29 @@ struct RSVPView: View {
             // Always = book page even while playing; Only show when
             // paused = focus line while playing, book page when paused;
             // Never = focus line only, even when paused.
-            switch viewModel.contextDisplayStyle {
-            case .always:
-                bookPage
+            // Style 2 (Manh 2026-11-21): a scrollable reading page
+            // replaces the RSVP focus area — everything else (progress
+            // bar, focus size label, control row, settings) is shared
+            // and works the same in both styles.
+            if viewModel.readingStyle == .style2 {
+                Style2ReadingPage(viewModel: viewModel, horizontalPadding: 32)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .never:
-                readingArea
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case .onPause:
-                if viewModel.isPlaying {
-                    readingArea
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
+            } else {
+                switch viewModel.contextDisplayStyle {
+                case .always:
                     bookPage
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .never:
+                    readingArea
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .onPause:
+                    if viewModel.isPlaying {
+                        readingArea
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else {
+                        bookPage
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
             }
 
@@ -471,7 +927,17 @@ struct RSVPView: View {
         // at full width. The view stays focusable — Space / arrows / Esc
         // still work — just without the ring.
         .focusEffectDisabled()
-        .onAppear { isFocused = true }
+        .onAppear {
+            isFocused = true
+            // Hand the TTS coordinator to the view model (Manh
+            // 2026-11-21, CI314 fix): the read-along speaks through it.
+            // The controller calls play() before this view appears, so
+            // the view model switches to the TTS-driven task itself
+            // when the coordinator arrives (see its didSet). No
+            // onChange needed — the coordinator is one shared instance
+            // that never changes while this view lives.
+            viewModel.ttsCoordinator = ttsCoordinator
+        }
         .onKeyPress { press in
             switch press.key {
             case .space:
@@ -675,11 +1141,34 @@ struct RSVPView: View {
             Toggle("Run text automatically", isOn: $viewModel.autoPlay)
                 .padding(.top, 4)
                 .help("When on, text starts reading as soon as it is sent in")
+            // Reading style (Manh 2026-11-21): Style 1 = RSVP Focus
+            // (the current one-chunk focus window, default); Style 2 =
+            // Basic Reading (a scrollable page, focus line advances line
+            // by line). The two are independent of the Theme above — any
+            // style works with any theme. Named, not numbered.
+            Text("Reading Style")
+                .font(.headline)
+                .padding(.top, 4)
+            Picker("Reading Style", selection: $viewModel.readingStyle) {
+                ForEach(ReadingStyle.allCases, id: \.self) { style in
+                    Text(style.displayName).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            // Highlight the current line in Style 2 (Manh 2026-11-21):
+            // OFF by default. While TTS is playing the highlight turns
+            // itself on (computed in the view), so the spoken line stays
+            // visible without turning this on first.
+            Toggle("Highlight current line", isOn: $viewModel.highlightCurrentLine)
+                .padding(.top, 4)
+                .help("Highlight the current line in the Basic Reading style")
             // Reset the reading settings to their defaults (Manh
             // 2026-11-18, round 7): speed 500, focus font 80, context
             // size 40%, context display "Only show when paused",
             // auto-play ON. The
-            // color scheme is a theme preference, so it is NOT reset.
+            // color scheme, reading style and line highlight are mode
+            // preferences, so they are NOT reset.
             Button("Reset to default") {
                 viewModel.resetToDefaults()
             }
@@ -877,7 +1366,7 @@ struct RSVPView: View {
 
     private var progressRow: some View {
         HStack(spacing: 12) {
-            Text("\(viewModel.currentSlideIndex + 1) / \(viewModel.slideCount)")
+            Text(viewModel.progressLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -902,7 +1391,7 @@ struct RSVPView: View {
 
     // MARK: - Controls
 
-    /// Four buttons centered at the bottom, with "Reading time" at the
+    /// Six buttons centered at the bottom, with "Reading time" at the
     /// left end and the shortcut hints at the right end of the same row
     /// (§14.4 + Manh 2026-11-18, temporary — the hints used to sit on
     /// their own row at the bottom-right, and "Reading time" used to
@@ -910,17 +1399,21 @@ struct RSVPView: View {
     /// HStack, centered on the full width) and the two side texts
     /// overlay at the leading / trailing edges, so they don't push the
     /// buttons off-center. At the 880pt minimum width the side texts
-    /// (~110pt left, ~360pt right) and the centered buttons (~200pt)
+    /// (~110pt left, ~360pt right) and the centered buttons (~300pt)
     /// just fit; at the default size there is room to spare.
+    /// Order (Manh 2026-11-21): Restart, Speaker, Play, Rewind,
+    /// Forward, Maximize — the speaker sits left of Play (so the reader
+    /// hears the text without hunting for it) and Rewind sits left of
+    /// Forward (mirroring a media player's ◀ ▶ pair). The fast custom
+    /// hover tooltips show the same texts as `.help()` — the system
+    /// tooltip is too slow here, and `.help()` is kept as fallback.
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
                 // Restart (Manh 2026-11-19, round 10): read from the
                 // beginning — jump to slide 0, reset the timer, and
                 // start playing. First button in the row, left of
-                // Rewind, like the Windows Window Read. The row is
-                // still ~260pt wide, so it fits at the 880pt minimum
-                // with the side texts.
+                // the Speaker, like the Windows Window Read.
                 Button {
                     viewModel.restart()
                 } label: {
@@ -928,14 +1421,15 @@ struct RSVPView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Restart (read from the beginning)")
+                .hoverTooltip("Restart (read from the beginning)")
 
-                Button {
-                    viewModel.stepBack()
-                } label: {
-                    Image(systemName: "backward.fill")
-                }
-                .buttonStyle(.bordered)
-                .help("Rewind (←)")
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off for
+                // the read-along — when on, Play/Space speaks each
+                // slide as it shows (TTS drives the advance); when off
+                // the read is silent (WPM timer). Shared component —
+                // the icon, the voice picker and the toggle all live
+                // there, so Window and Lite can never drift apart.
+                SpeakerButton(viewModel: viewModel)
 
                 Button {
                     viewModel.togglePlayPause()
@@ -945,6 +1439,16 @@ struct RSVPView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .help("Play / Pause (Space)")
+                .hoverTooltip("Play / Pause (Space)")
+
+                Button {
+                    viewModel.stepBack()
+                } label: {
+                    Image(systemName: "backward.fill")
+                }
+                .buttonStyle(.bordered)
+                .help("Rewind (←)")
+                .hoverTooltip("Rewind (←)")
 
                 Button {
                     viewModel.stepForward()
@@ -953,6 +1457,7 @@ struct RSVPView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Fast-forward (→)")
+                .hoverTooltip("Fast-forward (→)")
 
                 Button {
                     onToggleMaximize?()
@@ -961,6 +1466,7 @@ struct RSVPView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Toggle maximize window")
+                .hoverTooltip("Toggle maximize window")
             }
             .frame(maxWidth: .infinity, alignment: .center)
 

@@ -346,6 +346,11 @@ struct CompactReadingView: View {
     /// reading and returns to panel right. Only the panel sets it (the
     /// Rest window has no X button — it closes itself on Esc / Done).
     var onCloseReading: (() -> Void)? = nil
+    /// The shared TTS coordinator, injected by the panel controller
+    /// (Manh 2026-11-21, CI314 fix): handed to the view model on
+    /// appear so the read-along can speak through it. Nil in the Rest
+    /// window (no TTS there).
+    @Environment(\.ttsCoordinator) private var ttsCoordinator
 
     @FocusState private var isFocused: Bool
     @State private var showingSettings = false
@@ -446,6 +451,15 @@ struct CompactReadingView: View {
             .focusEffectDisabled()
             .onAppear {
                 isFocused = true
+                // Hand the TTS coordinator to the view model (Manh
+                // 2026-11-21, CI314 fix): the read-along speaks through
+                // it. The store calls play() before this view appears
+                // (auto-play), so the view model switches to the
+                // TTS-driven task itself when the coordinator arrives
+                // (see its didSet). No onChange needed — the
+                // coordinator is one shared instance that never changes
+                // while this view lives.
+                viewModel.ttsCoordinator = ttsCoordinator
             }
             .onKeyPress(action: handleKeyPress)
         }
@@ -457,20 +471,28 @@ struct CompactReadingView: View {
     /// book page when paused; Never = focus line only, even when paused.
     @ViewBuilder
     private var readingAreaForCurrentState: some View {
-        switch viewModel.contextDisplayStyle {
-        case .always:
-            bookPage
+        // Style 2 (Manh 2026-11-21): a scrollable reading page replaces
+        // the RSVP focus area — everything else (progress bar, control
+        // rows, settings) is shared and works the same in both styles.
+        if viewModel.readingStyle == .style2 {
+            Style2ReadingPage(viewModel: viewModel, horizontalPadding: 12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .never:
-            readingArea
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        case .onPause:
-            if viewModel.isPlaying {
-                readingArea
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
+        } else {
+            switch viewModel.contextDisplayStyle {
+            case .always:
                 bookPage
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .never:
+                readingArea
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .onPause:
+                if viewModel.isPlaying {
+                    readingArea
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    bookPage
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             }
         }
     }
@@ -540,10 +562,15 @@ struct CompactReadingView: View {
     }
 
     /// Compact bottom chrome: the small progress bar ("X / total" +
-    /// bar) + bottom-center X / Restart / Rewind / Play / Forward /
-    /// Maximize buttons, shown BELOW the reading area (split out of
+    /// bar) + bottom-center X / Restart / Speaker / Play / Rewind /
+    /// Forward / Maximize buttons, shown BELOW the reading area (split out of
     /// the old compactPausedChrome, Manh 2026-11-20, 09:16 — the top
     /// bar moved above the reading area; the progress stays below it).
+    /// Order (Manh 2026-11-21): the speaker sits left of Play and
+    /// Rewind sits left of Forward, matching the Window Read. The fast
+    /// custom hover tooltips show the same texts as `.help()` — the
+    /// system tooltip never fires in this non-activating panel, and
+    /// `.help()` is kept as fallback.
     private var compactBottomChrome: some View {
         VStack(spacing: 6) {
             progressRow
@@ -562,6 +589,7 @@ struct CompactReadingView: View {
                     }
                     .buttonStyle(.bordered)
                     .help("Close reading (Esc)")
+                    .hoverTooltip("Close reading (Esc)")
                     .background { InteractiveMarker() }
                     .panelHoverHighlight()
                 }
@@ -576,6 +604,27 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Restart (read from the beginning)")
+                .hoverTooltip("Restart (read from the beginning)")
+                .background { InteractiveMarker() }
+                .panelHoverHighlight()
+
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off
+                // for the read-along — when on, Play/Space speaks each
+                // slide/line as it shows (TTS drives the advance);
+                // when off the read is silent (WPM timer). Shared
+                // component — the icon, the voice picker and the toggle
+                // all live there, so Window and Lite can never drift apart.
+                SpeakerButton(viewModel: viewModel)
+
+                Button {
+                    viewModel.togglePlayPause()
+                } label: {
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Play / Pause (Space)")
+                .hoverTooltip("Play / Pause (Space)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -586,17 +635,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Rewind (←)")
-                .background { InteractiveMarker() }
-                .panelHoverHighlight()
-
-                Button {
-                    viewModel.togglePlayPause()
-                } label: {
-                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title2)
-                }
-                .buttonStyle(.borderedProminent)
-                .help("Play / Pause (Space)")
+                .hoverTooltip("Rewind (←)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -607,6 +646,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Fast-forward (→)")
+                .hoverTooltip("Fast-forward (→)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -617,6 +657,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Toggle size")
+                .hoverTooltip("Toggle size")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
             }
@@ -860,11 +901,33 @@ struct CompactReadingView: View {
             Toggle("Run text automatically", isOn: $viewModel.autoPlay)
                 .padding(.top, 4)
                 .help("When on, text starts reading as soon as it is sent in")
+            // Reading style (Manh 2026-11-21): Style 1 = RSVP Focus
+            // (the current one-chunk focus window, default); Style 2 =
+            // Basic Reading (a scrollable page, focus line advances line
+            // by line). The two are independent of the Theme above — any
+            // style works with any theme. Named, not numbered.
+            Text("Reading Style")
+                .font(.headline)
+                .padding(.top, 4)
+            Picker("Reading Style", selection: $viewModel.readingStyle) {
+                ForEach(ReadingStyle.allCases, id: \.self) { style in
+                    Text(style.displayName).tag(style)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+            // Highlight the current line in Style 2 (Manh 2026-11-21):
+            // OFF by default. While TTS is playing the highlight turns
+            // itself on (computed in the view), so the spoken line stays
+            // visible without turning this on first.
+            Toggle("Highlight current line", isOn: $viewModel.highlightCurrentLine)
+                .padding(.top, 4)
+                .help("Highlight the current line in the Basic Reading style")
             // Reset the reading settings to their defaults (Manh
             // 2026-11-18, round 7): speed 500, focus font 80, context
             // size 40%, context display "Only show when paused",
-            // auto-play ON. The color scheme is a theme preference, so
-            // it is NOT reset.
+            // auto-play ON. The color scheme, reading style and line
+            // highlight are mode preferences, so they are NOT reset.
             Button("Reset to default") {
                 viewModel.resetToDefaults()
             }
@@ -1044,7 +1107,7 @@ struct CompactReadingView: View {
 
     private var progressRow: some View {
         HStack(spacing: 12) {
-            Text("\(viewModel.currentSlideIndex + 1) / \(viewModel.slideCount)")
+            Text(viewModel.progressLabel)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -1070,13 +1133,19 @@ struct CompactReadingView: View {
 
     // MARK: - Controls
 
-    /// Five buttons centered at the bottom, with "Reading time" at the
+    /// Six buttons centered at the bottom, with "Reading time" at the
     /// left end (Manh 2026-11-18). The buttons stay truly centered
     /// (their own HStack, centered on the full width) and the
     /// "Reading time" text overlays at the leading edge, so it doesn't
     /// push the buttons off-center. The shortcut hint used to sit at
     /// the right end of this row — it moved to its own row above the
     /// progress bar (Manh 2026-11-20, 09:41).
+    /// Order (Manh 2026-11-21): X, Restart, Speaker, Play, Rewind,
+    /// Forward, Maximize — the speaker sits left of Play and Rewind
+    /// sits left of Forward, matching the Window Read. The fast custom
+    /// hover tooltips show the same texts as `.help()` — the system
+    /// tooltip never fires in this non-activating panel, and `.help()`
+    /// is kept as fallback.
     private var controlRow: some View {
         ZStack {
             HStack(spacing: 20) {
@@ -1091,14 +1160,14 @@ struct CompactReadingView: View {
                     }
                     .buttonStyle(.bordered)
                     .help("Close reading (Esc)")
+                    .hoverTooltip("Close reading (Esc)")
                     .background { InteractiveMarker() }
                     .panelHoverHighlight()
                 }
 
                 // Restart (Manh 2026-11-19, round 10): read from the
                 // beginning — jump to slide 0, reset the timer, and
-                // start playing. First button in the row, left of
-                // Rewind.
+                // start playing. Left of the Speaker.
                 Button {
                     viewModel.restart()
                 } label: {
@@ -1106,6 +1175,27 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Restart (read from the beginning)")
+                .hoverTooltip("Restart (read from the beginning)")
+                .background { InteractiveMarker() }
+                .panelHoverHighlight()
+
+                // Speaker (Manh 2026-11-21, CI314 fix): TTS on/off
+                // for the read-along — when on, Play/Space speaks each
+                // slide/line as it shows (TTS drives the advance);
+                // when off the read is silent (WPM timer). Shared
+                // component — the icon, the voice picker and the toggle
+                // all live there, so Window and Lite can never drift apart.
+                SpeakerButton(viewModel: viewModel)
+
+                Button {
+                    viewModel.togglePlayPause()
+                } label: {
+                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                }
+                .buttonStyle(.borderedProminent)
+                .help("Play / Pause (Space)")
+                .hoverTooltip("Play / Pause (Space)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -1116,17 +1206,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Rewind (←)")
-                .background { InteractiveMarker() }
-                .panelHoverHighlight()
-
-                Button {
-                    viewModel.togglePlayPause()
-                } label: {
-                    Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title2)
-                }
-                .buttonStyle(.borderedProminent)
-                .help("Play / Pause (Space)")
+                .hoverTooltip("Rewind (←)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -1137,6 +1217,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Fast-forward (→)")
+                .hoverTooltip("Fast-forward (→)")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
 
@@ -1147,6 +1228,7 @@ struct CompactReadingView: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Toggle size")
+                .hoverTooltip("Toggle size")
                 .background { InteractiveMarker() }
                 .panelHoverHighlight()
             }

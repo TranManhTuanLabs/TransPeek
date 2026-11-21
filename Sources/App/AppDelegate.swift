@@ -106,6 +106,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rsvpWindowController.onClose = { [weak self] in
             self?.focusTimerStore.fastReadWindowClosed()
         }
+        // The Window Read speaker button (Manh 2026-11-21) reads the
+        // shared TTS coordinator — the window injects it into its
+        // SwiftUI environment when its content is created.
+        rsvpWindowController.ttsCoordinator = ttsCoordinator
         focusTimerStore.isFastReadWindowOpen = { [weak self] in
             self?.rsvpWindowController.isVisible ?? false
         }
@@ -775,7 +779,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// configured source language when it names a real language. "auto" (or an
     /// empty value) cannot be spoken — AppleTTSProvider would resolve it to no
     /// voice and fall back to the system default — so default to English.
-    private static func speakLanguage(for text: String) -> String {
+    /// Internal (not private) since Manh 2026-11-21: the Fast Read view
+    /// model reuses this one rule for its speaker button, so the two
+    /// speak paths can never disagree on language.
+    static func speakLanguage(for text: String) -> String {
         if let detected = LanguageDetector.detect(text), !detected.isEmpty {
             return detected
         }

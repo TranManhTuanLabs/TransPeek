@@ -34,7 +34,12 @@ final class RestWindowController: NSObject, NSWindowDelegate {
             contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
             contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
-            autoPlay: true
+            autoPlay: true,
+            // Reading style + line highlight (Manh 2026-11-21): the
+            // reader's persisted picks. The Rest window has no TTS
+            // coordinator, so its speaker button stays hidden.
+            readingStyle: Defaults[.rsvpReadingStyle],
+            highlightCurrentLine: Defaults[.rsvpHighlightCurrentLine]
         )
         self.viewModel = viewModel
 
