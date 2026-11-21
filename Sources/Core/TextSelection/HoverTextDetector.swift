@@ -30,7 +30,10 @@ enum HoverBlockText {
     /// container must not surface the container's text).
     static let interactiveRoles: Set<String> = [
         kAXButtonRole as String,
-        kAXLinkRole as String,
+        // "AXLink": the kAXLinkRole constant is not in scope in Swift
+        // (unlike the other kAX*Role constants), so use the literal
+        // role string the AX framework returns for a link.
+        "AXLink",
         kAXMenuItemRole as String,
         kAXMenuBarItemRole as String,
         kAXCheckBoxRole as String,
@@ -53,7 +56,10 @@ enum HoverBlockText {
     /// (a window title is not a text block).
     static let chromeRoles: Set<String> = [
         kAXWindowRole as String,
-        kAXDialogRole as String,
+        // "AXDialog": same reason as "AXLink" above — the
+        // kAXDialogRole constant is not in scope in Swift, so use
+        // the literal role string the AX framework returns.
+        "AXDialog",
         kAXApplicationRole as String,
         kAXMenuBarRole as String,
         kAXMenuRole as String,
