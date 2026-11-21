@@ -3,17 +3,23 @@
 Design spec for the Fast Read reading theme and reading styles, shared by
 both reading surfaces: the **Window Read** window and the **Fast Read Lite**
 panel (panel right). Settled 2026-11-21 (Manh). Style 1 is the current,
-locked design; Style 2 is planned, not built yet.
+locked design; Style 2 is being built (approved 2026-11-21).
 
 ## 1. Naming — Theme vs Style
 
-Two independent axes. Do not conflate them.
+Two independent axes. Do not conflate them. These definitions are the
+reference for anyone (and any AI) working on the reading UI — use these
+words, not "theme" for a layout or "style" for a colour.
 
 - **Theme** = colours only: the reading background and the text colour
-  (light / dark / sepia, …). A theme changes colours, never layout.
-- **Style** = the reading mode + layout: where the focus text sits, where the
-  around text sits, whether there is a focus line, and the buttons + button
-  positions that belong to that mode. Each style defines its own controls.
+  (light / dark / sepia, …). This is the standard meaning of "theme" in
+  reading apps (Kindle, Apple Books both call it that). A theme changes
+  colours, never layout.
+- **Style** = the reading mode + layout. Style 1 is the current mode
+  (focus line, around text above/below, focus in the middle). Style 2 is
+  the plain-page reading mode (scroll the whole page, zoom the text,
+  focus / highlight line optional). The buttons + button positions follow
+  each Style, because each reading mode has its own controls.
 
 Any style works with any theme. In Settings these are two separate picks:
 "Reading style" and "Theme".
@@ -91,12 +97,12 @@ a theme.
 **Input:** trackpad horizontal = previous/next word, vertical = font
 size; fast vertical swipe = 4x.
 
-## 4. Style 2 — "basic reading" (future, planned)
+## 4. Style 2 — "basic reading" (being built)
 
 Temporary name: "basic reading". A plain reading page, not an RSVP window.
-Settled direction (Manh 2026-11-21); **not built yet**. Do not start it
-without Manh's go-ahead. It applies to both surfaces the same way Style 1
-does (Window Read gets the full page, Lite gets the compact page).
+Settled direction (Manh 2026-11-21); approved to build 2026-11-21. It
+applies to both surfaces the same way Style 1 does (Window Read gets the
+full page, Lite gets the compact page).
 
 - **Layout:** a scrollable page — read the whole text by scrolling, like a
   normal document. No focus line by default (pure page). Font zoom adjusts
