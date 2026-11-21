@@ -236,7 +236,13 @@ struct PanelFastReadView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 14)
-            .padding(.vertical, 24)
+            // Top is only 8pt (Manh 2026-11-22): the book icon sat 24pt
+            // below the dots row, wasting space and forcing a scroll to
+            // reach the buttons — now it sits close under the dots.
+            // Bottom keeps 24pt so the content never sits flush on the
+            // panel's bottom edge.
+            .padding(.top, 8)
+            .padding(.bottom, 24)
             .background {
                 GeometryReader { geometry in
                     Color.clear
