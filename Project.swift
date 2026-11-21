@@ -58,6 +58,9 @@ let project = Project(
                 .external(name: "Defaults"),
                 .external(name: "Sparkle"),
                 .external(name: "Textual"),
+                // Tesseract OCR engine (fallback, Manh 2026-11-20): the
+                // Swift overlay over the XCFramework binary target.
+                .external(name: "TesseractSwift"),
             ],
             settings: .settings(
                 base: [
@@ -80,6 +83,10 @@ let project = Project(
             bundleId: "com.tranmanhtuanlabs.transpeekTests",
             deploymentTargets: .macOS("15.0"),
             sources: ["Tests/**"],
+            // Tesseract test data (Manh 2026-11-20): the bundled
+            // eng/vie traineddata, so the OCR tests can run Tesseract
+            // without the app bundle. Same files as Resources/tessdata.
+            resources: ["Resources/tessdata/**"],
             dependencies: [
                 .target(name: "TransPeek"),
             ]

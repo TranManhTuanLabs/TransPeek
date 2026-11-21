@@ -4,6 +4,8 @@ import Foundation
 /// Identifies an OCR engine. New providers (e.g. Tesseract, Phase 2) add a case here.
 enum OcrProviderID: String, Sendable, CaseIterable {
     case vision
+    /// Tesseract OCR (fallback when Vision can't do it, Manh 2026-11-20).
+    case tesseract
 }
 
 /// A screenshot-OCR engine behind the common provider interface (SPEC v0.1 §3.3).
