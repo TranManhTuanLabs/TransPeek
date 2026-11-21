@@ -1,41 +1,57 @@
-# Fast Read — Select Shows Icon (fake icon in Read mode)
+# Fast Read — Select Shows Icon (alternative icon in Read mode)
 
 Design spec for the icon that appears when the user selects text inside
 Fast Read. Settled 2026-11-21 (Manh). **Not implemented yet** — planned
-branch `feature/select-shows-icon-fastread` (from main `9b0816b8`).
+branch `feature/select-shows-icon-fastread` (from main `9b0816b8`; a new
+branch may be created if needed). Built AFTER the CI314 speaker-sync fix.
 
-## 1. Why a separate "fake" icon
+## 1. Name — "alternative icon"
+
+One unified name: **alternative icon**. It is an alternative to the main
+float icon, used only in Read mode. The name avoids confusion with the
+Read action (Fast Read) — this icon does NOT start a Read session.
+
+## 2. Why a separate icon
 
 The float icon (`TriggerIconController`) works well today and its logic is
 delicate (glyph state machine, Option-key polling, hover debounce, the
 panel-visible guard). The Fast Read select case must **not** touch that
-logic. So it gets its own separate path: a **fake icon** that looks exactly
-like the current float icon but is a different object with its own wiring.
-Hovering/clicking the fake icon calls into the existing trigger callbacks
-(`onTranslateRequested` / `onSpeakRequested`) — it reuses the translate and
-speak behaviour, it does not duplicate or modify the icon's internals.
+logic. So it gets its own separate path: an **alternative icon** that looks
+like the float icon but is a different object with its own wiring.
+Hovering/clicking the alternative icon calls into the existing trigger
+callbacks (`onTranslateRequested` / `onSpeakRequested`) — it reuses the
+translate and speak behaviour, it does not duplicate or modify the icon's
+internals.
 
-"Fake" means *separate path that delegates*, not *non-interactive*. The fake
-icon is a real floating window that receives mouse events, so **hover and
-click both work on it**, exactly like the real icon.
+"Alternative" means *separate path that delegates*, not *non-interactive*.
+The alternative icon is a real floating window that receives mouse events,
+so **hover and click both work on it**, exactly like the real icon.
 
-## 2. Behaviour — hover + click both work
+## 3. Appearance — blue A in a chat bubble, same on hover
+
+- The icon is a **blue "A" inside a chat (speech) bubble** — the earlier
+  icon design, reused here. Windows uses this same icon later.
+- It displays the **same** normally and on hover — it does NOT change
+  glyph on hover (unlike the main float icon, which changes glyph with
+  hover/Option). No hover-state icon swap is needed.
+
+## 4. Behaviour — hover + click both work
 
 | Action | What happens | Notes |
 | --- | --- | --- |
-| **Hover** | Translate (look up the selected word) | Per surface (see §3). |
-| **Click** | Speak — listen to the selected text (TTS) | Uses the source text. No Read. |
+| **Hover** | Translate (look up the selected word) | Per surface (see §5). |
+| **Click** | Speak — listen to the selected text (speaker glyph, as normal) | Uses its OWN separate system-TTS audio path (see §6). No Read. |
 
 There is **no Read action** on this icon. Pressing Read here is meaningless:
 the user selected one word inside a long passage, so starting a Fast Read
 session on that fragment would lose the long context. The user only wants
 to look up one word or listen to it.
 
-The icon shows the **speaker glyph** (click = listen), and hover still opens
+The icon shows the **speaker glyph** on click (listen), and hover still opens
 the translate flow for lookup. The global "Click icon for:" setting is
 ignored here — the icon is always speaker + hover in Read mode.
 
-## 3. Hover differs per surface
+## 5. Hover differs per surface
 
 - **Fast Read Lite** (panel right, panel already open): hover only switches
   the panel to the **center (translate) tab**. It must NOT call
@@ -44,7 +60,16 @@ ignored here — the icon is always speaker + hover in Read mode.
 - **Window Read** (separate window, panel closed): hover **opens the panel**
   (normal icon flow: panel opens at the cursor on the translate tab).
 
-## 4. When the icon appears
+## 6. Click uses a SEPARATE system-TTS audio path
+
+Clicking the alternative icon speaks the selected text through its **own
+separate system TTS path**. It does NOT share the Read-mode speaker
+button's audio path: the Read speaker button is tied to RSVP playback
+sync (TTS drives the chunk advance), while the alternative icon's click
+is a quick, independent "speak this selected text" that does not touch
+RSVP playback state.
+
+## 7. When the icon appears
 
 Only when the user is in a Fast Read surface:
 
@@ -59,7 +84,7 @@ sees other apps, so it cannot catch a selection inside TransPeek itself).
 Auto-detect (block-text hover) is not a conflict: it already turns itself
 off while the panel or the icon is visible.
 
-## 5. Scope (what is NOT in this feature)
+## 8. Scope (what is NOT in this feature)
 
 - No change to the real float icon's logic, glyphs, or settings.
 - No Read action from a Fast Read selection.
