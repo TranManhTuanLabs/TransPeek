@@ -11,8 +11,11 @@ import SwiftUI
 /// be called panel 1/2/3 (left/center/right). The enum order is left →
 /// right, so rawValue is the dot index — the cases are named by feature,
 /// not by number, because the numbers may map to different features
-/// later (Manh 2026-11-17 12:24).
-private enum PanelTab: Int, CaseIterable {
+/// later (Manh 2026-11-17 12:24). Internal (not private) so
+/// `PopupPanelController` can read the current tab — the alternative
+/// icon's selection monitor only shows the icon when the panel is on
+/// its Fast Read tab (Manh 2026-11-21).
+enum PanelTab: Int, CaseIterable {
     case shortcut = 0
     case translate = 1
     case fastRead = 2
@@ -41,6 +44,10 @@ struct PopupView: View {
     /// opens the RSVP reading window with the text being translated
     /// (Manh 2026-11-17).
     var onFastRead: ((String) -> Void)?
+    /// Called when the visible tab changes (Manh 2026-11-21): the
+    /// controller stores the tab so the alternative icon's selection
+    /// monitor knows when the panel is on its Fast Read tab.
+    var onSelectedTabChange: ((PanelTab) -> Void)? = nil
     /// Whether the "?" shortcuts table (embedded at the top of the
     /// output box, Manh 2026-11-17) is shown. It is a plain section, not
     /// a popover and not a provider card.
@@ -190,6 +197,12 @@ struct PopupView: View {
                 let lang = coordinator.detectedLanguage ?? Defaults[.sourceLanguage]
                 tts.speak(MarkdownSupport.speakableText(newValue), language: lang)
             }
+        }
+        // Report the visible tab (Manh 2026-11-21): the controller
+        // stores it so the alternative icon's selection monitor knows
+        // when the panel is on its Fast Read tab.
+        .onChange(of: selectedTab) { _, newValue in
+            onSelectedTabChange?(newValue)
         }
         .onChange(of: coordinator.targetLanguage) { _, newValue in
             targetLang = newValue

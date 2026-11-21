@@ -172,6 +172,14 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
         window?.isVisible ?? false
     }
 
+    /// Whether the given screen point is inside this window (Manh
+    /// 2026-11-21): the alternative icon's selection monitor uses it
+    /// to tell a selection inside the Read window from one elsewhere.
+    func contains(_ point: CGPoint) -> Bool {
+        guard let window else { return false }
+        return window.frame.contains(point)
+    }
+
     // MARK: - NSWindowDelegate
 
     /// The red close button: stop playback so the timer does not keep

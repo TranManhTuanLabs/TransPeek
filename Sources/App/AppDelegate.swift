@@ -21,6 +21,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// mouse hovers a block of text, without selecting first. A second
     /// trigger path alongside SelectionMonitor — same icon flow.
     var hoverTextDetector: HoverTextDetector!
+    /// Alternative icon (Manh 2026-11-21): a fake float icon for text
+    /// selected inside Fast Read. A separate path from the real float
+    /// icon — it does not touch that logic; it only delegates hover
+    /// (translate) and click (speak, its own TTS) through callbacks.
+    var alternativeIconController: AlternativeIconController!
+    /// Detects selections inside Fast Read surfaces for the alternative
+    /// icon (Manh 2026-11-21): a local mouse-up monitor + an AX read,
+    /// because the global SelectionMonitor only sees other apps.
+    var readSelectionMonitor: ReadSelectionMonitor!
     lazy var copyToastController = CopyToastController()
     lazy var updaterController = UpdaterController()
     /// Fast Read (RSVP) window controller (Manh 2026-11-17).
@@ -96,14 +105,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A focus / rest-eyes reminder with destination Right Panel
         // (Manh 2026-11-20): the store holds the request; bring the
         // panel forward and the panel switches to the Fast Read tab
-        // and starts the read itself.
+        // and starts the read itself. Open keyed (Manh 2026-11-21):
+        // the reminder starts a Read in panel right, so the panel
+        // needs keyboard input at once (Space play/pause) — the same
+        // fix as showFastRead's .rightPanel case (2026-11-21). A
+        // non-activating open would not route keystrokes to the
+        // reader until the user clicked into the panel first.
         focusTimerStore.onShowPanel = { [weak self] in
-            self?.panelController.showAtCursor()
+            self?.panelController.showAtCursor(makeKey: true)
         }
         // A break reminder that fired while reading waits (Manh
         // 2026-11-20, 05:33): show it when the Fast Read window closes,
         // and let the store ask whether the window is open.
         rsvpWindowController.onClose = { [weak self] in
+            // The alternative icon lives in the Read window — it goes
+            // away with it (Manh 2026-11-21).
+            self?.alternativeIconController.dismissSilently()
             self?.focusTimerStore.fastReadWindowClosed()
         }
         // The Window Read speaker button (Manh 2026-11-21) reads the
@@ -132,6 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         selectionMonitor = SelectionMonitor()
         triggerIconController = TriggerIconController()
         hoverTextDetector = HoverTextDetector()
+        setupAlternativeIcon()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.
         NSApp.setActivationPolicy(Defaults[.showInDock] ? .regular : .accessory)
@@ -780,6 +798,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         hoverTextDetector.start()
+    }
+
+    /// Alternative icon (Manh 2026-11-21): wire the in-Read selection
+    /// monitor and the fake float icon. A separate path from the real
+    /// float icon — nothing here touches `TriggerIconController`.
+    private func setupAlternativeIcon() {
+        let iconController = AlternativeIconController()
+        iconController.speakLanguageProvider = { Self.speakLanguage(for: $0) }
+        // Hover → translate the selected word. Per surface (design doc
+        // §5): Window Read opens the panel at the cursor (normal icon
+        // flow); Lite only translates — the panel follows `sourceText`
+        // to the center tab on its own, and calling showAtCursor here
+        // would move the panel to the cursor.
+        iconController.onTranslateRequested = { [weak self] text, surface in
+            guard let self else { return }
+            Task { @MainActor in
+                await self.cancelSmartTranslationAndWait()
+                await self.coordinator.translateTriggeredSelection(text)
+                if case .idle = self.coordinator.phase { return }
+                if surface == .windowRead {
+                    self.panelController.showAtCursor()
+                }
+            }
+        }
+        self.alternativeIconController = iconController
+
+        let monitor = ReadSelectionMonitor()
+        // The icon only appears for selections inside a Fast Read
+        // surface — never for the translate input or Settings.
+        monitor.isInWindowRead = { [weak self] point in
+            self?.rsvpWindowController.contains(point) ?? false
+        }
+        monitor.isInLiteRead = { [weak self] point in
+            guard let self else { return false }
+            return self.panelController.contains(point)
+                && self.panelController.selectedTab == .fastRead
+        }
+        monitor.isInAlternativeIcon = { [weak self] point in
+            self?.alternativeIconController.contains(point) ?? false
+        }
+        monitor.onSelectionFound = { [weak self] text, point, surface in
+            self?.alternativeIconController.show(text: text, near: point, surface: surface)
+        }
+        monitor.onSelectionCleared = { [weak self] in
+            self?.alternativeIconController.dismissSilently()
+        }
+        self.readSelectionMonitor = monitor
+        monitor.start()
     }
 
     /// Language for click-to-speak: detect the text itself first, then the

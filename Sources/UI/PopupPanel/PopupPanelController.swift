@@ -174,6 +174,21 @@ final class PopupPanelController {
         panel?.isVisible ?? false
     }
 
+    /// Which tab of the multi-tab frame is showing (Manh 2026-11-21):
+    /// reported by PopupView via `onSelectedTabChange`. The alternative
+    /// icon's selection monitor reads it — the icon only appears when
+    /// the panel is on its Fast Read tab, never for selections in the
+    /// translate input. Default `.translate` (the panel's default tab).
+    private(set) var selectedTab: PanelTab = .translate
+
+    /// Whether the given screen point is inside this panel (Manh
+    /// 2026-11-21): the alternative icon's selection monitor uses it
+    /// to tell a selection inside the panel from one elsewhere.
+    func contains(_ point: CGPoint) -> Bool {
+        guard let panel else { return false }
+        return panel.frame.contains(point)
+    }
+
     /// TransPeek Phase 1: OCR from the float panel. Hide the panel so the
     /// region selector is unobstructed, run OCR (respecting the user's
     /// post-OCR mode), then show the panel again with the result — or, in
@@ -254,6 +269,12 @@ final class PopupPanelController {
                 // Same call-time forwarding for Fast Read (Manh 2026-11-17).
                 onFastRead: { [weak self] text in
                     self?.onFastRead?(text)
+                },
+                // Report the visible tab (Manh 2026-11-21): the
+                // alternative icon's selection monitor reads it from
+                // `selectedTab` above.
+                onSelectedTabChange: { [weak self] tab in
+                    self?.selectedTab = tab
                 },
                 onResultLayoutChange: { [weak self] layout in
                     self?.resultLayout = layout

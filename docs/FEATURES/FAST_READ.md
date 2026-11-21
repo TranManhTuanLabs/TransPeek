@@ -196,10 +196,13 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   icon (Manh 2026-11-21): the panel opens keyed for a Fast Read
   (`showAtCursor(makeKey: true)`) — a non-activating open would not
   route keystrokes to the reader until the user clicked into the panel
-  first. The translate quick-peek stays non-activating.** The panel
-  auto-pins when a panel read starts (pin button in the panel-right
-  header toggles it off); auto-fit freezes while reading; Maximize
-  toggles default (420×450) ↔ max (600×800).
+  first. The same fix applies to a reminder that opens the panel
+  (`onShowPanel`, Manh 2026-11-21): a reminder read in panel right
+  also opens keyed, so Space pauses at once. The translate quick-peek
+  stays non-activating.** The panel auto-pins when a panel read starts
+  (pin button in the panel-right header toggles it off); auto-fit
+  freezes while reading; Maximize toggles default (420×450) ↔ max
+  (600×800).
 - **Rest window** (`Sources/FocusTimer/RestWindowController.swift`,
   "TransPeek — Rest", 560×400, min 480×320): opens when a work /
   eye-rest interval ends and "Run reminder in:" is "New Fast Read
@@ -223,6 +226,22 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   notification ("Take a break" / "Snooze 5 min", orange dot on the
   Focus-Rest card) and shows when the read stops (Manh 2026-11-20,
   05:33).
+- **Alternative icon (Manh 2026-11-21):** selecting text inside Fast
+  Read shows a fake float icon — a blue "A" in a chat bubble — for
+  looking up one word or listening to it. It is a separate path
+  (`Sources/UI/AlternativeIcon/`: `ReadSelectionMonitor` +
+  `AlternativeIconController` + `AlternativeIconView`); it does not
+  touch the real float icon's logic. A local mouse-up monitor +
+  `AccessibilityGrabber` read the selection from TransPeek's own
+  window (the global `SelectionMonitor` only sees other apps). Hover
+  translates (Window Read opens the panel at the cursor; Lite only
+  switches the already-open panel to the center tab — the panel
+  follows `sourceText`); click speaks through the icon's own
+  `AVSpeechSynthesizer` (separate from the Read speaker's
+  TTSCoordinator path, so it never disturbs RSVP playback). No Read
+  action. Only in Fast Read surfaces (Window Read open, or the panel
+  on its Fast Read tab) — never for the translate input or Settings.
+  Design: `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md`.
 
 ## 10. Speaker button — read-along (continuous, word-sync)
 

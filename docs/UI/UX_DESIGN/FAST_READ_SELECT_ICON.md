@@ -1,9 +1,11 @@
 # Fast Read — Select Shows Icon (alternative icon in Read mode)
 
 Design spec for the icon that appears when the user selects text inside
-Fast Read. Settled 2026-11-21 (Manh). **Not implemented yet** — planned
-branch `feature/select-shows-icon-fastread` (from main `9b0816b8`; a new
-branch may be created if needed). Built AFTER the CI314 speaker-sync fix.
+Fast Read. Settled 2026-11-21 (Manh). **Implemented 2026-11-21** (main):
+`Sources/UI/AlternativeIcon/` (`ReadSelectionMonitor`,
+`AlternativeIconController`, `AlternativeIconView`), wired in
+`AppDelegate.setupAlternativeIcon()`. The reminder Space fix (panel
+opens keyed via `onShowPanel`) shipped in the same push.
 
 ## 1. Name — "alternative icon"
 
