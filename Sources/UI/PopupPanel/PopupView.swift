@@ -125,9 +125,10 @@ struct PopupView: View {
         )
     }
 
-    /// Whether the panel has anything to show (Manh 2026-11-20, icon-click Fast Read bug): a translation is active, OR the user is on the Fast Read tab (a panel read was requested there), OR the user is on the left tab (the menubar "Focus & Rest" item opened it there — Manh 2026-11-20, 19:22), OR a panel read is running. The Fast Read tab must stay rendered even with no translation — hovering the float icon hides it, so an icon click can only happen before any hover, when the coordinator is still `.idle`; without this the panel opened empty and the requested read played invisibly. The same holds for the left tab: it is opened from the menubar with no translation running, so without the `selectedTab == .shortcut` arm it would open empty too. The store is held as a plain `let` on purpose (so the panel never re-renders on timer ticks), so this reads its @Published values without subscribing — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes, so the gate is always evaluated with fresh values.
+    /// Whether the panel has anything to show (Manh 2026-11-20, icon-click Fast Read bug): a translation is active, OR the user is on any of the three tabs (translate / Fast Read / left), OR a panel read is running. The translate tab must be listed too — it always has content (the source input + language pickers), even with no translation running. Without the `selectedTab == .translate` arm, opening the panel from the menubar "Focus & Rest" item (phase `.idle`, no translation) and swiping to the center tab showed a blank panel: the left tab was covered by the `.shortcut` arm and the right tab by the `.fastRead` arm, but the center tab matched none of the arms (Manh 2026-11-21). The store is held as a plain `let` on purpose (so the panel never re-renders on timer ticks), so this reads its @Published values without subscribing — re-renders are driven by `selectedTab` (@State) and the coordinator, which change in the same synchronous block as the store writes, so the gate is always evaluated with fresh values.
     private var hasPanelContent: Bool {
         coordinator.phase == .active
+            || selectedTab == .translate
             || selectedTab == .fastRead
             || selectedTab == .shortcut
             || focusTimerStore.panelReadingViewModel != nil
@@ -332,10 +333,11 @@ struct PopupView: View {
             Image(systemName: coordinator.isPinned ? "pin.fill" : "pin")
                 .font(.system(size: CGFloat(fontSize - 2)))
                 .foregroundStyle(coordinator.isPinned ? Color.accentColor : Color.secondary)
-                // Pin tilted left (Manh 2026-11-20): a pinned pushpin leans
-                // at an angle, not straight up — rotate -45° so the icon
-                // reads as "pinned" on all 3 tabs.
-                .rotationEffect(.degrees(-45))
+                // Pin tilted left (Manh 2026-11-21): a pinned pushpin leans
+                // at an angle, not straight up — rotate -30° so the icon
+                // reads as "pinned" on all 3 tabs. (Was -45°, Manh said
+                // 30° is enough.)
+                .rotationEffect(.degrees(-30))
         }
         .buttonStyle(.plain)
         .help(coordinator.isPinned ? "Unpin Popup" : "Pin Popup")
@@ -980,6 +982,10 @@ struct PopupView: View {
                     .buttonStyle(.plain)
                     .help(dotHelp(tab))
                     .background { InteractiveMarker() }
+                    // Hover highlight (Manh 2026-11-21): the dots light up
+                    // like the chevrons beside them, so they read as
+                    // tappable tab buttons, not just indicators.
+                    .panelHoverHighlight()
                 }
 
                 Button {
