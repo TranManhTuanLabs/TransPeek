@@ -209,13 +209,86 @@ re-reads the key state directly (see below).
   `.speak`) / `.speak` / `.translate`.
 - `triggerActivationMode`: `.hover` (default) / `.click`.
 - `hoverDelayMs`: default 500 (Picker: 300 / 400 / 500 / 600 / 700 / 800 ms —
-  changed from Slider 2026-11-20, Manh).
+  changed from Slider 2026-11-20, Manh). This is the delay before the
+  translate panel opens on hover — NOT the block-text detection delay
+  (see §8).
 - `autoHideDelaySec`: default 5 (Picker: 3–10 s — changed from Slider
   2026-11-20, Manh).
 - `floatIconSize`: default 24 (Picker: 18 / 20 / 22 / 24 / 26 / 28 / 30 /
   32 pt — recommend 20-24pt; default was 26 before 2026-11-22, Manh).
 - `autoShowFloatIconSize`: default 24 (Picker: 18 / 20 / 22 / 24 pt —
   recommend 20, 22pt; Manh 2026-11-21).
+- `isHoverBlockDetectionEnabled`: default `true` — the "Show icon when
+  hovering text" toggle (Settings → General → Translation, inside "Show
+  floating icon on text selection"; Manh 2026-11-21). Master
+  auto-detect (`isAutoDetectEnabled`) must also be on.
+- `hoverBlockDelayMs`: default 400 (Picker: 200 / 300 / 400 / 500 / 700 ms,
+  shown in Settings as 0.2 / 0.3 / 0.4 / 0.5 / 0.7 s — Manh 2026-11-21).
+  How long the mouse must stay still over a text block before the hover
+  icon appears (see §8).
+
+## 8. Block-text detection — auto-show on hover (settled, Manh 2026-11-21)
+
+What auto-detect has achieved (verified: Manh tested it and confirmed
+"auto nhận block text ngon rồi", 2026-11-21). The full behaviour is in
+the feature doc (`docs/FEATURES/FLOAT_ICON.md` §3); this section is the
+UX-spec record of the same settled behaviour.
+
+- **Hovering a text block in another app shows the float icon without
+  selecting the text first.** After the icon appears, the flow is the
+  normal icon flow (§2): hover → translate panel; click → Speak / Fast
+  Read per "Click icon for:"; Option+Click → the other action.
+- **Model A (how a block is found):** one Accessibility hit-test per
+  hover point (`AXUIElementCopyElementAtPosition`), then read the text
+  of the element under the cursor — or its nearest text-bearing ancestor,
+  at most 3 levels up. One point, one parent chain, never a tree scan.
+  Model B (scan the whole accessibility tree / show the icon on every
+  block) is NOT done — too expensive on CPU and does not follow scrolling.
+- **Debounce:** the icon appears only after the mouse has stayed still
+  over a text block for the "Hover text delay" (`hoverBlockDelayMs`,
+  default 400 ms; Picker 200–700 ms). Sweeping the mouse across text
+  costs one hit-test (only the last position in the window is tested),
+  so it does not flicker the icon or burn CPU.
+- **What counts as a block (v1 limits):** at least 4 characters and at
+  most 2000 characters, carrying at least one letter or digit (not just
+  punctuation) — short enough that headings and short phrases work, long
+  enough that stray 1–3 letter UI labels do not summon the icon, and
+  capped so a whole document is never treated as a block (the user can
+  still select manually). Buttons, links and other controls never summon
+  the icon, and neither does anything above one (a button inside a big
+  text container must not surface the container's text). Window chrome
+  (window/dialog/menu) is never read as text. TransPeek's own windows
+  are skipped, and the excluded-apps list applies, same as selection.
+- **Same block, no re-show:** a hit with the same frame and the same
+  text start (first 40 characters, prefix match) counts as the same
+  block — a re-layout or a second hit-test does not re-show the icon.
+- **Follow / stale:** while the icon is up, the block's frame is re-read
+  every 0.3 s. If it moved more than 10 pt (the text scrolled away) or
+  the element is gone, the icon is dismissed as stale; moving the mouse
+  re-detects. The poll stops the moment the icon is dismissed. While
+  speaking, the icon is never dismissed as stale (the user needs it to
+  stop playback).
+- **Suppress after dismiss:** 500 ms after a dismiss, a tiny mouse move
+  does not re-summon the icon at once.
+- **Gates (never fire):** no hit-test while dragging (a selection is in
+  progress — the selection flow owns the mouse); no delivery while the
+  icon or the panel is already up (a hover never yanks another flow's
+  icon); the master auto-detect and the feature toggle must both be on.
+- **Scope:** only apps that expose text via Accessibility work. Apps or
+  places that do not expose text are out of scope (separate research) —
+  hovering there simply does nothing.
+- **Tests:** the pure decision rules (`shouldAccept`, `isSameBlock`) are
+  unit-tested; the AX calls only run on a real Mac.
+
+### Plan — what is NOT done
+
+- **Model B** (scan the whole tree / icon on every block): not planned —
+  too expensive, and it does not follow scrolling.
+- **Apps that do not expose text via Accessibility:** out of scope for
+  now; separate research task (hovering there does nothing today).
+- **No further tuning planned:** the delay and the icon size are
+  user-adjustable in Settings; the 4–2000 char limits are the v1 tuning
+  and have not needed changing since Manh confirmed it works.
 
 ## References
 
@@ -223,6 +296,9 @@ re-reads the key state directly (see below).
   `Sources/UI/TriggerIcon/TriggerIconController.swift`
   (`TriggerTrackingView` draws the glyph; `updateOptionPreview` +
   `startOptionPollTimer` are the Option mechanism).
+  Block-text detection: `Sources/Core/TextSelection/HoverTextDetector.swift`
+  (`HoverBlockText` rules + `HoverTextDetector` mouse watch, debounce,
+  follow/stale poll).
 - Feature doc: `docs/FEATURES/FLOAT_ICON.md`.
 - Window Read: `docs/FEATURES/FAST_READ.md`.
 - Original flow decisions:
