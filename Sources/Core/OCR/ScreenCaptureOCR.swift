@@ -107,9 +107,24 @@ enum ScreenCaptureOCR {
                 return try await vision.recognizeText(in: image)
             } catch {
                 // Vision failed — try Tesseract before giving up.
+                // Tesseract is Apple Silicon only (Manh 2026-11-21,
+                // option B): on Intel there is no fallback engine,
+                // so the Vision error is rethrown as-is.
+                #if arch(arm64)
+                return try await TesseractOCRProvider().recognizeText(in: image)
+                #else
+                throw error
+                #endif
             }
         }
+        #if arch(arm64)
         return try await TesseractOCRProvider().recognizeText(in: image)
+        #else
+        // Intel (x86_64): Tesseract is arm64-only, so there is no
+        // fallback engine. Vision supports none of the requested
+        // languages here, so nothing can read the image.
+        throw OCRError.noTextRecognized
+        #endif
     }
 }
 

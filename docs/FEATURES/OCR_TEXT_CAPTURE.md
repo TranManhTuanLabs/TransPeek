@@ -1,6 +1,7 @@
-# OCR Text Capture (bản nháp)
+# OCR Text Capture
 
-> Trạng thái: **bản nháp** — mô tả OCR mac: Vision là chính, Tesseract là fallback.
+> Trạng thái: Vision là chính, Tesseract là fallback — **chỉ trên Apple
+> Silicon** (phương án B, Manh 2026-11-21). Intel chỉ dùng Vision.
 
 ## 1. Engine OCR
 
@@ -9,14 +10,30 @@
 - **mac Vision là chính**, mặc định `["vi-VN", "en-US"]`.
 - Vision OCR có từ macOS 10.15, chạy được cả Apple Silicon lẫn Intel;
   TransPeek yêu cầu macOS 15.0+.
+- **Vision giống nhau trên Intel và Apple Silicon** — cùng API, cùng model,
+  cùng ngôn ngữ (kể cả tiếng Việt); khác nhau theo phiên bản macOS, không
+  theo chip. Chip M nhanh hơn nhờ Neural Engine, Intel dùng CPU/GPU. Nên
+  máy Intel vẫn đọc chữ bằng Vision đầy đủ, chỉ thiếu dự phòng Tesseract
+  khi Vision đọc không được.
 
-### Tesseract (fallback, Manh 2026-11-20)
+### Tesseract (fallback, chỉ Apple Silicon — phương án B, Manh 2026-11-21)
 
+- **Quyết định (phương án B): Tesseract chỉ bật trên Apple Silicon**
+  (`#if arch(arm64)`); Intel chỉ dùng Vision. **Giữ nguyên bản
+  universal** (hỗ trợ cả 2 chip, Intel còn lâu mới bỏ).
+- **Lý do:** thư viện Tesseract chỉ có arm64, nên build universal Release
+  lỗi link x86_64 (CI #307: bước test xanh, bước Build app đỏ — test build
+  chỉ chạy trên máy arm64 nên test vẫn qua, còn link universal thì lỗi).
+  Code được bọc `#if arch(arm64)` ở `TesseractOCRProvider.swift`,
+  `ScreenCaptureOCR.swift`, `OCRSettingsView.swift` và bộ test;
+  `Project.swift` vẫn khai báo external như cũ — code guard mới là phần
+  sửa, CI kiểm chứng link.
 - **Tesseract là fallback khi Vision không làm được** — Vision thử trước;
   Tesseract chạy khi Vision không hỗ trợ ngôn ngữ nào được chọn, hoặc
-  Vision không nhận ra chữ. Vision vẫn là chính.
+  Vision lỗi. Giới hạn v1: Vision trả về chữ SAI mà không báo lỗi thì
+  KHÔNG kích hoạt fallback.
 - Engine: XCFramework cộng đồng qua SPM binary target
-  (`lexiaoyao20/tesseract-Apple`, Tesseract 5.5.x, arm64, tĩnh, kèm
+  (`lexiaoyao20/tesseract-Apple`, Tesseract 5.5.2, arm64, tĩnh, kèm
   Leptonica), dùng qua lớp phủ Swift `TesseractSwift`.
   Provider: `TesseractOCRProvider` (theo protocol `OcrProvider`).
 - **Ngôn ngữ: đủ 8 thứ tiếng trong `OCRSettingsView.availableLanguages`**
@@ -29,6 +46,15 @@
   (`https://github.com/tesseract-ocr/tessdata_best/raw/main/<mã>.traineddata`)
   vào `~/Library/Application Support/TransPeek/tessdata`.
   Quản lý bởi `TesseractLanguageDataManager` (port từ Windows).
+
+### Chuỗi fallback
+
+1. Vision thử trước với các ngôn ngữ user đã chọn trong Settings.
+2. Ngôn ngữ nào Vision không hỗ trợ (hoặc Vision lỗi) → Tesseract thử
+   với ngôn ngữ đó (chỉ trên Apple Silicon; Intel bỏ qua bước này).
+3. Tesseract thiếu dữ liệu ngôn ngữ → tải ngầm (không hỏi, không báo);
+   tải lỗi (mất mạng) thì bỏ ngôn ngữ đó, OCR tiếp bằng các ngôn ngữ
+   còn lại (rớt về `eng`), không hiện lỗi làm gián đoạn lúc chụp.
 
 ## 2. Hai chế độ
 

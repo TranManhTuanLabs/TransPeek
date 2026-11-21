@@ -47,6 +47,10 @@ struct OCRSettingsView: View {
             // can't recognise the requested language. English and
             // Vietnamese are built into the app; the other languages
             // download automatically the first time they are needed.
+            // Apple Silicon only (Manh 2026-11-21, option B): the
+            // Tesseract XCFramework ships arm64 slices only, so this
+            // section is hidden on Intel (Vision only there).
+            #if arch(arm64)
             Section {
                 // Prompt (Manh 2026-11-21): ask which languages the
                 // user usually uses OCR for, so they tick them in
@@ -63,6 +67,7 @@ struct OCRSettingsView: View {
             } footer: {
                 Text("Tesseract runs only when Vision can't handle the request. Languages not listed above download automatically when needed.")
             }
+            #endif
         }
         // Same grouped look as the General tab: the plain form style
         // stretches the rows across the whole window, which is what made
@@ -77,7 +82,9 @@ struct OCRSettingsView: View {
 
     /// Which of the 8 OCR languages Tesseract can already recognise
     /// (bundled eng + vie, or already downloaded). The rest download
-    /// on demand the first time they are needed.
+    /// on demand the first time they are needed. Apple Silicon only
+    /// (the Tesseract fallback section is hidden on Intel).
+    #if arch(arm64)
     private var tesseractStatusText: String {
         let ready = Self.availableLanguages.filter { code in
             guard let tess = TesseractLanguageDataManager.tessCode(forBCP47: code) else { return false }
@@ -89,6 +96,7 @@ struct OCRSettingsView: View {
         let names = ready.map { languageName(for: $0) }.joined(separator: ", ")
         return String(localized: "Ready: \(names).")
     }
+    #endif
 
     private func binding(for code: String) -> Binding<Bool> {
         Binding(

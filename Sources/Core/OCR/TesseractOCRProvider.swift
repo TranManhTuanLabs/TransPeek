@@ -1,3 +1,10 @@
+// Tesseract is Apple Silicon only (Manh 2026-11-21, option B): the
+// tesseract-Apple XCFramework ships arm64 slices only, so the Intel
+// (x86_64) build has no Tesseract code at all — Intel uses Vision
+// only (see ScreenCaptureOCR). Without this guard the universal
+// Release build fails to link for x86_64 (CI #307: hundreds of
+// undefined Tesseract symbols).
+#if arch(arm64)
 import AppKit
 import CoreGraphics
 import Defaults
@@ -79,3 +86,5 @@ struct TesseractOCRProvider: OcrProvider {
         return result.text
     }
 }
+
+#endif

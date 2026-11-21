@@ -11,6 +11,10 @@ import Testing
 /// links, loads its language data, and recognises real text on Apple
 /// Silicon. It draws a clean test image (no committed binary image)
 /// and runs the real provider against the bundled eng data.
+///
+/// Apple Silicon only (Manh 2026-11-21, option B): the provider does
+/// not exist on Intel, so these tests are skipped there.
+#if arch(arm64)
 @Suite struct TesseractOCRProviderTests {
     /// Draw `text` in large black type on a white image. Big, clean
     /// type so the engine is tested on loading + recognition, not on
@@ -82,6 +86,7 @@ import Testing
         ]))
     }
 }
+#endif
 
 /// Pure-logic tests for `TesseractLanguageDataManager` (no engine, no network).
 @Suite struct TesseractLanguageDataManagerTests {
