@@ -62,6 +62,14 @@ docs/
   (xem §5.1).
 - **Dùng chung hàm/component:** cái gì dùng nhiều chỗ thì viết 1 lần, không
   copy-paste — sửa 1 lần là hết mọi chỗ.
+- **Cái đang ngon, ổn định thì để nguyên, tìm đường khác nối (Manh
+  21/11/2026):** một phần của hệ thống đang chạy tốt, đã test kỹ thì KHÔNG
+  sửa trực tiếp vào nó để thêm tính năng mới — sửa vào rất dễ làm vỡ logic
+  đang ngon. Thay vào đó nối đường riêng: làm phần mới tách ra, rồi kích
+  hoạt / dùng lại hành vi cũ qua callback có sẵn. Ví dụ: icon giả trong
+  Read mode — không sửa logic icon float hiện tại, mà làm icon giả y hệt,
+  hover/click thì kích hoạt trigger vào icon hiện tại
+  (`docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md`).
 - **Cấu trúc rõ ràng như dự án lớn:** tên file/thư mục nói rõ nó là cái gì,
   ai mới vào cũng tìm được file cần sửa mà không cần hỏi.
 

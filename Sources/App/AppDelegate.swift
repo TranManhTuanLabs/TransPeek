@@ -17,6 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var onboardingController: OnboardingWindowController!
     var selectionMonitor: SelectionMonitor!
     var triggerIconController: TriggerIconController!
+    /// Hover block detection (Manh 2026-11-21): shows the icon when the
+    /// mouse hovers a block of text, without selecting first. A second
+    /// trigger path alongside SelectionMonitor — same icon flow.
+    var hoverTextDetector: HoverTextDetector!
     lazy var copyToastController = CopyToastController()
     lazy var updaterController = UpdaterController()
     /// Fast Read (RSVP) window controller (Manh 2026-11-17).
@@ -102,6 +106,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rsvpWindowController.onClose = { [weak self] in
             self?.focusTimerStore.fastReadWindowClosed()
         }
+        // The Window Read speaker button (Manh 2026-11-21) reads the
+        // shared TTS coordinator — the window injects it into its
+        // SwiftUI environment when its content is created.
+        rsvpWindowController.ttsCoordinator = ttsCoordinator
         focusTimerStore.isFastReadWindowOpen = { [weak self] in
             self?.rsvpWindowController.isVisible ?? false
         }
@@ -123,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         onboardingController = OnboardingWindowController(permissionManager: permissionManager, registry: registry)
         selectionMonitor = SelectionMonitor()
         triggerIconController = TriggerIconController()
+        hoverTextDetector = HoverTextDetector()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.
         NSApp.setActivationPolicy(Defaults[.showInDock] ? .regular : .accessory)
@@ -652,12 +661,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         selectionMonitor.onMouseDown = { [weak self] _ in
-            guard let self, self.triggerIconController.isVisible else { return }
+            guard let self else { return }
+            // A click may start a drag/selection — cancel any pending
+            // hover hit-test and stop following, even when no icon is up.
+            self.hoverTextDetector.cancelPendingHover()
+            self.hoverTextDetector.stopFollowing()
+            guard self.triggerIconController.isVisible else { return }
             self.triggerIconController.dismissSilently()
         }
 
         triggerIconController.onTranslateRequested = { [weak self] text in
             guard let self else { return }
+            // The icon is gone and the panel opens — stop following the
+            // hovered block (its poll must not outlive the icon).
+            self.hoverTextDetector.stopFollowing()
             Task { @MainActor in
                 await self.cancelSmartTranslationAndWait()
                 await self.coordinator.translateTriggeredSelection(text)
@@ -686,6 +703,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // too (Manh 2026-11-20, 05:27).
         triggerIconController.onReadRequested = { [weak self] text in
             guard let self else { return }
+            // The Read window opens and the icon hides after its 2.5s
+            // confirmation — stop following the hovered block now.
+            self.hoverTextDetector.stopFollowing()
             self.showFastRead(text: text)
         }
 
@@ -702,10 +722,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         triggerIconController.onDismissed = { [weak self] in
             self?.selectionMonitor.suppressBriefly()
+            // Same suppression for the hover path, so the mouse still
+            // sitting over the same text does not re-summon the icon,
+            // and the follow poll ends with the icon.
+            self?.hoverTextDetector.suppressBriefly()
+            self?.hoverTextDetector.stopFollowing()
         }
 
         panelController.onDismiss = { [weak self] in
             self?.selectionMonitor.suppressBriefly()
+            self?.hoverTextDetector.suppressBriefly()
+            self?.hoverTextDetector.stopFollowing()
             if self?.triggerIconController.isVisible == true {
                 self?.triggerIconController.dismiss()
             }
@@ -716,13 +743,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         selectionMonitor.start()
+
+        setupHoverTextDetector()
+    }
+
+    /// Hover block detection wiring (Manh 2026-11-21): a second trigger
+    /// path for the float icon, alongside selection. The detector only
+    /// finds the block; the icon, panel, Speak and Read flows are the
+    /// normal ones — nothing about them changes.
+    private func setupHoverTextDetector() {
+        // No delivery while the icon or the panel is already up — a
+        // hover must never yank another flow's icon.
+        hoverTextDetector.shouldDetect = { [weak self] in
+            guard let self else { return false }
+            return !self.panelController.isVisible && !self.triggerIconController.isVisible
+        }
+
+        hoverTextDetector.onBlockHovered = { [weak self] text, point in
+            guard let self else { return }
+            self.triggerIconController.show(text: text, near: point)
+        }
+
+        // The hovered block scrolled away or vanished — dismiss the
+        // stale icon. While speaking, the icon must stay so the user
+        // can click again to stop playback.
+        hoverTextDetector.onHoverStale = { [weak self] in
+            guard let self, !self.triggerIconController.isSpeaking else { return }
+            self.triggerIconController.dismissSilently()
+        }
+
+        hoverTextDetector.start()
     }
 
     /// Language for click-to-speak: detect the text itself first, then the
     /// configured source language when it names a real language. "auto" (or an
     /// empty value) cannot be spoken — AppleTTSProvider would resolve it to no
     /// voice and fall back to the system default — so default to English.
-    private static func speakLanguage(for text: String) -> String {
+    /// Internal (not private) since Manh 2026-11-21: the Fast Read view
+    /// model reuses this one rule for its speaker button, so the two
+    /// speak paths can never disagree on language.
+    static func speakLanguage(for text: String) -> String {
         if let detected = LanguageDetector.detect(text), !detected.isEmpty {
             return detected
         }
@@ -733,3 +793,4 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return "en"
     }
 }
+

@@ -6,7 +6,9 @@ let project = Project(
         base: [
             "INFOPLIST_KEY_LSUIElement": "YES",
             "INFOPLIST_KEY_NSAccessibilityUsageDescription":
-                "TransPeek needs accessibility access to read selected text.",
+                // Hover block detection (Manh 2026-11-21) reads the text
+                // under the cursor too — same permission, wider wording.
+                "TransPeek needs accessibility access to read text you hover over or select.",
             "INFOPLIST_KEY_NSScreenCaptureUsageDescription":
                 "TransPeek needs screen capture for OCR translation.",
             "SWIFT_STRICT_CONCURRENCY": "complete",

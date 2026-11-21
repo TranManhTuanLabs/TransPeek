@@ -667,6 +667,27 @@ enum RSVPColorScheme: String, CaseIterable, Defaults.Serializable {
     }
 }
 
+/// Fast Read reading style (Manh 2026-11-21): which way the text is
+/// presented. Style 1 is the RSVP focus window; Style 2 is the "basic
+/// reading" scrollable page. Picked in the Window Read / Lite Settings
+/// popover; persists across opens. The two are independent of the Theme
+/// (color scheme) — any style works with any theme.
+enum ReadingStyle: String, CaseIterable, Defaults.Serializable {
+    /// RSVP focus — one chunk centred, focus line fixed (the current design).
+    case style1
+    /// Basic reading — a scrollable page, focus line advances line by line.
+    case style2
+
+    /// Display names, not numbers (Manh 2026-11-21): the picker shows
+    /// these names, never "Style 1" / "Style 2".
+    var displayName: String {
+        switch self {
+        case .style1: return "RSVP Focus"
+        case .style2: return "Basic Reading"
+        }
+    }
+}
+
 /// Fast Read (RSVP) — when the context around the focus word shows
 /// (Manh 2026-11-18, from SwiftRead's `contextDisplayStyle`):
 /// picked in the window's Settings button; persists across opens.
@@ -718,6 +739,10 @@ extension Defaults.Keys {
 
     // Auto-detect text selection
     static let isAutoDetectEnabled = Key<Bool>("isAutoDetectEnabled", default: true)
+    // Block text detection on hover (Manh 2026-11-21): show the float
+    // icon when hovering a block of text, without selecting it first.
+    // Default ON — the hover icon auto-appears by default.
+    static let isHoverBlockDetectionEnabled = Key<Bool>("transpeek_isHoverBlockDetectionEnabled", default: true)
     static let textDetectionMode = Key<TextDetectionMode>("textDetectionMode", default: .full)
     static let excludedAppBundleIDs = Key<Set<String>>("excludedAppBundleIDs", default: [])
 
@@ -800,12 +825,27 @@ extension Defaults.Keys {
     static let rsvpContextSizeRatio = Key<Double>("transpeek_rsvpContextSizeRatio", default: 0.40)
     static let rsvpColorScheme = Key<RSVPColorScheme>("transpeek_rsvpColorScheme", default: .light)
     static let rsvpContextDisplayStyle = Key<RSVPContextDisplayStyle>("transpeek_rsvpContextDisplayStyle", default: .onPause)
+    /// Reading style (Manh 2026-11-21): Style 1 = RSVP focus (default),
+    /// Style 2 = basic reading page. A mode preference like the color
+    /// scheme, so "Reset to default" does NOT reset it.
+    static let rsvpReadingStyle = Key<ReadingStyle>("transpeek_rsvpReadingStyle", default: .style1)
+    /// Highlight the current line in Style 2 (Manh 2026-11-21): a toggle
+    /// in Settings, default OFF. While TTS is playing the highlight
+    /// turns itself on (computed in the view, not stored here).
+    static let rsvpHighlightCurrentLine = Key<Bool>("transpeek_rsvpHighlightCurrentLine", default: false)
     /// Whether text starts reading automatically when it is sent in
     /// (Manh 2026-11-20): when ON (default), every time text arrives
     /// from the select-text icon the Fast Read window starts reading
     /// at once — no Space press needed. Toggled in the window's
     /// Settings popover.
     static let rsvpAutoPlay = Key<Bool>("transpeek_rsvpAutoPlay", default: true)
+    /// TTS (speech) on/off for Fast Read playback (Manh 2026-11-21,
+    /// CI314 fix): the speaker button toggles whether the RSVP
+    /// read-along speaks. Default OFF — a reader who never touches
+    /// the speaker keeps the silent WPM reading they already have.
+    /// A mode preference like the color scheme, so "Reset to default"
+    /// does NOT reset it.
+    static let rsvpTTSEnabled = Key<Bool>("transpeek_rsvpTTSEnabled", default: false)
 
     // Focus timer + rest eyes (Manh 2026-11-20, focus timer + panel
     // decor — the Focus & Rest card in panel left). Pomodoro STANDARD

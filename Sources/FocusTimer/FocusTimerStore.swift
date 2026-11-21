@@ -429,7 +429,12 @@ final class FocusTimerStore: ObservableObject {
             contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
             contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
-            autoPlay: true
+            autoPlay: true,
+            // Reading style + line highlight (Manh 2026-11-21): the
+            // reader's persisted picks, so the Lite read keeps the
+            // style it was left in.
+            readingStyle: Defaults[.rsvpReadingStyle],
+            highlightCurrentLine: Defaults[.rsvpHighlightCurrentLine]
         )
         panelReadingCountdownSeconds = countdownSeconds
         // The kind rides with the countdown (both set here, cleared

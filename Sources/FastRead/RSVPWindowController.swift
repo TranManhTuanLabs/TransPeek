@@ -23,6 +23,11 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
     /// size. Created with the window, stopped when it closes.
     private var trackpadMonitor: RSVPTrackpadMonitor?
     private var trackpadCancellable: AnyCancellable?
+    /// The shared TTS coordinator (Manh 2026-11-21): set by AppDelegate
+    /// so the Window Read speaker button can read the text aloud. The
+    /// window reads it from the environment, so it is injected when the
+    /// content is created.
+    var ttsCoordinator: TTSCoordinator?
 
     /// Open the reading window with `text`. If the window is already open,
     /// replace its text (and restart from the first slide).
@@ -34,6 +39,10 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             viewModel.pause()
             viewModel.text = trimmed
             viewModel.currentSlideIndex = 0
+            // The read-along speaks through the coordinator (Manh
+            // 2026-11-21, CI314 fix) — re-assert it here, so a reused
+            // window always has it before play() runs.
+            viewModel.ttsCoordinator = ttsCoordinator
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             trackpadMonitor?.start(window: window)
@@ -54,9 +63,18 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
             contextSizeRatio: Defaults[.rsvpContextSizeRatio],
             colorScheme: Defaults[.rsvpColorScheme],
             contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
-            autoPlay: Defaults[.rsvpAutoPlay]
+            autoPlay: Defaults[.rsvpAutoPlay],
+            // Reading style + line highlight (Manh 2026-11-21): the
+            // reader's persisted picks, so a reopened window keeps the
+            // style it was left in.
+            readingStyle: Defaults[.rsvpReadingStyle],
+            highlightCurrentLine: Defaults[.rsvpHighlightCurrentLine]
         )
         self.viewModel = viewModel
+        // The read-along speaks through the coordinator (Manh 2026-11-21,
+        // CI314 fix) — set it before play() runs, so auto-play starts in
+        // the right mode at once (the view re-asserts it on appear too).
+        viewModel.ttsCoordinator = ttsCoordinator
 
         let contentView = RSVPView(
             viewModel: viewModel,
@@ -64,6 +82,10 @@ final class RSVPWindowController: NSObject, NSWindowDelegate {
         ) { [weak self] in
             self?.close()
         }
+        // The speaker button reads the coordinator from the
+        // environment (Manh 2026-11-21) — without this the Window
+        // Read has no TTS and the button stays hidden.
+        .environment(\.ttsCoordinator, ttsCoordinator)
         let hostingView = NSHostingView(rootView: contentView)
 
         let screen = NSScreen.main
