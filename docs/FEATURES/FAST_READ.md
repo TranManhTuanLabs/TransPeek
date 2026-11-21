@@ -14,8 +14,9 @@
 - A **separate window** for RSVP speed reading (not a tab of the translate
   panel — the panel is ~400px wide, far too narrow for 50–110px reading
   text, and a tab risks an accidental swipe out mid-read).
-- **Read-only.** No TTS inside the Read window (listening is the icon's
-  click action, not part of reading). It copies SwiftRead's UX.
+- **Read-only, with a speaker button for read-along (§10).** Listening
+  is also the icon's click action, but the speaker here reads the text
+  aloud in sync with the focus. It copies SwiftRead's UX.
 - Window: `NSWindow`, title "Fast Read - RSVP", min **880×550**, default
   ~70% of screen width × ~55% of screen height, frame autosaved
   (`TransPeekRSVPWindow`) so macOS remembers size/position. Maximize =
@@ -212,6 +213,33 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   Focus-Rest card) and shows when the read stops (Manh 2026-11-20,
   05:33).
 
+## 10. Speaker button — read-along (continuous, word-sync)
+
+- **Speaker = TTS on/off toggle for the read-along** (Manh 2026-11-21):
+  a speaker button in the control row, with a voice picker (voice +
+  speed 0.6x–4x). Play advances slide-by-slide (Style 1) or
+  line-by-line (Style 2) in sync with the voice. TTS off → the WPM
+  timer path is unchanged. The speed slider writes the global
+  `ttsSpeechRate` (same key Settings → TTS uses); it takes effect from
+  the next utterance.
+- **Continuous speech, word-sync (Manh 2026-11-21, Option B):** the
+  whole remaining text is spoken as ONE utterance (no gap between
+  words, so the voice never stutters), and the focus follows the voice
+  word by word via `AVSpeechSynthesizerDelegate
+  .willSpeakRangeOfSpeechString` — each spoken word's range maps to the
+  slide (Style 1) or line (Style 2) containing it. The speed is the
+  TTS rate (1x–4x), not the WPM setting. Pausing stops the
+  synthesizer; resuming speaks again from the current slide/line's
+  first word. (This replaced the earlier chunk-by-chunk read-along,
+  where each slide/line was a separate utterance and the finish-then-
+  speak-next cycle left an audible gap.)
+- **Lite + Full share one speaker state:** the on/off flag is persisted
+  (`rsvpTTSEnabled`) and re-read when Play starts, so toggling the
+  speaker on one surface (Full window or Lite panel) applies to the
+  other — the two surfaces use separate view-model instances, and the
+  persisted setting is the single source of truth.
+- The speaker is hidden where there is no coordinator (Rest window).
+
 ## References
 
 - Implementation (mac): `Sources/FastRead/RSVPView.swift` (window
@@ -220,10 +248,17 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   PanelFastReadView.swift` (`CompactReadingView`, the panel-right /
   Rest-window lite reading view — shares only `RSVPViewModel` +
   `RSVPEngine` with the window), `RSVPViewModel` (state),
-  `RSVPEngine.swift` (tokenize/chunk/timing/ORP), `ORPReadingLine.swift`
+  `RSVPEngine.swift` (tokenize/chunk/timing/ORP + `wordRanges(for:)` for
+  the read-along), `ORPReadingLine.swift`
   (shared focus line), `RSVPWindowController.swift` (window),
   `RSVPTrackpadMonitor.swift` (swipes), `RSVPShare.swift` (share URLs),
   `Sources/FocusTimer/` (store, Rest window, panel-right view).
+- Speaker / TTS: `Sources/Core/TTSCoordinator.swift`
+  (`speakContinuous` — one utterance + word ranges), `Sources/Services/
+  TTSProvider.swift` (`speakWithWordTracking`), `Sources/Services/TTS/
+  AppleTTSProvider.swift` (word tracking via
+  `willSpeakRangeOfSpeechString`), `Sources/FastRead/SpeakerButton.swift`
+  (speaker toggle + voice picker + speed slider).
 - Original design spec:
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md` §14.
 - Icon (entries + glyph): `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md`.

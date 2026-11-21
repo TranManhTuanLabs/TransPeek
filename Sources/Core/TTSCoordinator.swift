@@ -80,38 +80,39 @@ final class TTSCoordinator {
         activePlaybackProvider = nil
         currentText = nil
         playbackState = .idle
-        // Any in-flight chunk speech is interrupted by this stop, so
-        // its caller must not treat it as finished (see speakChunk).
+        // Any in-flight read-along speech is interrupted by this stop,
+        // so its caller must not treat it as finished (see
+        // speakContinuous — it returns false when the generation moved).
         speechGeneration += 1
     }
 
-    /// Speak ONE chunk/line and return when it finishes (Manh 2026-11-21,
-    /// CI314 fix — the Fast Read read-along): the RSVP reader speaks
-    /// each slide/line in turn and advances only when that unit finishes
-    /// speaking, so the audio and the visible text stay in sync
-    /// (SwiftRead / Speechify read-along model). Returns true when the
-    /// utterance finished on its own, false when it was cut short by a
-    /// `stop()` from elsewhere. Deliberately does NOT touch
-    /// `onPlaybackEnded`, `currentText` or `playbackState` — those belong
-    /// to the trigger icon's whole-text speech, and a chunk must not trip
-    /// its "speech ended" cleanup. Cancellation is delivered through
-    /// `stop()` (which stops the provider, so its delegate resumes the
-    /// continuation via didCancel) — the caller checks the return value
-    /// and `Task.isCancelled` after the await.
-    @MainActor func speakChunk(_ text: String, language: String) async -> Bool {
+    /// Speak the whole text in ONE continuous utterance and report each
+    /// word's range as it is spoken (Manh 2026-11-21, Option B — natural
+    /// reading): no gap between words, so the voice never stutters, and
+    /// the caller maps each range to the current slide/line, so the text
+    /// follows the voice. Returns true when the utterance finished on its
+    /// own, false when it was cut short by a `stop()` from elsewhere.
+    /// Deliberately does NOT touch `onPlaybackEnded`, `currentText` or
+    /// `playbackState` — those belong to the trigger icon's whole-text
+    /// speech, and a read-along utterance must not trip its "speech
+    /// ended" cleanup. The `onWordRange` callback is main-actor-isolated,
+    /// so the caller may update UI state directly. If the active provider
+    /// cannot track words (its default implementation), no ranges are
+    /// reported and the caller advances only when the utterance finishes.
+    @MainActor func speakContinuous(_ text: String, language: String, onWordRange: @escaping @MainActor (NSRange) -> Void) async -> Bool {
         let generation = speechGeneration
         let provider = registry.activeProvider
         activePlaybackProvider = provider
         do {
-            try await provider.speak(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language))
+            try await provider.speakWithWordTracking(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language), onWordRange: onWordRange)
         } catch {
             // Same Apple fallback as speak(): a cloud provider failing
-            // on one chunk must not stall the read — try Apple TTS,
-            // and if that fails too the chunk is skipped (the caller
-            // still advances, so one bad chunk never stalls the read).
+            // must not stall the read — try Apple TTS, and if that fails
+            // too the utterance is skipped (the caller still advances, so
+            // one bad utterance never stalls the read).
             if provider.id != AppleTTSProvider.providerID,
                let apple = registry.provider(withID: AppleTTSProvider.providerID) {
-                try? await apple.speak(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language))
+                try? await apple.speakWithWordTracking(text, language: language, accent: Defaults[.ttsAccent], rate: effectiveRate(for: language), onWordRange: onWordRange)
             }
         }
         return generation == speechGeneration

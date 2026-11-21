@@ -197,6 +197,25 @@ struct RSVPEngine {
         return max(baseMs * multiplier - executionOverheadMs, minimumDelayMs)
     }
 
+    // MARK: - Word Ranges (continuous TTS read-along)
+
+    /// UTF-16 ranges of each word in `text`, in reading order, matching
+    /// `words` (same words, same order, same count — both split on
+    /// whitespace). Used by the continuous TTS read-along (Manh 2026-11-21,
+    /// Option B): the speech delegate reports the range of the word about
+    /// to be spoken, and the caller maps that range back to a word index
+    /// (binary search on this array), then to the slide/line containing
+    /// that word, so the text follows the voice. The ranges are in the
+    /// given string's UTF-16 coordinates, matching NSRange.
+    static func wordRanges(for text: String) -> [NSRange] {
+        // Non-whitespace runs — the same split the tokenizer does
+        // (whitespace and newlines separate words, nothing else does).
+        let pattern = try? NSRegularExpression(pattern: "\\S+")
+        let nsText = text as NSString
+        let fullRange = NSRange(location: 0, length: nsText.length)
+        return pattern?.matches(in: text, range: fullRange).map(\.range) ?? []
+    }
+
     // MARK: - Context
 
     /// Words around the slide at `slideIndex`, for the pause context view:

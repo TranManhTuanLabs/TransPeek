@@ -44,11 +44,47 @@ protocol TTSProvider: AnyObject, Sendable {
         rate: Float
     ) async throws
 
+    /// Speak the text and report each word's range as it is spoken
+    /// (Manh 2026-11-21, Option B — natural reading): the range is the
+    /// word about to be spoken, in the utterance string's UTF-16
+    /// coordinates. The caller maps it to the current slide/line, so the
+    /// text follows the voice. Still returns when the whole utterance
+    /// finishes or is cancelled. The default implementation just speaks
+    /// (no word tracking) — a provider that cannot track words uses it,
+    /// and the caller then gets no per-word updates. The callback is
+    /// main-actor-isolated, so the caller may update UI state directly.
+    @MainActor func speakWithWordTracking(
+        _ text: String,
+        language: String,
+        accent: TTSAccent,
+        rate: Float,
+        onWordRange: @escaping @MainActor (NSRange) -> Void
+    ) async throws
+
     /// Stop any in-progress playback immediately.
     @MainActor func stop()
 
     /// Return a settings view for this provider.
     @MainActor func makeSettingsView() -> AnyView
+}
+
+// MARK: - TTS Provider Defaults
+
+extension TTSProvider {
+    /// Default word tracking: no per-word updates, just speak the text.
+    /// A provider that can track words (Apple TTS) overrides this.
+    @MainActor func speakWithWordTracking(
+        _ text: String,
+        language: String,
+        accent: TTSAccent,
+        rate: Float,
+        onWordRange: @escaping @MainActor (NSRange) -> Void
+    ) async throws {
+        // No word tracking — the callback is never invoked, and the
+        // caller advances only when the whole utterance finishes.
+        _ = onWordRange
+        try await speak(text, language: language, accent: accent, rate: rate)
+    }
 }
 
 // MARK: - TTS Errors

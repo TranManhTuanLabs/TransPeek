@@ -313,6 +313,15 @@ final class RSVPViewModel: ObservableObject {
     }
 
     func play() {
+        // Sync the speaker state from the persisted setting (Manh 2026-11-21,
+        // Lite speaker fix): Lite and Full use separate view-model instances,
+        // so the in-memory flag can go stale when the speaker is toggled on
+        // the other surface. The persisted setting is the single source of
+        // truth — read it fresh so both surfaces always respect the current
+        // speaker choice. Setting the same value back is harmless (didSet
+        // just rewrites it), and the @Published update refreshes the
+        // speaker button icon on this surface too.
+        ttsEnabled = Defaults[.rsvpTTSEnabled]
         // Style 2 (Manh 2026-11-21): Play advances the focus line one
         // line at a time instead of stepping RSVP slides — same button,
         // same timer bookkeeping, different unit.
@@ -558,72 +567,73 @@ final class RSVPViewModel: ObservableObject {
         }
     }
 
-    /// TTS-driven playback (Manh 2026-11-21, CI314 fix — the read-along):
-    /// the same loop shape as `startPlaybackTask`, but the speech is the
-    /// clock. Each slide is spoken through the coordinator, and the
-    /// reader advances ONLY when that slide finishes speaking, so the
-    /// audio and the visible text stay in sync (SwiftRead / Speechify
-    /// read-along model). The WPM timer is not used here at all — the
-    /// speaking pace is the TTS rate, not the WPM setting. Reaching the
-    /// last slide finishes the read (completion line + elapsed time),
-    /// exactly like the WPM finish.
+    /// TTS-driven playback (Manh 2026-11-21, Option B — natural reading):
+    /// ONE continuous utterance for the rest of the text, so there is no
+    /// gap between words and the voice never stutters. The speech delegate
+    /// reports each word's range as it is spoken, and the reader advances
+    /// to the slide containing that word, so the text follows the voice
+    /// (the focus moves word by word, in sync with the audio). The WPM
+    /// timer is not used here at all — the speaking pace is the TTS rate
+    /// (1x–4x), not the WPM setting. Reaching the end finishes the read
+    /// (completion line + elapsed time), exactly like the WPM finish.
+    /// Pausing stops the synthesizer; resuming speaks again from the
+    /// current slide's first word. If the speech was cut short from
+    /// outside, stop the read-along without calling stop() again (that
+    /// would cut off the speech that just interrupted us).
     private func startTTSPlaybackTask() {
         playbackTask?.cancel()
         playbackTask = Task { [weak self] in
             guard let self else { return }
-            while !Task.isCancelled {
-                // Snapshot the current slide on the main actor.
-                let (slideText, isLast) = await MainActor.run { () -> (String?, Bool) in
-                    guard self.engine.slides.indices.contains(self.currentSlideIndex) else {
-                        return (nil, true)
-                    }
-                    return (
-                        self.engine.slides[self.currentSlideIndex].joinedText,
-                        self.currentSlideIndex >= self.engine.slides.count - 1
-                    )
+            // Snapshot the starting word + coordinator + language on the
+            // main actor. The utterance starts at the current slide's
+            // first word, so a resume continues from where the reader is.
+            let snapshot = await MainActor.run { () -> (startWord: Int, tts: TTSCoordinator?, language: String)? in
+                guard self.engine.slides.indices.contains(self.currentSlideIndex) else { return nil }
+                return (
+                    self.engine.slides[self.currentSlideIndex].startWordIndex,
+                    self.ttsCoordinator,
+                    self.speakLanguage
+                )
+            }
+            guard let snapshot, let tts = snapshot.tts else { return }
+            let (startWord, language) = (snapshot.startWord, snapshot.language)
+            // The utterance is the original text from the starting word,
+            // so punctuation and paragraph breaks are preserved and the
+            // voice pauses naturally at sentence ends. The ranges are in
+            // the utterance string's coordinates.
+            let (utteranceText, utteranceRanges) = await MainActor.run { () -> (String, [NSRange]) in
+                self.utterance(fromWord: startWord)
+            }
+            guard !utteranceText.isEmpty, !utteranceRanges.isEmpty else { return }
+            // Speak continuously; on each word, move the focus to the
+            // slide containing that word. The callback is main-actor
+            // isolated, so it updates the slide index directly.
+            let finished = await tts.speakContinuous(utteranceText, language: language) { [weak self] range in
+                guard let self else { return }
+                // Word index within the utterance (last range starting at
+                // or before this word's location).
+                let localIndex = utteranceRanges.lastIndex(where: { $0.location <= range.location }) ?? 0
+                let globalWord = startWord + localIndex
+                // Slide containing this word.
+                let slideIndex = self.engine.slides.lastIndex(where: { $0.startWordIndex <= globalWord }) ?? 0
+                if slideIndex != self.currentSlideIndex {
+                    self.currentSlideIndex = slideIndex
                 }
-                guard let slideText, !slideText.isEmpty else { break }
-                // Speak this slide; advance only when it finishes.
-                // If the speech was cut short from outside (another
-                // speech started elsewhere) do not advance — stop the
-                // read-along, but do NOT call stop() again (that would
-                // cut off the speech that just interrupted us).
-                // Snapshot the coordinator + language on the main actor
-                // first (speakChunk is @MainActor, so the await hops
-                // there); the snapshot keeps the call out of a
-                // MainActor.run async closure.
-                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
-                let finished: Bool
-                if let tts {
-                    finished = await tts.speakChunk(slideText, language: language)
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                if finished {
+                    // Spoke to the end: land on the last slide, stop the
+                    // clock, show the completion line.
+                    self.currentSlideIndex = max(self.engine.slides.count - 1, 0)
+                    self.elapsedSeconds = self.accumulatedSeconds
+                        + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                    self.playStartDate = nil
+                    self.isFinished = true
+                    self.isPlaying = false
                 } else {
-                    finished = false
-                }
-                guard !Task.isCancelled else { break }
-                guard finished else {
-                    await MainActor.run {
-                        self.bankElapsedTime()
-                        self.isPlaying = false
-                    }
-                    break
-                }
-                if isLast {
-                    // Finished: stop the clock and show the completion line.
-                    await MainActor.run {
-                        self.elapsedSeconds = self.accumulatedSeconds
-                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
-                        self.playStartDate = nil
-                        self.isFinished = true
-                        self.isPlaying = false
-                    }
-                    break
-                }
-                await MainActor.run {
-                    if self.currentSlideIndex < self.engine.slides.count - 1 {
-                        self.currentSlideIndex += 1
-                    } else {
-                        self.isPlaying = false
-                    }
+                    self.bankElapsedTime()
+                    self.isPlaying = false
                 }
             }
         }
@@ -674,73 +684,109 @@ final class RSVPViewModel: ObservableObject {
         }
     }
 
-    /// Style 2 TTS-driven playback (Manh 2026-11-21, CI314 fix — the
-    /// read-along): the same shape as `startTTSPlaybackTask`, but the
-    /// unit is a line, not a slide. Each line is spoken through the
-    /// coordinator, and the focus advances ONLY when that line finishes
-    /// speaking, so the audio and the highlighted line stay in sync.
-    /// The WPM timer is not used here at all. Reaching the last line
-    /// finishes the read (completion line + elapsed time), exactly like
-    /// the WPM finish.
+    /// Style 2 TTS-driven playback (Manh 2026-11-21, Option B — natural
+    /// reading): same shape as `startTTSPlaybackTask`, but the unit is a
+    /// line, not a slide. ONE continuous utterance for the rest of the
+    /// text; the delegate reports each word's range, and the highlight
+    /// moves to the line containing that word, so the highlighted line
+    /// follows the voice. The WPM timer is not used here at all.
+    /// Reaching the end finishes the read (completion line + elapsed
+    /// time), exactly like the WPM finish. Pausing stops the synthesizer;
+    /// resuming speaks again from the current line's first word.
     private func startStyle2TTSPlaybackTask() {
         playbackTask?.cancel()
         playbackTask = Task { [weak self] in
             guard let self else { return }
-            while !Task.isCancelled {
-                // Snapshot the current line on the main actor.
-                let (lineText, isLast) = await MainActor.run { () -> (String?, Bool) in
-                    let lines = self.style2Lines
-                    guard lines.indices.contains(self.style2CurrentLineIndex) else {
-                        return (nil, true)
-                    }
-                    return (
-                        lines[self.style2CurrentLineIndex],
-                        self.style2CurrentLineIndex >= lines.count - 1
-                    )
+            // Snapshot the starting word + coordinator + language on the
+            // main actor. The utterance starts at the current line's
+            // first word, so a resume continues from where the reader is.
+            let snapshot = await MainActor.run { () -> (startWord: Int, tts: TTSCoordinator?, language: String)? in
+                let starts = self.style2LineStartWordIndices
+                guard self.style2Lines.indices.contains(self.style2CurrentLineIndex),
+                      starts.indices.contains(self.style2CurrentLineIndex) else { return nil }
+                return (
+                    starts[self.style2CurrentLineIndex],
+                    self.ttsCoordinator,
+                    self.speakLanguage
+                )
+            }
+            guard let snapshot, let tts = snapshot.tts else { return }
+            let (startWord, language) = (snapshot.startWord, snapshot.language)
+            // The utterance is the original text from the starting word,
+            // so punctuation and paragraph breaks are preserved.
+            let (utteranceText, utteranceRanges) = await MainActor.run { () -> (String, [NSRange]) in
+                self.utterance(fromWord: startWord)
+            }
+            guard !utteranceText.isEmpty, !utteranceRanges.isEmpty else { return }
+            // Speak continuously; on each word, move the highlight to
+            // the line containing that word.
+            let finished = await tts.speakContinuous(utteranceText, language: language) { [weak self] range in
+                guard let self else { return }
+                // Word index within the utterance, then the global word.
+                let localIndex = utteranceRanges.lastIndex(where: { $0.location <= range.location }) ?? 0
+                let globalWord = startWord + localIndex
+                // Line containing this word.
+                let starts = self.style2LineStartWordIndices
+                let lineIndex = starts.lastIndex(where: { $0 <= globalWord }) ?? 0
+                if lineIndex != self.style2CurrentLineIndex {
+                    self.style2CurrentLineIndex = lineIndex
                 }
-                guard let lineText, !lineText.isEmpty else { break }
-                // Speak this line; advance only when it finishes.
-                // If the speech was cut short from outside, stop the
-                // read-along without calling stop() again (that would
-                // cut off the speech that just interrupted us).
-                // Snapshot the coordinator + language on the main actor
-                // first (speakChunk is @MainActor, so the await hops
-                // there); the snapshot keeps the call out of a
-                // MainActor.run async closure.
-                let (tts, language) = await MainActor.run { (self.ttsCoordinator, self.speakLanguage) }
-                let finished: Bool
-                if let tts {
-                    finished = await tts.speakChunk(lineText, language: language)
+            }
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                if finished {
+                    // Spoke to the end: land on the last line, stop the
+                    // clock, show the completion line.
+                    self.style2CurrentLineIndex = max(self.style2Lines.count - 1, 0)
+                    self.elapsedSeconds = self.accumulatedSeconds
+                        + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
+                    self.playStartDate = nil
+                    self.isFinished = true
+                    self.isPlaying = false
                 } else {
-                    finished = false
-                }
-                guard !Task.isCancelled else { break }
-                guard finished else {
-                    await MainActor.run {
-                        self.bankElapsedTime()
-                        self.isPlaying = false
-                    }
-                    break
-                }
-                if isLast {
-                    await MainActor.run {
-                        self.elapsedSeconds = self.accumulatedSeconds
-                            + (self.playStartDate.map { Date().timeIntervalSince($0) } ?? 0)
-                        self.playStartDate = nil
-                        self.isFinished = true
-                        self.isPlaying = false
-                    }
-                    break
-                }
-                await MainActor.run {
-                    if self.style2CurrentLineIndex < self.style2Lines.count - 1 {
-                        self.style2CurrentLineIndex += 1
-                    } else {
-                        self.isPlaying = false
-                    }
+                    self.bankElapsedTime()
+                    self.isPlaying = false
                 }
             }
         }
+    }
+
+    /// The utterance to speak from a word index to the end of the text,
+    /// and the word ranges within it (Manh 2026-11-21, Option B): the
+    /// utterance is the original text from the starting word's offset,
+    /// so punctuation and paragraph breaks are preserved and the voice
+    /// pauses naturally at sentence ends. The ranges are in the utterance
+    /// string's UTF-16 coordinates (each global range shifted by the
+    /// utterance start), so the delegate's reported range maps back to a
+    /// word index by binary search. Returns an empty string + empty
+    /// ranges when the word index is out of range (nothing left to speak).
+    private func utterance(fromWord startWord: Int) -> (String, [NSRange]) {
+        let ranges = RSVPEngine.wordRanges(for: text)
+        guard ranges.indices.contains(startWord) else { return ("", []) }
+        let startOffset = ranges[startWord].location
+        let nsText = text as NSString
+        guard startOffset <= nsText.length else { return ("", []) }
+        let utteranceText = nsText.substring(from: startOffset)
+        // Shift the remaining ranges into utterance coordinates.
+        let utteranceRanges = ranges[startWord...].map { range in
+            NSRange(location: range.location - startOffset, length: range.length)
+        }
+        return (utteranceText, utteranceRanges)
+    }
+
+    /// Start word index of each Style 2 line, in order (Manh 2026-11-21,
+    /// Option B): line N starts at the word after line N-1's last word.
+    /// Computed from the displayed lines (word count per line), so the
+    /// ranges always match what the reader sees. Used to map a spoken
+    /// word index to the line containing it.
+    private var style2LineStartWordIndices: [Int] {
+        var starts: [Int] = []
+        var next = 0
+        for line in style2Lines {
+            starts.append(next)
+            next += line.split(separator: " ").count
+        }
+        return starts
     }
 
     /// Rebuild the engine after a setting change, keeping the reading
