@@ -2,6 +2,24 @@ import AppKit
 import Defaults
 import SwiftUI
 
+/// Pro gate for the continuous word-sync read-along (Manh 2026-11-21):
+/// word-sync was listed as a Pro feature in the internal Pro plan, but
+/// it ships FREE for now. This is the single cut-off point — set
+/// `wordSyncEnabled` to `false` to disable word-sync (the read-along
+/// falls back to the silent WPM timer even with the speaker on), or
+/// wire it to a real Pro check (purchase / licence key) later. Each
+/// surface keeps its OWN speaker on/off state (Lite and Full do not
+/// share it — Manh 2026-11-21, simpler code); this gate only controls
+/// whether the word-sync engine itself is available. Future demo idea
+/// (NOT built yet): when gated, pressing the speaker plays a short
+/// DEMO — a different TTS voice reading a different text than the
+/// user's content, with a "this is a Pro feature" note — so the user
+/// hears the feature before buying.
+enum ProGate {
+    /// Word-sync read-along enabled. Free for now (Manh 2026-11-21).
+    static let wordSyncEnabled = true
+}
+
 /// View model driving the RSVP reading window. Owns the engine, the
 /// current slide, and the playback task; the view only renders state.
 @MainActor
@@ -313,15 +331,6 @@ final class RSVPViewModel: ObservableObject {
     }
 
     func play() {
-        // Sync the speaker state from the persisted setting (Manh 2026-11-21,
-        // Lite speaker fix): Lite and Full use separate view-model instances,
-        // so the in-memory flag can go stale when the speaker is toggled on
-        // the other surface. The persisted setting is the single source of
-        // truth — read it fresh so both surfaces always respect the current
-        // speaker choice. Setting the same value back is harmless (didSet
-        // just rewrites it), and the @Published update refreshes the
-        // speaker button icon on this surface too.
-        ttsEnabled = Defaults[.rsvpTTSEnabled]
         // Style 2 (Manh 2026-11-21): Play advances the focus line one
         // line at a time instead of stepping RSVP slides — same button,
         // same timer bookkeeping, different unit.
@@ -355,8 +364,11 @@ final class RSVPViewModel: ObservableObject {
     /// coordinator is wired, otherwise the WPM timer task (unchanged).
     /// Centralised here so every play() path — Play button, Space,
     /// auto-play, restart, seek, style switch — picks the right clock.
+    /// The word-sync read-along also needs the Pro gate (§ ProGate):
+    /// when it is off, the read stays silent (WPM timer) even with the
+    /// speaker on.
     private func startPlayback() {
-        if ttsEnabled, ttsCoordinator != nil {
+        if ttsEnabled, ttsCoordinator != nil, ProGate.wordSyncEnabled {
             startTTSPlaybackTask()
         } else {
             startPlaybackTask()
@@ -366,7 +378,7 @@ final class RSVPViewModel: ObservableObject {
     /// Style 2 version of startPlayback(): same routing, but the unit
     /// is a line, so the TTS-driven task speaks lines, not slides.
     private func startStyle2Playback() {
-        if ttsEnabled, ttsCoordinator != nil {
+        if ttsEnabled, ttsCoordinator != nil, ProGate.wordSyncEnabled {
             startStyle2TTSPlaybackTask()
         } else {
             startStyle2PlaybackTask()

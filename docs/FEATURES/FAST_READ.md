@@ -233,11 +233,21 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   first word. (This replaced the earlier chunk-by-chunk read-along,
   where each slide/line was a separate utterance and the finish-then-
   speak-next cycle left an audible gap.)
-- **Lite + Full share one speaker state:** the on/off flag is persisted
-  (`rsvpTTSEnabled`) and re-read when Play starts, so toggling the
-  speaker on one surface (Full window or Lite panel) applies to the
-  other — the two surfaces use separate view-model instances, and the
-  persisted setting is the single source of truth.
+- **Lite + Full keep SEPARATE speaker state (Manh 2026-11-21):** each
+  surface has its own on/off flag — they do not share it, which keeps
+  the code simpler. Toggling the speaker on one surface does not change
+  the other. (An earlier shared-state sync in `play()` was reverted.)
+- **Pro gate for word-sync (Manh 2026-11-21):** word-sync was listed
+  as a Pro feature in the internal Pro plan, but it ships FREE for now.
+  The cut-off is a single flag, `ProGate.wordSyncEnabled` in
+  `RSVPViewModel` (`Sources/FastRead/RSVPView.swift`): set it to
+  `false` to disable word-sync (the read falls back to the silent WPM
+  timer even with the speaker on), or wire it to a real Pro check
+  (purchase / licence key) later. Future demo idea (NOT built yet):
+  when gated, pressing the speaker plays a short DEMO — a different
+  TTS voice reading a different text than the user's content, with a
+  "this is a Pro feature" note — so the user hears the feature before
+  buying.
 - The speaker is hidden where there is no coordinator (Rest window).
 
 ## References
