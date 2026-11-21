@@ -26,11 +26,16 @@ struct TesseractOCRProvider: OcrProvider {
     let needsNetwork = false
     let needsAPIKey = false
 
-    /// All 8 OCR languages the app offers (`OCRSettingsView.availableLanguages`).
-    /// Tesseract can recognise each of them: eng + vie are bundled, the
-    /// other 6 download on demand, so the full list is supported.
+    /// All 18 OCR languages the app offers (`OCRSettingsView.availableLanguages`).
+    /// Tesseract can recognise 15 of them: eng + vie are bundled, the
+    /// other 13 download on demand, so the full list is supported except
+    /// Arabic (Najdi) and the two Cantonese variants, which are Vision-only
+    /// (no Tesseract model for them — `tessCode` returns nil and the
+    /// provider skips them).
     var supportedLanguages: [String] {
-        ["vi-VN", "en-US", "zh-Hans", "zh-Hant", "ja-JP", "ko-KR", "fr-FR", "de-DE"]
+        ["vi-VN", "en-US", "ar-SA", "ars-SA", "de-DE", "es-ES", "fr-FR",
+         "it-IT", "ja-JP", "ko-KR", "pt-BR", "ru-RU", "th-TH", "uk-UA",
+         "yue-Hans", "yue-Hant", "zh-Hans", "zh-Hant"]
     }
 
     var status: String { String(localized: "Ready") }

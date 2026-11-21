@@ -12,7 +12,7 @@ import Foundation
 /// on demand to the local dir (from tessdata_best, like Windows).
 ///
 /// The manager is generic: every operation takes a Tesseract language
-/// code (`eng`, `vie`, `chi_sim`, ...), so the full 8-language OCR list
+/// code (`eng`, `vie`, `chi_sim`, ...), so the full 18-language OCR list
 /// works — adding a language is just adding its code to the list, no
 /// new logic.
 enum TesseractLanguageDataManager {

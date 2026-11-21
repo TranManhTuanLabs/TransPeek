@@ -36,16 +36,28 @@
   (`lexiaoyao20/tesseract-Apple`, Tesseract 5.5.2, arm64, tĩnh, kèm
   Leptonica), dùng qua lớp phủ Swift `TesseractSwift`.
   Provider: `TesseractOCRProvider` (theo protocol `OcrProvider`).
-- **Ngôn ngữ: đủ 8 thứ tiếng trong `OCRSettingsView.availableLanguages`**
-  (vi-VN, en-US, zh-Hans, zh-Hant, ja-JP, ko-KR, fr-FR, de-DE) → mã
-  tessdata: vie, eng, chi_sim, chi_tra, jpn, kor, fra, deu.
+- **Ngôn ngữ: đủ 18 thứ tiếng trong `OCRSettingsView.availableLanguages`**
+  (đủ bộ Vision trên macOS 15+: vi-VN, en-US, ar-SA, ars-SA, de-DE, es-ES,
+  fr-FR, it-IT, ja-JP, ko-KR, pt-BR, ru-RU, th-TH, uk-UA, yue-Hans,
+  yue-Hant, zh-Hans, zh-Hant) → mã tessdata: vie, eng, ara, deu, spa, fra,
+  ita, jpn, kor, por, rus, tha, ukr, chi_sim, chi_tra. **3 thứ tiếng chỉ
+  Vision đọc được** (ars-SA, yue-Hans, yue-Hant — Tesseract không có model
+  cho chúng, fallback sẽ bỏ qua và đọc tiếng Anh nếu Vision lỗi).
+- **Danh sách gạt ngôn ngữ trong Settings là card thu gọn** (bấm để
+  ẩn/mở, mặc định thu gọn cho đỡ tốn diện tích — dòng thu gọn vẫn hiện
+  các ngôn ngữ đang chọn, vd "Vietnamese, English").
 - **Dữ liệu ngôn ngữ:** eng + vie nhúng sẵn trong app (tessdata_best,
   ~27 MB — eng 15.4 MB + vie 12.4 MB; Manh chốt 23:32 "nhúng best luôn",
-  chấp nhận app tăng từ ~15 MB lên ~43 MB để chính xác nhất); 6 thứ
+  chấp nhận app tăng từ ~15 MB lên ~43 MB để chính xác nhất); 13 thứ
   còn lại download on-demand từ tessdata_best
   (`https://github.com/tesseract-ocr/tessdata_best/raw/main/<mã>.traineddata`)
   vào `~/Library/Application Support/TransPeek/tessdata`.
   Quản lý bởi `TesseractLanguageDataManager` (port từ Windows).
+- **Nút tải trước trong Settings** (mục Tesseract fallback, chỉ Apple
+  Silicon): nút "Download missing language data" tải ngay dữ liệu của
+  các ngôn ngữ đã chọn mà còn thiếu — để lần OCR đầu không phải chờ tải
+  giữa lúc chụp. Nút chỉ hiện khi còn ngôn ngữ thiếu dữ liệu; tải xong
+  hiện kết quả (tải được / tải lỗi những ngôn ngữ nào).
 
 ### Chuỗi fallback
 
@@ -53,8 +65,10 @@
 2. Ngôn ngữ nào Vision không hỗ trợ (hoặc Vision lỗi) → Tesseract thử
    với ngôn ngữ đó (chỉ trên Apple Silicon; Intel bỏ qua bước này).
 3. Tesseract thiếu dữ liệu ngôn ngữ → tải ngầm (không hỏi, không báo);
-   tải lỗi (mất mạng) thì bỏ ngôn ngữ đó, OCR tiếp bằng các ngôn ngữ
-   còn lại (rớt về `eng`), không hiện lỗi làm gián đoạn lúc chụp.
+   tải lỗi (mất mạng) thì bỏ ngôn ngữ đó CHỈ Ở LẦN CHỤP ĐÓ, OCR tiếp bằng
+   các ngôn ngữ còn lại (rớt về `eng`), không hiện lỗi làm gián đoạn lúc
+   chụp. Lần chụp sau (khi đã có mạng) app tự tải lại — KHÔNG bị bỏ vĩnh
+   viễn, vì app không lưu lại lần tải lỗi nào (không có cờ "đã lỗi").
 
 ## 2. Hai chế độ
 
