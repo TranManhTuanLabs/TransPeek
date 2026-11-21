@@ -295,14 +295,23 @@ window file `RSVPView.swift` is never edited for panel work (Manh
 - **Panel right** (`Sources/FocusTimer/PanelFastReadView.swift`):
   idle = "Fast Read — coming soon" + focus demo ("reading", the "a"
   in yellow, half-bars above/below, via the shared `ORPLineView`) +
-  "Read in panel" button for the translate tab's text; reading =
-  the reading view only (coming-soon + book icon hidden). Display
-  adapts to panel size: while playing, only focus + context + the
-  shortcut hint; while paused at the default size, compact chrome
-  (speed + compact Settings top-right, small progress bar, centered
-  Rewind / Play / Forward / Maximize); while paused near maximum
-  size (content width ≥ 540pt), the full window chrome (4-picker top
-  bar, progress, 5-button control row, completion + share). Focus
+  two buttons for the translate tab's text — "Read in panel" (always
+  reads here) and "Read in FastRead Window" (always opens the Window
+  Read, Manh 2026-11-22) — plus the "Run FastRead in:" picker
+  ("FastRead Lite" / "FastRead Full Window (recommended)", renamed
+  2026-11-22 from "New FastRead Window" — "New" is wrong once the
+  window is no longer new, and "Full" names the Lite-vs-Full contrast;
+  same rename on Windows; "FastRead Lite" kept, "ReadMode" is not a
+  term the app uses). The two buttons ignore the picker — it only
+  decides where a LAUNCH (float icon, menubar, shortcut, reminder)
+  goes. Reading = the reading view only (coming-soon + book icon
+  hidden). Display adapts to panel size: while playing, only focus +
+  context + the shortcut hint; while paused at the default size,
+  compact chrome (speed + compact Settings top-right, small progress
+  bar, centered Rewind / Play / Forward / Maximize); while paused near
+  maximum size (content width ≥ 540pt), the full window chrome
+  (4-picker top bar, progress, 5-button control row, completion +
+  share). Focus
   font is capped for the panel (48pt default size, 64pt near max) —
   the setting itself is unchanged. Vertical trackpad swipe changes
   font size (±16pt / 50pt, vertical-only monitor so horizontal swipes

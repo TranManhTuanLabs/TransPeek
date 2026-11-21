@@ -102,6 +102,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             self.performFastRead(text: text)
         }
+        // The panel-right "Read in FastRead Window" button (Manh
+        // 2026-11-22): an explicit window read — it always opens the
+        // Window Read, whatever "Run FastRead in:" says (the sibling of
+        // the "Read in panel" button, which always reads in the panel).
+        // Hide the translate panel first so it does not cover the
+        // screen while reading, and stop any panel read (same text
+        // read two ways — the window replaces the panel one).
+        panelController.onReadInWindow = { [weak self] text in
+            guard let self else { return }
+            self.panelController.hidePanelTemporarily()
+            self.focusTimerStore.stopPanelReading(showPending: false)
+            self.rsvpWindowController.show(text: text)
+        }
         // A focus / rest-eyes reminder with destination Right Panel
         // (Manh 2026-11-20): the store holds the request; bring the
         // panel forward and the panel switches to the Fast Read tab
@@ -479,9 +492,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Show Fast Read at the user's chosen location (Manh 2026-11-20,
-    /// 05:27 — the "Run FastRead in:" picker in panel right). "New Fast
-    /// Read Window" opens the separate Window Read (default, the current
-    /// behavior); "Right Panel" reads inside panel right — the store
+    /// 05:27 — the "Run FastRead in:" picker in panel right).
+    /// "FastRead Full Window" opens the separate Window Read (default,
+    /// the current behavior); "Right Panel" reads inside panel right —
     /// holds the request and the panel switches to the Fast Read tab,
     /// exactly like a reminder with destination Right Panel (PopupView
     /// consumes the request on appear if the panel was hidden, or on

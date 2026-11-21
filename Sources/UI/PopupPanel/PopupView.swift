@@ -44,6 +44,11 @@ struct PopupView: View {
     /// opens the RSVP reading window with the text being translated
     /// (Manh 2026-11-17).
     var onFastRead: ((String) -> Void)?
+    /// Called when the "Read in FastRead Window" button in panel right
+    /// is clicked (Manh 2026-11-22): opens the Window Read with the
+    /// text being translated, whatever "Run FastRead in:" says — the
+    /// explicit window action, sibling of the "Read in panel" button.
+    var onReadInWindow: ((String) -> Void)?
     /// Called when the visible tab changes (Manh 2026-11-21): the
     /// controller stores the tab so the alternative icon's selection
     /// monitor knows when the panel is on its Fast Read tab.
@@ -910,6 +915,9 @@ struct PopupView: View {
             store: focusTimerStore,
             sourceText: editableText,
             onStartReading: { coordinator.isPinned = true },
+            onReadInWindow: { [onReadInWindow] text in
+                onReadInWindow?(text)
+            },
             onToggleMaximize: { togglePanelSize() }
         )
     }

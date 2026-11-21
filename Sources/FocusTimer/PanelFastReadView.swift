@@ -9,7 +9,8 @@ import SwiftUI
 /// Two states:
 /// - Idle: the "Fast Read Lite" placeholder, the focus demo
 ///   ("reading" — the "a" in yellow, half-bars above and below), a
-///   "Read in panel" button for the text in the translate tab, and the
+///   "Read in panel" button and a "Read in FastRead Window" button
+///   (Manh 2026-11-22) for the text in the translate tab, and the
 ///   "Run FastRead in:" radio buttons (Manh 2026-11-20, 05:27;
 ///   radio since 07:02).
 /// - Reading: `CompactReadingView` below — the panel's OWN lite reading
@@ -28,6 +29,11 @@ struct PanelFastReadView: View {
     var sourceText: String
     /// Called when a panel read starts (the host pins the panel).
     var onStartReading: (() -> Void)?
+    /// Called by the "Read in FastRead Window" button (Manh 2026-11-22):
+    /// the host opens the Window Read with this text, whatever "Run
+    /// FastRead in:" says — the explicit window action, sibling of the
+    /// "Read in panel" button (which always reads in the panel).
+    var onReadInWindow: ((String) -> Void)?
     /// Called by the Maximize button in the reading chrome (the host
     /// toggles the panel between its default and maximum size).
     var onToggleMaximize: (() -> Void)?
@@ -172,8 +178,8 @@ struct PanelFastReadView: View {
 
     // MARK: - Demo (idle)
 
-    /// Placeholder + focus demo + "Read in panel" + "Run FastRead in:"
-    /// picker (Manh 2026-11-20). The header is "Fast Read Lite" (Manh
+    /// Placeholder + focus demo + "Read in panel" / "Read in FastRead
+    /// Window" + "Run FastRead in:" picker (Manh 2026-11-20). The header is "Fast Read Lite" (Manh
     /// 2026-11-20, 11:35 — the in-panel reading works, so "coming soon"
     /// is no longer true; "Lite" names the in-panel version, distinct
     /// from the full Window Read). The subtitle no longer claims the
@@ -195,17 +201,36 @@ struct PanelFastReadView: View {
                 FocusDemoView()
                     .padding(.top, 12)
 
-                Button {
-                    store.startPanelReading(text: sourceText)
-                    onStartReading?()
-                } label: {
-                    Label("Read in panel", systemImage: "book.pages")
+                // Two explicit actions, side by side (Manh 2026-11-22):
+                // "Read in panel" always reads here, whatever "Run
+                // FastRead in:" says; "Read in FastRead Window" always
+                // opens the Window Read. Both ignore the setting — the
+                // setting only decides where a LAUNCH (float icon,
+                // menubar, shortcut, reminder) goes.
+                HStack(spacing: 8) {
+                    Button {
+                        store.startPanelReading(text: sourceText)
+                        onStartReading?()
+                    } label: {
+                        Label("Read in panel", systemImage: "book.pages")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Read the text in the translate tab, right here in the panel")
+                    .background { InteractiveMarker() }
+                    .panelHoverHighlight()
+
+                    Button {
+                        onReadInWindow?(sourceText)
+                    } label: {
+                        Label("Read in FastRead Window", systemImage: "macwindow")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .help("Read the text in the translate tab, in a separate Fast Read window")
+                    .background { InteractiveMarker() }
+                    .panelHoverHighlight()
                 }
-                .buttonStyle(.bordered)
-                .disabled(sourceText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help("Read the text in the translate tab, right here in the panel")
-                .background { InteractiveMarker() }
-                .panelHoverHighlight()
 
                 runLocationSection
             }
@@ -238,14 +263,16 @@ struct PanelFastReadView: View {
     /// "Run FastRead in:" (Manh 2026-11-20, 05:27; radio buttons
     /// 07:02–19:00, two toggles since 19:00) — where Fast Read runs,
     /// for EVERY launch (panel button, float icon, menubar, shortcut).
-    /// "New FastRead Window (recommended)" opens the separate Window
+    /// "FastRead Full Window (recommended)" opens the separate Window
     /// Read (default, the current behavior); "FastRead Lite" reads
     /// here, in panel right, no separate window. A one-line hint under
     /// the toggles points at the window (Manh 2026-11-20, 11:41).
     /// Separate from the reminder's "Run reminder in:" — the two
     /// features must not share a setting. The "Read in panel" button
     /// above always reads here, whatever this says — it is the
-    /// explicit panel action, not a launch.
+    /// explicit panel action, not a launch. Its sibling, "Read in
+    /// FastRead Window" (Manh 2026-11-22), always opens the Window
+    /// Read the same way.
     private var runLocationSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Run FastRead in:")
@@ -288,17 +315,17 @@ struct PanelFastReadView: View {
                 ))
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .accessibilityLabel("New FastRead Window (recommended)")
+                .accessibilityLabel("FastRead Full Window (recommended)")
                 .background { InteractiveMarker() }
                 Button {
                     runLocation = .newWindow
                 } label: {
-                    Text("New FastRead Window (recommended)")
+                    Text("FastRead Full Window (recommended)")
                 }
                 .buttonStyle(.plain)
                 .background { InteractiveMarker() }
             }
-            Text("For the full experience, choose New FastRead Window.")
+            Text("For the full experience, choose FastRead Full Window.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text("Applies to the Fast Read button, the float icon, and the keyboard shortcut.")

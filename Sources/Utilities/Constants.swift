@@ -608,14 +608,14 @@ enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
     case rightPanel
 
     /// Labels synced to the Fast Read names (Manh 2026-11-20, 17:28):
-    /// "FastRead Lite" / "New FastRead Window" — same words as the
+    /// "FastRead Lite" / "FastRead Full Window" — same words as the
     /// "Run FastRead in:" picker, so the two pickers read as one
     /// vocabulary. NO "(recommended)" suffix here: that nudge belongs
     /// to Fast Read only, not to the reminder. Labels only — the
     /// setting key, values and default are unchanged.
     var displayName: String {
         switch self {
-        case .newWindow: return "New FastRead Window"
+        case .newWindow: return "FastRead Full Window"
         case .rightPanel: return "FastRead Lite"
         }
     }
@@ -628,7 +628,7 @@ enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
 /// launch (panel button, float icon, menubar, shortcut): the chosen
 /// location is the only place RSVP shows.
 /// Case order = picker order (Manh 2026-11-20, 17:11): "FastRead Lite"
-/// first, "New FastRead Window (recommended)" second. Order is display
+/// first, "FastRead Full Window (recommended)" second. Order is display
 /// only — the default is still `.newWindow` (set explicitly in the
 /// Defaults key) and values are stored as Strings, so existing saved
 /// values keep working.
@@ -642,10 +642,13 @@ enum FastReadRunLocation: String, CaseIterable, Defaults.Serializable {
     /// Labels (Manh 2026-11-20, 11:41): "FastRead" one word, matching
     /// the setting name; the picker appends " (recommended)" (lowercase)
     /// to the window option; "FastRead Lite" matches the panel-right
-    /// section title "Fast Read Lite".
+    /// section title "Fast Read Lite". Renamed 2026-11-22 (Manh):
+    /// "New FastRead Window" → "FastRead Full Window" — "New" is
+    /// wrong once the window is no longer new, and "Full" names the
+    /// Lite-vs-Full contrast (same rename on Windows).
     var displayName: String {
         switch self {
-        case .newWindow: return "New FastRead Window"
+        case .newWindow: return "FastRead Full Window"
         case .rightPanel: return "FastRead Lite"
         }
     }
