@@ -103,7 +103,15 @@ enum HoverBlockText {
     /// text start), so a re-layout or a second hit-test of one block
     /// does not re-show the icon.
     static func isSameBlock(text: String, frame: CGRect, otherText: String, otherFrame: CGRect) -> Bool {
-        frame == otherFrame && text.prefix(40) == otherText.prefix(40)
+        // Same frame + same text start: one text may be a prefix of
+        // the other (the block grew or shrank slightly), so a shared
+        // start counts as the same block — exact equality of the
+        // first 40 chars was too strict and treated a longer text
+        // as a different block.
+        guard frame == otherFrame else { return false }
+        let head = text.prefix(40)
+        let otherHead = otherText.prefix(40)
+        return head.hasPrefix(otherHead) || otherHead.hasPrefix(head)
     }
 
     /// The AX element at a screen point (AX coordinates, top-left
