@@ -66,6 +66,12 @@ struct Style2ReadingPage: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, 16)
             }
+            // No user scrolling (Manh 2026-11-22): a vertical swipe is
+            // the font-size gesture, not a scroll — it must never scroll
+            // the page along with changing the font (they conflict).
+            // Programmatic scrolling still works, so Play keeps
+            // auto-scrolling the focus line into view (scrollTo below).
+            .scrollDisabled(true)
             // Keep the focused line in view as Play advances it.
             .onChange(of: viewModel.style2CurrentLineIndex) { _, newIndex in
                 withAnimation(.easeOut(duration: 0.25)) {

@@ -853,6 +853,14 @@ struct RSVPView: View {
     private var readingSecondary: Color {
         viewModel.colorScheme == .dark ? .white.opacity(0.6) : .black.opacity(0.6)
     }
+    /// The secondary text color as NSColor, for the AppKit text view
+    /// (NonScrollingSelectableText takes NSColor, not SwiftUI Color).
+    /// Same values as readingSecondary: white/black at 60% opacity.
+    private var readingSecondaryNSColor: NSColor {
+        viewModel.colorScheme == .dark
+            ? NSColor(white: 1.0, alpha: 0.6)
+            : NSColor(white: 0.0, alpha: 0.6)
+    }
     private var pageBackground: Color {
         viewModel.colorScheme == .dark ? .black : .white
     }
@@ -1355,17 +1363,19 @@ struct RSVPView: View {
                 // they don't fit (no scroll).
                 Group {
                     if !beforeText.isEmpty {
-                        Text(beforeText)
-                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
-                            .foregroundStyle(readingSecondary)
-                            .textSelection(.enabled)
-                            // No scroll on the text itself too (Manh
-                            // 2026-11-22): with a large font the context
-                            // overflows the half and the selectable text
-                            // view scrolls, even with .scrollDisabled on
-                            // the Group — the modifier has to sit on the
-                            // scrollable text view itself.
-                            .scrollDisabled(true)
+                        // Selectable but never scrollable (Manh
+                        // 2026-11-22): a SwiftUI Text with
+                        // .textSelection turns into a scroll box as soon
+                        // as the user clicks into it — this AppKit text
+                        // view has no scroll view, so it can never
+                        // scroll. Bottom-aligned: the words nearest the
+                        // focus line sit just above it.
+                        NonScrollingSelectableText(
+                            text: beforeText,
+                            font: .systemFont(ofSize: viewModel.fontSize * viewModel.contextSizeRatio),
+                            textColor: readingSecondaryNSColor,
+                            verticalAlignment: .bottom
+                        )
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     } else {
                         Color.clear
@@ -1373,10 +1383,10 @@ struct RSVPView: View {
                 }
                 .frame(maxHeight: .infinity)
                 .clipped()
-                // No scroll (Manh 2026-11-21): a selectable Text is
-                // backed by a scrollable text view, so without this
-                // the context text scrolls and defeats the clip above.
-                .scrollDisabled(true)
+                // No scroll (Manh 2026-11-21, component 2026-11-22):
+                // the context text is a NonScrollingSelectableText
+                // (no scroll view), so it can never scroll and defeat
+                // the clip above.
                 // The focus line: fixed height, always at the vertical
                 // center (the two halves above/below share the rest).
                 if let slide {
@@ -1389,15 +1399,17 @@ struct RSVPView: View {
                 // they don't fit (no scroll).
                 Group {
                     if !afterText.isEmpty {
-                        Text(afterText)
-                            .font(.system(size: viewModel.fontSize * viewModel.contextSizeRatio))
-                            .foregroundStyle(readingSecondary)
-                            .textSelection(.enabled)
-                            // No scroll on the text itself too (Manh
-                            // 2026-11-22): same as the before-text above
-                            // — with a large font the selectable text
-                            // view scrolls unless the modifier sits on it.
-                            .scrollDisabled(true)
+                        // Selectable but never scrollable (Manh
+                        // 2026-11-22): same as the before-text above —
+                        // the SwiftUI Text became a scroll box on click.
+                        // Top-aligned: the words nearest the focus line
+                        // sit just below it.
+                        NonScrollingSelectableText(
+                            text: afterText,
+                            font: .systemFont(ofSize: viewModel.fontSize * viewModel.contextSizeRatio),
+                            textColor: readingSecondaryNSColor,
+                            verticalAlignment: .top
+                        )
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     } else {
                         Color.clear
@@ -1405,10 +1417,10 @@ struct RSVPView: View {
                 }
                 .frame(maxHeight: .infinity)
                 .clipped()
-                // No scroll (Manh 2026-11-21): same as the before-text
-                // above — the selectable Text would otherwise scroll
-                // here, right above the Play/Pause controls.
-                .scrollDisabled(true)
+                // No scroll (Manh 2026-11-21, component 2026-11-22):
+                // same as the before-text above — the selectable text
+                // has no scroll view, so it can never scroll here,
+                // right above the Play/Pause controls.
             }
         }
         .padding(.horizontal, 32)
