@@ -173,6 +173,15 @@ full page, Lite gets the compact page).
   swallowed the first click to dismiss itself, so the user had to click
   the speaker twice. Clicking the speaker now toggles sound at once
   while the picker stays open.
+- The picker also has a **Speed slider, 0.6x–4x** (Manh 2026-11-21):
+  the listening speed, changed right here without opening Settings.
+  0.6x–4x is the TRUE speech multiplier (Apple's ceiling is 4x normal
+  speech); it is stored in the same `ttsSpeechRate` key Settings → TTS
+  uses, so the two stay in sync. It takes effect from the next
+  slide/line (each chunk reads the rate when it starts speaking). The
+  WPM setting is NOT connected to it — WPM is the silent-reading
+  speed; in TTS mode the display tracks the voice (the "track" model),
+  so the speed is the speech speed.
 - Hidden in the Rest window (no TTS coordinator is wired there), so it
   never shows a dead button.
 
