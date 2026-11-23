@@ -604,21 +604,26 @@ enum SwapLanguagesShortcut {
 enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
     /// The reminder shows inside panel right, no separate window.
     /// Case order = picker order (Manh 2026-11-22): "FastRead Lite"
-    /// first, "FastRead Full Window" second — Lite on top, matching
+    /// first, "FastRead Lite Window" second — Lite on top, matching
     /// the "Run FastRead in:" picker in panel right.
     case rightPanel
     /// The reminder opens a separate Rest window (the original design).
     case newWindow
 
-    /// Labels synced to the Fast Read names (Manh 2026-11-20, 17:28):
-    /// "FastRead Lite" / "FastRead Full Window" — same words as the
-    /// "Run FastRead in:" picker, so the two pickers read as one
-    /// vocabulary. NO "(recommended)" suffix here: that nudge belongs
-    /// to Fast Read only, not to the reminder. Labels only — the
-    /// setting key, values and default are unchanged.
+    /// Labels (Manh 2026-11-23): "FastRead Lite" for the panel, and
+    /// "FastRead Lite Window" for the separate window — NOT "FastRead
+    /// Full Window", because the Rest window shows the LITE view
+    /// (`CompactReadingView`), not the Full window (`RSVPView`). The
+    /// old "Full Window" label was misleading: it made the reminder
+    /// destination sound like the Fast Read window. Both labels say
+    /// Lite because both destinations read with the Lite view — they
+    /// differ only in host (panel vs window). NO "(recommended)"
+    /// suffix here: that nudge belongs to Fast Read only, not to the
+    /// reminder. Labels only — the setting key, values and default
+    /// are unchanged.
     var displayName: String {
         switch self {
-        case .newWindow: return "FastRead Full Window"
+        case .newWindow: return "FastRead Lite Window"
         case .rightPanel: return "FastRead Lite"
         }
     }

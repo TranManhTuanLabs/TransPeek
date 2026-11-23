@@ -348,7 +348,7 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   (600×800).
 - **Rest window** (`Sources/FocusTimer/RestWindowController.swift`,
   "TransPeek — Rest", 560×400, min 480×320): opens when a work /
-  eye-rest interval ends and "Run reminder in:" is "New Fast Read
+  eye-rest interval ends and "Run reminder in:" is "FastRead Lite
   Window". RSVP-reads the reminder, then shows the rest countdown
   (5 min / 20 s) and closes itself; Done closes early. Never touches
   an open Fast Read window.
@@ -356,10 +356,13 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   card `Sources/UI/PopupPanel/FocusTimerCard.swift` in panel left):
   Pomodoro standard (Work 25 / Rest 5, long break 15 after 4 cycles)
   + rest eyes 20-20-20 (fixed), each with its own Start / Stop.
-  "Run reminder in:" ("New Fast Read Window" / "Right Panel") applies
+  "Run reminder in:" ("FastRead Lite" / "FastRead Lite Window", Manh
+  2026-11-23 — "FastRead Lite Window", not "FastRead Full Window",
+  because the Rest window shows the Lite view) applies
   ONLY to the reminder — Fast Read has its OWN separate setting, "Run
-  FastRead in:" in panel right (Manh 2026-11-20, 05:27): "New Fast
-  Read Window" (default) / "Right Panel", applying globally to every
+  FastRead in:" in panel right (Manh 2026-11-20, 05:27): "FastRead Full
+  Window (recommended)" (default) / "FastRead Lite", applying globally
+  to every
   Fast Read launch (panel button, float icon, menubar, shortcut).
   A reminder to panel right opens the panel on the Fast Read tab and
   starts reading; after the read, the panel shows the rest countdown
