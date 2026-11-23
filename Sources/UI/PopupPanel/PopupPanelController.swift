@@ -121,6 +121,18 @@ final class PopupPanelController {
         startDismissMonitor()
     }
 
+    /// Open the panel for Fast Read (Lite) — always keyed (Manh
+    /// 2026-11-22, shared read focus, `docs/FEATURES/FAST_READ.md`
+    /// §11). This is the ONE opener every Fast Read entry path uses
+    /// (`showFastRead` and the reminder's `onShowPanel`), so no path
+    /// has to remember `makeKey: true` itself — forgetting that flag
+    /// broke Space once (`b6388f20`). The translate quick-peek keeps
+    /// plain `showAtCursor()` non-activating — only Fast Read opens
+    /// keyed, so its reader gets keystrokes at once.
+    func showForFastRead() {
+        showAtCursor(makeKey: true)
+    }
+
     func showAtScreenCenter() {
         let initialSize = setupPanel()
         guard let panel else { return }

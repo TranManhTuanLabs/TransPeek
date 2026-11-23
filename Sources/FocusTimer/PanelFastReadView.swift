@@ -397,7 +397,6 @@ struct CompactReadingView: View {
     /// window (no TTS there).
     @Environment(\.ttsCoordinator) private var ttsCoordinator
 
-    @FocusState private var isFocused: Bool
     @State private var showingSettings = false
     @State private var showingHotkeys = false
 
@@ -499,11 +498,15 @@ struct CompactReadingView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(pageBackground)
             .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
-            .focusable()
-            .focused($isFocused)
-            .focusEffectDisabled()
+            // Shared read keyboard + focus (Manh 2026-11-22, see
+            // `ReadKeyboardFocus`): focus + Space/arrows live in one
+            // place for both surfaces — this view no longer owns its
+            // own `@FocusState` / `.onChange(isPlaying)` /
+            // `.onKeyPress` copy. Esc is left `nil` on purpose: the
+            // host owns it (panel dismiss monitor / Rest window
+            // closer), so it must propagate up, not be swallowed here.
+            .readKeyboardFocus(viewModel: viewModel)
             .onAppear {
-                isFocused = true
                 // Hand the TTS coordinator to the view model (Manh
                 // 2026-11-21, CI314 fix): the read-along speaks through
                 // it. The store calls play() before this view appears
@@ -514,16 +517,6 @@ struct CompactReadingView: View {
                 // while this view lives.
                 viewModel.ttsCoordinator = ttsCoordinator
             }
-            // Re-take focus whenever a read starts playing (Manh
-            // 2026-11-22): a reminder read that starts in an
-            // already-visible panel never fires onAppear again, so the
-            // SwiftUI focus stays lost from the previous read and
-            // Space never reaches the reader. Grabbing focus on play
-            // makes Space work at once for the new read.
-            .onChange(of: viewModel.isPlaying) { _, isPlaying in
-                if isPlaying { isFocused = true }
-            }
-            .onKeyPress(action: handleKeyPress)
         }
     }
 
@@ -787,44 +780,6 @@ struct CompactReadingView: View {
         .padding(.horizontal, 12)
         .padding(.top, 8)
         .padding(.bottom, 4)
-    }
-
-    /// Keyboard handling. Same keys as the window: Space play/pause,
-    /// ←/→ step (Shift = sentence), ↑/↓ speed ±50. Esc is IGNORED —
-    /// the host owns it: the panel's dismiss monitor closes the reading
-    /// first (two-stage Esc, Manh 2026-11-20, 07:02) and only dismisses
-    /// the panel on the next Esc; the Rest window closes itself. This
-    /// view must not swallow the key.
-    private func handleKeyPress(_ press: KeyPress) -> KeyPress.Result {
-        switch press.key {
-        case .space:
-            viewModel.togglePlayPause()
-            return .handled
-        case .leftArrow:
-            if press.modifiers.contains(.shift) {
-                viewModel.stepSentence(forward: false)
-            } else {
-                viewModel.stepBack()
-            }
-            return .handled
-        case .rightArrow:
-            if press.modifiers.contains(.shift) {
-                viewModel.stepSentence(forward: true)
-            } else {
-                viewModel.stepForward()
-            }
-            return .handled
-        case .upArrow:
-            viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + RSVPEngine.wpmStep)
-            return .handled
-        case .downArrow:
-            viewModel.wpm = max(50, viewModel.wpm - RSVPEngine.wpmStep)
-            return .handled
-        case .escape:
-            return .ignored
-        default:
-            return .ignored
-        }
     }
 
     // MARK: - Pickers (full-size top bar)

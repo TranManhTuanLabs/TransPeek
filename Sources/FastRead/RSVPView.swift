@@ -839,7 +839,6 @@ struct RSVPView: View {
     /// window (no TTS there).
     @Environment(\.ttsCoordinator) private var ttsCoordinator
 
-    @FocusState private var isFocused: Bool
     @State private var showingSettings = false
     @State private var showingHotkeys = false
 
@@ -986,15 +985,12 @@ struct RSVPView: View {
         // on Black" page, invisible. Setting the color scheme makes
         // them render light-on-dark instead.
         .preferredColorScheme(viewModel.colorScheme == .dark ? .dark : .light)
-        .focusable()
-        .focused($isFocused)
-        // Hide the blue focus ring (Manh 2026-11-18): the focusable root
-        // view drew a blue border framing the whole window, most visible
-        // at full width. The view stays focusable — Space / arrows / Esc
-        // still work — just without the ring.
-        .focusEffectDisabled()
+        // Shared read keyboard + focus (Manh 2026-11-22, see
+        // `ReadKeyboardFocus`): focus + Space/arrows live in one place
+        // for both surfaces — this view no longer owns its own
+        // `@FocusState` / `.onKeyPress` copy. Esc closes the window.
+        .readKeyboardFocus(viewModel: viewModel, onEscape: { onClose?() })
         .onAppear {
-            isFocused = true
             // Hand the TTS coordinator to the view model (Manh
             // 2026-11-21, CI314 fix): the read-along speaks through it.
             // The controller calls play() before this view appears, so
@@ -1003,38 +999,6 @@ struct RSVPView: View {
             // onChange needed — the coordinator is one shared instance
             // that never changes while this view lives.
             viewModel.ttsCoordinator = ttsCoordinator
-        }
-        .onKeyPress { press in
-            switch press.key {
-            case .space:
-                viewModel.togglePlayPause()
-                return .handled
-            case .leftArrow:
-                if press.modifiers.contains(.shift) {
-                    viewModel.stepSentence(forward: false)
-                } else {
-                    viewModel.stepBack()
-                }
-                return .handled
-            case .rightArrow:
-                if press.modifiers.contains(.shift) {
-                    viewModel.stepSentence(forward: true)
-                } else {
-                    viewModel.stepForward()
-                }
-                return .handled
-            case .upArrow:
-                viewModel.wpm = min(RSVPEngine.maxWPM, viewModel.wpm + RSVPEngine.wpmStep)
-                return .handled
-            case .downArrow:
-                viewModel.wpm = max(50, viewModel.wpm - RSVPEngine.wpmStep)
-                return .handled
-            case .escape:
-                onClose?()
-                return .handled
-            default:
-                return .ignored
-            }
         }
     }
 

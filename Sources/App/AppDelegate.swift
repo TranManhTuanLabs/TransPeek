@@ -118,14 +118,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // A focus / rest-eyes reminder with destination Right Panel
         // (Manh 2026-11-20): the store holds the request; bring the
         // panel forward and the panel switches to the Fast Read tab
-        // and starts the read itself. Open keyed (Manh 2026-11-21):
-        // the reminder starts a Read in panel right, so the panel
-        // needs keyboard input at once (Space play/pause) — the same
-        // fix as showFastRead's .rightPanel case (2026-11-21). A
-        // non-activating open would not route keystrokes to the
-        // reader until the user clicked into the panel first.
+        // and starts the read itself. The reminder starts a Read in
+        // panel right, so the panel needs keyboard input at once
+        // (Space play/pause) — opened through the shared Fast Read
+        // opener (`showForFastRead`, Manh 2026-11-22), which always
+        // opens keyed. A non-activating open would not route
+        // keystrokes to the reader until the user clicked into the
+        // panel first.
         focusTimerStore.onShowPanel = { [weak self] in
-            self?.panelController.showAtCursor(makeKey: true)
+            self?.panelController.showForFastRead()
         }
         // A break reminder that fired while reading waits (Manh
         // 2026-11-20, 05:33): show it when the Fast Read window closes,
@@ -516,11 +517,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // `= nil` broke the reminder call site, CI #298).
                 kind: nil
             )
-            // Open keyed (Manh 2026-11-21): the Lite reader needs
+            // Open through the shared Fast Read opener (Manh
+            // 2026-11-22, `showForFastRead`): the Lite reader needs
             // keyboard input at once (Space play/pause) — a
             // non-activating open would not route keystrokes to it
             // until the user clicked into the panel first.
-            panelController.showAtCursor(makeKey: true)
+            panelController.showForFastRead()
         }
     }
 
