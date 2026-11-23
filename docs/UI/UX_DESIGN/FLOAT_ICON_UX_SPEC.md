@@ -280,15 +280,42 @@ UX-spec record of the same settled behaviour.
 - **Tests:** the pure decision rules (`shouldAccept`, `isSameBlock`) are
   unit-tested; the AX calls only run on a real Mac.
 
-### Plan — what is NOT done
+### Spec snapshot — thresholds (v1, recorded 2026-11-23)
 
-- **Model B** (scan the whole tree / icon on every block): not planned —
-  too expensive, and it does not follow scrolling.
-- **Apps that do not expose text via Accessibility:** out of scope for
-  now; separate research task (hovering there does nothing today).
-- **No further tuning planned:** the delay and the icon size are
-  user-adjustable in Settings; the 4–2000 char limits are the v1 tuning
-  and have not needed changing since Manh confirmed it works.
+The current tuning, in one place, so a later change can be compared
+against it. Note: the 2000 limit counts **characters, not words** —
+2000 characters ≈ 300–400 words.
+
+| Threshold | Value | Where |
+|---|---|---|
+| Max parent levels to climb | 3 | `HoverBlockText.maxParentLevels` |
+| Block length | ≥ 4 and ≤ 2000 characters (trimmed), ≥ 1 letter/digit | `HoverBlockText.shouldAccept` |
+| Hover delay (debounce) | default 400 ms; Picker 200/300/400/500/700 ms | `hoverBlockDelayMs`, Settings → General → Translation |
+| Follow poll | every 0.3 s | `HoverTextDetector` |
+| Stale move | > 10 pt | `HoverTextDetector` |
+| Suppress after dismiss | 500 ms | `HoverTextDetector` |
+| Same-block dedup | same frame + same first 40 chars (prefix match) | `HoverBlockText.isSameBlock` |
+| Hover icon size | default 24 pt; Picker 18/20/22/24 pt | `autoShowFloatIconSize` |
+| Text source order | value → title → description (first non-empty) | `HoverBlockText` |
+
+### Decisions — done / not doing / not yet done (2026-11-23)
+
+- **ĐÃ LÀM (done, settled):** Model A (one hit-test, ≤ 3 levels up);
+  4–2000 char limits; debounce 400 ms; follow/stale poll; suppress
+  500 ms; same-block dedup; gates (no drag, no delivery while icon/
+  panel up, master + feature toggles); Settings toggle (default ON),
+  delay + icon size pickers; unit tests for the pure rules.
+  (Manh confirmed "auto nhận block text ngon rồi", 2026-11-21.)
+- **KHÔNG LÀM (not doing, no plan):** Model B (scan the whole tree /
+  icon on every block) — too expensive, and it does not follow
+  scrolling.
+- **CHƯA LÀM (not yet, separate work):** apps that do not expose text
+  via Accessibility — out of scope for now, separate research task
+  (hovering there does nothing today). Threshold review — whether
+  3 levels and 2000 chars are optimal vs real content sizes (1 Word
+  page, 1 news article) and how Speechify/Natural Reader read a web
+  page (whole page vs per block) — research in progress, 2026-11-23;
+  its result may change the snapshot table above.
 
 ## References
 

@@ -68,6 +68,9 @@
 - Limits (v1): a block must be ≥ 4 chars and ≤ 2000 chars; buttons,
   links and other controls never summon the icon; TransPeek's own
   windows are skipped; the excluded-apps list applies, same as selection.
+  Full threshold table + done/not-doing/not-yet decisions:
+  `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` §8 (Spec snapshot +
+  Decisions, recorded 2026-11-23).
 
 ## Liên kết
 
