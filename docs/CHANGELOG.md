@@ -5,10 +5,25 @@
 
 ## 2026-11-23
 
+- 13:51 — Manh chốt: MỞ swipe ngang ở cửa sổ Nghỉ (panel vẫn khoá — không có tab nên không trùng); gộp theo vào phiên tiếp theo (lẻ gộp món 3/3). Ghi doc `FEATURES/FAST_READ.md` §2 + §10 (đợt docs này).
+- 13:40 — Release v0.1.12 (stable, Release #36, app = CI353 `f08a9a3f`): Space ở cả 3 đường vào đọc, loa ở cửa sổ Nghỉ (nhớ chung), vuốt dọc đổi font ở cửa sổ Nghỉ, khoá swipe ngang Lite, đổi tên "FastRead Lite Window".
+- 13:30 — Manh sửa quy tắc lẻ gộp: món đang chờ gộp THEO vào task tiếp theo nếu cùng nhánh, KHÔNG đợi đợt gộp sau / lệnh gộp tiếp theo.
+- 12:26 — Pre-release `v0.1.5.353` (CI353 XANH): đổi tên label nhắc nhở.
+- 12:23 — `73e58ba1` (docs-only): theme/style dùng chung + vẽ riêng theo mặt (`FAST_READ.md` §9).
+- 12:06 — `e003317f` (docs-only): luồng nhắc nhở chung + mô hình 2 mặt (`FAST_READ.md` §9).
+- 11:54 — `f08a9a3f` (CI353): đổi tên "Run reminder in:" → "FastRead Lite Window".
+- 10:41 — `daf38565` (CI352 XANH, pre-release `v0.1.5.352`): khoá swipe ngang Lite (panel + cửa sổ Nghỉ).
+- 10:28 — PR #11 merged (`ce86e95`): component chung phím/focus read (`ReadKeyboardFocus`).
+- 10:20 — `71f242bb` (CI351, bị supersede bởi `daf38565`): loa + trackpad cho cửa sổ Nghỉ.
 - 10:19 — (docs-only): 3 quyết định mới về loa read (Manh): (1) thêm loa vào cửa sổ nghỉ; (2) loa nhớ trạng thái chung Full + Lite, lưu bền (thay quyết định 21/11 mỗi mặt giữ riêng); (3) sau này gộp speed audio vào WPM thành 1 control chung. Ghi vào `FEATURES/FAST_READ.md` §10 + `TASK_QUEUE.md`.
 
 ## 2026-11-22
 
+- 05:09 — Release v0.1.11 (stable, Release #35, app = CI344 `b0e314f0`).
+- Post-release batch (CI347 XANH, pre-release `v0.1.5.347`): `c7ed69ad` book icon spacing, `46c8e357` "Read in:" title, `2cb39c10` nút ngắn + thứ tự nhắc nhở.
+- `4bd122c2` (docs-only): quy tắc "sửa lặp → test + log + bắt lỗi + docs" vào `docs/AGENTS.md` §9.
+- `ea5745df` (docs-only): block-text UX spec §8.
+- `1bee44bf` + `48467629` (docs-only): comma ngắt nhịp — nghiên cứu + doc §6.5 (chưa sửa code).
 - 03:05 — `762909cb` (docs-only): `FAST_READ.md` §11 — 3 đường mở read + trạng thái phân mảnh của Space/focus + hướng component chung (làm sau v0.1.11).
 - 02:48 — `f50688aa` (CI341, đang chạy): context không cuộn — thêm `.scrollDisabled(true)` ngay trên Text (Window + Lite, trước + sau); gộp cả 2 sửa của `1ca40268`.
 - 02:40 — `1ca40268` (CI340, bị supersede bởi `f50688aa`): Style 2 select được text; Lite lấy lại focus khi bắt đầu phát (sửa Space ở reminder/rest-eye read sau Lite).
