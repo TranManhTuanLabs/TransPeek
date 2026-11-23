@@ -91,12 +91,39 @@
 ## 3. Màu sắc — học theo Speechify / NaturalReader
 
 Manh chốt (2026-11-24 00:26): màu câu + đoạn xem Speechify, NaturalReader
-dùng màu gì thì học theo. Đã tra (2026-11-24, nguồn chính thức + tài liệu):
+dùng màu gì thì học theo. Đã tra từ **source extension thật** (anh gửi,
+trong `src/`) — đây mới là đáp án đúng, thay cho tra web trước đó:
 
-| Sản phẩm | Câu đang đọc | Từ đang đọc | Ghi chú |
-|---|---|---|---|
-| **NaturalReader** (help chính thức + tài liệu v12/v14) | **Vàng** (nền vàng) | **Nền tối** bên trong nền vàng của câu | 2 tầng: câu nền vàng, từ nền tối hơn bên trong. Cho người dùng tự chọn màu highlight (Light / Dark / Ice / Warm) và chế độ (Sentence & Word / Sentence Only / Word Only / None). PDF tô xanh dương; Word tô vàng (Windows) / câu xanh dương (Mac). |
-| **Speechify** | 2 tầng: câu + từ (đã xác nhận nhiều nguồn: help, review, plugin Obsidian) | — | **Màu chính xác CHƯA xác minh từ nguồn chính thức.** 1 nguồn không chính thức (trang MOD APK) nói từ = xanh lá nhạt, câu = xanh dương — không đáng tin, chỉ tham khảo. |
+### NaturalReader — màu thật trong source extension
+
+File `src/naturalreader/injected/nr-ext-dom/nr-ext-dom.css` (đọc trực tiếp
+từ source extension anh gửi). NaturalReader cho chọn 4 theme (Light /
+Dark / Ice / Warm), mỗi theme có 2 tầng: câu + từ. Theme mặc định là
+**Light**:
+
+| Theme | Câu đang đọc | Từ đang đọc |
+|---|---|---|
+| **Light** (mặc định) | Nền xanh lá nhạt `#B5C687`, chữ xanh dương đậm `#0d3b55` | Nền xanh dương đậm `#0d3b55`, chữ sáng `#E7ECEE` |
+| Dark | Nền xanh dương đậm `#0d3b55`, chữ sáng `#E7ECEE` | Nền vàng `#EFD369`, chữ `#393E3E` |
+| Ice | Nền xám rất nhạt `#F1F3F4`, chữ `#373D3E` | Nền xanh teal `#0F7895`, chữ trắng `#FFFFFF` |
+| Warm | Nền be ấm `#ebdcb2`, chữ `#605140` | Nền nâu đậm `#563e20`, chữ `#E6CCB5` |
+
+**Cơ chế highlight của NaturalReader (từ source thật):** extension chạy
+content script TRONG trang web, chèn tag vào DOM của trang (câu được bọc
+bằng class `nr-s{N}`, rồi gắn class `nr-highlighted-sentence` /
+`nr-highlighted-word` + `nr-sentence-highlight-{theme}` /
+`nr-word-highlight-{theme}`), và tự cuộn tới câu đang đọc
+(`scrollIntoView`). Tức là highlight trên trang được vì extension ở TRONG
+trang và sửa được DOM — đúng như nhận định overlay: TransPeek (app macOS,
+ở NGOÀI trang) không sửa được DOM nên chỉ vẽ overlay được. Source
+extension xác nhận cơ chế này.
+
+### Speechify — màu chính xác chưa tìm được trong source extension
+
+Đã tìm trong source extension Speechify (anh gửi): file CSS chỉ có reset
+tap-highlight, màu highlight đọc-theo-giọng không nằm trong CSS mà nằm
+trong JS đã minify hoặc ở web app — chưa tìm được. Chỉ xác nhận được 2
+tầng (câu + từ) từ help/review/plugin. Nên màu Speechify vẫn chưa xác minh.
 
 **Màu thử cho TransPeek (Manh chốt 2026-11-24 00:38 — bảng màu pastel, thay cho đề xuất theo NaturalReader):**
 
@@ -112,6 +139,12 @@ chỉ có 2 tầng (câu + từ) — vì TransPeek không lấy được vị tr
 chắc chắn nên tầng "từ" là có điều kiện (nếu làm được); tầng "đoạn" là tầng
 rộng hơn câu để thay thế khi không có tầng từ. Nếu lúc thử thấy các màu nhạt
 khó phân biệt trên nền trang sáng/tối thì đổi màu và ghi lại ở mục cuối.
+
+**Lưu ý thêm (từ source thật):** màu câu mặc định của NaturalReader là
+xanh lá nhạt `#B5C687` — cùng tông với màu ĐOẠN (green nhạt) mà Manh chọn
+cho TransPeek. Tức là nếu học sát NaturalReader thì câu = xanh lá nhạt,
+đoạn phải chọn màu khác. Bảng màu pastel của Manh vẫn giữ nguyên trừ khi
+anh muốn đổi theo NaturalReader.
 
 ## 4. Theo dõi khi cuộn + dự phòng chống giật
 
