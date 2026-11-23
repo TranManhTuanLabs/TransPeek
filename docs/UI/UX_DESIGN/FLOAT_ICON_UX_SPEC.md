@@ -328,8 +328,12 @@ against it. Note: the 2000 limit counts **characters, not words** —
   the whole article continuously, TransPeek reads one block then
   stops); step 1 is the ĐÃ LÀM above. Step 2 — "đọc nối tiếp"
   (after Speak finishes one block, find the next block and keep
-  reading until the end or the user stops) — planned on its own
-  branch, frame to be presented first. Step 3 — "Đọc cả bài" (extract
+  reading until the end or the user stops) — frame approved 2026-11-24
+  (branch `feature/continuous-reading`, work in the next session);
+  trial plan (vertical line + sentence/block highlight + scroll
+  fallback + 2 test phases):
+  `docs/RESEARCH/tts-speechify-naturalreader/step2-trial-plan.md`.
+  Step 3 — "Đọc cả bài" (extract
   the article's main content into Fast Read + TTS) — later, its own
   feature, frame to be presented first. Manh 2026-11-23 (revised
   16:55): step 3 is the FILE reader only — the RSVP window becomes
@@ -353,6 +357,7 @@ against it. Note: the 2000 limit counts **characters, not words** —
   (`HoverBlockText` rules + `HoverTextDetector` mouse watch, debounce,
   follow/stale poll).
 - Feature doc: `docs/FEATURES/FLOAT_ICON.md`.
+- Step 2 trial plan: `docs/RESEARCH/tts-speechify-naturalreader/step2-trial-plan.md`.
 - Window Read: `docs/FEATURES/FAST_READ.md`.
 - Original flow decisions:
   `docs/RESEARCH/tts-speechify-naturalreader/recommendation.md`.

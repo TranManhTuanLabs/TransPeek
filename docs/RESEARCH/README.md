@@ -18,7 +18,8 @@
   (input / output / snap-back / khung). Báo cáo gốc viết cho mac, có đối chiếu Windows.
   Cơ sở cho thiết kế panel chung mac + Windows chốt 16/11.
 - **`tts-speechify-naturalreader/`** (16/11/2026, cập nhật chốt 17/11) — TTS: 5 báo cáo
-  (Speechify, NaturalReader, ENVI, RSVP, panel nhiều tab + break) + `recommendation.md`.
+  (Speechify, NaturalReader, ENVI, RSVP, panel nhiều tab + break) + `recommendation.md`
+  + `step2-trial-plan.md` (kế hoạch thử nghiệm bước 2, chốt 24/11/2026).
   Kết luận: tích hợp native phần lớn; **Model B KHÔNG làm (chốt 17/11)**; RSVP vào theo
   thứ tự Option/Alt-click → chuột phải icon → nút trong panel dịch → menubar/tray →
   shortcut fallback + toggle; view đọc RSVP giữ cả 2 phương án (tab dãn / panel riêng),

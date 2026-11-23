@@ -45,7 +45,7 @@
 | `docs/BUILD_FROM_ZERO.md` | Build app từ máy trắng | Đang dùng |
 | `docs/RESEARCH/README.md` | Chỉ mục research | Đang dùng |
 | `docs/RESEARCH/transpeek-panel-sizing/report.md` | Research panel co dãn | Đang dùng |
-| `docs/RESEARCH/tts-speechify-naturalreader/` | Research TTS (6 báo cáo) | Đang dùng |
+| `docs/RESEARCH/tts-speechify-naturalreader/` | Research TTS (6 báo cáo + 1 kế hoạch thử nghiệm bước 2) | Đang dùng |
 | `docs/RESEARCH/transpeek-windows-packaging-signing/report.md` | Research đóng gói/ký/Store (Windows) | Đang dùng |
 
 ## 3. Cây docs
@@ -70,7 +70,7 @@ docs/
 ├── RESEARCH/
 │   ├── README.md                     # chỉ mục research
 │   ├── transpeek-panel-sizing/       # panel co dãn (gốc mac, đối chiếu Windows)
-│   ├── tts-speechify-naturalreader/  # TTS (6 báo cáo)
+│   ├── tts-speechify-naturalreader/  # TTS (6 báo cáo + 1 kế hoạch thử nghiệm bước 2)
 │   └── transpeek-windows-packaging-signing/  # đóng gói/ký/Store (Windows-specific)
 ├── ARCHITECTURE.md               # kiến trúc tổng
 ├── MASTER_PLAN.md                # lộ trình

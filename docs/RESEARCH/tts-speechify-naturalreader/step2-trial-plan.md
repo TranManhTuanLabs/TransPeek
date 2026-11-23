@@ -1,0 +1,178 @@
+# Kế hoạch thử nghiệm bước 2 — đọc nối tiếp + chỉ báo trên trang
+
+> Kế hoạch làm lần thử này (chốt 2026-11-24). Tài liệu sống: sau khi thử trên máy
+> thật thì chỉnh sửa theo thực tế — ghi kết quả thử + điều chỉnh vào mục
+> "Ghi chú điều chỉnh theo thực tế" ở cuối, đừng viết doc mới.
+
+- **Nhánh:** `feature/continuous-reading` (tạo nhánh sau khi Manh duyệt khung;
+  thông báo tên nhánh + mục đích trước khi tạo, theo chuẩn nhánh).
+- **Trạng thái:** khung đã duyệt (Manh 2026-11-24 00:17); code để phiên tới.
+- **Mục đích:** bấm Speak 1 lần thì đọc hết bài báo ngay trên trang (không đưa
+  vào trình đọc), và người dùng luôn biết đang đọc tới đoạn/câu nào — bằng
+  gạch dọc + highlight overlay ngay trên trang/app đang đọc.
+
+## 1. Phạm vi đợt thử này
+
+### Làm
+
+1. **Bước 2 — "đọc nối tiếp" (chaining).** Bấm icon Speak 1 lần: đọc xong
+   1 đoạn thì tự tìm đoạn tiếp theo đọc tiếp, tới hết bài hoặc tới khi người
+   dùng bấm dừng. Nghe ở lại trên trang, không trích xuất vào trình đọc.
+2. **Gạch dọc sợi chỉ** trước đoạn (block) đang đọc — chỉ báo đang đọc khu
+   vực đó.
+3. **Highlight câu + highlight đoạn (overlay)** — thử nghiệm: tô câu đang
+   đọc 1 màu riêng, tô đoạn đang đọc 1 màu riêng, để phân biệt được câu vs
+   đoạn khi test.
+4. **5 món lẻ gộp** đi theo (đã chờ từ trước, cùng nhánh): (a) vuốt ngang
+   Style 2 nhanh hơn (1 dòng/100pt → ~50pt/dòng); (b) căn "Read in:" theo
+   "Run FastRead in:" (cả 2 mục `.frame(maxWidth: .infinity,
+   alignment: .leading)`); (c) mở swipe ngang ở cửa sổ Nghỉ (gỡ `break`
+   ở `RestWindowController`); (d) 2 chú thích cũ trong `RSVPView.swift`
+   (ProGate + `ttsCoordinator`); (e) Enter→Done ở cả 2 màn đếm ngược
+   (`.keyboardShortcut(.defaultAction)` cho nút Done ở màn cafe + cửa sổ
+   Nghỉ).
+
+### KHÔNG làm đợt này
+
+- **Highlight trình đọc (RSVP/Lite, từ + câu)** — Manh chốt 2026-11-24 00:04,
+  đảo lại quyết định 2026-11-23 16:47. Component TTS sync-word + sửa dấu
+  phẩy (§6.5 báo cáo) đi theo phần highlight này, để sau.
+- **Cuộn theo trang kiểu Speechify** (tự cuộn trang để đoạn đang đọc luôn
+  hiện) — để sau, thử nghiệm riêng.
+- **Trích xuất bài web vào trình đọc** — Manh chốt không làm (2026-11-23
+  16:55): đọc xong lại phải xoá bản copy, mất độ liền mạch. Bước 3 là
+  trình đọc FILE local (PDF, Word, Markdown...), riêng.
+- **Model B** (quét cả cây / icon trên mọi block) — không làm.
+
+## 2. Cơ chế từng phần (đã đối chiếu code thật)
+
+### 2.1 Đọc nối tiếp
+
+- Móc vào đường Speak hiện có: `triggerIconController.onSpeakRequested`
+  → `ttsCoordinator.speak(text, language:)` (AppDelegate ~dòng 730).
+  `speak()` đọc xong 1 đoạn thì tự gọi `onPlaybackEnded`
+  (AppDelegate ~dòng 759: hiện tại chỉ gọi
+  `triggerIconController.speakingDidStop()` để tắt trạng thái "đang nói"
+  của icon) — đó là tín hiệu để tìm đoạn tiếp theo.
+- Tìm đoạn tiếp theo: hit-test 1 điểm ngay dưới khung đoạn vừa đọc (giữa
+  khung theo chiều ngang), dùng lại Model A (1 điểm, ≤ 5 tầng, không quét
+  cây). Tìm được đoạn khác thì đọc tiếp; không tìm được thì dừng.
+- Dừng: bấm icon lúc đang đọc nối tiếp thì **dừng hết** (đúng luật loa:
+  click = nói, click lại = dừng; `onStopSpeakRequested` → `stop()`).
+  `stop()` huỷ task nên `onPlaybackEnded` không bắn sau khi dừng — không
+  sợ đọc tiếp sau khi đã dừng.
+- Không dùng `speakContinuous` (đó là đường read-along của RSVP, cố ý
+  không chạm `onPlaybackEnded`); bước 2 dùng `speak()` (đọc cả đoạn).
+
+### 2.2 Gạch dọc sợi chỉ
+
+- 1 cửa sổ overlay trong suốt (borderless, không nhận chuột
+  `ignoresMouseEvents = true` để bấm xuyên qua, không cướp focus) đè lên
+  trên app khác, vẽ 1 gạch dọc đặc ở mép trái khung đoạn đang đọc.
+- Chỉ cần **khung của cả đoạn** — đã có sẵn (`HoverBlock.frame`, đọc lại
+  qua `HoverBlockText.frame(of: element)`).
+- Bám theo đoạn khi cuộn: poll đọc lại khung (xem §4). Đoạn cuộn khỏi màn
+  hình thì ẩn gạch.
+
+### 2.3 Highlight câu + highlight đoạn (overlay, thử nghiệm)
+
+- Cùng 1 cửa sổ overlay như gạch dọc, vẽ thêm 2 lớp tô mờ:
+  **câu đang đọc** 1 màu, **đoạn đang đọc** 1 màu (màu xem §3).
+- Khung câu: thử lấy qua `kAXBoundsForRangeParameterizedAttribute`
+  (AXBoundsForRange) với range ký tự của câu đang đọc — app chưa từng
+  dùng API này, chưa biết app nào hỗ trợ. **Nếu app không trả khung câu
+  thì rơi về chỉ tô cả đoạn** (vẫn còn gạch dọc + highlight đoạn).
+- Khung đoạn: có sẵn như §2.2.
+- Tô mờ (translucent) chứ không tô đặc — vì vẽ đè lên chữ của app khác,
+  tô đặc sẽ che chữ. Độ mờ chỉnh trong lúc thử (bắt đầu khoảng 25–35%,
+  tăng dần nếu khó thấy, giảm nếu che chữ).
+
+## 3. Màu sắc — học theo Speechify / NaturalReader
+
+Manh chốt (2026-11-24 00:26): màu câu + đoạn xem Speechify, NaturalReader
+dùng màu gì thì học theo. Đã tra (2026-11-24, nguồn chính thức + tài liệu):
+
+| Sản phẩm | Câu đang đọc | Từ đang đọc | Ghi chú |
+|---|---|---|---|
+| **NaturalReader** (help chính thức + tài liệu v12/v14) | **Vàng** (nền vàng) | **Nền tối** bên trong nền vàng của câu | 2 tầng: câu nền vàng, từ nền tối hơn bên trong. Cho người dùng tự chọn màu highlight (Light / Dark / Ice / Warm) và chế độ (Sentence & Word / Sentence Only / Word Only / None). PDF tô xanh dương; Word tô vàng (Windows) / câu xanh dương (Mac). |
+| **Speechify** | 2 tầng: câu + từ (đã xác nhận nhiều nguồn: help, review, plugin Obsidian) | — | **Màu chính xác CHƯA xác minh từ nguồn chính thức.** 1 nguồn không chính thức (trang MOD APK) nói từ = xanh lá nhạt, câu = xanh dương — không đáng tin, chỉ tham khảo. |
+
+**Màu thử cho TransPeek (theo NaturalReader — nguồn xác minh được):**
+
+| Thành phần | Màu thử | Lý do |
+|---|---|---|
+| Câu đang đọc | **Vàng** (mờ) | Đúng màu câu của NaturalReader — vàng là màu highlight câu chuẩn. |
+| Đoạn đang đọc | **Xanh dương nhạt** (mờ) | Màu xanh dương NaturalReader dùng cho PDF/text highlight; là màu "lạnh", tách biệt với vàng của câu. |
+| Gạch dọc sợi chỉ | **Xanh dương đậm** (đặc) | Màu accent của app; đặc để nhìn rõ, khác với 2 lớp tô mờ. |
+
+Lưu ý: TransPeek có 3 tầng (gạch + câu + đoạn) còn Speechify/NaturalReader
+chỉ có 2 tầng (câu + từ) — vì TransPeek không lấy được vị trí từng từ nên
+thay tầng "từ" bằng tầng "đoạn" (rộng hơn câu). Nếu lúc thử thấy vàng +
+xanh nhạt khó phân biệt trên nền trang sáng/tối thì đổi màu và ghi lại ở
+mục cuối.
+
+## 4. Theo dõi khi cuộn + dự phòng chống giật
+
+- Cơ chế có sẵn: follow poll hiện tại 0.3 s (`followIntervalSec`,
+  `HoverTextDetector.swift` ~dòng 264) — mỗi lần poll đọc lại khung của
+  element qua `HoverBlockText.frame(of:)`. Hiện tại khung lệch > 10 pt
+  thì icon bị coi là stale và ẩn đi.
+- Cho chỉ báo đang đọc thì đổi hành vi: lúc đang nói, poll **dời gạch
+  dọc/highlight theo khung mới** thay vì ẩn.
+- Độ "sát" phụ thuộc tốc độ poll: 0.3 s = cập nhật ~3 lần/giây; lúc cuộn
+  nhanh sẽ lag rồi bắt kịp từng bước, không mượt như dính liền. Thử poll
+  nhanh hơn lúc đang nói (vd 0.1 s) để bám sát hơn — nhưng AX lúc cuộn
+  nhanh có thể trả chậm (app đích bận vẽ), nên đây là phần phải test trên
+  máy thật.
+- **Dự phòng khi bị giật (Manh 2026-11-24 00:13):** nếu thử mà gạch
+  dọc/highlight bị giật / không theo kịp thì chuyển sang: **lúc đang cuộn
+  thì ẨN đi, khi cuộn dừng thì HIỆN LẠI** ở vị trí mới. Nhận biết: khung
+  còn đổi giữa các lần poll tức đang cuộn (ẩn); khung đứng yên qua 1–2
+  lần poll (khoảng 0.3–0.6 s) tức đã dừng (hiện lại ở khung mới). Tránh
+  hình ảnh lag rồi nhảy từng bước lúc cuộn nhanh.
+
+## 5. Pha test (tách 2 pha)
+
+**Pha 1 — hiển thị** (làm trước, test trước):
+- Gạch dọc + highlight câu + highlight đoạn có hiện đúng chỗ không?
+- Có chặn chuột không? (bấm xuyên qua được không?)
+- Phân biệt được câu vs đoạn bằng màu không? (thấy màu câu = lấy được
+  khung câu; chỉ thấy màu đoạn = đã rơi về highlight cả đoạn.)
+- Nếu highlight câu không ra ở app nào đó thì vẫn còn gạch + highlight
+  đoạn (không trắng tay).
+
+**Pha 2 — cuộn + dự phòng** (chỉ làm khi pha 1 xong và thấy giật):
+- Cuộn nhanh: gạch/highlight có bám theo không, có giật không?
+- Nếu giật: bật dự phòng ẩn lúc cuộn / hiện lại khi dừng, test lại.
+
+Test trên trang báo đơn giản trước (Safari/Chrome), rồi mới thử app khác
+(Word...). Ghi kết quả từng app vào mục cuối.
+
+## 6. Câu hỏi mở — cần kiểm chứng trên máy thật
+
+- `AXBoundsForRange` có trả khung câu không — Safari? Chrome? Word?
+  App nào có, app nào không?
+- Poll nhanh lúc đang nói (0.1 s) có bám sát không? AX lúc cuộn nhanh
+  có trả chậm không?
+- Overlay có chặn chuột không? (phải `ignoresMouseEvents`.)
+- Đoạn cuộn khỏi màn hình thì ẩn đúng không?
+- Độ mờ 25–35% có đọc được chữ bên dưới không, hay phải chỉnh?
+- Màu vàng + xanh nhạt có phân biệt được trên cả nền sáng và nền tối
+  không?
+
+## 7. Ghi chú điều chỉnh theo thực tế
+
+_(Điền sau khi thử trên máy thật — kết quả từng app, màu/độ mờ cuối cùng,
+tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi gặp phải.)_
+
+- ...
+
+## Liên kết
+
+- Spec icon float + quyết định bước 1/2/3:
+  `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` (§8).
+- Tính năng icon float: `docs/FEATURES/FLOAT_ICON.md`.
+- Báo cáo nghiên cứu TTS/Speechify/NaturalReader (ngưỡng, dấu phẩy §6.5):
+  `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md`.
+- Tính năng đọc Fast Read (RSVP/Lite): `docs/FEATURES/FAST_READ.md`.
+- Chỉ mục research: `docs/RESEARCH/README.md`.
