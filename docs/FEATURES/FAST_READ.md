@@ -489,6 +489,7 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   a single persisted setting, read when a read session starts and saved
   on toggle; no live sync between surfaces open at the same time (a
   surface picks up a change on its next read session).
+- **NO live sync of the speaker for an already-open read (Manh 2026-11-23 14:58, via Windows chat — SETTLED, do not propose again):** the shared + remembered rule above is the whole rule. Pressing the speaker on any surface writes the new state immediately (key `transpeek_rsvpTTSEnabled`); any read opened AFTER that reads the last saved state; a read that is ALREADY OPEN does not change live. The code already does exactly this (toggle writes in `didSet`; all 3 surfaces create a new ViewModel that reads the key at init) — verified by the Windows chat against main `14dc867a`. No code change needed; this bullet exists so a future live-sync proposal is answered by the decision, not re-litigated.
 - **Speaker in the Rest window (Manh 2026-11-23, BUILT):** the Rest
   window (reminder / rest-eyes countdown) now has a speaker button so
   the user can listen instead of reading while resting their eyes.
