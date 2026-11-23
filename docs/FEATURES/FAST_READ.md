@@ -323,6 +323,19 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   display — style, layout, chrome. So a reading-logic fix goes in the
   shared engine/view model once, while a layout/UI fix goes in the
   Lite view or the Full view, never both.
+- **Theme + style — shared settings, per-surface rendering (Manh
+  2026-11-23):** **Theme** = colours only, one shared setting
+  (`transpeek_rsvpColorScheme`, Black on White / White on Black) for
+  both Lite and Full — it never touches buttons or layout. **Style**
+  = the reading mode (Style 1 RSVP Focus / Style 2 Basic Reading),
+  also one shared setting (`transpeek_rsvpReadingStyle`) — both
+  surfaces follow the same choice. The per-surface customisation lives
+  in each view's rendering code, not in a second setting: e.g. the
+  shared `Style2ReadingPage` takes `horizontalPadding` 32 in Full
+  and 12 in Lite, and each view has its own chrome. Buttons and
+  layout belong to the VIEWS (Lite view / Full view), not to theme or
+  style — theme only recolours, style only picks the reading-area
+  layout (focus line vs full-page scroll).
 
 - **Panel right** (`Sources/FocusTimer/PanelFastReadView.swift`):
   idle = "Fast Read — coming soon" + focus demo ("reading", the "a"
