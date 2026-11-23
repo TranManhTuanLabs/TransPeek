@@ -415,10 +415,35 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   fix directions (split into phrase utterances with `postUtteranceDelay`,
   pre-process commas, or SSML `<break>`) are in the research report
   `docs/RESEARCH/tts-speechify-naturalreader/rsvp-report.md` §6.5.
-- **Lite + Full keep SEPARATE speaker state (Manh 2026-11-21):** each
-  surface has its own on/off flag — they do not share it, which keeps
-  the code simpler. Toggling the speaker on one surface does not change
+- **Lite + Full keep SEPARATE speaker state (Manh 2026-11-21) — SUPERSEDED 2026-11-23:** each
+  surface had its own on/off flag — they did not share it, which kept
+  the code simpler. Toggling the speaker on one surface did not change
   the other. (An earlier shared-state sync in `play()` was reverted.)
+  Replaced by the shared + remembered speaker state below.
+- **Speaker state is SHARED across Full + Lite and REMEMBERED (Manh 2026-11-23):** one
+  on/off flag for all read surfaces (Full window + Lite panel; the Rest
+  window speaker, when added, follows the same flag), persisted across
+  sessions. Default is still OFF on first run; toggling the speaker on
+  one surface is remembered by the other, and the state survives app
+  restarts. This supersedes the 2026-11-21 separate-state decision,
+  which was a bug fix for the Lite button not toggling plus code
+  simplicity — not a UX preference for separate states. Implementation:
+  a single persisted setting, read when a read session starts and saved
+  on toggle; no live sync between surfaces open at the same time (a
+  surface picks up a change on its next read session).
+- **Speaker in the Rest window (Manh 2026-11-23, NOT built yet):** the
+  Rest window (reminder / rest-eyes countdown) will get a speaker
+  button so the user can listen instead of reading while resting their
+  eyes. The Rest window currently hides the speaker because it has no
+  TTS coordinator (`viewModel.ttsCoordinator` is nil); wiring one in
+  is the work. (The same gap was found on Windows the same day.)
+- **Audio speed merges into WPM (Manh 2026-11-23, LATER — not scheduled yet):** the
+  separate TTS speed slider (0.6x–4x, key `ttsSpeechRate`) will be
+  merged into the WPM control — one speed control for reading, not
+  two. Manh's sketch: 100 WPM ↔ 0.1x, 200 WPM ↔ 1.5x (recorded
+  verbatim; the conversion table needs confirming before
+  implementation — a normal TTS voice reads ~150 WPM at 1.0x, so
+  100 WPM ≈ 0.6–0.7x).
 - **Pro gate for word-sync (Manh 2026-11-21):** word-sync was listed
   as a Pro feature in the internal Pro plan, but it ships FREE for now.
   The cut-off is a single flag, `ProGate.wordSyncEnabled` in
@@ -430,7 +455,7 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   TTS voice reading a different text than the user's content, with a
   "this is a Pro feature" note — so the user hears the feature before
   buying.
-- The speaker is hidden where there is no coordinator (Rest window).
+- The speaker is hidden where there is no coordinator (Rest window) — a speaker will be added to the Rest window (Manh 2026-11-23, see above).
 
 ## 11. Read entry paths + keyboard focus (Manh 2026-11-22)
 

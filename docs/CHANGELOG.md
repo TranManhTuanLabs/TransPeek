@@ -3,6 +3,10 @@
 > Log thay đổi theo ngày, mới nhất lên đầu. Mỗi mục 1–2 dòng: ngày + commit + CI + thay đổi.
 > Ảnh chụp nhanh tình hình hiện tại: `PROJECT_STATE.md`.
 
+## 2026-11-23
+
+- 10:19 — (docs-only): 3 quyết định mới về loa read (Manh): (1) thêm loa vào cửa sổ nghỉ; (2) loa nhớ trạng thái chung Full + Lite, lưu bền (thay quyết định 21/11 mỗi mặt giữ riêng); (3) sau này gộp speed audio vào WPM thành 1 control chung. Ghi vào `FEATURES/FAST_READ.md` §10 + `TASK_QUEUE.md`.
+
 ## 2026-11-22
 
 - 03:05 — `762909cb` (docs-only): `FAST_READ.md` §11 — 3 đường mở read + trạng thái phân mảnh của Space/focus + hướng component chung (làm sau v0.1.11).

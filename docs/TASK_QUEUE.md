@@ -22,6 +22,9 @@
 - [ ] M5: phát hành (signing/notarize, Sparkle, dọn nợ).
 - [ ] Link release notes trong Settings → About (còn thiếu).
 - [ ] Nút RSVP cạnh loa trong output — chưa chốt lại.
+- [ ] **Loa ở cửa sổ nghỉ** (mac — TransPeek, Manh 23/11) — thêm nút loa vào cửa sổ nghỉ (Rest window) để nghe thay vì đọc lúc nghỉ mắt; hiện cửa sổ nghỉ không có TTS coordinator nên nút loa ẩn. Làm sau (chưa có lịch).
+- [ ] **Loa nhớ trạng thái chung của read** (mac — TransPeek, Manh 23/11) — 1 trạng thái loa chung cho Full + Lite, lưu bền (mặc định lần đầu vẫn TẮT); thay thế quyết định 21/11 (mỗi mặt giữ riêng). Làm sau.
+- [ ] **Gộp speed audio vào WPM** (mac — TransPeek, Manh 23/11, làm sau, chưa có lịch) — 1 control tốc độ chung, không để 2 slider riêng (Speed 0.6x–4x + WPM); bảng quy đổi cần chốt lại khi làm (vd anh đưa: 100-0.1x, 200-1.5x).
 
 ## ĐÃ ĐÓNG
 

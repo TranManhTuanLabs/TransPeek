@@ -9,6 +9,7 @@
   `m2-m3-tts-ocr` đã xoá 17/11, PR #1 đóng không merge; code cũ xem lại được qua diff
   của PR đóng để tham khảo).
 - **KHÔNG dùng Edge TTS** (đã quyết không dùng).
+- **Speed audio gộp vào WPM (Manh 2026-11-23, làm sau):** sau này chỉ còn 1 control tốc độ đọc — slider Speed 0.6x–4x (key `ttsSpeechRate`) sẽ gộp vào WPM, không để 2 slider riêng. Chi tiết + bảng quy đổi: `FEATURES/FAST_READ.md` §10.
 - **M4: ElevenLabs + VieNeu.** ElevenLabs = cloud REST, key của user, trả theo ký tự.
   VieNeu-TTS v3 Turbo on-device ~500–600MB, KHÔNG nhúng — chạy server local ngoài,
   app gọi localhost, làm theo kiểu nút tải engine ngoài; v4 chỉ qua API vieneu.io.
