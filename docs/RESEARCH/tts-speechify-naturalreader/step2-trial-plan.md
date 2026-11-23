@@ -22,7 +22,7 @@
    vực đó.
 3. **Highlight câu + highlight đoạn (overlay)** — thử nghiệm: tô câu đang
    đọc 1 màu riêng, tô đoạn đang đọc 1 màu riêng, để phân biệt được câu vs
-   đoạn khi test.
+   đoạn khi test. Thêm tầng **từ (tím nhạt) nếu lấy được vị trí từ**.
 4. **5 món lẻ gộp** đi theo (đã chờ từ trước, cùng nhánh): (a) vuốt ngang
    Style 2 nhanh hơn (1 dòng/100pt → ~50pt/dòng); (b) căn "Read in:" theo
    "Run FastRead in:" (cả 2 mục `.frame(maxWidth: .infinity,
@@ -77,7 +77,8 @@
 ### 2.3 Highlight câu + highlight đoạn (overlay, thử nghiệm)
 
 - Cùng 1 cửa sổ overlay như gạch dọc, vẽ thêm 2 lớp tô mờ:
-  **câu đang đọc** 1 màu, **đoạn đang đọc** 1 màu (màu xem §3).
+  **câu đang đọc** 1 màu, **đoạn đang đọc** 1 màu (màu xem §3), và thêm
+  tầng **từ đang đọc (tím nhạt) nếu lấy được vị trí từ**.
 - Khung câu: thử lấy qua `kAXBoundsForRangeParameterizedAttribute`
   (AXBoundsForRange) với range ký tự của câu đang đọc — app chưa từng
   dùng API này, chưa biết app nào hỗ trợ. **Nếu app không trả khung câu
@@ -97,19 +98,20 @@ dùng màu gì thì học theo. Đã tra (2026-11-24, nguồn chính thức + t�
 | **NaturalReader** (help chính thức + tài liệu v12/v14) | **Vàng** (nền vàng) | **Nền tối** bên trong nền vàng của câu | 2 tầng: câu nền vàng, từ nền tối hơn bên trong. Cho người dùng tự chọn màu highlight (Light / Dark / Ice / Warm) và chế độ (Sentence & Word / Sentence Only / Word Only / None). PDF tô xanh dương; Word tô vàng (Windows) / câu xanh dương (Mac). |
 | **Speechify** | 2 tầng: câu + từ (đã xác nhận nhiều nguồn: help, review, plugin Obsidian) | — | **Màu chính xác CHƯA xác minh từ nguồn chính thức.** 1 nguồn không chính thức (trang MOD APK) nói từ = xanh lá nhạt, câu = xanh dương — không đáng tin, chỉ tham khảo. |
 
-**Màu thử cho TransPeek (theo NaturalReader — nguồn xác minh được):**
+**Màu thử cho TransPeek (Manh chốt 2026-11-24 00:38 — bảng màu pastel, thay cho đề xuất theo NaturalReader):**
 
 | Thành phần | Màu thử | Lý do |
 |---|---|---|
-| Câu đang đọc | **Vàng** (mờ) | Đúng màu câu của NaturalReader — vàng là màu highlight câu chuẩn. |
-| Đoạn đang đọc | **Xanh dương nhạt** (mờ) | Màu xanh dương NaturalReader dùng cho PDF/text highlight; là màu "lạnh", tách biệt với vàng của câu. |
-| Gạch dọc sợi chỉ | **Xanh dương đậm** (đặc) | Màu accent của app; đặc để nhìn rõ, khác với 2 lớp tô mờ. |
+| Từ đang đọc | **Tím nhạt** (mờ) — NẾU LÀM ĐƯỢC | Manh chọn. Chỉ làm được nếu lấy được vị trí từng từ (qua AXBoundsForRange với range của từ) — chưa chắc app nào cũng đưa; nếu không lấy được thì bỏ tầng từ, còn câu + đoạn + gạch. |
+| Câu đang đọc | **Vàng nhạt** (mờ) | Muse chọn để hợp với tím nhạt: vàng là màu bổ sung (complementary) của tím nên từ tím nổi rõ bên trong câu vàng; vàng cũng là màu highlight câu chuẩn (NaturalReader). |
+| Đoạn đang đọc | **Green nhạt** (mờ) | Manh chọn. Tách biệt với vàng của câu. |
+| Gạch dọc sợi chỉ | **Blue nhạt** (đặc) | Manh chọn. Gạch là vạch đặc nên dùng blue nhạt vẫn nhìn rõ, khác với 2 lớp tô mờ. |
 
-Lưu ý: TransPeek có 3 tầng (gạch + câu + đoạn) còn Speechify/NaturalReader
-chỉ có 2 tầng (câu + từ) — vì TransPeek không lấy được vị trí từng từ nên
-thay tầng "từ" bằng tầng "đoạn" (rộng hơn câu). Nếu lúc thử thấy vàng +
-xanh nhạt khó phân biệt trên nền trang sáng/tối thì đổi màu và ghi lại ở
-mục cuối.
+Lưu ý: TransPeek thử 4 tầng (gạch + từ + câu + đoạn) còn Speechify/NaturalReader
+chỉ có 2 tầng (câu + từ) — vì TransPeek không lấy được vị trí từng từ một cách
+chắc chắn nên tầng "từ" là có điều kiện (nếu làm được); tầng "đoạn" là tầng
+rộng hơn câu để thay thế khi không có tầng từ. Nếu lúc thử thấy các màu nhạt
+khó phân biệt trên nền trang sáng/tối thì đổi màu và ghi lại ở mục cuối.
 
 ## 4. Theo dõi khi cuộn + dự phòng chống giật
 
