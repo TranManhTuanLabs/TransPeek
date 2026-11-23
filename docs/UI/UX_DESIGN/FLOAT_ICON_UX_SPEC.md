@@ -331,7 +331,13 @@ against it. Note: the 2000 limit counts **characters, not words** —
   reading until the end or the user stops) — planned on its own
   branch, frame to be presented first. Step 3 — "Đọc cả bài" (extract
   the article's main content into Fast Read + TTS) — later, its own
-  feature. Still open: does the icon show in Word for Mac (unknown
+  feature, frame to be presented first. Manh 2026-11-23: step 3 can
+  be split apart or merged into one expansion — the RSVP window
+  becomes a reader like Apple Books, opening local files in various
+  formats (PDF, Word, Markdown, ...) and reading them in the RSVP
+  interface, plus the web "read whole article" extraction. Reading
+  PDF is Pro for sure; free vs Pro for the other formats undecided;
+  PDF is NOT done now — later. Still open: does the icon show in Word for Mac (unknown
   what Word returns via AX — if it returns the whole document, the
   2000 cap blocks the icon) — needs a real-Mac test.
 
