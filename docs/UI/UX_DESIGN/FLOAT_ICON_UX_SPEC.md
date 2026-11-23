@@ -241,9 +241,16 @@ UX-spec record of the same settled behaviour.
 - **Model A (how a block is found):** one Accessibility hit-test per
   hover point (`AXUIElementCopyElementAtPosition`), then read the text
   of the element under the cursor — or its nearest text-bearing ancestor,
-  at most 3 levels up. One point, one parent chain, never a tree scan.
-  Model B (scan the whole accessibility tree / show the icon on every
-  block) is NOT done — too expensive on CPU and does not follow scrolling.
+  at most 5 levels up (was 3; raised to 5 in step 1, 2026-11-23 — the
+  hit-test usually lands on the text itself, so 3 was enough, but 5
+  costs almost nothing and covers deeply nested inline spans). One
+  point, one parent chain, never a tree scan. A link is climbed past,
+  not stopped at (step 1, 2026-11-23): a link is part of its sentence,
+  so hovering a link inside a paragraph summons the icon for that
+  paragraph; the link's own text is never taken. Every other control
+  still stops the walk. Model B (scan the whole accessibility tree /
+  show the icon on every block) is NOT done — too expensive on CPU
+  and does not follow scrolling.
 - **Debounce:** the icon appears only after the mouse has stayed still
   over a text block for the "Hover text delay" (`hoverBlockDelayMs`,
   default 400 ms; Picker 200–700 ms). Sweeping the mouse across text
@@ -288,7 +295,7 @@ against it. Note: the 2000 limit counts **characters, not words** —
 
 | Threshold | Value | Where |
 |---|---|---|
-| Max parent levels to climb | 3 | `HoverBlockText.maxParentLevels` |
+| Max parent levels to climb | 5 (was 3; raised in step 1, 2026-11-23) | `HoverBlockText.maxParentLevels` |
 | Block length | ≥ 4 and ≤ 2000 characters (trimmed), ≥ 1 letter/digit | `HoverBlockText.shouldAccept` |
 | Hover delay (debounce) | default 400 ms; Picker 200/300/400/500/700 ms | `hoverBlockDelayMs`, Settings → General → Translation |
 | Follow poll | every 0.3 s | `HoverTextDetector` |
@@ -300,22 +307,33 @@ against it. Note: the 2000 limit counts **characters, not words** —
 
 ### Decisions — done / not doing / not yet done (2026-11-23)
 
-- **ĐÃ LÀM (done, settled):** Model A (one hit-test, ≤ 3 levels up);
-  4–2000 char limits; debounce 400 ms; follow/stale poll; suppress
-  500 ms; same-block dedup; gates (no drag, no delivery while icon/
-  panel up, master + feature toggles); Settings toggle (default ON),
-  delay + icon size pickers; unit tests for the pure rules.
+- **ĐÃ LÀM (done, settled):** Model A (one hit-test, ≤ 5 levels up
+  since step 1, 2026-11-23 — was ≤ 3; links are climbed past, other
+  controls still stop the walk); 4–2000 char limits (2000 kept —
+  research 2026-11-23 measured real news paragraphs at median
+  116–189 chars, longest 316, none over 500, so 2000 has 6–10x
+  headroom; raising it would let whole pages through as "blocks");
+  debounce 400 ms; follow/stale poll; suppress 500 ms; same-block
+  dedup; gates (no drag, no delivery while icon/panel up, master +
+  feature toggles); Settings toggle (default ON), delay + icon size
+  pickers; unit tests for the pure rules.
   (Manh confirmed "auto nhận block text ngon rồi", 2026-11-21.)
 - **KHÔNG LÀM (not doing, no plan):** Model B (scan the whole tree /
   icon on every block) — too expensive, and it does not follow
   scrolling.
 - **CHƯA LÀM (not yet, separate work):** apps that do not expose text
   via Accessibility — out of scope for now, separate research task
-  (hovering there does nothing today). Threshold review — whether
-  3 levels and 2000 chars are optimal vs real content sizes (1 Word
-  page, 1 news article) and how Speechify/Natural Reader read a web
-  page (whole page vs per block) — research in progress, 2026-11-23;
-  its result may change the snapshot table above.
+  (hovering there does nothing today). Threshold review — research
+  DONE 2026-11-23 (3→5, keep 2000, Speechify/Natural Reader read
+  the whole article continuously, TransPeek reads one block then
+  stops); step 1 is the ĐÃ LÀM above. Step 2 — "đọc nối tiếp"
+  (after Speak finishes one block, find the next block and keep
+  reading until the end or the user stops) — planned on its own
+  branch, frame to be presented first. Step 3 — "Đọc cả bài" (extract
+  the article's main content into Fast Read + TTS) — later, its own
+  feature. Still open: does the icon show in Word for Mac (unknown
+  what Word returns via AX — if it returns the whole document, the
+  2000 cap blocks the icon) — needs a real-Mac test.
 
 ## References
 

@@ -23,7 +23,10 @@
 - Model A (research TTS 16/11): hover → hit-test ONE point via the
   macOS Accessibility API (`AXUIElementCopyElementAtPosition`), read the
   text element under the cursor (or its nearest text-bearing ancestor,
-  ≤ 3 levels up). Model B (scan the whole accessibility tree / show the
+  ≤ 5 levels up — was 3, raised in step 1, 2026-11-23). A link is
+  climbed past, not stopped at (step 1): hovering a link inside a
+  paragraph summons the icon for that paragraph; the link's own text
+  is never taken. Model B (scan the whole accessibility tree / show the
   icon on every block) is NOT done — too expensive on CPU and does not
   follow scrolling.
 - Only apps that expose text via Accessibility work. Apps/places that do

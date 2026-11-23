@@ -28,6 +28,10 @@ enum HoverBlockText {
     /// and other controls. Hovering one must not summon the icon, and
     /// nothing above one is read either (a button inside a big text
     /// container must not surface the container's text).
+    /// Exception (step 1, 2026-11-23): a link (AXLink) is climbed past
+    /// in blockText — a link is part of its sentence, so the paragraph
+    /// above it can still become the block. The link's own text is
+    /// never accepted as a block (shouldAccept rejects it below).
     static let interactiveRoles: Set<String> = [
         kAXButtonRole as String,
         // "AXLink": the kAXLinkRole constant is not in scope in Swift
@@ -82,7 +86,12 @@ enum HoverBlockText {
 
     /// How far up the parent chain to look for text (levels). A single
     /// parent chain, not a tree scan — it follows one element, bounded.
-    static let maxParentLevels = 3
+    /// v1 was 3; raised to 5 (research 2026-11-23, step 1): the AX
+    /// hit-test usually lands on the text itself (level 0), so 3 was
+    /// enough, but 5 costs almost nothing and covers deeply nested
+    /// inline spans (React pages). The 2000-char cap stays — it is
+    /// what stops a whole document being treated as a block.
+    static let maxParentLevels = 5
 
     /// Whether `text` from an element with `role` is a block worth
     /// showing the icon for: not a control or chrome, long enough to
@@ -144,7 +153,15 @@ enum HoverBlockText {
             // A control or chrome is never a text block, and neither is
             // anything above it — stop here instead of walking up into
             // a container that might hold the whole document.
-            if let role, interactiveRoles.contains(role) || chromeRoles.contains(role) {
+            // Exception (research 2026-11-23, step 1): a link is part
+            // of the sentence it sits in, so climb past it to the
+            // paragraph that contains it instead of stopping — hovering
+            // a link inside a paragraph should still summon the icon
+            // for that paragraph. The link's own text is never taken
+            // (shouldAccept rejects AXLink below); only an ancestor's
+            // text can become the block.
+            if let role, role != "AXLink",
+               interactiveRoles.contains(role) || chromeRoles.contains(role) {
                 return nil
             }
             if let text = readableText(of: el),
