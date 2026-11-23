@@ -301,6 +301,29 @@ separate Rest window. No second reading implementation, and the
 window file `RSVPView.swift` is never edited for panel work (Manh
 2026-11-20, 05:36).
 
+- **Reminder flow — SHARED, one flow for both kinds (Manh 2026-11-23,
+  recorded so the structure stays clear):** the Pomodoro work-break
+  reminder and the rest-eyes reminder are NOT two flows — both go
+  through the same `FocusTimerStore.fireReminder(kind,
+  countdownSeconds)` → `showReminder(kind, countdownSeconds)`. The
+  `kind` (`FocusReminderKind`: `.workBreak(minutes:)` / `.eyeRest`)
+  only changes the message read aloud, the title ("Take a break" /
+  "Rest your eyes"), and the countdown after the read (rest minutes
+  × 60, e.g. 5 min, vs 20 s). `showReminder` routes by the "Run
+  reminder in:" setting: "FastRead Lite Window" → the Rest window,
+  "FastRead Lite" → panel right. The Full window is NEVER a reminder
+  destination — it opens only when the user starts a read by hand
+  (float icon, menubar, shortcut, panel button).
+- **Two surfaces to manage for layout/UI fixes (Manh 2026-11-23):**
+  (1) **Lite** — one view, `CompactReadingView`, shared by panel Lite
+  and the Rest window (same buttons, same reminder countdown screen);
+  a Lite layout fix lands in both places at once. (2) **Full** —
+  one view, `RSVPView`, in its own window. Both views share ONE
+  reading engine (`RSVPEngine` + `RSVPViewModel`); they differ only in
+  display — style, layout, chrome. So a reading-logic fix goes in the
+  shared engine/view model once, while a layout/UI fix goes in the
+  Lite view or the Full view, never both.
+
 - **Panel right** (`Sources/FocusTimer/PanelFastReadView.swift`):
   idle = "Fast Read — coming soon" + focus demo ("reading", the "a"
   in yellow, half-bars above/below, via the shared `ORPLineView`) +
