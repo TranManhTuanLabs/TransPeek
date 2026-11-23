@@ -101,6 +101,16 @@ Top to bottom:
     `PanelReadTrackpadMonitor` (vertical → font, horizontal passes to
     the panel tab switch). The font-size step (16pt/50pt) matches Style 1
     and the window.
+  - **Lite read — horizontal swipe is LOCKED (Manh 2026-11-23):** in Lite
+    read (panel + Rest window), a horizontal swipe NEVER turns the page.
+    In the panel it switches tabs (the panel's `TrackpadSwipeMonitor`);
+    in the Rest window it does nothing. Reason: one gesture, one action
+    — if a horizontal swipe both switched tabs and turned the page, the
+    user would get two actions at once. The Lite view
+    (`CompactReadingView`) is shared by both surfaces, so both follow
+    the same rule. To turn the page in Lite, use the ←/→ keys or the
+    Rewind / Forward buttons. Vertical swipe = font size only, on both
+    surfaces.
   - **Lẻ gộp (pending):** the Style 2 horizontal flip (1 line/100pt)
     feels slow — when the batch is big enough, lower the threshold to
     ~50pt/line. Style 1 keeps 1 step/event.
@@ -438,11 +448,13 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   (AppDelegate → `FocusTimerStore.ttsCoordinator` → `RestWindowController.ttsCoordinator`,
   injected into the SwiftUI environment as in the Fast Read window).
   The Rest window also installs an `RSVPTrackpadMonitor` (same as the
-  Fast Read window), so vertical swipe changes the font size and
-  horizontal swipe steps a slide — before this, the Rest window had no
-  coordinator (speaker hidden) and no trackpad monitor (swipe did
-  nothing), found by Manh's CI348 test on 2026-11-23. (The same gap was
-  found on Windows the same day.)
+  Fast Read window), so vertical swipe changes the font size — but
+  horizontal swipe is LOCKED in Lite read (Manh 2026-11-23, §2): it
+  does nothing in the Rest window, because in the panel it switches
+  tabs and the Lite view is shared by both surfaces. Before this, the
+  Rest window had no coordinator (speaker hidden) and no trackpad
+  monitor (swipe did nothing), found by Manh's CI348 test on 2026-11-23.
+  (The same gap was found on Windows the same day.)
 - **Audio speed merges into WPM (Manh 2026-11-23, LATER — not scheduled yet):** the
   separate TTS speed slider (0.6x–4x, key `ttsSpeechRate`) will be
   merged into the WPM control — one speed control for reading, not

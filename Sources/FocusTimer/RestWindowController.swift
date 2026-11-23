@@ -102,17 +102,22 @@ final class RestWindowController: NSObject, NSWindowDelegate {
         self.window = window
 
         // Trackpad swipes over this window (Manh 2026-11-23): same as
-        // the Fast Read window — horizontal steps a slide (like ←/→),
-        // vertical changes the font size by 16pt per swipe, clamped
-        // to 40...450. The Rest window had no monitor at all, so a
-        // swipe did nothing here.
+        // the Fast Read window — vertical swipe changes the font size
+        // by 16pt per swipe, clamped to 40...450. The Rest window had
+        // no monitor at all, so a swipe did nothing here.
+        // Lite read — horizontal swipe is LOCKED (Manh 2026-11-23):
+        // the Rest window renders the Lite view (`CompactReadingView`),
+        // and in Lite a horizontal swipe never turns the page — in the
+        // panel it switches tabs, so one gesture must not also step a
+        // slide. The step actions below are ignored on purpose; only
+        // the font actions run.
         let monitor = RSVPTrackpadMonitor()
         self.trackpadMonitor = monitor
         trackpadCancellable = monitor.actionPublisher.sink { [weak self] action in
             guard let self, let viewModel = self.viewModel else { return }
             switch action {
-            case .stepForward: viewModel.stepForward()
-            case .stepBack: viewModel.stepBack()
+            case .stepForward, .stepBack:
+                break
             case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
             case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
