@@ -192,6 +192,40 @@ enum HoverBlockText {
         return CGRect(origin: position, size: size)
     }
 
+    /// The on-screen frame of one character range inside an AX element
+    /// (AX coordinates, top-left origin) — the frame of the sentence or
+    /// word being read, for the Step 2 reading indicator (Manh
+    /// 2026-11-24). Uses the standard macOS parameterized attribute
+    /// `kAXBoundsForRangeParameterizedAttribute` with a CFRange
+    /// parameter. Returns nil on ANY failure (the app does not support
+    /// range bounds, the range is out of bounds, the rect is empty) —
+    /// every caller must fall back gracefully (skip that highlight
+    /// level), never crash or block on it. The range is an NSRange in
+    /// the element's text (UTF-16 offsets, the same indexing the TTS
+    /// word callback reports).
+    static func bounds(for range: NSRange, in element: AXUIElement) -> CGRect? {
+        // CFRange and NSRange share the same layout (location/length),
+        // but build a CFRange explicitly so the AX call never depends
+        // on that bridging.
+        var cfRange = CFRange(location: range.location, length: range.length)
+        guard let parameter = AXValueCreate(.cfRange, &cfRange) else { return nil }
+        var value: CFTypeRef?
+        guard AXUIElementCopyParameterizedAttributeValue(
+            element,
+            kAXBoundsForRangeParameterizedAttribute as CFString,
+            parameter,
+            &value
+        ) == .success,
+              let value,
+              CFGetTypeID(value) == AXValueGetTypeID()
+        else { return nil }
+        var rect = CGRect.zero
+        guard AXValueGetValue(value as! AXValue, .cgRect, &rect),
+              !rect.isNull, !rect.isEmpty
+        else { return nil }
+        return rect
+    }
+
     /// Read a string attribute (value / title / description / role).
     /// Returns nil when the attribute is missing or not a string.
     private static func stringAttribute(_ element: AXUIElement, _ attribute: CFString) -> String? {
@@ -282,6 +316,14 @@ final class HoverTextDetector {
     /// (AX coordinates) and element, for same-block dedup and the
     /// follow poll.
     private var currentBlock: HoverBlock?
+
+    /// The block the icon is currently up for, for the Step 2 chaining
+    /// start (Manh 2026-11-24): the chaining controller reads the block
+    /// once at Speak time and keeps its own copy — the detector may
+    /// forget it (stopFollowing) while speaking, so the controller must
+    /// not depend on it after start. Read-only; the detector still
+    /// owns the value.
+    var currentBlockForReading: HoverBlock? { currentBlock }
 
     deinit {
         if let monitor = mouseMovedMonitor { NSEvent.removeMonitor(monitor) }

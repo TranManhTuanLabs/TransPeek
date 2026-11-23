@@ -105,19 +105,20 @@ final class RestWindowController: NSObject, NSWindowDelegate {
         // the Fast Read window — vertical swipe changes the font size
         // by 16pt per swipe, clamped to 40...450. The Rest window had
         // no monitor at all, so a swipe did nothing here.
-        // Lite read — horizontal swipe is LOCKED (Manh 2026-11-23):
-        // the Rest window renders the Lite view (`CompactReadingView`),
-        // and in Lite a horizontal swipe never turns the page — in the
-        // panel it switches tabs, so one gesture must not also step a
-        // slide. The step actions below are ignored on purpose; only
-        // the font actions run.
+        // Rest window — horizontal swipe is OPEN (Manh 2026-11-23,
+        // "có mở nhé"): the Rest window renders the Lite view
+        // (`CompactReadingView`) but it has NO tabs, so a horizontal
+        // swipe turning the page cannot clash with tab switching.
+        // The PANEL Lite stays locked (there a horizontal swipe
+        // switches tabs) — only this window opens it. The step actions
+        // below turn the page, exactly like the Fast Read window.
         let monitor = RSVPTrackpadMonitor()
         self.trackpadMonitor = monitor
         trackpadCancellable = monitor.actionPublisher.sink { [weak self] action in
             guard let self, let viewModel = self.viewModel else { return }
             switch action {
-            case .stepForward, .stepBack:
-                break
+            case .stepForward: viewModel.stepForward()
+            case .stepBack: viewModel.stepBack()
             case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
             case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
             }
@@ -209,6 +210,12 @@ private struct RestWindowView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .padding(.top, 4)
+                    // Enter triggers Done (Manh 2026-11-23, lẻ gộp): the
+                    // cafe countdown screen already accepted Enter only
+                    // because its Done button happened to be focused — a
+                    // default-action shortcut makes Enter work here
+                    // regardless of focus, the same as the cafe screen.
+                    .keyboardShortcut(.defaultAction)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(pageBackground)

@@ -21,6 +21,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// mouse hovers a block of text, without selecting first. A second
     /// trigger path alongside SelectionMonitor — same icon flow.
     var hoverTextDetector: HoverTextDetector!
+    /// Step 2 continuous reading (Manh 2026-11-24): the chaining
+    /// controller (reads one hovered block after another on the page)
+    /// and its reading-indicator overlay (vertical line + sentence /
+    /// block / word highlights over the page). Created here, wired to
+    /// the icon's Speak/Stop callbacks in setupSelectionMonitor.
+    var continuousSpeakController: ContinuousSpeakController!
+    var readingIndicatorOverlay: ReadingIndicatorOverlay!
     /// Alternative icon (Manh 2026-11-21): a fake float icon for text
     /// selected inside Fast Read. A separate path from the real float
     /// icon — it does not touch that logic; it only delegates hover
@@ -167,6 +174,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         selectionMonitor = SelectionMonitor()
         triggerIconController = TriggerIconController()
         hoverTextDetector = HoverTextDetector()
+        // Step 2 (Manh 2026-11-24): the overlay first, then the chaining
+        // controller that drives it — both need the icon controller and
+        // the shared TTS coordinator, which already exist by now.
+        readingIndicatorOverlay = ReadingIndicatorOverlay()
+        continuousSpeakController = ContinuousSpeakController(
+            ttsCoordinator: ttsCoordinator,
+            triggerIconController: triggerIconController,
+            overlay: readingIndicatorOverlay
+        )
         setupAlternativeIcon()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.
@@ -727,15 +743,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Click-to-speak (TransPeek Phase 1): no panel, no translation.
         // No detection has run at icon time, so detect the text's language
         // now; "auto"/empty configured source falls back to English.
+        // Step 2 chaining (Manh 2026-11-24): when the icon is up for a
+        // hovered block, Speak reads that block and chains to the next
+        // blocks below it (continuous on-page reading); otherwise
+        // (a selection, no hover block) it speaks once, as before.
         triggerIconController.onSpeakRequested = { [weak self] text in
             guard let self else { return }
-            self.ttsCoordinator.speak(text, language: Self.speakLanguage(for: text))
+            if let block = self.hoverTextDetector.currentBlockForReading,
+               block.text == text {
+                self.continuousSpeakController.start(from: block)
+            } else {
+                self.ttsCoordinator.speak(text, language: Self.speakLanguage(for: text))
+            }
         }
 
+        // Second click while speaking: stop everything. The chaining
+        // controller's stop() covers both a chain and a single speak —
+        // it stops TTS, ends the chain, hides the overlay and clears
+        // the icon speaking state.
         triggerIconController.onStopSpeakRequested = { [weak self] in
             guard let self else { return }
-            self.ttsCoordinator.stop()
-            self.triggerIconController.setSpeaking(false)
+            self.continuousSpeakController.stop()
         }
 
         // Fast Read (RSVP, Manh 2026-11-17): open Fast Read with the

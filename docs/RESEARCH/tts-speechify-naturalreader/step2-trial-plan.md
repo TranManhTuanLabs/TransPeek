@@ -200,6 +200,20 @@ Test trên trang báo đơn giản trước (Safari/Chrome), rồi mới thử a
 _(Điền sau khi thử trên máy thật — kết quả từng app, màu/độ mờ cuối cùng,
 tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi gặp phải.)_
 
+- **Độ lệch so với kế hoạch (ghi khi triển khai, 2026-11-24):**
+  - §2.1 nói "Không dùng `speakContinuous`... bước 2 dùng `speak()`" —
+    triển khai làm NGƯỢC LẠI: chaining dùng `speakContinuous` (vì cần
+    `onWordRange` để theo dõi từ/câu cho highlight, và Bool trả về là
+    tín hiệu nối tiếp). `speak()` không có word tracking nên không dùng
+    được cho chaining. Quyết định này nằm trong brief triển khai.
+  - Tên hàm update của overlay: brief gọi là
+    `update(wordRange:sentenceRange:)` — triển khai nhận CGRect?
+    (`update(wordFrame:sentenceFrame:)`) vì overlay vẽ frame, không
+    vẽ range. Tên đổi cho rõ, hành vi giữ nguyên.
+  - Vạch dọc: brief nói "ở mép trái frame của block" — triển khai cho
+    cửa sổ overlay rộng hơn block 8pt về bên trái, vạch nằm trong dải
+    8pt đó (bên CẠNH chữ, không che ký tự đầu dòng).
+  - Màu cuối cùng sau test: (chưa test — điền sau khi thử trên máy thật).
 - ...
 
 ## Liên kết

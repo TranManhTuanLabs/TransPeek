@@ -163,6 +163,11 @@ struct PanelFastReadView: View {
                 store.stopPanelReading()
             }
             .buttonStyle(.borderedProminent)
+            // Enter triggers Done (Manh 2026-11-23, lẻ gộp): this screen
+            // accepted Enter only because its Done button happened to be
+            // focused — a default-action shortcut makes Enter work
+            // regardless of focus, the same as the Rest window.
+            .keyboardShortcut(.defaultAction)
             // Blue border (Manh 2026-11-21): the Done button on the cafe
             // waiting screen was hard to spot — a blue outline makes its
             // edge crisp so it is easy to see and tap.
@@ -210,6 +215,13 @@ struct PanelFastReadView: View {
                 // destination name ("FastRead Lite" / "FastRead Full
                 // Window") — the "Read in" is already in the title
                 // above, so repeating it on the buttons is redundant.
+                // Full width + leading (Manh 2026-11-22, lẻ gộp): this
+                // section and "Run FastRead in:" below were each a
+                // VStack sized to their own content, then centered as
+                // blocks — ~318pt vs ~258pt wide, so their left edges
+                // sat ~30pt apart. Stretching both full width and
+                // aligning leading puts both left edges on the
+                // content's left edge.
                 VStack(alignment: .leading, spacing: 6) {
                     Text("Read in:")
                         .font(.callout)
@@ -239,6 +251,7 @@ struct PanelFastReadView: View {
                         .panelHoverHighlight()
                     }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 runLocationSection
             }
@@ -288,6 +301,9 @@ struct PanelFastReadView: View {
     /// Full Window" (Manh 2026-11-22), always opens the Window
     /// Read the same way.
     private var runLocationSection: some View {
+        // Full width + leading (Manh 2026-11-22, lẻ gộp): same as the
+        // "Read in:" section above — both sections stretch full width
+        // and align leading so their left edges line up.
         VStack(alignment: .leading, spacing: 6) {
             Text("Run FastRead in:")
                 .font(.callout)
@@ -346,6 +362,7 @@ struct PanelFastReadView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
