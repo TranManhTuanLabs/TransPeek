@@ -141,6 +141,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // shared TTS coordinator — the window injects it into its
         // SwiftUI environment when its content is created.
         rsvpWindowController.ttsCoordinator = ttsCoordinator
+        // The Rest window speaker button (Manh 2026-11-23): same shared
+        // coordinator, forwarded through the focus timer store — the
+        // Rest window owns its own controller inside the store.
+        focusTimerStore.ttsCoordinator = ttsCoordinator
         focusTimerStore.isFastReadWindowOpen = { [weak self] in
             self?.rsvpWindowController.isVisible ?? false
         }

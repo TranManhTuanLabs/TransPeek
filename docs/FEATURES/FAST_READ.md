@@ -421,8 +421,8 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   the other. (An earlier shared-state sync in `play()` was reverted.)
   Replaced by the shared + remembered speaker state below.
 - **Speaker state is SHARED across Full + Lite and REMEMBERED (Manh 2026-11-23):** one
-  on/off flag for all read surfaces (Full window + Lite panel; the Rest
-  window speaker, when added, follows the same flag), persisted across
+  on/off flag for all read surfaces (Full window + Lite panel + Rest
+  window speaker, which follows the same flag), persisted across
   sessions. Default is still OFF on first run; toggling the speaker on
   one surface is remembered by the other, and the state survives app
   restarts. This supersedes the 2026-11-21 separate-state decision,
@@ -431,12 +431,18 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   a single persisted setting, read when a read session starts and saved
   on toggle; no live sync between surfaces open at the same time (a
   surface picks up a change on its next read session).
-- **Speaker in the Rest window (Manh 2026-11-23, NOT built yet):** the
-  Rest window (reminder / rest-eyes countdown) will get a speaker
-  button so the user can listen instead of reading while resting their
-  eyes. The Rest window currently hides the speaker because it has no
-  TTS coordinator (`viewModel.ttsCoordinator` is nil); wiring one in
-  is the work. (The same gap was found on Windows the same day.)
+- **Speaker in the Rest window (Manh 2026-11-23, BUILT):** the Rest
+  window (reminder / rest-eyes countdown) now has a speaker button so
+  the user can listen instead of reading while resting their eyes.
+  Wired by giving `RestWindowController` the shared TTS coordinator
+  (AppDelegate → `FocusTimerStore.ttsCoordinator` → `RestWindowController.ttsCoordinator`,
+  injected into the SwiftUI environment as in the Fast Read window).
+  The Rest window also installs an `RSVPTrackpadMonitor` (same as the
+  Fast Read window), so vertical swipe changes the font size and
+  horizontal swipe steps a slide — before this, the Rest window had no
+  coordinator (speaker hidden) and no trackpad monitor (swipe did
+  nothing), found by Manh's CI348 test on 2026-11-23. (The same gap was
+  found on Windows the same day.)
 - **Audio speed merges into WPM (Manh 2026-11-23, LATER — not scheduled yet):** the
   separate TTS speed slider (0.6x–4x, key `ttsSpeechRate`) will be
   merged into the WPM control — one speed control for reading, not

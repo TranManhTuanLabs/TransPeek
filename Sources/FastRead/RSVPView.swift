@@ -835,8 +835,8 @@ struct RSVPView: View {
     var onClose: (() -> Void)?
     /// The shared TTS coordinator, injected by the window controller
     /// (Manh 2026-11-21, CI314 fix): handed to the view model on
-    /// appear so the read-along can speak through it. Nil in the Rest
-    /// window (no TTS there).
+    /// appear so the read-along can speak through it. The Rest window
+    /// wires it too (Manh 2026-11-23), so its speaker works the same.
     @Environment(\.ttsCoordinator) private var ttsCoordinator
 
     @State private var showingSettings = false

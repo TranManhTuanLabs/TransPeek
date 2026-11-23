@@ -13,8 +13,11 @@ import SwiftUI
 /// a slash while off. Hovering shows a voice picker (English /
 /// Vietnamese system voices, the same lists as Settings → TTS) so the
 /// reader can pick a voice without leaving the read. Hidden entirely
-/// when no TTS coordinator is available (the Rest window does not wire
-/// one), so it never shows a dead button.
+/// when no TTS coordinator is available, so it never shows a dead
+/// button. The on/off state is SHARED across Full + Lite + Rest window
+/// (Manh 2026-11-23): one persisted key, `transpeek_rsvpTTSEnabled` —
+/// turning the speaker on in one surface turns it on everywhere, and
+/// it is remembered across reads.
 struct SpeakerButton: View {
     @ObservedObject var viewModel: RSVPViewModel
     @Environment(\.ttsCoordinator) private var ttsCoordinator
@@ -32,8 +35,8 @@ struct SpeakerButton: View {
     @State private var dismissTask: Task<Void, Never>?
 
     var body: some View {
-        // No coordinator (Rest window) — no button at all, rather than a
-        // button that does nothing.
+        // No coordinator — no button at all, rather than a button
+        // that does nothing.
         if ttsCoordinator != nil {
             Button {
                 // Toggle TTS for the read-along (Manh 2026-11-21, CI314

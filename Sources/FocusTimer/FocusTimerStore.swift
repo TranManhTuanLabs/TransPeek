@@ -171,6 +171,14 @@ final class FocusTimerStore: ObservableObject {
     @Published var panelReadingReminderKind: FocusReminderKind?
 
     private let restWindowController = RestWindowController()
+    /// The shared TTS coordinator (Manh 2026-11-23): set by AppDelegate
+    /// and forwarded to the Rest window, so its speaker button can read
+    /// the reminder aloud with the same shared speaker state as Full +
+    /// Lite. Without it the Rest window has no TTS and the button stays
+    /// hidden.
+    var ttsCoordinator: TTSCoordinator? {
+        didSet { restWindowController.ttsCoordinator = ttsCoordinator }
+    }
     private var tickerTask: Task<Void, Never>?
     private var tickerToken = 0
     private var panelCountdownTask: Task<Void, Never>?

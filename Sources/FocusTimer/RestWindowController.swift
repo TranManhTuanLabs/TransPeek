@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Defaults
 import SwiftUI
 
@@ -17,6 +18,22 @@ import SwiftUI
 final class RestWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var viewModel: RSVPViewModel?
+    /// The shared TTS coordinator (Manh 2026-11-23): set by AppDelegate
+    /// via FocusTimerStore, so the Rest window's speaker button can read
+    /// the reminder aloud — same shared speaker state as Full + Lite
+    /// (one key, `transpeek_rsvpTTSEnabled`, remembered across reads).
+    var ttsCoordinator: TTSCoordinator?
+    /// Trackpad swipe monitor (Manh 2026-11-23): horizontal swipe steps
+    /// a slide (like ←/→), vertical swipe changes the font size — the
+    /// same as the Fast Read window, which the Rest window was missing.
+    /// Created with the window, stopped when it closes.
+    private var trackpadMonitor: RSVPTrackpadMonitor?
+    private var trackpadCancellable: AnyCancellable?
+    /// Keeps the trackpad monitor's Style 2 flag in sync with the view
+    /// model's reading style (Manh 2026-11-21, same as the Fast Read
+    /// window): the style can change while the window is open, so the
+    /// monitor must follow it.
+    private var styleCancellable: AnyCancellable?
 
     /// Open the Rest window with `text`. Any previous Rest window is
     /// closed first (a reminder replaces the previous one); the read
@@ -36,8 +53,10 @@ final class RestWindowController: NSObject, NSWindowDelegate {
             contextDisplayStyle: Defaults[.rsvpContextDisplayStyle],
             autoPlay: true,
             // Reading style + line highlight (Manh 2026-11-21): the
-            // reader's persisted picks. The Rest window has no TTS
-            // coordinator, so its speaker button stays hidden.
+            // reader's persisted picks. The speaker state comes from
+            // the shared key (`transpeek_rsvpTTSEnabled`), so the Rest
+            // window's speaker follows the same on/off as Full + Lite
+            // (Manh 2026-11-23, shared + remembered).
             readingStyle: Defaults[.rsvpReadingStyle],
             highlightCurrentLine: Defaults[.rsvpHighlightCurrentLine]
         )
@@ -51,6 +70,10 @@ final class RestWindowController: NSObject, NSWindowDelegate {
         ) { [weak self] in
             self?.close()
         }
+        // The speaker button reads the coordinator from the
+        // environment (Manh 2026-11-23) — without this the Rest window
+        // has no TTS and the button stays hidden, as before.
+        .environment(\.ttsCoordinator, ttsCoordinator)
         let hostingView = NSHostingView(rootView: contentView)
 
         let screen = NSScreen.main
@@ -78,6 +101,33 @@ final class RestWindowController: NSObject, NSWindowDelegate {
         window.delegate = self
         self.window = window
 
+        // Trackpad swipes over this window (Manh 2026-11-23): same as
+        // the Fast Read window — horizontal steps a slide (like ←/→),
+        // vertical changes the font size by 16pt per swipe, clamped
+        // to 40...450. The Rest window had no monitor at all, so a
+        // swipe did nothing here.
+        let monitor = RSVPTrackpadMonitor()
+        self.trackpadMonitor = monitor
+        trackpadCancellable = monitor.actionPublisher.sink { [weak self] action in
+            guard let self, let viewModel = self.viewModel else { return }
+            switch action {
+            case .stepForward: viewModel.stepForward()
+            case .stepBack: viewModel.stepBack()
+            case .fontBigger: viewModel.fontSize = min(450, viewModel.fontSize + 16)
+            case .fontSmaller: viewModel.fontSize = max(40, viewModel.fontSize - 16)
+            }
+        }
+        // Style 2 slow page-flip swipe (Manh 2026-11-21, same as the
+        // Fast Read window): the monitor only throttles the horizontal
+        // swipe when the reader is in Style 2 — Style 1 keeps the fast
+        // one-step-per-event. The style can change while the window is
+        // open, so follow it.
+        monitor.isStyle2 = viewModel.readingStyle == .style2
+        styleCancellable = viewModel.$readingStyle.sink { [weak monitor] style in
+            monitor?.isStyle2 = style == .style2
+        }
+        monitor.start(window: window)
+
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         viewModel.play()
@@ -86,6 +136,7 @@ final class RestWindowController: NSObject, NSWindowDelegate {
     /// Close the window (and stop playback).
     func close() {
         viewModel?.pause()
+        trackpadMonitor?.stop()
         window?.close()
         window = nil
         viewModel = nil
@@ -99,6 +150,7 @@ final class RestWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         viewModel?.pause()
+        trackpadMonitor?.stop()
     }
 }
 
