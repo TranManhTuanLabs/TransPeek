@@ -583,3 +583,12 @@ TransPeek: **một float icon chung** — **hover = dịch** (dịch/tra từ), 
 ---
 
 *Báo cáo viết ngày 2026-11-16 từ source code NaturalReader 8.0.3.0 (.crx) + tài liệu Help Center công khai. Không cài/chạy thử extension live. Chỉ mô tả pattern để re-implement, không copy code/asset/backend của NaturalReader.*
+
+---
+
+## Tham khảo chéo — báo cáo liên quan (TTS word-sync highlight)
+
+- `swiftread-apk-read-tts-report.md` §11.4 + §11.10 + §12 — phân tích binary APK SwiftRead 1.10.3: WordPlayer 1 interface + 2 driver, part + timepoints, token map; verdict kết hợp kiến trúc SwiftRead + timestamp native theo nền tảng (§12.4); giá Azure + list TTS tham khảo (§12.2–§12.3).
+- `speechify-report.md` §5 — highlight 2 lớp câu+từ bằng overlay rect (không sửa DOM), §6 (block → playable → câu), §8.4 (markCharIndex theo mốc thời gian cloud).
+- `rsvp-report.md` §1 + §6 — engine RSVP SwiftRead (đã đọc source thật .crx), khả thi tích hợp native.
+- `recommendation.md` §3 — TTS tích hợp native: mac `willSpeakRange` miễn phí, Windows WinRT highlight theo câu hoặc cloud speech marks.

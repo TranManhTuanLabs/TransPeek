@@ -576,3 +576,12 @@ Mô hình chung của mobile: **đọc trong app** (thư viện sách/bài trong
 - **~~Không tải được file `.crx` của SwiftRead~~ — ĐÃ GIẢI QUYẾT 17/11:** Manh gửi 2 file `.crx` (6.11.2.0 + 5.9.2.0), đã đọc source và bổ sung toàn bộ §1/§4/§6/§7/§9/§12 (xem các ghi chú "theo source thật (17/11)"). Những gì **không có trong `.crx`** — 3 chế độ Focus/Flow/Spotlight, danh sách giọng TTS, trích xuất toàn trang luồng mới, vị trí/history của reader mới — nằm ở **web app/server `app.swiftread.com`**, không kiểm chứng được từ source. Sprint Reader vẫn chỉ có repo GitHub công khai (đã clone và đọc source đầy đủ).
 - **Không cài extension để quan sát live** trong đợt này (chỉ đọc source + trang web) — các con số WPM, kích thước panel, phím tắt đều lấy từ source code hoặc listing chính thức, không phải từ quan sát live.
 - **Số WPM "1800+" của Sprint Reader và "3x" của SwiftRead** là claim quảng cáo của nhà phát triển; độ hiểu thực tế ở tốc độ cao thấp hơn nhiều (xem §0).
+
+---
+
+## Tham khảo chéo — báo cáo liên quan (TTS word-sync highlight)
+
+- `swiftread-apk-read-tts-report.md` §11.4 + §11.10 + §12 — phân tích binary APK SwiftRead 1.10.3: WordPlayer 1 interface + 2 driver, part + timepoints, token map; verdict kết hợp kiến trúc SwiftRead + timestamp native theo nền tảng (§12.4); giá Azure + list TTS tham khảo (§12.2–§12.3).
+- `speechify-report.md` §5 — highlight 2 lớp câu+từ bằng overlay rect (không sửa DOM), §6 (block → playable → câu).
+- `naturalreader-report.md` §4–§6 — highlight câu/từ 4 theme, speech marks, chunk 60 ký tự, word timer 50ms.
+- `recommendation.md` §3 + §5 — TTS tích hợp native (mac `willSpeakRange`, Windows WinRT) và verdict RSVP.

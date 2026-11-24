@@ -461,3 +461,12 @@ Hệ highlight tên `speechifyPlaybackHighlighter` (`content/chunk-F5R7TDWC.js`,
 2. **Cái đáng học nhất:** (a) icon bám đúng dòng đầu bằng Range của từ đầu tiên + né nút/link + kiểm tra che khuất; (b) **mọi control tốc độ/giọng/nảy câu nằm ngay trong player đang phát** (1 click, không mở Settings); (c) highlight câu+từ bằng speechMarks của cloud + click câu để nhảy tới trong lúc phát.
 3. **Cho TransPeek native:** làm **Model A** (hover → icon, opt-in, có dwell, fallback bôi-chọn) + **mini-player khi phát TTS** + **highlight theo câu** (từ thì mac làm được ngay nhờ AVSpeech word-range, Windows cần cloud TTS hoặc chỉ highlight câu). **Model B generic trên desktop là không thực tế** — phần web-style (nút hiện sẵn theo block) nên để cho **extension trình duyệt riêng** (Path 2) nếu sau này làm.
 4. Khuyến nghị tổng thể (Path 1 vs Path 2, RSVP, multi-tab panel, break app, quick-controls) nằm ở **`recommendation.md`** cùng thư mục.
+
+---
+
+## Tham khảo chéo — báo cáo liên quan (TTS word-sync highlight)
+
+- `swiftread-apk-read-tts-report.md` §11.4 + §11.10 + §12 — phân tích binary APK SwiftRead 1.10.3: WordPlayer 1 interface + 2 driver, part + timepoints, token map; verdict kết hợp kiến trúc SwiftRead + timestamp native theo nền tảng (§12.4); giá Azure + list TTS tham khảo (§12.2–§12.3).
+- `naturalreader-report.md` §4–§6 — highlight câu/từ 4 theme, speech marks, chunk 60 ký tự, word timer 50ms.
+- `rsvp-report.md` §1 + §6 — engine RSVP SwiftRead (đã đọc source thật .crx), khả thi tích hợp native.
+- `recommendation.md` §3 — TTS tích hợp native: mac `willSpeakRange` miễn phí, Windows WinRT highlight theo câu hoặc cloud speech marks.

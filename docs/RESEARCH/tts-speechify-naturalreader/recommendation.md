@@ -143,3 +143,12 @@ Thứ tự làm: (1) khung multi-tab 3 chấm kiểu hub trên main (Dịch gi�
 - Autoswitch voice 2 ngôn ngữ chưa có mẫu trong các extension đã đọc — tự thiết kế + spike.
 - Các ngưỡng cử chỉ (swipe 50px, wheel 120 delta, debounce 300 ms) là điểm khởi đầu để test bằng prototype, chưa kiểm chứng.
 - SwiftRead .crx **đã đọc được source thật từ 17/11** (Manh gửi 2 file 6.11.2.0 + 5.9.2.0) — xem ghi chú ở đầu file và `rsvp-report.md`. Sprint Reader .crx vẫn chưa tải được (proxy chặn endpoint Web Store, mirror 404) nhưng đủ qua GitHub open source.
+
+---
+
+## Tham khảo chéo — báo cáo liên quan (TTS word-sync highlight)
+
+- `swiftread-apk-read-tts-report.md` §11.10 + §12.4 — verdict kết hợp: kiến trúc WordPlayer + token map của SwiftRead (phân tích binary APK 1.10.3) + timestamp native theo nền tảng; §12.2 giá Azure, §12.3 list TTS tham khảo của Manh.
+- `speechify-report.md` §5 — highlight 2 lớp câu+từ bằng overlay rect (không sửa DOM), §6 (block → playable → câu).
+- `naturalreader-report.md` §4–§6 — highlight câu/từ 4 theme, speech marks, chunk 60 ký tự, word timer 50ms.
+- `rsvp-report.md` §1 + §6 — engine RSVP SwiftRead (đã đọc source thật .crx), khả thi tích hợp native.
