@@ -52,5 +52,6 @@ Chỉ có 1 `ttsCoordinator` chung + 1 `AVSpeechSynthesizer` duy nhất nên kh�
 ## Liên kết
 
 - [Speech Engine](SPEECH_ENGINE.md)
+- [TTS Word-Sync Highlight](TTS_WORD_SYNC_HIGHLIGHT.md)
 - [Float Icon](FLOAT_ICON.md)
 - [Panel UX (chưa viết)](../UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
