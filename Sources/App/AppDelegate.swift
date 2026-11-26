@@ -23,10 +23,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var hoverTextDetector: HoverTextDetector!
     /// Step 2 continuous reading (Manh 2026-11-24): the chaining
     /// controller (reads one hovered block after another on the page)
-    /// and its reading-indicator overlay (sentence / word highlights
-    /// over the page on main — the line + block layers stay on the
-    /// branch, see the overlay's Layers). Created here, wired to the
-    /// speak indicator's Pause/Resume callbacks in setupSelectionMonitor.
+    /// and its reading-indicator overlay (vertical line + sentence /
+    /// block / word highlights over the page — which layers actually
+    /// show is the user's per-layer toggle in Settings, see the
+    /// overlay's Layers). Created here, wired to the speak indicator's
+    /// Pause/Resume callbacks in setupSelectionMonitor.
     var continuousSpeakController: ContinuousSpeakController!
     var readingIndicatorOverlay: ReadingIndicatorOverlay!
     /// The separate speak indicator (Manh 2026-11-26): the floating ⏸/▶
@@ -189,13 +190,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hoverTextDetector = HoverTextDetector()
         // Step 2 (Manh 2026-11-24): the overlay first, then the chaining
         // controller that drives it — both need the shared TTS
-        // coordinator, which already exists by now. Main draws ONLY
-        // sentence + word (the branch is not stable yet, so the line +
-        // block layers stay there — see the overlay's Layers). The
-        // chaining controller drives the SEPARATE speak indicator (Manh
+        // coordinator, which already exists by now. The overlay is
+        // created with ALL layers; which ones actually show is the
+        // user's per-layer Show toggle in Settings (Manh 2026-11-27 —
+        // main defaults: sentence + word on, line + block off, so the
+        // behaviour is unchanged until the user turns a layer on).
+        // The chaining controller drives the SEPARATE speak indicator (Manh
         // 2026-11-26), not the float icon — the icon never shows
         // playback state.
-        readingIndicatorOverlay = ReadingIndicatorOverlay(layers: .sentenceAndWord)
+        readingIndicatorOverlay = ReadingIndicatorOverlay()
         speakIndicatorController = SpeakIndicatorController()
         continuousSpeakController = ContinuousSpeakController(
             ttsCoordinator: ttsCoordinator,
@@ -778,11 +781,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Read the frame BEFORE dismissing (dismiss clears it).
             let indicatorFrame = self.triggerIconController.currentFrame
             self.triggerIconController.dismissSilently()
+            // Read the hovered block BEFORE stopping the follow —
+            // stopFollowing forgets it (currentBlock = nil), so reading
+            // it after would always fail and every hover speak would
+            // fall back to a single speak with no overlay/highlight
+            // (bug from the indicator split, f932b11b).
+            let hoveredBlock = self.hoverTextDetector.currentBlockForReading
             // The icon is gone — stop following the hovered block (its
             // poll must not outlive the icon). The indicator never
             // follows the text; it stays where it appeared.
             self.hoverTextDetector.stopFollowing()
-            if let block = self.hoverTextDetector.currentBlockForReading,
+            if let block = hoveredBlock,
                block.text == text {
                 self.continuousSpeakController.start(from: block, indicatorFrame: indicatorFrame)
             } else {

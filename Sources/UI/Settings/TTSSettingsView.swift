@@ -19,6 +19,21 @@ struct TTSSettingsView: View {
     @Default(.ttsVoiceEN) private var ttsVoiceEN
     @Default(.ttsVoiceVI) private var ttsVoiceVI
 
+    // Reading indicator highlight colors (Manh 2026-11-27): the 4
+    // layers' colors, stored as "#RRGGBB" hex strings. The overlay
+    // reads them live, so a change applies at once.
+    @Default(.highlightLineHex) private var highlightLineHex
+    @Default(.highlightBlockHex) private var highlightBlockHex
+    @Default(.highlightSentenceHex) private var highlightSentenceHex
+    @Default(.highlightWordHex) private var highlightWordHex
+    // Reading indicator layer visibility (Manh 2026-11-27): one Show
+    // toggle per layer (in its color row). The overlay reads them
+    // live, so toggling applies at once.
+    @Default(.highlightLineShown) private var highlightLineShown
+    @Default(.highlightBlockShown) private var highlightBlockShown
+    @Default(.highlightSentenceShown) private var highlightSentenceShown
+    @Default(.highlightWordShown) private var highlightWordShown
+
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
     @State private var testLanguage = "en"
@@ -151,6 +166,52 @@ struct TTSSettingsView: View {
                 Text("Voices (EN / VI)")
             }
 
+            // MARK: - Highlight colors
+
+            Section {
+                HighlightColorRow(
+                    title: "Vertical line",
+                    subtitle: "Solid bar at the block's left edge",
+                    hex: $highlightLineHex,
+                    shown: $highlightLineShown,
+                    defaultHex: HighlightColors.lineDefaultHex
+                )
+                HighlightColorRow(
+                    title: "Block",
+                    subtitle: "Highlight for the whole block being read",
+                    hex: $highlightBlockHex,
+                    shown: $highlightBlockShown,
+                    defaultHex: HighlightColors.blockDefaultHex
+                )
+                HighlightColorRow(
+                    title: "Sentence",
+                    subtitle: "Highlight for the sentence being read",
+                    hex: $highlightSentenceHex,
+                    shown: $highlightSentenceShown,
+                    defaultHex: HighlightColors.sentenceDefaultHex
+                )
+                HighlightColorRow(
+                    title: "Word",
+                    subtitle: "Highlight for the word being spoken",
+                    hex: $highlightWordHex,
+                    shown: $highlightWordShown,
+                    defaultHex: HighlightColors.wordDefaultHex
+                )
+
+                Button("Reset all to default") {
+                    highlightLineHex = HighlightColors.lineDefaultHex
+                    highlightBlockHex = HighlightColors.blockDefaultHex
+                    highlightSentenceHex = HighlightColors.sentenceDefaultHex
+                    highlightWordHex = HighlightColors.wordDefaultHex
+                }
+            } header: {
+                Text("Highlight colors")
+            } footer: {
+                Text("Colors for the reading indicator shown over the page while listening. Changes apply at once — no restart needed. Opacity is fixed so the text underneath stays readable. Use the Show switch on each row to hide a layer you don't want.")
+                    .font(.settingsCaption(appTextSize: appTextSize))
+                    .foregroundStyle(.secondary)
+            }
+
             // MARK: - Test
 
             Section {
@@ -213,4 +274,81 @@ struct TTSSettingsView: View {
 
     private var englishVoices: [AVSpeechSynthesisVoice] { voices(forLanguagePrefix: "en") }
     private var vietnameseVoices: [AVSpeechSynthesisVoice] { voices(forLanguagePrefix: "vi") }
+}
+
+// MARK: - HighlightColorRow
+
+/// One highlight layer's row in the Highlight colors section (Manh
+/// 2026-11-27): name + Show toggle + native ColorPicker + hex +
+/// per-layer Reset, with a preset swatch row underneath. The picker
+/// never edits opacity (`supportsOpacity: false`) — opacity stays
+/// fixed in code (fills 0.30, line solid 1.0), so a color can never
+/// hide the text. The hex is display-only (shown for users who want
+/// the exact value); the color is picked with the swatch or the system
+/// color panel. The Show switch hides/shows this layer (the overlay
+/// reads it live, so it applies at once); the color stays editable
+/// while hidden, so the user can set it first and show it after.
+private struct HighlightColorRow: View {
+    let title: String
+    let subtitle: String
+    @Binding var hex: String
+    @Binding var shown: Bool
+    let defaultHex: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text(hex.uppercased())
+                    .monospaced()
+                    .foregroundStyle(.secondary)
+                Toggle("Show", isOn: $shown)
+                    .help("Show this highlight layer while listening")
+                ColorPicker("", selection: colorBinding, supportsOpacity: false)
+                    .labelsHidden()
+                Button("Reset") { hex = defaultHex }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+            }
+            // Preset swatches: tap one to set this layer's color at
+            // once. The current color gets a strong ring so the user
+            // can see which preset (if any) is active.
+            HStack(spacing: 8) {
+                ForEach(HighlightColors.pastelPresets, id: \.self) { preset in
+                    Button {
+                        hex = preset
+                    } label: {
+                        Circle()
+                            .fill(Color(nsColor: HighlightColors.nsColor(hex: preset, alpha: 1.0, fallbackHex: preset)))
+                            .frame(width: 22, height: 22)
+                            .overlay {
+                                if hex.uppercased() == preset.uppercased() {
+                                    Circle().stroke(Color.primary, lineWidth: 2)
+                                } else {
+                                    Circle().stroke(Color.secondary.opacity(0.4), lineWidth: 1)
+                                }
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .help(preset)
+                }
+            }
+        }
+    }
+
+    /// The picker's Color binding: the stored hex is opaque (alpha 1.0
+    /// for the picker — the overlay applies its own fixed alpha at draw
+    /// time), and a picked color is stored back as "#RRGGBB".
+    private var colorBinding: Binding<Color> {
+        Binding(
+            get: { Color(nsColor: HighlightColors.nsColor(hex: hex, alpha: 1.0, fallbackHex: defaultHex)) },
+            set: { hex = HighlightColors.string(from: NSColor($0)) }
+        )
+    }
 }

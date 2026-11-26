@@ -11,6 +11,7 @@
 | `UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` | Icon float: hình dạng, hover=dịch, click=nghe | Bản nháp |
 | `UI/UX_DESIGN/FAST_READ_THEME_STYLE.md` | Fast Read: Theme (màu) vs Style (kiểu đọc), Style 1/2 | Bản nháp |
 | `UI/UX_DESIGN/FAST_READ_SELECT_ICON.md` | Fast Read: icon giả khi bôi đen trong Read (loa + hover, không Read) | Bản nháp |
+| `UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` | Highlight: màu + hiện/ẩn 4 lớp (vạch/đoạn/câu/từ, mặc định câu + từ bật) | Bản nháp |
 | `UI/UX_DESIGN/APP_UX_OVERVIEW.md` | Tổng quan UX toàn app | Bản nháp |
 | `UI/UX_DESIGN/MAIN_NAVIGATION_UX.md` | Menu bar + cấu trúc Settings | Bản nháp |
 | `UI/UX_DESIGN/SETTING_UX.md` | UX từng trang Settings | **CHƯA VIẾT** |
@@ -30,6 +31,7 @@
 - [Icon float UX](UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md)
 - [Fast Read: Theme & Style](UI/UX_DESIGN/FAST_READ_THEME_STYLE.md)
 - [Fast Read: icon giả khi bôi đen trong Read](UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
+- [Highlight: màu + hiện/ẩn 4 lớp](UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md)
 - [Tổng quan UX](UI/UX_DESIGN/APP_UX_OVERVIEW.md)
 - [Điều hướng chính](UI/UX_DESIGN/MAIN_NAVIGATION_UX.md)
 - [Settings UX (chưa viết)](UI/UX_DESIGN/SETTING_UX.md)

@@ -36,6 +36,7 @@
 | `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` | Icon float UX | Bản nháp |
 | `docs/UI/UX_DESIGN/FAST_READ_THEME_STYLE.md` | Fast Read: Theme vs Style, Style 1/2 | Bản nháp |
 | `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md` | Fast Read: icon giả khi bôi đen trong Read | Bản nháp |
+| `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` | Highlight: màu + hiện/ẩn 4 lớp (vạch/đoạn/câu/từ) | Bản nháp |
 | `docs/UI/UX_DESIGN/APP_UX_OVERVIEW.md` | Tổng quan UX | Bản nháp |
 | `docs/UI/UX_DESIGN/SETTING_UX.md` | Settings UX | **CHƯA VIẾT** |
 | `docs/UI/UX_DESIGN/MAIN_NAVIGATION_UX.md` | Menu bar + Settings | Bản nháp |
@@ -91,6 +92,7 @@ docs/
         ├── FLOAT_ICON_UX_SPEC.md     # icon float UX
         ├── FAST_READ_THEME_STYLE.md  # Fast Read: Theme vs Style, Style 1/2
         ├── FAST_READ_SELECT_ICON.md  # Fast Read: icon giả khi bôi đen trong Read
+        ├── HIGHLIGHT_COLORS_UX_SPEC.md  # highlight: màu + hiện/ẩn 4 lớp
         ├── APP_UX_OVERVIEW.md        # tổng quan UX
         ├── MAIN_NAVIGATION_UX.md     # menu bar + Settings
         └── SETTING_UX.md             # Settings UX (CHƯA VIẾT)
@@ -112,4 +114,5 @@ docs/
 - [Fast Read: Theme & Style](UI/UX_DESIGN/FAST_READ_THEME_STYLE.md)
 - [TTS Word-Sync Highlight](FEATURES/TTS_WORD_SYNC_HIGHLIGHT.md)
 - [Fast Read: icon giả khi bôi đen trong Read](UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
+- [Highlight: màu + hiện/ẩn 4 lớp](UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md)
 - [Chỉ mục UX](UI_DESIGN.md)

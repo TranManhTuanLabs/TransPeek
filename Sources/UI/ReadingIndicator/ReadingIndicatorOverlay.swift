@@ -1,4 +1,5 @@
 import AppKit
+import Defaults
 import Foundation
 
 // MARK: - ReadingIndicatorOverlay
@@ -14,48 +15,83 @@ import Foundation
 /// block frame and repositions the window. The hide-during-scroll /
 /// show-when-stopped fallback is phase 2 — only if testing shows
 /// jerkiness (see the trial plan).
-/// Which layers are drawn is configurable (Manh 2026-11-26): main
-/// draws ONLY sentence + word (the branch is not stable yet, so the
-/// line + block stay on the branch); the branch draws all four. One
-/// file, one component — the layers are a setting, not a fork.
+/// Which layers are drawn is user-configurable (Manh 2026-11-27): the
+/// overlay is created with all four layers, and each layer has its own
+/// Show toggle in Settings (Audio tab → Highlight colors) — the
+/// toggles decide what actually shows (see `isShown`). One file, one
+/// component — the layers are a setting, not a fork.
 @MainActor
 final class ReadingIndicatorOverlay {
-    /// Which indicator layers to draw. Main = sentence + word only;
-    /// the branch = all four (line + block + sentence + word).
+    /// Which indicator layers to draw. The creation set — the
+    /// per-layer Show toggles in Settings filter it further (see
+    /// `isShown`): a layer draws only when it is in this set AND its
+    /// toggle is on. Main creates the overlay with `.all` and the
+    /// toggles decide (main defaults: sentence + word on, line + block
+    /// off).
     struct Layers: OptionSet {
         let rawValue: Int
         static let line = Layers(rawValue: 1 << 0)
         static let block = Layers(rawValue: 1 << 1)
         static let sentence = Layers(rawValue: 1 << 2)
         static let word = Layers(rawValue: 1 << 3)
-        /// All four layers (the branch).
+        /// All four layers.
         static let all: Layers = [.line, .block, .sentence, .word]
-        /// Sentence + word only (main — the branch is not stable yet).
+        /// Sentence + word only (kept for callers that want it).
         static let sentenceAndWord: Layers = [.sentence, .word]
     }
 
-    /// Trial colors (Manh 2026-11-24 00:38, pastel palette). Fills are
-    /// translucent (~30%) so the text underneath stays readable; the
-    /// line is solid so it reads as a marker, not a tint.
-    /// `fileprivate` so the content view (same file) can draw with them.
-    fileprivate static let wordFill = NSColor(red: 0.85, green: 0.75, blue: 0.98, alpha: 0.30) // tím nhạt
-    fileprivate static let sentenceFill = NSColor(red: 1.0, green: 0.95, blue: 0.65, alpha: 0.30) // vàng nhạt
-    fileprivate static let blockFill = NSColor(red: 0.75, green: 0.95, blue: 0.70, alpha: 0.30) // green nhạt
-    fileprivate static let lineFill = NSColor(red: 0.55, green: 0.75, blue: 1.0, alpha: 1.0) // blue nhạt, đặc
+    /// Whether a layer draws: it must be in the creation set AND its
+    /// Settings Show toggle must be on (Manh 2026-11-27). The toggles
+    /// are read live (not cached) so flipping one applies at once —
+    /// the follow timer redraws every 0.3 s while showing, and
+    /// `update` re-lays out on the next word. `fileprivate` so the
+    /// content view (same file) can draw with it.
+    fileprivate static func isShown(_ layer: Layers, in layers: Layers) -> Bool {
+        guard layers.contains(layer) else { return false }
+        if layer == .line { return Defaults[.highlightLineShown] }
+        if layer == .block { return Defaults[.highlightBlockShown] }
+        if layer == .sentence { return Defaults[.highlightSentenceShown] }
+        if layer == .word { return Defaults[.highlightWordShown] }
+        return false
+    }
+
+    /// The 4 layer colors, read live from Defaults (Manh 2026-11-27):
+    /// user-customizable in Settings (Audio tab → Highlight colors).
+    /// Computed (not stored) so a change applies at once — `draw` reads
+    /// them every time, and the follow timer redraws every 0.3 s while
+    /// showing. The opacity stays fixed here (fills 0.30, line solid
+    /// 1.0) — the picker never edits it. A malformed hex falls back to
+    /// the layer's default color. `fileprivate` so the content view
+    /// (same file) can draw with them.
+    fileprivate static var wordFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightWordHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.wordDefaultHex)
+    }
+    fileprivate static var sentenceFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightSentenceHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.sentenceDefaultHex)
+    }
+    fileprivate static var blockFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightBlockHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.blockDefaultHex)
+    }
+    fileprivate static var lineFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightLineHex], alpha: HighlightColors.lineAlpha, fallbackHex: HighlightColors.lineDefaultHex)
+    }
     /// Width of the vertical line (points).
     fileprivate static let lineWidth: CGFloat = 3.5
     /// How far the window extends left of the block (points) so the
     /// line sits BESIDE the text instead of covering the first
     /// characters — the line lives in this strip, the fills start at
-    /// the block's own left edge. Only when the line layer is on; with
-    /// sentence + word only, the window is exactly the block frame.
-    private var leftPad: CGFloat { layers.contains(.line) ? 8 : 0 }
+    /// the block's own left edge. Only when the line layer is shown
+    /// (creation set + its Settings toggle); otherwise the window is
+    /// exactly the block frame. Read live so toggling the line applies
+    /// at once (the follow timer repositions every 0.3 s).
+    private var leftPad: CGFloat { Self.isShown(.line, in: layers) ? 8 : 0 }
     /// How often the block frame is re-read while showing (seconds) —
     /// the same interval as the hover follow poll, so the indicator
     /// moves with the text when the page scrolls.
     private static let followIntervalSec = 0.3
 
-    /// The layers this overlay draws (set at init — main vs branch).
+    /// The layers this overlay draws (the creation set — the Settings
+    /// Show toggles filter it further, see `isShown`).
     private let layers: Layers
     private let panel: ReadingIndicatorPanel
     private let contentView: ReadingIndicatorView
@@ -104,8 +140,8 @@ final class ReadingIndicatorOverlay {
     /// drawn — the other levels keep showing. A level whose layer is
     /// off is ignored (never drawn, even if a frame arrives).
     func update(wordFrame: CGRect?, sentenceFrame: CGRect?) {
-        sentenceAXRect = layers.contains(.sentence) ? sentenceFrame : nil
-        wordAXRect = layers.contains(.word) ? wordFrame : nil
+        sentenceAXRect = Self.isShown(.sentence, in: layers) ? sentenceFrame : nil
+        wordAXRect = Self.isShown(.word, in: layers) ? wordFrame : nil
         layoutHighlightRects()
         contentView.needsDisplay = true
     }
@@ -158,7 +194,7 @@ final class ReadingIndicatorOverlay {
         let windowFrame = panel.frame
         // The block area in window-local coordinates: everything right
         // of the line strip (or the whole window when no line layer).
-        contentView.blockRect = layers.contains(.block) ? CGRect(
+        contentView.blockRect = Self.isShown(.block, in: layers) ? CGRect(
             x: leftPad,
             y: 0,
             width: max(0, panel.frame.width - leftPad),
@@ -266,23 +302,23 @@ private final class ReadingIndicatorView: NSView {
         // (sentence, then word) reads as a stronger mark inside it.
         // The fills are translucent, so overlapping levels blend
         // instead of hiding each other.
-        if layers.contains(.block), let blockRect {
+        if ReadingIndicatorOverlay.isShown(.block, in: layers), let blockRect {
             ReadingIndicatorOverlay.blockFill.setFill()
             NSBezierPath(rect: blockRect).fill()
         }
-        if layers.contains(.sentence), let sentenceRect {
+        if ReadingIndicatorOverlay.isShown(.sentence, in: layers), let sentenceRect {
             ReadingIndicatorOverlay.sentenceFill.setFill()
             NSBezierPath(rect: sentenceRect).fill()
         }
-        if layers.contains(.word), let wordRect {
+        if ReadingIndicatorOverlay.isShown(.word, in: layers), let wordRect {
             ReadingIndicatorOverlay.wordFill.setFill()
             NSBezierPath(rect: wordRect).fill()
         }
         // The vertical line: a solid bar at the window's left edge (the
         // strip left of the block text), full height, so the eye finds
         // the block being read at a glance even when the fills are faint.
-        // Only when the line layer is on.
-        if layers.contains(.line) {
+        // Only when the line layer is shown (creation set + its toggle).
+        if ReadingIndicatorOverlay.isShown(.line, in: layers) {
             ReadingIndicatorOverlay.lineFill.setFill()
             NSBezierPath(rect: CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)).fill()
         }
