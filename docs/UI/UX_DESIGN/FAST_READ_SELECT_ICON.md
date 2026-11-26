@@ -78,8 +78,14 @@ Clicking the alternative icon speaks the selected text through its **own
 separate system TTS path**. It does NOT share the Read-mode speaker
 button's audio path: the Read speaker button is tied to RSVP playback
 sync (TTS drives the chunk advance), while the alternative icon's click
-is a quick, independent "speak this selected text" that does not touch
-RSVP playback state.
+is a quick, independent "speak this selected text" through the shared
+click-to-listen flow (see `../../FEATURES/SPEECH_PLAYER.md` §1).
+
+One voice at a time (CHỐT 27/11 00:48): starting this session STOPS any
+Read playback in progress — Read stops at its current position (press
+Play to continue from there). It does not disturb RSVP's position state,
+only its playback. (Sửa 27/11: câu cũ "does not touch RSVP playback
+state" bỏ — click DỪNG tiếng Read, chỉ giữ nguyên vị trí đọc.)
 
 ## 7. When the icon appears
 

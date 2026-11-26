@@ -28,6 +28,13 @@ Lý do tách: icon float chỉ có 1 cửa sổ — lúc đang phát, nó bị p
   tốc độ 1x/1.2x/1.5x/2x, chọn giọng, autoswitch voice nhận diện 2 ngôn ngữ — khỏi
   vào Settings; hoặc làm control riêng như Speechify/NaturalReader (định hướng 16/11).
 
+### Read playback vs click-to-listen — 1 giọng tại 1 thời điểm (CHỐT 27/11 00:48)
+
+Chỉ có 1 `ttsCoordinator` chung + 1 `AVSpeechSynthesizer` duy nhất nên không bao giờ chồng 2 luồng tiếng. Phiên mới thay phiên cũ, kể cả Read playback — cả 2 chiều:
+
+- **Read đang phát → bấm loa nghe (icon float / alternative icon)**: Read DỪNG ở chỗ đang đọc (giữ nguyên vị trí slide/dòng), từ được nghe; bấm Play/Space thì Read đọc tiếp từ chỗ dừng. (Đã kiểm chứng code 27/11: `ContinuousSpeakController.start()` → `stop()` → `ttsCoordinator.stop()` → `synthesizer.stopSpeaking(at: .immediate)`; Read đi vào nhánh dừng, `isPlaying = false`.)
+- **Click-to-listen đang phát → bấm Play / bật loa trong Read**: phiên click-to-listen BỊ DỪNG trước, rồi Read mới đọc. (Đã kiểm chứng code 27/11: `toggleTTS()` đã dừng trước qua `pause()`; nhưng `startTTSPlaybackTask()` gọi `speakContinuous` trực tiếp không `stop()` trước nên xếp hàng + nguy cơ bug delegate — Read tưởng đã đọc xong sớm, `SpeechPlayer` kẹt ở `.playing`, indicator có thể kẹt hiện. **SỬA: Read gọi `ttsCoordinator.stop()` trước khi bắt đầu `speakContinuous`.**)
+
 ## 2. Đọc nhanh (RSVP) — đã chốt luồng vào 17/11, CHƯA LÀM
 
 - (1) Option-click (Mac) / Alt-click (Windows) → RSVP thẳng.
