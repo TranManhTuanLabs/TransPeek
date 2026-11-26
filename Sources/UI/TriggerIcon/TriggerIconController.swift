@@ -14,31 +14,6 @@ final class TriggerTrackingView: NSView {
     /// A right-click (Control-click / two-finger tap) opens the icon menu.
     var onRightMouseDown: ((NSEvent) -> Void)?
 
-    /// When true the icon shows a speaker symbol (TTS playing) instead of
-    /// the plain A (Manh 2026-11-18, round 7: speaking wins the glyph so
-    /// the user can click again to stop it).
-    var isSpeaking = false {
-        didSet {
-            if isSpeaking != oldValue {
-                needsDisplay = true
-            }
-        }
-    }
-
-    /// Whether the current speak session is paused (Manh 2026-11-26,
-    /// speaker law): the icon shows ▶ (play.fill, click to resume)
-    /// instead of ⏸ (pause.fill, click to pause). Only meaningful while
-    /// isSpeaking is true — a paused session is still a live session, so
-    /// the icon stays visible and the glyph tells what the next click
-    /// will do (the float icon's standing principle).
-    var isPaused = false {
-        didSet {
-            if isPaused != oldValue {
-                needsDisplay = true
-            }
-        }
-    }
-
     /// What a plain click on this icon does — it decides the Option+Click
     /// preview (Option held flips to the other action) and what a click
     /// does. Updated when the icon is shown (it follows the Settings
@@ -126,27 +101,10 @@ final class TriggerTrackingView: NSView {
         // to make the Click setting visible at a glance, and it confused
         // the flow with the upstream (MoePeek) activation logic.
         // The glyph only leaves the plain A to show: the Option+Click
-        // preview (while Option is held), the speaking state, or the
-        // 2.5s A+ confirmation after a Read click.
-        //
-        // Speaking comes FIRST (Manh 2026-11-18, round 7): while TTS is
-        // playing the icon must show the speaker, so the user can click
-        // again to stop it — even when the click action is Read. Before
-        // this fix the `.read` branch below returned early, so after an
-        // Option+click to Speak (with Click = Read) the icon stayed on
-        // A+ once Option was released, instead of switching to the
-        // speaker, and the user had no way to tell speech was playing.
-        // Speaker law (Manh 2026-11-26): the glyph is now play/pause,
-        // not a plain speaker — playing shows ⏸ (pause.fill, click to
-        // pause), paused shows ▶ (play.fill, click to resume). The
-        // glyph tells what the next click will do.
-        if isSpeaking {
-            // Playing — pause glyph (click to pause).
-            // Paused — play glyph (click to resume).
-            drawSymbolGlyph(named: isPaused ? "play.fill" : "pause.fill", in: bounds)
-            return
-        }
-
+        // preview (while Option is held), or the 2.5s A+ confirmation
+        // after a Read click. The icon NEVER shows playback state
+        // (Manh 2026-11-26: the separate speak indicator owns ⏸/▶) —
+        // a session playing elsewhere does not change this icon.
         if isReadPending {
             // Fast Read click landed — turmeric "A+" for 2.5s as a
             // confirmation while the Read window opens (Manh 2026-11-18).
@@ -209,9 +167,9 @@ final class TriggerTrackingView: NSView {
     /// Draw the speaker glyph (`speaker.wave.2.fill`, accent color) —
     /// used as the Speak preview (Manh 2026-11-19, 0.1.5): when Option is
     /// held and the click action is Read, the preview shows the speaker
-    /// (Option+click will speak). The playing/paused glyphs are now
-    /// pause.fill / play.fill (speaker law, Manh 2026-11-26) — the
-    /// speaker glyph no longer means "playing".
+    /// (Option+click will speak). It is ONLY a preview — the icon never
+    /// shows playback state (Manh 2026-11-26: ⏸/▶ live on the separate
+    /// speak indicator, not here).
     private func drawSpeakerGlyph(in bounds: NSRect) {
         drawSymbolGlyph(named: "speaker.wave.2.fill", in: bounds)
     }
@@ -304,15 +262,10 @@ final class TriggerIconController: NSObject {
     var onTranslateRequested: ((String) -> Void)?
     /// Click-to-speak (TransPeek Phase 1): invoked with the selected text when the
     /// user clicks the icon while `triggerClickAction` is `.speak`. The panel is
-    /// not opened for this path.
+    /// not opened for this path. The click only STARTS a session — pause
+    /// and resume live on the separate speak indicator (Manh 2026-11-26),
+    /// never on this icon.
     var onSpeakRequested: ((String) -> Void)?
-    /// Click while playing (speaker law, Manh 2026-11-26): pause the
-    /// session (keep the position + highlight), do NOT stop it. The
-    /// icon flips to ▶.
-    var onPauseSpeakRequested: (() -> Void)?
-    /// Click while paused (speaker law, Manh 2026-11-26): resume the
-    /// session from the kept position. The icon flips back to ⏸.
-    var onResumeSpeakRequested: (() -> Void)?
     /// Fast Read (RSVP, Manh 2026-11-17): invoked with the selected text when
     /// the user clicks the icon while `triggerClickAction` is `.read`, or
     /// Option-clicks it while the click action is `.speak`.
@@ -322,61 +275,12 @@ final class TriggerIconController: NSObject {
     var onOpenSettingsRequested: (() -> Void)?
     var onDismissed: (() -> Void)?
 
-    /// True while a click-to-speak session is live (playing OR paused).
-    /// While PLAYING the icon shows ⏸ and does not auto-dismiss (so the
-    /// user can always click to pause); while PAUSED it shows ▶ and
-    /// follows the normal hide law (auto-hide after 5s, dismiss when the
-    /// block scrolls away) — when it hides, the session ends silently.
-    /// (Speaker law, Manh 2026-11-26, Esc removed 2026-11-26: no Stop
-    /// button, no Esc — pause and leave it.)
-    private(set) var isSpeaking = false {
-        didSet { trackingView?.isSpeaking = isSpeaking }
-    }
-
-    /// True while the live session is paused (Manh 2026-11-26, speaker
-    /// law): the icon shows ▶ (play.fill, click to resume) instead of ⏸.
-    /// Only meaningful while isSpeaking is true.
-    private(set) var isPaused = false {
-        didSet { trackingView?.isPaused = isPaused }
-    }
-
-    /// Set the speaking state and redraw the icon. While PLAYING the
-    /// icon does not auto-dismiss (so the user can click to pause);
-    /// while PAUSED the auto-dismiss runs (see setPaused); when the
-    /// session stops the 5s auto-dismiss timer restarts (only if the
-    /// icon is still visible).
-    func setSpeaking(_ speaking: Bool) {
-        guard isSpeaking != speaking else { return }
-        isSpeaking = speaking
-        if speaking {
-            cancelAutoDismissTimer()
-        } else if panel != nil {
-            startAutoDismissTimer()
-        }
-    }
-
-    /// Set the paused state and redraw the icon (Manh 2026-11-26,
-    /// speaker law): paused shows ▶, playing shows ⏸. While PLAYING
-    /// the icon must stay (cancel the auto-dismiss) so the user can
-    /// click to pause; while PAUSED the icon follows the normal hide
-    /// law (start the auto-dismiss — it hides after 5s and the session
-    /// then ends silently, because there is no Esc to stop it).
-    /// When the session just ended (not speaking), leave the timer
-    /// alone: setSpeaking(false) already restarted it so the icon hides.
-    func setPaused(_ paused: Bool) {
-        guard isPaused != paused else { return }
-        isPaused = paused
-        if paused {
-            if panel != nil { startAutoDismissTimer() }
-        } else if isSpeaking {
-            cancelAutoDismissTimer()
-        }
-    }
-
-    /// Called when TTS playback ends on its own (finished or failed) so the icon
-    /// returns to its normal state.
-    func speakingDidStop() {
-        setSpeaking(false)
+    /// The icon's current frame (screen coordinates), or nil when hidden.
+    /// The separate speak indicator takes this frame when a session
+    /// starts — it appears exactly where the user clicked Speak (Manh
+    /// 2026-11-26), so the icon's place is the indicator's place.
+    var currentFrame: CGRect? {
+        panel?.frame
     }
 
     private var panel: TriggerIconPanel?
@@ -419,8 +323,6 @@ final class TriggerIconController: NSObject {
         dismissSilently()
 
         currentText = text
-        isSpeaking = false
-        isPaused = false
 
         // The panel size: compact for the hover icon, full for selection.
         let size = compact ? TriggerIconPanel.compactSize : TriggerIconPanel.size
@@ -533,8 +435,6 @@ final class TriggerIconController: NSObject {
     }
 
     private func cleanup() {
-        isSpeaking = false
-        isPaused = false
         isReadPending = false
         readHideTimer?.invalidate()
         readHideTimer = nil
@@ -552,9 +452,9 @@ final class TriggerIconController: NSObject {
     // MARK: - Timers
 
     private func startHoverTimer() {
-        // While speaking, hover must not re-trigger translation (the click
-        // already consumed the interaction and the panel must stay closed).
-        guard !isSpeaking else { return }
+        // Hover always works (Manh 2026-11-26: the icon no longer tracks
+        // a speak session, so nothing blocks hover-translate — the user
+        // can look up another word while listening).
         cancelHoverTimer()
         cancelAutoDismissTimer()
         let delayMs = min(max(Defaults[.hoverDelayMs], 100), 1000)
@@ -571,11 +471,10 @@ final class TriggerIconController: NSObject {
     }
 
     private func startAutoDismissTimer() {
-        // While PLAYING the icon must stay visible so the user can click
-        // to pause (there is no Esc and no Stop button). While PAUSED
-        // the icon follows the normal hide law — the timer runs, and
-        // when it fires the session ends silently (no Esc to stop it).
-        guard !(isSpeaking && !isPaused) else { return }
+        // The icon follows its normal hide law at all times (Manh
+        // 2026-11-26: it no longer tracks a speak session, so no
+        // session pins it — a session playing elsewhere does not keep
+        // this icon up).
         cancelAutoDismissTimer()
         // Auto-hide delay from Settings (default 5s, range 3–10s; was a
         // hardcoded 3.0s, raised to 5.0s 2026-11-17 ~20:38, then made
@@ -658,24 +557,14 @@ final class TriggerIconController: NSObject {
         }
         switch effectiveAction {
         case .speak:
-            // Speaker law (Manh 2026-11-26, Esc removed 2026-11-26):
-            // one button = Play/Pause toggle, no Stop, no Esc. Playing
-            // → pause (keep position); paused → resume from position;
-            // idle → play from the start. While playing the icon stays
-            // so the user can pause; while paused it follows the normal
-            // hide law, and when it hides the session ends silently.
-            if isSpeaking {
-                if isPaused {
-                    onResumeSpeakRequested?()
-                } else {
-                    onPauseSpeakRequested?()
-                }
-            } else {
-                cancelAllTimers()
-                setSpeaking(true)
-                setPaused(false)
-                onSpeakRequested?(currentText)
-            }
+            // The click only STARTS a session (Manh 2026-11-26: the
+            // separate speak indicator owns pause/resume — this icon
+            // never toggles). AppDelegate shows the indicator at the
+            // icon's frame and dismisses this icon, so the two never
+            // overlap; a new click starts a new session (the old one,
+            // with its indicator, is replaced).
+            cancelAllTimers()
+            onSpeakRequested?(currentText)
         case .read:
             performRead()
         }
@@ -740,20 +629,10 @@ final class TriggerIconController: NSObject {
     }
 
     @objc private func menuSpeak() {
-        // The menu "Speak" toggles like a click (speaker law, Manh
-        // 2026-11-26): playing → pause, paused → resume, idle → play.
-        if isSpeaking {
-            if isPaused {
-                onResumeSpeakRequested?()
-            } else {
-                onPauseSpeakRequested?()
-            }
-        } else {
-            cancelAllTimers()
-            setSpeaking(true)
-            setPaused(false)
-            onSpeakRequested?(currentText)
-        }
+        // The menu "Speak" starts a session like a click (Manh
+        // 2026-11-26: pause/resume live on the separate indicator, not
+        // here) — AppDelegate shows the indicator and dismisses the icon.
+        onSpeakRequested?(currentText)
     }
 
     @objc private func menuRead() {

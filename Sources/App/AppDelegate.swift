@@ -25,9 +25,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// controller (reads one hovered block after another on the page)
     /// and its reading-indicator overlay (vertical line + sentence /
     /// block / word highlights over the page). Created here, wired to
-    /// the icon's Speak/Pause/Resume callbacks in setupSelectionMonitor.
+    /// the speak indicator's Pause/Resume callbacks in setupSelectionMonitor.
     var continuousSpeakController: ContinuousSpeakController!
     var readingIndicatorOverlay: ReadingIndicatorOverlay!
+    /// The separate speak indicator (Manh 2026-11-26): the floating ⏸/▶
+    /// button that owns pause/resume for the on-page session. It is NOT
+    /// the float icon — the icon keeps its own lifecycle and never shows
+    /// playback state.
+    var speakIndicatorController: SpeakIndicatorController!
     /// The shared click-to-listen player for the PANEL speaker button
     /// (Manh 2026-11-26, speaker law): the panel speaks through this
     /// one player (play/pause/resume), so a panel speak and an on-page
@@ -182,12 +187,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         triggerIconController = TriggerIconController()
         hoverTextDetector = HoverTextDetector()
         // Step 2 (Manh 2026-11-24): the overlay first, then the chaining
-        // controller that drives it — both need the icon controller and
-        // the shared TTS coordinator, which already exist by now.
+        // controller that drives it — both need the shared TTS
+        // coordinator, which already exists by now. The chaining
+        // controller drives the SEPARATE speak indicator (Manh
+        // 2026-11-26), not the float icon — the icon never shows
+        // playback state.
         readingIndicatorOverlay = ReadingIndicatorOverlay()
+        speakIndicatorController = SpeakIndicatorController()
         continuousSpeakController = ContinuousSpeakController(
             ttsCoordinator: ttsCoordinator,
-            triggerIconController: triggerIconController,
+            indicator: speakIndicatorController,
             overlay: readingIndicatorOverlay
         )
         setupAlternativeIcon()
@@ -757,28 +766,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // (a selection, no hover block) it speaks once. Both go through
         // the chaining controller, so both get play/pause/resume (the
         // controller owns the player).
+        // The click only STARTS the session: the separate speak
+        // indicator takes this icon's frame (the place the user clicked
+        // Speak) and the icon dismisses, so the two never overlap — a
+        // new click starts a new session (the old one, with its
+        // indicator, is replaced). The icon's own lifecycle is
+        // untouched: it is simply gone, and a later hover/select shows
+        // a new icon while the session keeps playing.
         triggerIconController.onSpeakRequested = { [weak self] text in
             guard let self else { return }
+            // Read the frame BEFORE dismissing (dismiss clears it).
+            let indicatorFrame = self.triggerIconController.currentFrame
+            self.triggerIconController.dismissSilently()
+            // The icon is gone — stop following the hovered block (its
+            // poll must not outlive the icon). The indicator never
+            // follows the text; it stays where it appeared.
+            self.hoverTextDetector.stopFollowing()
             if let block = self.hoverTextDetector.currentBlockForReading,
                block.text == text {
-                self.continuousSpeakController.start(from: block)
+                self.continuousSpeakController.start(from: block, indicatorFrame: indicatorFrame)
             } else {
-                self.continuousSpeakController.start(text: text)
+                self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
             }
         }
 
-        // Click while playing: pause (keep the position + highlight).
-        // The icon flips to ▶ and now follows the normal hide law
-        // (auto-hide after 5s, dismiss when the block scrolls away) —
-        // when it hides, the session ends silently (speaker law, Manh
-        // 2026-11-26, Esc removed: no Stop, no Esc — pause and leave it).
-        triggerIconController.onPauseSpeakRequested = { [weak self] in
+        // The separate speak indicator (Manh 2026-11-26): its click
+        // pauses/resumes the on-page session (the float icon never
+        // toggles). When the indicator hides on its own (auto-hide while
+        // paused) the session ends silently — once it is gone there is
+        // no way to resume it.
+        speakIndicatorController.onPauseRequested = { [weak self] in
             self?.continuousSpeakController.pause()
         }
-
-        // Click while paused: resume from the kept position.
-        triggerIconController.onResumeSpeakRequested = { [weak self] in
+        speakIndicatorController.onResumeRequested = { [weak self] in
             self?.continuousSpeakController.resume()
+        }
+        speakIndicatorController.onDismissed = { [weak self] in
+            self?.continuousSpeakController.stop()
         }
 
         // Fast Read (RSVP, Manh 2026-11-17): open Fast Read with the
@@ -798,13 +822,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self.settingsController.showWindow()
         }
 
-        // Natural end of playback (finished or failed) clears the icon
-        // state — this is the auto-play speak() path; the chaining
-        // controller clears its own icon state on stop/end.
-        ttsCoordinator.onPlaybackEnded = { [weak self] in
-            self?.triggerIconController.speakingDidStop()
-        }
-
         triggerIconController.onDismissed = { [weak self] in
             self?.selectionMonitor.suppressBriefly()
             // Same suppression for the hover path, so the mouse still
@@ -812,16 +829,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // and the follow poll ends with the icon.
             self?.hoverTextDetector.suppressBriefly()
             self?.hoverTextDetector.stopFollowing()
-            // The icon hid while a session was live (paused — the
-            // auto-hide timer only runs while paused, or the user
-            // opened Settings from the icon menu): the session ends
-            // silently. There is no Esc and no Stop button, so once
-            // the icon is gone there is no way to resume — the voice
-            // must not keep speaking unseen. (Speaker law, Manh
-            // 2026-11-26, Esc removed.)
-            if self?.continuousSpeakController.isActive == true {
-                self?.continuousSpeakController.stop()
-            }
+            // The icon and the speak session are independent now (Manh
+            // 2026-11-26: the separate indicator owns the session) — an
+            // icon hiding never stops a session; only the indicator
+            // hiding does (see its onDismissed above).
         }
 
         panelController.onDismiss = { [weak self] in
@@ -863,22 +874,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // The hovered block scrolled away or vanished — dismiss the
-        // stale icon. While PLAYING the icon must stay so the user can
-        // click to pause it (no Esc, no Stop button). While PAUSED the
-        // icon follows the normal hide law (dismiss when the block
-        // scrolls away) — and when it hides, the session ends silently
-        // (speaker law, Manh 2026-11-26, Esc removed).
+        // stale icon. The icon follows its normal lifecycle at all
+        // times (Manh 2026-11-26: it never tracks a speak session) —
+        // a session playing elsewhere is owned by the separate
+        // indicator, so an icon hiding never stops it.
         hoverTextDetector.onHoverStale = { [weak self] in
             guard let self else { return }
-            // Playing = speaking and not paused: keep the icon.
-            guard !(self.triggerIconController.isSpeaking && !self.triggerIconController.isPaused) else { return }
-            let hadLiveSession = self.continuousSpeakController.isActive
             self.triggerIconController.dismissSilently()
-            // Paused: the icon hid, so the session ends silently —
-            // once the icon is gone there is no way to resume it.
-            if hadLiveSession {
-                self.continuousSpeakController.stop()
-            }
         }
 
         hoverTextDetector.start()
