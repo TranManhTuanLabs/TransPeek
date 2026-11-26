@@ -596,6 +596,15 @@ final class RSVPViewModel: ObservableObject {
     /// would cut off the speech that just interrupted us).
     private func startTTSPlaybackTask() {
         playbackTask?.cancel()
+        // One voice at a time (Manh 2026-11-27): stop any speech in
+        // progress BEFORE starting Read's own utterance — this stops a
+        // running click-to-listen session (it must not queue behind
+        // Read's utterance) and cleans up leftover Read speech from
+        // the task just cancelled above. Without this, the new
+        // utterance queues behind the old one and the old session's
+        // delegate can report a false finish (Read thinks it finished
+        // early, the click-to-listen player sticks at .playing).
+        ttsCoordinator?.stop()
         playbackTask = Task { [weak self] in
             guard let self else { return }
             // Snapshot the starting word + coordinator + language on the
@@ -709,6 +718,13 @@ final class RSVPViewModel: ObservableObject {
     /// resuming speaks again from the current line's first word.
     private func startStyle2TTSPlaybackTask() {
         playbackTask?.cancel()
+        // One voice at a time (Manh 2026-11-27): same stop-before-speak
+        // as `startTTSPlaybackTask` — a running click-to-listen session
+        // is stopped first (it must not queue behind Read's utterance),
+        // and leftover Read speech from the cancelled task is cleaned
+        // up. Without this, the new utterance queues behind the old
+        // one and the old session's delegate can report a false finish.
+        ttsCoordinator?.stop()
         playbackTask = Task { [weak self] in
             guard let self else { return }
             // Snapshot the starting word + coordinator + language on the
