@@ -18,13 +18,14 @@ struct TTSSettingsView: View {
     @Default(.ttsLanguageRates) private var languageRates
     @Default(.ttsVoiceEN) private var ttsVoiceEN
     @Default(.ttsVoiceVI) private var ttsVoiceVI
-    // Reading indicator highlight colors (Manh 2026-11-27): the 4
+    // Reading indicator highlight colors (Manh 2026-11-27): the 5
     // layers' colors, stored as "#RRGGBB" hex strings. The overlay
     // reads them live, so a change applies at once.
     @Default(.highlightLineHex) private var highlightLineHex
     @Default(.highlightBlockHex) private var highlightBlockHex
     @Default(.highlightSentenceHex) private var highlightSentenceHex
     @Default(.highlightWordHex) private var highlightWordHex
+    @Default(.highlightClusterHex) private var highlightClusterHex
     // Reading indicator layer visibility (Manh 2026-11-27): each layer
     // has its own Show toggle in its Highlight colors row. The overlay
     // reads them live, so hiding a layer applies at once.
@@ -32,6 +33,11 @@ struct TTSSettingsView: View {
     @Default(.highlightBlockShown) private var highlightBlockShown
     @Default(.highlightSentenceShown) private var highlightSentenceShown
     @Default(.highlightWordShown) private var highlightWordShown
+    @Default(.highlightClusterShown) private var highlightClusterShown
+    // Which unit the vertical line's height follows (Manh 2026-11-27):
+    // the sentence, the paragraph (cluster), or the whole block. The
+    // overlay reads it live, so a picker change applies at once.
+    @Default(.highlightLineFollows) private var highlightLineFollows
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -170,10 +176,11 @@ struct TTSSettingsView: View {
             Section {
                 HighlightColorRow(
                     title: "Vertical line",
-                    subtitle: "Solid bar at the block's left edge",
+                    subtitle: "Solid bar beside the text — its height follows the unit below",
                     hex: $highlightLineHex,
                     isShown: $highlightLineShown,
-                    defaultHex: HighlightColors.lineDefaultHex
+                    defaultHex: HighlightColors.lineDefaultHex,
+                    lineFollows: $highlightLineFollows
                 )
                 HighlightColorRow(
                     title: "Block",
@@ -181,6 +188,13 @@ struct TTSSettingsView: View {
                     hex: $highlightBlockHex,
                     isShown: $highlightBlockShown,
                     defaultHex: HighlightColors.blockDefaultHex
+                )
+                HighlightColorRow(
+                    title: "Cluster",
+                    subtitle: "Highlight for the paragraph (group of sentences) being read",
+                    hex: $highlightClusterHex,
+                    isShown: $highlightClusterShown,
+                    defaultHex: HighlightColors.clusterDefaultHex
                 )
                 HighlightColorRow(
                     title: "Sentence",
@@ -202,17 +216,22 @@ struct TTSSettingsView: View {
                     highlightBlockHex = HighlightColors.blockDefaultHex
                     highlightSentenceHex = HighlightColors.sentenceDefaultHex
                     highlightWordHex = HighlightColors.wordDefaultHex
-                    // Reset all restores the default visibility too —
-                    // all four layers shown (the branch default).
+                    highlightClusterHex = HighlightColors.clusterDefaultHex
+                    // Reset all restores the branch defaults (Manh
+                    // 2026-11-27): the line, sentence, word and cluster
+                    // shown, the block hidden, and the line following
+                    // the paragraph (cluster).
                     highlightLineShown = true
-                    highlightBlockShown = true
+                    highlightBlockShown = false
                     highlightSentenceShown = true
                     highlightWordShown = true
+                    highlightClusterShown = true
+                    highlightLineFollows = HighlightColors.LineFollows.paragraph.rawValue
                 }
             } header: {
                 Text("Highlight colors")
             } footer: {
-                Text("Colors for the reading indicator shown over the page while listening. Changes apply at once — no restart needed. Opacity is fixed so the text underneath stays readable. Turn a layer off with its Show switch to hide it.")
+                Text("Colors for the reading indicator shown over the page while listening. Changes apply at once — no restart needed. Opacity is fixed so the text underneath stays readable. Turn a layer off with its Show switch to hide it. The vertical line's height follows the unit picked in its row (sentence, paragraph, or block).")
                     .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
             }
@@ -298,6 +317,11 @@ private struct HighlightColorRow: View {
     @Binding var hex: String
     @Binding var isShown: Bool
     let defaultHex: String
+    /// Optional "Line follows" picker (only the Vertical line row has
+    /// one — Manh 2026-11-27): which unit the line's height follows
+    /// (sentence / paragraph / block). Shown below the presets when
+    /// provided; other rows leave it nil.
+    var lineFollows: Binding<String>? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -345,6 +369,18 @@ private struct HighlightColorRow: View {
                     .buttonStyle(.plain)
                     .help(preset)
                 }
+            }
+            // Line follows: which unit the vertical line's height
+            // follows. The overlay reads it live, so a tap applies at
+            // once (the line narrows to the sentence / paragraph, or
+            // stretches back to the whole block).
+            if let lineFollows {
+                Picker("Line follows", selection: lineFollows) {
+                    ForEach(HighlightColors.LineFollows.allCases, id: \.self) { follows in
+                        Text(follows.displayName).tag(follows.rawValue)
+                    }
+                }
+                .pickerStyle(.segmented)
             }
         }
     }

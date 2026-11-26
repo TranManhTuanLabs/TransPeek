@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - HighlightColors
 
-/// Reading indicator highlight colors (Manh 2026-11-27): the 4 layers'
+/// Reading indicator highlight colors (Manh 2026-11-27): the 5 layers'
 /// colors are user-customizable in Settings (Audio tab → Highlight
 /// colors) and stored as "#RRGGBB" hex strings in Defaults. The overlay
 /// reads them live at draw time, so a change applies at once — no
@@ -20,6 +20,30 @@ enum HighlightColors {
     static let blockDefaultHex = "#BFF2B3" // green nhạt
     static let sentenceDefaultHex = "#FFF2A6" // vàng nhạt
     static let wordDefaultHex = "#D9BFFA" // tím nhạt
+    /// Default cluster color (Manh 2026-11-27): light pink, from the
+    /// preset palette — distinct from the other four fills, so the
+    /// paragraph reads as its own level. Chosen by the parent (Manh
+    /// did not name a color); changeable in Settings like the rest.
+    static let clusterDefaultHex = "#FFC2D1" // hồng nhạt
+    /// What the vertical line marks (Manh 2026-11-27): the line's
+    /// height can follow the sentence being read, the paragraph
+    /// (cluster) around it, or the whole block (the original
+    /// behaviour). Stored as its raw string in Defaults; an unknown
+    /// stored value falls back to the branch default (paragraph) in
+    /// the overlay instead of crashing.
+    enum LineFollows: String, CaseIterable {
+        case sentence
+        case paragraph
+        case block
+        /// The label shown in the Settings picker.
+        var displayName: String {
+            switch self {
+            case .sentence: return "Sentence"
+            case .paragraph: return "Paragraph"
+            case .block: return "Block"
+            }
+        }
+    }
     /// Fixed opacity for the fills (translucent so the text underneath
     /// stays readable) and the line (solid so it reads as a marker,
     /// not a tint).

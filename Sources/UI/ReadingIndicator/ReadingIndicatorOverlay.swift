@@ -6,8 +6,9 @@ import Foundation
 
 /// Step 2 — reading indicator (Manh 2026-11-24): a floating overlay that
 /// marks the block being read on the page itself — a vertical line at
-/// the block's left edge plus translucent highlights for the block,
-/// the sentence and (when the app exposes range bounds) the word.
+/// the block's left edge plus translucent highlights for the block, the
+/// paragraph (cluster) around the sentence, the sentence and (when the
+/// app exposes range bounds) the word.
 /// It draws OVER another app's window without touching that app: the
 /// window ignores mouse events (clicks pass through) and never becomes
 /// key, so reading along never steals input from the page.
@@ -17,27 +18,28 @@ import Foundation
 /// jerkiness (see the trial plan).
 /// Which layers are drawn is configurable (Manh 2026-11-26): main
 /// draws ONLY sentence + word (the branch is not stable yet, so the
-/// line + block stay on the branch); the branch draws all four. One
+/// line + block stay on the branch); the branch draws all five. One
 /// file, one component — the layers are a setting, not a fork. Each
 /// layer also has its own Show toggle in Settings (Manh 2026-11-27):
 /// a hidden layer is never drawn, on either side.
 @MainActor
 final class ReadingIndicatorOverlay {
     /// Which indicator layers to draw. Main = sentence + word only;
-    /// the branch = all four (line + block + sentence + word).
+    /// the branch = all five (line + block + cluster + sentence + word).
     struct Layers: OptionSet {
         let rawValue: Int
         static let line = Layers(rawValue: 1 << 0)
         static let block = Layers(rawValue: 1 << 1)
         static let sentence = Layers(rawValue: 1 << 2)
         static let word = Layers(rawValue: 1 << 3)
-        /// All four layers (the branch).
-        static let all: Layers = [.line, .block, .sentence, .word]
+        static let cluster = Layers(rawValue: 1 << 4)
+        /// All five layers (the branch).
+        static let all: Layers = [.line, .block, .sentence, .word, .cluster]
         /// Sentence + word only (main — the branch is not stable yet).
         static let sentenceAndWord: Layers = [.sentence, .word]
     }
 
-    /// The 4 layer colors, read live from Defaults (Manh 2026-11-27):
+    /// The 5 layer colors, read live from Defaults (Manh 2026-11-27):
     /// user-customizable in Settings (Audio tab → Highlight colors).
     /// Computed (not stored) so a change applies at once — `draw` reads
     /// them every time, and the follow timer redraws every 0.3 s while
@@ -54,6 +56,9 @@ final class ReadingIndicatorOverlay {
     fileprivate static var blockFill: NSColor {
         HighlightColors.nsColor(hex: Defaults[.highlightBlockHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.blockDefaultHex)
     }
+    fileprivate static var clusterFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightClusterHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.clusterDefaultHex)
+    }
     fileprivate static var lineFill: NSColor {
         HighlightColors.nsColor(hex: Defaults[.highlightLineHex], alpha: HighlightColors.lineAlpha, fallbackHex: HighlightColors.lineDefaultHex)
     }
@@ -64,11 +69,23 @@ final class ReadingIndicatorOverlay {
     /// the follow timer redraws every 0.3 s while showing. A hidden
     /// layer is never drawn, even when its frame arrives.
     /// `fileprivate` so the content view (same file) can draw with
-    /// them. On the branch all four default to shown.
+    /// them. On the branch the block defaults to hidden (Manh
+    /// 2026-11-27 — the cluster is the broad fill now) and the other
+    /// four default to shown.
     fileprivate static var isLineShown: Bool { Defaults[.highlightLineShown] }
     fileprivate static var isBlockShown: Bool { Defaults[.highlightBlockShown] }
     fileprivate static var isSentenceShown: Bool { Defaults[.highlightSentenceShown] }
     fileprivate static var isWordShown: Bool { Defaults[.highlightWordShown] }
+    fileprivate static var isClusterShown: Bool { Defaults[.highlightClusterShown] }
+    /// Which unit the vertical line's height follows (Manh 2026-11-27):
+    /// the sentence being read, the paragraph (cluster) around it, or
+    /// the whole block. Read live from Defaults so a picker change in
+    /// Settings applies at once (the follow timer re-lays out every
+    /// 0.3 s while showing). An unknown stored value falls back to the
+    /// branch default (paragraph) instead of hiding the line.
+    fileprivate static var lineFollows: HighlightColors.LineFollows {
+        HighlightColors.LineFollows(rawValue: Defaults[.highlightLineFollows]) ?? .paragraph
+    }
     /// Width of the vertical line (points).
     fileprivate static let lineWidth: CGFloat = 3.5
     /// How far the window extends left of the block (points) so the
@@ -90,12 +107,14 @@ final class ReadingIndicatorOverlay {
     /// The block being marked (the controller's copy — the overlay owns
     /// the element for its follow poll).
     private var block: HoverBlock?
-    /// Sentence/word frames in AX coordinates (absolute on screen), or
-    /// nil when the level is not drawn. Stored in AX coordinates and
-    /// converted to window-local at draw time, so a window move never
-    /// needs the frames re-read — only the window frame changes.
+    /// Sentence/word/cluster frames in AX coordinates (absolute on
+    /// screen), or nil when the level is not drawn. Stored in AX
+    /// coordinates and converted to window-local at draw time, so a
+    /// window move never needs the frames re-read — only the window
+    /// frame changes.
     private var sentenceAXRect: CGRect?
     private var wordAXRect: CGRect?
+    private var clusterAXRect: CGRect?
     private var followTimer: Timer?
 
     init(layers: Layers = .all) {
@@ -113,6 +132,7 @@ final class ReadingIndicatorOverlay {
         self.block = block
         sentenceAXRect = nil
         wordAXRect = nil
+        clusterAXRect = nil
         guard reposition() else {
             // The block is off-screen or its element is gone — nothing
             // to mark, so stay hidden instead of showing a stale box.
@@ -127,13 +147,15 @@ final class ReadingIndicatorOverlay {
         startFollowing()
     }
 
-    /// Update the sentence/word highlight frames (AX coordinates, or
-    /// nil when that level has no frame). A nil level is simply not
-    /// drawn — the other levels keep showing. A level whose layer is
-    /// off or hidden is ignored (never drawn, even if a frame arrives).
-    func update(wordFrame: CGRect?, sentenceFrame: CGRect?) {
+    /// Update the sentence/word/cluster highlight frames (AX
+    /// coordinates, or nil when that level has no frame). A nil level is
+    /// simply not drawn — the other levels keep showing. A level whose
+    /// layer is off or hidden is ignored (never drawn, even if a frame
+    /// arrives).
+    func update(wordFrame: CGRect?, sentenceFrame: CGRect?, clusterFrame: CGRect?) {
         sentenceAXRect = layers.contains(.sentence) && Self.isSentenceShown ? sentenceFrame : nil
         wordAXRect = layers.contains(.word) && Self.isWordShown ? wordFrame : nil
+        clusterAXRect = layers.contains(.cluster) && Self.isClusterShown ? clusterFrame : nil
         layoutHighlightRects()
         contentView.needsDisplay = true
     }
@@ -145,9 +167,11 @@ final class ReadingIndicatorOverlay {
         block = nil
         sentenceAXRect = nil
         wordAXRect = nil
+        clusterAXRect = nil
         contentView.blockRect = nil
         contentView.wordRect = nil
         contentView.sentenceRect = nil
+        contentView.clusterRect = nil
         panel.orderOut(nil)
     }
 
@@ -178,10 +202,11 @@ final class ReadingIndicatorOverlay {
         return true
     }
 
-    /// Convert the stored AX sentence/word frames to window-local rects
-    /// for the content view. The block fill is always the window's own
-    /// block area (the window minus the left line strip, or the whole
-    /// window when there is no line strip).
+    /// Convert the stored AX sentence/word/cluster frames to
+    /// window-local rects for the content view. The block fill is always
+    /// the window's own block area (the window minus the left line
+    /// strip, or the whole window when there is no line strip). The
+    /// line's vertical span follows the chosen unit (see `lineFollows`).
     private func layoutHighlightRects() {
         let windowFrame = panel.frame
         // The block area in window-local coordinates: everything right
@@ -194,6 +219,29 @@ final class ReadingIndicatorOverlay {
         ) : nil
         contentView.sentenceRect = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
         contentView.wordRect = wordAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
+        contentView.clusterRect = clusterAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
+        // The vertical line lives in the left strip (x 0, width 3.5 pt)
+        // and its height follows the chosen unit (Manh 2026-11-27):
+        // the sentence, the paragraph (cluster), or the whole block.
+        // The window itself stays the block frame (the fills still need
+        // it) — only the line's height changes. A unit with no frame
+        // yet (no word spoken, or the app hides range bounds) falls
+        // back to the full block height, so the line is never lost.
+        // The span is clamped to the window so a partially scrolled
+        // unit never draws the line outside it.
+        let lineUnitRect: CGRect?
+        switch Self.lineFollows {
+        case .sentence: lineUnitRect = contentView.sentenceRect
+        case .paragraph: lineUnitRect = contentView.clusterRect
+        case .block: lineUnitRect = nil
+        }
+        if let unit = lineUnitRect {
+            let y = max(0, unit.minY)
+            let height = max(0, min(unit.maxY, panel.frame.height) - y)
+            contentView.lineRect = CGRect(x: 0, y: y, width: Self.lineWidth, height: height)
+        } else {
+            contentView.lineRect = CGRect(x: 0, y: 0, width: Self.lineWidth, height: panel.frame.height)
+        }
     }
 
     private func startFollowing() {
@@ -269,16 +317,21 @@ private final class ReadingIndicatorPanel: NSPanel {
 
 // MARK: - ReadingIndicatorView
 
-/// Draws the enabled indicator levels (block fill, sentence fill, word
-/// fill, vertical line) in window-local coordinates. Any level with a
-/// nil rect is simply not drawn — a missing frame never blanks the
-/// other levels. A layer that is off is never drawn.
+/// Draws the enabled indicator levels (block fill, cluster fill,
+/// sentence fill, word fill, vertical line) in window-local
+/// coordinates. Any level with a nil rect is simply not drawn — a
+/// missing frame never blanks the other levels. A layer that is off
+/// is never drawn.
 private final class ReadingIndicatorView: NSView {
     /// The layers this view draws (same set as the overlay).
     private let layers: ReadingIndicatorOverlay.Layers
     var blockRect: CGRect?
     var sentenceRect: CGRect?
     var wordRect: CGRect?
+    var clusterRect: CGRect?
+    /// The vertical line's rect in the left strip (set by
+    /// `layoutHighlightRects` — its height follows the chosen unit).
+    var lineRect: CGRect = .zero
 
     init(layers: ReadingIndicatorOverlay.Layers) {
         self.layers = layers
@@ -291,12 +344,16 @@ private final class ReadingIndicatorView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
         // Bottom to top: the broadest level first, so a narrower level
-        // (sentence, then word) reads as a stronger mark inside it.
-        // The fills are translucent, so overlapping levels blend
-        // instead of hiding each other.
+        // (cluster, then sentence, then word) reads as a stronger mark
+        // inside it. The fills are translucent, so overlapping levels
+        // blend instead of hiding each other.
         if layers.contains(.block), ReadingIndicatorOverlay.isBlockShown, let blockRect {
             ReadingIndicatorOverlay.blockFill.setFill()
             NSBezierPath(rect: blockRect).fill()
+        }
+        if layers.contains(.cluster), ReadingIndicatorOverlay.isClusterShown, let clusterRect {
+            ReadingIndicatorOverlay.clusterFill.setFill()
+            NSBezierPath(rect: clusterRect).fill()
         }
         if layers.contains(.sentence), ReadingIndicatorOverlay.isSentenceShown, let sentenceRect {
             ReadingIndicatorOverlay.sentenceFill.setFill()
@@ -306,13 +363,16 @@ private final class ReadingIndicatorView: NSView {
             ReadingIndicatorOverlay.wordFill.setFill()
             NSBezierPath(rect: wordRect).fill()
         }
-        // The vertical line: a solid bar at the window's left edge (the
-        // strip left of the block text), full height, so the eye finds
-        // the block being read at a glance even when the fills are faint.
-        // Only when the line layer is on and shown.
+        // The vertical line: a solid bar in the strip left of the text.
+        // Its height follows the chosen unit (sentence / paragraph /
+        // block — see `layoutHighlightRects`); a zero-height rect (no
+        // layout yet) falls back to the full window height, so the eye
+        // finds the block being read at a glance even when the fills
+        // are faint. Only when the line layer is on and shown.
         if layers.contains(.line), ReadingIndicatorOverlay.isLineShown {
             ReadingIndicatorOverlay.lineFill.setFill()
-            NSBezierPath(rect: CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)).fill()
+            let rect = lineRect.height > 0 ? lineRect : CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)
+            NSBezierPath(rect: rect).fill()
         }
     }
 }

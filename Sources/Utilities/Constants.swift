@@ -930,7 +930,7 @@ extension Defaults.Keys {
     static let ttsAutoPlayTargetProvider = Key<String>("tts_autoPlayTargetProvider", default: "first")
     static let ttsLanguageRates = Key<[String: Double]>("tts_languageRates", default: [:])
 
-    // Reading indicator highlight colors (Manh 2026-11-27): the 4
+    // Reading indicator highlight colors (Manh 2026-11-27): the 5
     // layers' colors are user-customizable in Settings (Audio tab →
     // Highlight colors) and stored as "#RRGGBB" hex strings. The overlay
     // reads them live at draw time, so a change applies at once — no
@@ -941,15 +941,26 @@ extension Defaults.Keys {
     static let highlightBlockHex = Key<String>("transpeek_highlightBlockHex", default: HighlightColors.blockDefaultHex)
     static let highlightSentenceHex = Key<String>("transpeek_highlightSentenceHex", default: HighlightColors.sentenceDefaultHex)
     static let highlightWordHex = Key<String>("transpeek_highlightWordHex", default: HighlightColors.wordDefaultHex)
+    static let highlightClusterHex = Key<String>("transpeek_highlightClusterHex", default: HighlightColors.clusterDefaultHex)
 
     // Reading indicator layer visibility (Manh 2026-11-27): each layer
     // has its own Show toggle in Settings (Audio tab → Highlight
     // colors). The overlay reads them live at draw time, like the
     // colors, so hiding a layer applies at once — no restart. On the
-    // branch all four default to shown (the branch draws all four).
+    // branch the block defaults to HIDDEN (Manh 2026-11-27: the cluster
+    // is the broad fill now; the block fill stays available to turn
+    // back on) and the other four default to shown.
     static let highlightLineShown = Key<Bool>("transpeek_highlightLineShown", default: true)
-    static let highlightBlockShown = Key<Bool>("transpeek_highlightBlockShown", default: true)
+    static let highlightBlockShown = Key<Bool>("transpeek_highlightBlockShown", default: false)
     static let highlightSentenceShown = Key<Bool>("transpeek_highlightSentenceShown", default: true)
     static let highlightWordShown = Key<Bool>("transpeek_highlightWordShown", default: true)
+    static let highlightClusterShown = Key<Bool>("transpeek_highlightClusterShown", default: true)
+
+    // Which unit the vertical line's height follows (Manh 2026-11-27):
+    // "sentence" (the sentence being read), "paragraph" (the cluster
+    // around it — the branch default), or "block" (the whole block, the
+    // original behaviour). Stored as a raw string; the overlay falls
+    // back to "paragraph" for an unknown value.
+    static let highlightLineFollows = Key<String>("transpeek_highlightLineFollows", default: HighlightColors.LineFollows.paragraph.rawValue)
 }
 

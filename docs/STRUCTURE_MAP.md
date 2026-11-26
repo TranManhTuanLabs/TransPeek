@@ -33,7 +33,7 @@
 | `docs/FEATURES/SETTINGS.md` | Tính năng Settings | **CHƯA VIẾT** |
 | `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md` | Panel UX | **CHƯA VIẾT (chưa chốt size)** |
 | `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` | Icon float UX | Bản nháp |
-| `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` | Highlight colors: 4 lớp màu indicator, chỉnh trong Settings | Bản nháp |
+| `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` | Highlight colors: 5 lớp màu indicator + vạch dọc theo câu/cụm/đoạn, chỉnh trong Settings | Bản nháp |
 | `docs/UI/UX_DESIGN/FAST_READ_THEME_STYLE.md` | Fast Read: Theme vs Style, Style 1/2 | Bản nháp |
 | `docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md` | Fast Read: icon giả khi bôi đen trong Read | Bản nháp |
 | `docs/UI/UX_DESIGN/APP_UX_OVERVIEW.md` | Tổng quan UX | Bản nháp |
@@ -88,7 +88,7 @@ docs/
     └── UX_DESIGN/
         ├── FLOAT_POPUP_PANEL_UX.md   # panel UX (CHƯA VIẾT — chưa chốt size)
         ├── FLOAT_ICON_UX_SPEC.md     # icon float UX
-        ├── HIGHLIGHT_COLORS_UX_SPEC.md # highlight colors: 4 lớp, chỉnh trong Settings
+        ├── HIGHLIGHT_COLORS_UX_SPEC.md # highlight colors: 5 lớp + line follows, chỉnh trong Settings
         ├── FAST_READ_THEME_STYLE.md  # Fast Read: Theme vs Style, Style 1/2
         ├── FAST_READ_SELECT_ICON.md  # Fast Read: icon giả khi bôi đen trong Read
         ├── APP_UX_OVERVIEW.md        # tổng quan UX
