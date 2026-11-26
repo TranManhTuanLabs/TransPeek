@@ -9,8 +9,10 @@ import Foundation
 /// Listening stays ON the page (no web extraction, no Reader) — this is
 /// the Speechify-style continuous audio, not RSVP reading.
 /// The speaker law (Manh 2026-11-26, SPEECH_PLAYER.md §1) applies here
-/// too: click = pause (keep position), click again = resume, Esc = stop,
-/// and the icon shows pause/play glyphs instead of a plain speaker.
+/// too: click = pause (keep position), click again = resume, no Esc and
+/// no Stop — while paused the icon follows the normal hide law, and
+/// when it hides the session ends silently. The icon shows pause/play
+/// glyphs instead of a plain speaker.
 @MainActor
 final class ContinuousSpeakController {
     /// How far below the current block to probe for the next one (AX
@@ -71,8 +73,9 @@ final class ContinuousSpeakController {
         }
     }
 
-    /// Whether a session is live (playing OR paused) — the icon stays
-    /// visible and Esc stops it. Used by the AppDelegate Esc monitor.
+    /// Whether a session is live (playing OR paused). Used by
+    /// AppDelegate: when the icon hides while a session is live, the
+    /// session ends silently (no Esc, no Stop button).
     var isActive: Bool { player.isActive }
     /// Whether the current session is paused (the icon shows ▶).
     var isPaused: Bool { player.state == .paused }
@@ -139,7 +142,8 @@ final class ContinuousSpeakController {
 
     /// Stop everything: the in-flight utterance, the chain, the overlay
     /// and the icon speaking state. Idempotent — safe to call when idle.
-    /// (Esc and "new play replaces old play" both come through here.)
+    /// (The icon hiding while paused, and "new play replaces old play",
+    /// both come through here. There is no Esc and no Stop button.)
     func stop() {
         isChaining = false
         currentBlock = nil
@@ -181,10 +185,11 @@ final class ContinuousSpeakController {
         player.play(text: next.text, language: AppDelegate.speakLanguage(for: next.text))
     }
 
-    /// The session was stopped or cut short from outside (Esc, a new
-    /// play on another surface, an auto-play): end the chain/session and
-    /// clear the icon + overlay. (A pause does NOT fire this — the
-    /// player only calls onStopped for a real end, never for a pause.)
+    /// The session was stopped or cut short from outside (the icon hid
+    /// while paused, a new play on another surface, an auto-play): end
+    /// the chain/session and clear the icon + overlay. (A pause does
+    /// NOT fire this — the player only calls onStopped for a real end,
+    /// never for a pause.)
     private func handleSessionStopped() {
         // If this stop came from our own stop() (which already cleared
         // everything), these are no-ops — the guards make it safe.

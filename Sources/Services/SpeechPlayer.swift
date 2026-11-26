@@ -18,8 +18,11 @@ import Observation
 final class SpeechPlayer {
     /// Playback state (Manh 2026-11-26): idle = no session; playing =
     /// the voice is speaking; paused = stopped mid-unit, position kept
-    /// for resume. A session is live while playing OR paused — the
-    /// speaker icon stays visible for both, and only hides on stop.
+    /// for resume. A session is live while playing OR paused. While
+    /// playing the speaker icon stays visible (so the user can pause);
+    /// while paused it follows the normal hide law, and when it hides
+    /// the session ends silently (no Esc, no Stop button — Manh
+    /// 2026-11-26).
     enum State: Equatable {
         case idle
         case playing
@@ -50,7 +53,8 @@ final class SpeechPlayer {
     /// stop, or being cut short from outside.
     @ObservationIgnored var onEnded: (() -> Void)?
     /// Fires when the session ends WITHOUT finishing the unit — a stop
-    /// (Esc) or being cut short from outside (another play started).
+    /// (the icon hid while paused, or a new play replaced this one) or
+    /// being cut short from outside (another play started).
     /// Never fires on pause (the session is suspended, not ended).
     @ObservationIgnored var onStopped: (() -> Void)?
 
@@ -131,11 +135,12 @@ final class SpeechPlayer {
         startTask()
     }
 
-    /// Stop the session entirely (Esc, or a new play replacing this
-    /// one): the voice stops, the position is forgotten, the highlight
-    /// is removed by the caller (onStopped), and the icon hides. No-op
-    /// when already idle. The in-flight task, when it wakes, sees the
-    /// bumped generation and returns without firing anything.
+    /// Stop the session entirely (the icon hid while paused, or a new
+    /// play replacing this one): the voice stops, the position is
+    /// forgotten, the highlight is removed by the caller (onStopped),
+    /// and the icon hides. No-op when already idle. The in-flight task,
+    /// when it wakes, sees the bumped generation and returns without
+    /// firing anything.
     func stop() {
         guard state != .idle || playTask != nil || currentText != nil else { return }
         generation += 1

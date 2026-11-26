@@ -313,10 +313,6 @@ final class TriggerIconController: NSObject {
     /// Click while paused (speaker law, Manh 2026-11-26): resume the
     /// session from the kept position. The icon flips back to ⏸.
     var onResumeSpeakRequested: (() -> Void)?
-    /// Stop the session entirely (Esc, or a new play replacing it) — the
-    /// app should stop playback and clear the session. No longer fired
-    /// by a plain click while playing (that is now pause).
-    var onStopSpeakRequested: (() -> Void)?
     /// Fast Read (RSVP, Manh 2026-11-17): invoked with the selected text when
     /// the user clicks the icon while `triggerClickAction` is `.read`, or
     /// Option-clicks it while the click action is `.speak`.
@@ -327,10 +323,12 @@ final class TriggerIconController: NSObject {
     var onDismissed: (() -> Void)?
 
     /// True while a click-to-speak session is live (playing OR paused).
-    /// The icon shows the play/pause glyph and does not auto-dismiss
-    /// until the session stops. (Speaker law, Manh 2026-11-26: the old
-    /// meaning was "TTS is playing"; now a paused session is still live,
-    /// so the icon must stay visible so the user can resume it.)
+    /// While PLAYING the icon shows ⏸ and does not auto-dismiss (so the
+    /// user can always click to pause); while PAUSED it shows ▶ and
+    /// follows the normal hide law (auto-hide after 5s, dismiss when the
+    /// block scrolls away) — when it hides, the session ends silently.
+    /// (Speaker law, Manh 2026-11-26, Esc removed 2026-11-26: no Stop
+    /// button, no Esc — pause and leave it.)
     private(set) var isSpeaking = false {
         didSet { trackingView?.isSpeaking = isSpeaking }
     }
@@ -342,8 +340,9 @@ final class TriggerIconController: NSObject {
         didSet { trackingView?.isPaused = isPaused }
     }
 
-    /// Set the speaking state and redraw the icon. While a session is
-    /// live (playing or paused) the icon does not auto-dismiss; when the
+    /// Set the speaking state and redraw the icon. While PLAYING the
+    /// icon does not auto-dismiss (so the user can click to pause);
+    /// while PAUSED the auto-dismiss runs (see setPaused); when the
     /// session stops the 5s auto-dismiss timer restarts (only if the
     /// icon is still visible).
     func setSpeaking(_ speaking: Bool) {
@@ -357,11 +356,21 @@ final class TriggerIconController: NSObject {
     }
 
     /// Set the paused state and redraw the icon (Manh 2026-11-26,
-    /// speaker law): paused shows ▶, playing shows ⏸. A paused session
-    /// is still live, so the auto-dismiss stays cancelled either way.
+    /// speaker law): paused shows ▶, playing shows ⏸. While PLAYING
+    /// the icon must stay (cancel the auto-dismiss) so the user can
+    /// click to pause; while PAUSED the icon follows the normal hide
+    /// law (start the auto-dismiss — it hides after 5s and the session
+    /// then ends silently, because there is no Esc to stop it).
+    /// When the session just ended (not speaking), leave the timer
+    /// alone: setSpeaking(false) already restarted it so the icon hides.
     func setPaused(_ paused: Bool) {
         guard isPaused != paused else { return }
         isPaused = paused
+        if paused {
+            if panel != nil { startAutoDismissTimer() }
+        } else if isSpeaking {
+            cancelAutoDismissTimer()
+        }
     }
 
     /// Called when TTS playback ends on its own (finished or failed) so the icon
@@ -562,9 +571,11 @@ final class TriggerIconController: NSObject {
     }
 
     private func startAutoDismissTimer() {
-        // While speaking the icon must stay visible so the user can click
-        // again to stop playback.
-        guard !isSpeaking else { return }
+        // While PLAYING the icon must stay visible so the user can click
+        // to pause (there is no Esc and no Stop button). While PAUSED
+        // the icon follows the normal hide law — the timer runs, and
+        // when it fires the session ends silently (no Esc to stop it).
+        guard !(isSpeaking && !isPaused) else { return }
         cancelAutoDismissTimer()
         // Auto-hide delay from Settings (default 5s, range 3–10s; was a
         // hardcoded 3.0s, raised to 5.0s 2026-11-17 ~20:38, then made
@@ -647,11 +658,12 @@ final class TriggerIconController: NSObject {
         }
         switch effectiveAction {
         case .speak:
-            // Speaker law (Manh 2026-11-26): one button = Play/Pause
-            // toggle, no Stop. Playing → pause (keep position); paused
-            // → resume from position; idle → play from the start. The
-            // session stays live (isSpeaking) for pause/resume, so the
-            // icon does not auto-dismiss mid-session.
+            // Speaker law (Manh 2026-11-26, Esc removed 2026-11-26):
+            // one button = Play/Pause toggle, no Stop, no Esc. Playing
+            // → pause (keep position); paused → resume from position;
+            // idle → play from the start. While playing the icon stays
+            // so the user can pause; while paused it follows the normal
+            // hide law, and when it hides the session ends silently.
             if isSpeaking {
                 if isPaused {
                     onResumeSpeakRequested?()
