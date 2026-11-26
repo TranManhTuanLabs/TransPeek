@@ -172,12 +172,13 @@ the highlight follows the cluster around the sentence being read.
   original behaviour). The overlay window stays the block frame
   (the fills still need it) — only the line's height changes. The
   picker is read live (the follow timer re-lays out every 0.3 s),
-  so a tap applies at once. If the chosen unit has no frame yet (no
-  word spoken yet, or the app hides range bounds), the line falls
-  back to the full block height — the line is never lost. The Show
-  toggle still decides whether the line shows at all; the picker
-  only decides how tall it is. An unknown stored value falls back
-  to Paragraph.
+  so a tap applies at once. Fallback chain (Manh 2026-11-27): if the
+  chosen unit has no frame yet (no word spoken yet, or the app hides
+  range bounds), the line falls back to the sentence being read, and
+  only then to the full block height — the block is just the last
+  safety net, so the line is never lost. The Show toggle still
+  decides whether the line shows at all; the picker only decides how
+  tall it is. An unknown stored value falls back to Paragraph.
 
 ## 5. Why this design
 

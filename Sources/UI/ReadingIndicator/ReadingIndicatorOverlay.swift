@@ -224,18 +224,28 @@ final class ReadingIndicatorOverlay {
         // and its height follows the chosen unit (Manh 2026-11-27):
         // the sentence, the paragraph (cluster), or the whole block.
         // The window itself stays the block frame (the fills still need
-        // it) — only the line's height changes. A unit with no frame
-        // yet (no word spoken, or the app hides range bounds) falls
-        // back to the full block height, so the line is never lost.
+        // it) — only the line's height changes. Fallback chain (Manh
+        // 2026-11-27): chosen unit → sentence → block. The sentence is
+        // tried first because it is the unit the voice is actually on;
+        // the block is only the last safety net, so the line is never
+        // lost. A unit with no frame yet (no word spoken, or the app
+        // hides range bounds) falls through to the next step.
         // The span is clamped to the window so a partially scrolled
         // unit never draws the line outside it.
-        let lineUnitRect: CGRect?
+        let lineSpanRect: CGRect?
         switch Self.lineFollows {
-        case .sentence: lineUnitRect = contentView.sentenceRect
-        case .paragraph: lineUnitRect = contentView.clusterRect
-        case .block: lineUnitRect = nil
+        case .sentence:
+            // The sentence itself; no sentence frame → whole block.
+            lineSpanRect = contentView.sentenceRect
+        case .paragraph:
+            // The cluster, falling back to the sentence the voice is
+            // on, then to the whole block.
+            lineSpanRect = contentView.clusterRect ?? contentView.sentenceRect
+        case .block:
+            // The whole block — no frame needed.
+            lineSpanRect = nil
         }
-        if let unit = lineUnitRect {
+        if let unit = lineSpanRect {
             let y = max(0, unit.minY)
             let height = max(0, min(unit.maxY, panel.frame.height) - y)
             contentView.lineRect = CGRect(x: 0, y: y, width: Self.lineWidth, height: height)
