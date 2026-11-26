@@ -947,14 +947,14 @@ extension Defaults.Keys {
     // has its own Show toggle in Settings (Audio tab → Highlight
     // colors, one switch per color row). The overlay reads them live
     // at draw time, so toggling applies at once — no restart. Main
-    // defaults keep the current behaviour: sentence + word + cluster
-    // on, line + block off (the line + block layers stay off until the
-    // user turns them on).
+    // defaults (Manh 2026-11-27 03:03): ONLY the word on — sentence +
+    // cluster off, line + block off — so a first launch shows just
+    // the word highlight until the user turns more layers on.
     static let highlightLineShown = Key<Bool>("transpeek_highlightLineShown", default: false)
     static let highlightBlockShown = Key<Bool>("transpeek_highlightBlockShown", default: false)
-    static let highlightSentenceShown = Key<Bool>("transpeek_highlightSentenceShown", default: true)
+    static let highlightSentenceShown = Key<Bool>("transpeek_highlightSentenceShown", default: false)
     static let highlightWordShown = Key<Bool>("transpeek_highlightWordShown", default: true)
-    static let highlightClusterShown = Key<Bool>("transpeek_highlightClusterShown", default: true)
+    static let highlightClusterShown = Key<Bool>("transpeek_highlightClusterShown", default: false)
 
     // Which unit the vertical line follows (Manh 2026-11-27): the line
     // can mark the sentence being read, the paragraph (cluster) around

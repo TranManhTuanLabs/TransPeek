@@ -4,10 +4,9 @@
 > `main`) — the user can change the reading indicator's 5 layer colors
 > in Settings, and show/hide each layer with its own switch. The overlay
 > is created with all five layers; which ones actually show is the
-> user's per-layer Show toggle (main defaults: sentence + word +
-> paragraph on, line + block off). The vertical line can follow the
-> sentence, the paragraph (cluster) or the whole block (main default:
-> sentence).
+> user's per-layer Show toggle (main defaults: only the word on — see
+> §5). The vertical line can follow the sentence, the paragraph
+> (cluster) or the whole block (main default: sentence).
 
 ## 1. Where it lives
 
@@ -34,11 +33,11 @@ Highlight colors
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Paragraph                    #FFC2D1  Show [x]  [swatch]  Reset │
+│ Paragraph                    #FFC2D1  Show [ ]  [swatch]  Reset │
 │ Highlight for the paragraph (cluster) being read                 │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence                     #FFF2A6  Show [x]  [swatch]  Reset │
+│ Sentence                     #FFF2A6  Show [ ]  [swatch]  Reset │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -90,8 +89,8 @@ layers' colours at once (it does not touch the Show switches or the
 |---|---|---|---|---|
 | Vertical line | Solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
-| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them | `#FFC2D1` (light pink) | 0.30 | Yes |
-| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 | Yes |
+| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them | `#FFC2D1` (light pink) | 0.30 | No |
+| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 | No |
 | Word | Fill for the word being spoken | `#D9BFFA` (light purple) | 0.30 | Yes |
 
 The defaults are the pastel palette from the trial (Manh 2026-11-24
@@ -139,10 +138,11 @@ of hiding each other.
   unit's vertical span in the 8 pt strip; it moves with the voice
   when the unit is the sentence or the paragraph. When the picked
   unit has no frame (bounds unsupported) the line falls back to the
-  whole block, so it never disappears for a missing frame. The line
-  still tracks its unit when that unit's fill is hidden — hiding the
-  sentence fill does not make a sentence-following line jump back to
-  the block.
+  sentence, and only when the sentence has no frame either to the
+  whole block — the block is the last safety net, so the line never
+  disappears for a missing frame. The line still tracks its unit when
+  that unit's fill is hidden — hiding the sentence fill does not make
+  a sentence-following line jump back to the block.
 
 ## 5. Show/hide per layer
 
@@ -154,12 +154,12 @@ hides/shows that layer at once — no restart.
   `transpeek_highlightBlockShown`, `transpeek_highlightClusterShown`,
   `transpeek_highlightSentenceShown`, `transpeek_highlightWordShown`),
   one key per layer.
-- **Main defaults: sentence + word + paragraph on, line + block off.**
-  That keeps main's previous behaviour (only sentence + word showed)
-  plus the new paragraph fill, until the user turns a layer on —
-  porting the colours does not change what the user sees on first
-  launch, except for the paragraph fill Manh asked to be on by
-  default.
+- **Main defaults (Manh 2026-11-27 03:03): only the word on.** Line,
+  block, sentence and paragraph are off — a first launch shows just
+  the word highlight until the user turns more layers on. That
+  replaces the earlier default (sentence + word + paragraph on):
+  Manh wants the first-launch indicator as quiet as possible, with
+  the user opting in to the bigger fills.
 - **The toggles decide what shows.** The overlay is created with all
   five layers (`.all`); a layer draws only when it is in the creation
   set AND its toggle is on (`ReadingIndicatorOverlay.isShown`). The
@@ -197,9 +197,11 @@ follows"): **Sentence / Paragraph / Block**.
   live; the follow timer redraws every 0.3 s and `update` re-lays out
   on the next word, so flipping the picker moves the line on the next
   draw.
-- **Fallback to the block.** When the picked unit has no frame (the
-  app did not expose its bounds), the line spans the whole block —
-  it never disappears for a missing frame.
+- **Fallback to the sentence, then the block.** When the picked unit
+  has no frame (the app did not expose its bounds), the line falls
+  back to the sentence; only when the sentence has no frame either
+  does it span the whole block — the block is the last safety net, so
+  the line never disappears for a missing frame.
 - **Independent of the fill toggles.** The line tracks its picked unit
   even when that unit's fill is hidden (hiding the sentence fill does
   not make a sentence-following line jump back to the block). The
@@ -232,8 +234,8 @@ follows"): **Sentence / Paragraph / Block**.
 - `Sources/Utilities/Constants.swift` — the 5 `Defaults.Keys` for
   colours (`transpeek_highlight*Hex`, `String`, default = the palette
   above), the 5 for visibility (`transpeek_highlight*Shown`,
-  `Bool`; main defaults: sentence + word + cluster `true`, line +
-  block `false`), and `transpeek_highlightLineFollows` (`String`,
+  `Bool`; main defaults: only word `true`, the other four `false`),
+  and `transpeek_highlightLineFollows` (`String`,
   `"sentence"` / `"paragraph"` / `"block"`, main default
   `"sentence"`).
 - `Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift` — the 5

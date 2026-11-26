@@ -364,7 +364,8 @@ private struct HighlightColorRow: View {
             // — because there are only three choices. The overlay reads
             // the value live, so it applies at once, even mid-speech;
             // when the chosen unit has no frame (the app did not expose
-            // its bounds) the line falls back to the whole block.
+            // its bounds) the line falls back to the sentence, and only
+            // then to the whole block.
             if let lineFollows {
                 Picker("Line follows", selection: lineFollows) {
                     Text("Sentence").tag("sentence")

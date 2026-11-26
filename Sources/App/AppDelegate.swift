@@ -186,8 +186,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // coordinator, which already exists by now. The overlay is
         // created with ALL layers; which ones actually show is the
         // user's per-layer Show toggle in Settings (Manh 2026-11-27 —
-        // main defaults: sentence + word on, line + block off, so the
-        // behaviour is unchanged until the user turns a layer on).
+        // main defaults (03:03): only the word on, so a first launch
+        // shows just the word highlight until the user turns more
+        // layers on).
         // The chaining controller drives the SEPARATE speak indicator (Manh
         // 2026-11-26), not the float icon — the icon never shows
         // playback state.

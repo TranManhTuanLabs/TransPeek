@@ -30,8 +30,7 @@ final class ReadingIndicatorOverlay {
     /// per-layer Show toggles in Settings filter it further (see
     /// `isShown`): a layer draws only when it is in this set AND its
     /// toggle is on. Main creates the overlay with `.all` and the
-    /// toggles decide (main defaults: sentence + word + cluster on,
-    /// line + block off).
+    /// toggles decide (main defaults: only the word on).
     struct Layers: OptionSet {
         let rawValue: Int
         static let line = Layers(rawValue: 1 << 0)
@@ -244,19 +243,27 @@ final class ReadingIndicatorOverlay {
             width: max(0, panel.frame.width - leftPad),
             height: panel.frame.height
         ) : nil
-        contentView.sentenceRect = Self.isShown(.sentence, in: layers) ? sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) } : nil
+        // Window-local rects for the sentence/cluster (ungated — the
+        // line needs them even when their fill is hidden; the fills are
+        // gated below).
+        let sentenceLocal = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
+        let clusterLocal = clusterAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
+        contentView.sentenceRect = Self.isShown(.sentence, in: layers) ? sentenceLocal : nil
         contentView.wordRect = Self.isShown(.word, in: layers) ? wordAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) } : nil
-        contentView.clusterRect = Self.isShown(.cluster, in: layers) ? clusterAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) } : nil
-        // The line's vertical span: the chosen unit's rect — computed
-        // from the stored frame even when that unit's fill is hidden,
-        // so the line still tracks its unit. Falls back to the whole
-        // window (the block) when the unit has no frame. Clamped to
-        // the window so a frame sticking out (rounding, a unit taller
-        // than the block) never draws outside the window.
+        contentView.clusterRect = Self.isShown(.cluster, in: layers) ? clusterLocal : nil
+        // The line's vertical span: the chosen unit's rect, falling
+        // back down the chain (Manh 2026-11-27 03:03) — chosen unit →
+        // sentence → block. A paragraph-following line falls back to
+        // the sentence when the paragraph has no frame; only when the
+        // sentence has no frame either does the line span the whole
+        // block — the block is the last safety net, so the line never
+        // disappears for a missing frame. Clamped to the window so a
+        // frame sticking out (rounding, a unit taller than the block)
+        // never draws outside the window.
         let unitRect: CGRect?
         switch Self.lineFollows {
-        case .sentence: unitRect = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
-        case .paragraph: unitRect = clusterAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
+        case .sentence: unitRect = sentenceLocal
+        case .paragraph: unitRect = clusterLocal ?? sentenceLocal
         case .block: unitRect = nil
         }
         let lineHeight = panel.frame.height
