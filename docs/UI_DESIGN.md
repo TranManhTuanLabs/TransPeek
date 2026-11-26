@@ -9,6 +9,7 @@
 |---|---|---|
 | `UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md` | Panel dịch: size, khung layout, snap-back | **CHƯA VIẾT (chưa chốt size)** |
 | `UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` | Icon float: hình dạng, hover=dịch, click=nghe | Bản nháp |
+| `UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` | Highlight colors: 4 lớp màu indicator, chỉnh trong Settings (Audio) | Bản nháp |
 | `UI/UX_DESIGN/FAST_READ_THEME_STYLE.md` | Fast Read: Theme (màu) vs Style (kiểu đọc), Style 1/2 | Bản nháp |
 | `UI/UX_DESIGN/FAST_READ_SELECT_ICON.md` | Fast Read: icon giả khi bôi đen trong Read (loa + hover, không Read) | Bản nháp |
 | `UI/UX_DESIGN/APP_UX_OVERVIEW.md` | Tổng quan UX toàn app | Bản nháp |
@@ -28,6 +29,7 @@
 
 - [Panel UX (chưa viết)](UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
 - [Icon float UX](UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md)
+- [Highlight colors](UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md)
 - [Fast Read: Theme & Style](UI/UX_DESIGN/FAST_READ_THEME_STYLE.md)
 - [Fast Read: icon giả khi bôi đen trong Read](UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
 - [Tổng quan UX](UI/UX_DESIGN/APP_UX_OVERVIEW.md)
