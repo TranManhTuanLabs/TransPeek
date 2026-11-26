@@ -6,6 +6,9 @@ Fast Read. Settled 2026-11-21 (Manh). **Implemented 2026-11-21** (main):
 `AlternativeIconController`, `AlternativeIconView`), wired in
 `AppDelegate.setupAlternativeIcon()`. The reminder Space fix (panel
 opens keyed via `onShowPanel`) shipped in the same push.
+Updated 2026-11-27 (Manh): click follows the new speaker law + separate
+speaker indicator — the icon no longer changes to the speaker glyph while
+speaking (see `../../FEATURES/SPEECH_PLAYER.md` §1).
 
 ## 1. Name — "alternative icon"
 
@@ -42,14 +45,21 @@ so **hover and click both work on it**, exactly like the real icon.
 | Action | What happens | Notes |
 | --- | --- | --- |
 | **Hover** | Translate (look up the selected word) | Per surface (see §5). |
-| **Click** | Speak — listen to the selected text (speaker glyph, as normal) | Uses its OWN separate system-TTS audio path (see §6). No Read. |
+| **Click** | Speak — listen to the selected text (new speaker law: play/pause/resume, separate speaker indicator appears at the click spot — see `../../FEATURES/SPEECH_PLAYER.md` §1) | Uses its OWN separate system-TTS audio path (see §6). No Read. |
 
 There is **no Read action** on this icon. Pressing Read here is meaningless:
 the user selected one word inside a long passage, so starting a Fast Read
 session on that fragment would lose the long context. The user only wants
 to look up one word or listen to it.
 
-The icon shows the **speaker glyph** on click (listen), and hover still opens
+Clicking starts a click-to-listen session under the new speaker law
+(play/pause/resume — see `../../FEATURES/SPEECH_PLAYER.md` §1): the
+SEPARATE speaker indicator appears at the click spot (⏸ while playing,
+▶ while paused), and clicking the alternative icon again while playing
+starts a NEW session replacing the old one (pause/resume is the
+indicator's job). The alternative icon itself KEEPS its blue A glyph —
+it does NOT change to a speaker glyph while speaking anymore (changed
+27/11 — playback state lives only on the indicator). Hover still opens
 the translate flow for lookup. The global "Click icon for:" setting is
 ignored here — the icon is always speaker + hover in Read mode.
 
