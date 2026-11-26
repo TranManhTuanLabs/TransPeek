@@ -41,6 +41,13 @@ final class PopupPanelController {
 
     private let coordinator: TranslationCoordinator
     private let ttsCoordinator: TTSCoordinator?
+    /// The shared click-to-listen player (Manh 2026-11-26, speaker
+    /// law): the panel speaker button plays/pauses/resumes through this
+    /// one player, so a panel speak and an on-page speak share one voice.
+    /// Injected into the panel's SwiftUI environment alongside the
+    /// coordinator; nil in tests (the button then falls back to the
+    /// plain coordinator speak/stop).
+    private let speechPlayer: SpeechPlayer?
     private let settingsController: SettingsWindowController?
     /// Focus timer store (Manh 2026-11-20, focus timer + panel decor):
     /// one store for the app — the panel-left card, the panel-right
@@ -53,6 +60,7 @@ final class PopupPanelController {
     init(
         coordinator: TranslationCoordinator,
         ttsCoordinator: TTSCoordinator? = nil,
+        speechPlayer: SpeechPlayer? = nil,
         settingsController: SettingsWindowController? = nil,
         // Default is a fresh store (tests construct the controller
         // without one); the app passes its shared store.
@@ -60,6 +68,7 @@ final class PopupPanelController {
     ) {
         self.coordinator = coordinator
         self.ttsCoordinator = ttsCoordinator
+        self.speechPlayer = speechPlayer
         self.settingsController = settingsController
         self.focusTimerStore = focusTimerStore
     }
@@ -306,6 +315,7 @@ final class PopupPanelController {
             )
             .environment(\.popupPanel, newPanel)
             .environment(\.ttsCoordinator, ttsCoordinator)
+            .environment(\.speechPlayer, speechPlayer)
             let hostingView = NSHostingView(rootView: contentView)
             // Prevent NSHostingView from auto-resizing the window on content changes,
             // which causes an infinite constraint update loop during streaming.

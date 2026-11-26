@@ -25,9 +25,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// controller (reads one hovered block after another on the page)
     /// and its reading-indicator overlay (vertical line + sentence /
     /// block / word highlights over the page). Created here, wired to
-    /// the icon's Speak/Stop callbacks in setupSelectionMonitor.
+    /// the icon's Speak/Pause/Resume/Stop callbacks in setupSelectionMonitor.
     var continuousSpeakController: ContinuousSpeakController!
     var readingIndicatorOverlay: ReadingIndicatorOverlay!
+    /// The shared click-to-listen player for the PANEL speaker button
+    /// (Manh 2026-11-26, speaker law): the panel speaks through this
+    /// one player (play/pause/resume), so a panel speak and an on-page
+    /// speak share one voice. Injected into the panel's environment via
+    /// the panel controller.
+    lazy var panelSpeechPlayer = SpeechPlayer(ttsCoordinator: ttsCoordinator)
+    /// Global Escape monitor (Manh 2026-11-26, speaker law: Esc stops a
+    /// session mid-way — there is no Stop button). Observes Esc in any
+    /// app while a session is live; a global monitor cannot consume the
+    /// key, so the frontmost app still receives it.
+    private var escapeKeyMonitor: Any?
     /// Alternative icon (Manh 2026-11-21): a fake float icon for text
     /// selected inside Fast Read. A separate path from the real float
     /// icon — it does not touch that logic; it only delegates hover
@@ -77,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController = PopupPanelController(
             coordinator: coordinator,
             ttsCoordinator: ttsCoordinator,
+            speechPlayer: panelSpeechPlayer,
             settingsController: settingsController,
             focusTimerStore: focusTimerStore
         )
@@ -190,6 +202,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         setupShortcuts()
         setupSelectionMonitor()
+        setupEscapeMonitor()
 
         // Auto start focus (Manh 2026-11-20, 09:47): if the
         // "Auto start focus" toggle is ON, the focus timer starts on
@@ -740,30 +753,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // Click-to-speak (TransPeek Phase 1): no panel, no translation.
-        // No detection has run at icon time, so detect the text's language
-        // now; "auto"/empty configured source falls back to English.
+        // Click-to-speak (TransPeek Phase 1, speaker law Manh 2026-11-26):
+        // no panel, no translation. No detection has run at icon time,
+        // so detect the text's language now; "auto"/empty configured
+        // source falls back to English.
         // Step 2 chaining (Manh 2026-11-24): when the icon is up for a
         // hovered block, Speak reads that block and chains to the next
         // blocks below it (continuous on-page reading); otherwise
-        // (a selection, no hover block) it speaks once, as before.
+        // (a selection, no hover block) it speaks once. Both go through
+        // the chaining controller, so both get play/pause/resume (the
+        // controller owns the player).
         triggerIconController.onSpeakRequested = { [weak self] text in
             guard let self else { return }
             if let block = self.hoverTextDetector.currentBlockForReading,
                block.text == text {
                 self.continuousSpeakController.start(from: block)
             } else {
-                self.ttsCoordinator.speak(text, language: Self.speakLanguage(for: text))
+                self.continuousSpeakController.start(text: text)
             }
         }
 
-        // Second click while speaking: stop everything. The chaining
-        // controller's stop() covers both a chain and a single speak —
+        // Click while playing: pause (keep the position + highlight).
+        // The session stays live — the icon flips to ▶ and does not
+        // auto-dismiss. (Speaker law, Manh 2026-11-26 — the old "click
+        // again = stop" is gone.)
+        triggerIconController.onPauseSpeakRequested = { [weak self] in
+            self?.continuousSpeakController.pause()
+        }
+
+        // Click while paused: resume from the kept position.
+        triggerIconController.onResumeSpeakRequested = { [weak self] in
+            self?.continuousSpeakController.resume()
+        }
+
+        // Stop the session entirely (Esc — there is no Stop button).
+        // The controller's stop() covers a chain and a single speak —
         // it stops TTS, ends the chain, hides the overlay and clears
-        // the icon speaking state.
+        // the icon speaking state. The panel player is stopped too, so
+        // Esc ends whichever surface is speaking.
         triggerIconController.onStopSpeakRequested = { [weak self] in
             guard let self else { return }
             self.continuousSpeakController.stop()
+            self.panelSpeechPlayer.stop()
         }
 
         // Fast Read (RSVP, Manh 2026-11-17): open Fast Read with the
@@ -837,14 +868,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // The hovered block scrolled away or vanished — dismiss the
-        // stale icon. While speaking, the icon must stay so the user
-        // can click again to stop playback.
+        // stale icon. While a session is live, the icon must stay so the
+        // user can click again to pause/resume it (speaker law, Manh
+        // 2026-11-26 — a live session is playing OR paused).
         hoverTextDetector.onHoverStale = { [weak self] in
             guard let self, !self.triggerIconController.isSpeaking else { return }
             self.triggerIconController.dismissSilently()
         }
 
         hoverTextDetector.start()
+    }
+
+    /// Escape stops a live speak session (Manh 2026-11-26, speaker law:
+    /// Esc is the only Stop — there is no Stop button). A GLOBAL key
+    /// monitor: the user is usually in another app (a web page) while
+    /// listening, so a local monitor would never see the key. A global
+    /// monitor only observes (it cannot consume the key), so the
+    /// frontmost app still receives Esc — the session stop is the only
+    /// side effect, and only while a session is live. When idle the
+    /// monitor does nothing and Esc behaves exactly as before.
+    private func setupEscapeMonitor() {
+        guard escapeKeyMonitor == nil else { return }
+        escapeKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            // Escape = keyCode 53. Only act while a click-to-listen
+            // session is live (on-page chain/single, or a panel speak).
+            guard event.keyCode == 53 else { return }
+            Task { @MainActor in
+                guard let self else { return }
+                guard self.continuousSpeakController.isActive || self.panelSpeechPlayer.isActive else { return }
+                self.continuousSpeakController.stop()
+                self.panelSpeechPlayer.stop()
+            }
+        }
     }
 
     /// Alternative icon (Manh 2026-11-21): wire the in-Read selection

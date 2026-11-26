@@ -14,8 +14,26 @@ import Foundation
 /// block frame and repositions the window. The hide-during-scroll /
 /// show-when-stopped fallback is phase 2 — only if testing shows
 /// jerkiness (see the trial plan).
+/// Which layers are drawn is configurable (Manh 2026-11-26): main
+/// draws ONLY sentence + word (the branch is not stable yet, so the
+/// line + block stay on the branch); the branch draws all four. One
+/// file, one component — the layers are a setting, not a fork.
 @MainActor
 final class ReadingIndicatorOverlay {
+    /// Which indicator layers to draw. Main = sentence + word only;
+    /// the branch = all four (line + block + sentence + word).
+    struct Layers: OptionSet {
+        let rawValue: Int
+        static let line = Layers(rawValue: 1 << 0)
+        static let block = Layers(rawValue: 1 << 1)
+        static let sentence = Layers(rawValue: 1 << 2)
+        static let word = Layers(rawValue: 1 << 3)
+        /// All four layers (the branch).
+        static let all: Layers = [.line, .block, .sentence, .word]
+        /// Sentence + word only (main — the branch is not stable yet).
+        static let sentenceAndWord: Layers = [.sentence, .word]
+    }
+
     /// Trial colors (Manh 2026-11-24 00:38, pastel palette). Fills are
     /// translucent (~30%) so the text underneath stays readable; the
     /// line is solid so it reads as a marker, not a tint.
@@ -29,13 +47,16 @@ final class ReadingIndicatorOverlay {
     /// How far the window extends left of the block (points) so the
     /// line sits BESIDE the text instead of covering the first
     /// characters — the line lives in this strip, the fills start at
-    /// the block's own left edge.
-    private static let leftPad: CGFloat = 8
+    /// the block's own left edge. Only when the line layer is on; with
+    /// sentence + word only, the window is exactly the block frame.
+    private var leftPad: CGFloat { layers.contains(.line) ? 8 : 0 }
     /// How often the block frame is re-read while showing (seconds) —
     /// the same interval as the hover follow poll, so the indicator
     /// moves with the text when the page scrolls.
     private static let followIntervalSec = 0.3
 
+    /// The layers this overlay draws (set at init — main vs branch).
+    private let layers: Layers
     private let panel: ReadingIndicatorPanel
     private let contentView: ReadingIndicatorView
     /// The block being marked (the controller's copy — the overlay owns
@@ -49,15 +70,17 @@ final class ReadingIndicatorOverlay {
     private var wordAXRect: CGRect?
     private var followTimer: Timer?
 
-    init() {
-        contentView = ReadingIndicatorView()
+    init(layers: Layers = .all) {
+        self.layers = layers
+        contentView = ReadingIndicatorView(layers: layers)
         panel = ReadingIndicatorPanel()
         panel.contentView = contentView
     }
 
     /// Show the indicator for a block: position the window over the
     /// block's frame and start following it. The fills start empty
-    /// (block + line only) until `update` reports a sentence/word.
+    /// (only the enabled static layers show) until `update` reports a
+    /// sentence/word.
     func show(block: HoverBlock) {
         self.block = block
         sentenceAXRect = nil
@@ -68,9 +91,9 @@ final class ReadingIndicatorOverlay {
             hide()
             return
         }
-        // The fills start empty (block + line only) until `update`
-        // reports a sentence/word — reposition already laid them out
-        // from the (nil) AX rects.
+        // The fills start empty (only the enabled static layers show)
+        // until `update` reports a sentence/word — reposition already
+        // laid them out from the (nil) AX rects.
         contentView.needsDisplay = true
         panel.orderFront(nil)
         startFollowing()
@@ -78,10 +101,11 @@ final class ReadingIndicatorOverlay {
 
     /// Update the sentence/word highlight frames (AX coordinates, or
     /// nil when that level has no frame). A nil level is simply not
-    /// drawn — the block + line keep showing.
+    /// drawn — the other levels keep showing. A level whose layer is
+    /// off is ignored (never drawn, even if a frame arrives).
     func update(wordFrame: CGRect?, sentenceFrame: CGRect?) {
-        sentenceAXRect = sentenceFrame
-        wordAXRect = wordFrame
+        sentenceAXRect = layers.contains(.sentence) ? sentenceFrame : nil
+        wordAXRect = layers.contains(.word) ? wordFrame : nil
         layoutHighlightRects()
         contentView.needsDisplay = true
     }
@@ -113,12 +137,12 @@ final class ReadingIndicatorOverlay {
         guard let mainScreen = NSScreen.screens.first,
               screenFrame.intersects(mainScreen.frame) else { return false }
         // The window extends left of the block so the line sits beside
-        // the text (see leftPad); its origin is the block's left edge
-        // minus that strip.
+        // the text (see leftPad); without the line layer the window is
+        // exactly the block frame.
         let windowFrame = CGRect(
-            x: screenFrame.minX - Self.leftPad,
+            x: screenFrame.minX - leftPad,
             y: screenFrame.minY,
-            width: screenFrame.width + Self.leftPad,
+            width: screenFrame.width + leftPad,
             height: screenFrame.height
         )
         panel.setFrame(windowFrame, display: true)
@@ -128,17 +152,18 @@ final class ReadingIndicatorOverlay {
 
     /// Convert the stored AX sentence/word frames to window-local rects
     /// for the content view. The block fill is always the window's own
-    /// block area (the window minus the left line strip).
+    /// block area (the window minus the left line strip, or the whole
+    /// window when there is no line strip).
     private func layoutHighlightRects() {
         let windowFrame = panel.frame
         // The block area in window-local coordinates: everything right
-        // of the line strip.
-        contentView.blockRect = CGRect(
-            x: Self.leftPad,
+        // of the line strip (or the whole window when no line layer).
+        contentView.blockRect = layers.contains(.block) ? CGRect(
+            x: leftPad,
             y: 0,
-            width: max(0, panel.frame.width - Self.leftPad),
+            width: max(0, panel.frame.width - leftPad),
             height: panel.frame.height
-        )
+        ) : nil
         contentView.sentenceRect = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
         contentView.wordRect = wordAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
     }
@@ -216,14 +241,24 @@ private final class ReadingIndicatorPanel: NSPanel {
 
 // MARK: - ReadingIndicatorView
 
-/// Draws the four indicator levels (block fill, sentence fill, word
+/// Draws the enabled indicator levels (block fill, sentence fill, word
 /// fill, vertical line) in window-local coordinates. Any level with a
 /// nil rect is simply not drawn — a missing frame never blanks the
-/// other levels.
+/// other levels. A layer that is off is never drawn.
 private final class ReadingIndicatorView: NSView {
+    /// The layers this view draws (same set as the overlay).
+    private let layers: ReadingIndicatorOverlay.Layers
     var blockRect: CGRect?
     var sentenceRect: CGRect?
     var wordRect: CGRect?
+
+    init(layers: ReadingIndicatorOverlay.Layers) {
+        self.layers = layers
+        super.init(frame: .zero)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError() }
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
@@ -231,22 +266,25 @@ private final class ReadingIndicatorView: NSView {
         // (sentence, then word) reads as a stronger mark inside it.
         // The fills are translucent, so overlapping levels blend
         // instead of hiding each other.
-        if let blockRect {
+        if layers.contains(.block), let blockRect {
             ReadingIndicatorOverlay.blockFill.setFill()
             NSBezierPath(rect: blockRect).fill()
         }
-        if let sentenceRect {
+        if layers.contains(.sentence), let sentenceRect {
             ReadingIndicatorOverlay.sentenceFill.setFill()
             NSBezierPath(rect: sentenceRect).fill()
         }
-        if let wordRect {
+        if layers.contains(.word), let wordRect {
             ReadingIndicatorOverlay.wordFill.setFill()
             NSBezierPath(rect: wordRect).fill()
         }
         // The vertical line: a solid bar at the window's left edge (the
         // strip left of the block text), full height, so the eye finds
         // the block being read at a glance even when the fills are faint.
-        ReadingIndicatorOverlay.lineFill.setFill()
-        NSBezierPath(rect: CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)).fill()
+        // Only when the line layer is on.
+        if layers.contains(.line) {
+            ReadingIndicatorOverlay.lineFill.setFill()
+            NSBezierPath(rect: CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)).fill()
+        }
     }
 }

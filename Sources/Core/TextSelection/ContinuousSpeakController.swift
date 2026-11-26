@@ -8,6 +8,9 @@ import Foundation
 /// read the next block below it, until no more blocks or the user stops.
 /// Listening stays ON the page (no web extraction, no Reader) — this is
 /// the Speechify-style continuous audio, not RSVP reading.
+/// The speaker law (Manh 2026-11-26, SPEECH_PLAYER.md §1) applies here
+/// too: click = pause (keep position), click again = resume, Esc = stop,
+/// and the icon shows pause/play glyphs instead of a plain speaker.
 @MainActor
 final class ContinuousSpeakController {
     /// How far below the current block to probe for the next one (AX
@@ -16,21 +19,26 @@ final class ContinuousSpeakController {
     /// first probe that lands on a different block wins.
     private static let nextBlockProbeOffsets: [CGFloat] = [4, 24, 48, 80]
 
-    private let ttsCoordinator: TTSCoordinator
     private let triggerIconController: TriggerIconController
     private let overlay: ReadingIndicatorOverlay
+    /// The play/pause/resume player for the current block (Manh
+    /// 2026-11-26): one unit at a time, word-tracked, so pause can keep
+    /// the position and resume can continue from it. The chain drives
+    /// it block by block; a single (non-chained) speak uses it too.
+    private let player: SpeechPlayer
 
-    /// The chain task (nil when idle). One chain at a time — starting a
-    /// new chain stops the old one first.
-    private var chainTask: Task<Void, Never>?
-    /// Whether a chain is running. The loop checks this after every
-    /// utterance, and `stop()` clears it — so a stop during speech ends
-    /// the chain even if the in-flight utterance returns afterwards.
+    /// Whether a chain is running (a hovered block being read + the
+    /// blocks below it). False for a single speak (selection) and when
+    /// idle. The player's onEnded advances the chain; onStopped ends it.
     private var isChaining = false
     /// The block being read right now (the controller's OWN copy — the
     /// hover detector may forget its block while speaking, so the chain
     /// must never depend on the detector after start).
     private var currentBlock: HoverBlock?
+    /// The single (non-chained) text being read, if any — a selection
+    /// has no block frame, so it has no overlay and no chaining; it is
+    /// still a unit under the speaker law (pause/resume apply).
+    private var currentSingleText: String?
     /// Sentence ranges (NSRange, UTF-16 offsets in the current block's
     /// text) precomputed at each block start, so the word callback can
     /// map a spoken word to its sentence without re-splitting.
@@ -45,105 +53,166 @@ final class ContinuousSpeakController {
     private var currentSentenceFrame: CGRect?
 
     init(ttsCoordinator: TTSCoordinator, triggerIconController: TriggerIconController, overlay: ReadingIndicatorOverlay) {
-        self.ttsCoordinator = ttsCoordinator
         self.triggerIconController = triggerIconController
         self.overlay = overlay
+        // The player owns the per-unit playback (word tracking +
+        // pause/resume). The controller wires its callbacks: word ranges
+        // update the overlay, a natural end advances the chain, and a
+        // stop ends the chain (or the single speak).
+        self.player = SpeechPlayer(ttsCoordinator: ttsCoordinator)
+        self.player.onWordRange = { [weak self] range in
+            self?.handleWordRange(range)
+        }
+        self.player.onEnded = { [weak self] in
+            self?.handleUnitEnded()
+        }
+        self.player.onStopped = { [weak self] in
+            self?.handleSessionStopped()
+        }
     }
+
+    /// Whether a session is live (playing OR paused) — the icon stays
+    /// visible and Esc stops it. Used by the AppDelegate Esc monitor.
+    var isActive: Bool { player.isActive }
+    /// Whether the current session is paused (the icon shows ▶).
+    var isPaused: Bool { player.state == .paused }
 
     /// Start a chain from a hovered block: stop any existing speech,
     /// show the reading indicator for this block, and read it — when it
     /// finishes on its own, the next block below is read, and so on.
     /// The icon speaking state is managed here (not via
-    /// `onPlaybackEnded`): `speakContinuous` deliberately does not
-    /// touch it, so a chain that ends naturally must clear it itself.
+    /// `onPlaybackEnded`): the player deliberately does not touch it, so
+    /// a chain that ends naturally must clear it itself.
     func start(from block: HoverBlock) {
         // A new chain replaces the old one — stop first so no two
         // utterances overlap (same "stop before speak" rule as
         // `TTSCoordinator.speak`).
         stop()
         currentBlock = block
+        currentSingleText = nil
         sentenceRanges = Self.sentenceRanges(for: block.text)
         currentSentenceRange = nil
         currentSentenceFrame = nil
-        // `stop()` above already stopped any speech from elsewhere (a
-        // single speak, a read-along, or an old chain) — one voice at
-        // a time — so the coordinator is quiet here.
         isChaining = true
         triggerIconController.setSpeaking(true)
+        triggerIconController.setPaused(false)
         overlay.show(block: block)
-        chainTask = Task { [weak self] in
-            await self?.runChain()
-        }
+        // The player stops any speech from elsewhere (a single speak, a
+        // panel speak, a read-along) — one voice at a time — then reads
+        // this block; its onEnded advances the chain.
+        player.play(text: block.text, language: AppDelegate.speakLanguage(for: block.text))
+    }
+
+    /// Speak a single text (a selection — no hover block, so no overlay
+    /// and no chaining) with the same play/pause/resume law. The icon
+    /// still shows the session (playing/paused) so the user can pause
+    /// and resume it.
+    func start(text: String) {
+        stop()
+        currentBlock = nil
+        currentSingleText = text
+        sentenceRanges = []
+        currentSentenceRange = nil
+        currentSentenceFrame = nil
+        isChaining = false
+        triggerIconController.setSpeaking(true)
+        triggerIconController.setPaused(false)
+        player.play(text: text, language: AppDelegate.speakLanguage(for: text))
+    }
+
+    /// Pause the current session (Manh 2026-11-26): the voice stops but
+    /// the position and the highlight stay, so resume continues from
+    /// the same word. The icon flips to ▶. No-op when not playing.
+    func pause() {
+        guard player.state == .playing else { return }
+        player.pause()
+        triggerIconController.setPaused(true)
+    }
+
+    /// Resume a paused session from the kept position (Manh 2026-11-26).
+    /// The icon flips back to ⏸. No-op when not paused.
+    func resume() {
+        guard player.state == .paused else { return }
+        player.resume()
+        triggerIconController.setPaused(false)
     }
 
     /// Stop everything: the in-flight utterance, the chain, the overlay
-    /// and the icon speaking state. Idempotent — safe to call when idle
-    /// (a single non-chained speak is stopped the same way).
+    /// and the icon speaking state. Idempotent — safe to call when idle.
+    /// (Esc and "new play replaces old play" both come through here.)
     func stop() {
         isChaining = false
-        chainTask?.cancel()
-        chainTask = nil
         currentBlock = nil
+        currentSingleText = nil
         sentenceRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
-        // Stopping the coordinator bumps its generation, so an
-        // in-flight `speakContinuous` returns false instead of true —
-        // the loop then ends instead of chaining on.
-        ttsCoordinator.stop()
+        // Stopping the player bumps its generation, so an in-flight
+        // utterance returns without firing onEnded — the chain then
+        // ends instead of advancing.
+        player.stop()
         overlay.hide()
         triggerIconController.setSpeaking(false)
+        triggerIconController.setPaused(false)
     }
 
-    /// The chain loop: speak the current block, then advance to the
-    /// next block below it. Ends when the user stops (isChaining
-    /// cleared), an utterance is cut short, or no next block is found.
-    private func runChain() async {
-        while isChaining {
-            guard let block = currentBlock else { return }
-            // `speakContinuous` reports each word's range so the overlay
-            // can track the sentence/word; its Bool is the chaining
-            // signal (true = finished on its own, false = cut short).
-            // The language rule is the app's single shared one
-            // (`AppDelegate.speakLanguage`) so the chain and the
-            // single-speak path can never disagree on language.
-            let finished = await ttsCoordinator.speakContinuous(
-                block.text,
-                language: AppDelegate.speakLanguage(for: block.text),
-                onWordRange: { [weak self] range in
-                    self?.handleWordRange(range)
-                }
-            )
-            // Stopped while speaking, or cut short from outside — the
-            // chain ends here (stop() already cleaned up).
-            guard isChaining, finished else { return }
-            // Find the next block below this one; none means the end
-            // of the article — end the chain and clear the icon state
-            // (speakContinuous never fires onPlaybackEnded).
-            guard let next = Self.nextBlock(below: block) else {
-                endChain()
-                return
-            }
-            currentBlock = next
-            sentenceRanges = Self.sentenceRanges(for: next.text)
-            currentSentenceRange = nil
-            currentSentenceFrame = nil
-            overlay.show(block: next)
+    /// The current unit finished on its own: for a chain, advance to the
+    /// next block below; for a single speak (or the last block), end the
+    /// session and clear the icon state (the player never fires
+    /// onPlaybackEnded, so the controller clears it itself).
+    private func handleUnitEnded() {
+        guard isChaining, let block = currentBlock else {
+            // A single speak ended, or the chain already stopped — end
+            // the session (the player is already idle).
+            endSession()
+            return
         }
+        // Find the next block below this one; none means the end of the
+        // article — end the session.
+        guard let next = Self.nextBlock(below: block) else {
+            endSession()
+            return
+        }
+        currentBlock = next
+        sentenceRanges = Self.sentenceRanges(for: next.text)
+        currentSentenceRange = nil
+        currentSentenceFrame = nil
+        overlay.show(block: next)
+        player.play(text: next.text, language: AppDelegate.speakLanguage(for: next.text))
     }
 
-    /// Natural end of a chain (no more blocks): hide the indicator and
-    /// clear the icon speaking state. Unlike `stop()` this does not
-    /// call `ttsCoordinator.stop()` — the speech already finished.
-    private func endChain() {
+    /// The session was stopped or cut short from outside (Esc, a new
+    /// play on another surface, an auto-play): end the chain/session and
+    /// clear the icon + overlay. (A pause does NOT fire this — the
+    /// player only calls onStopped for a real end, never for a pause.)
+    private func handleSessionStopped() {
+        // If this stop came from our own stop() (which already cleared
+        // everything), these are no-ops — the guards make it safe.
         isChaining = false
-        chainTask = nil
         currentBlock = nil
+        currentSingleText = nil
         sentenceRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
         overlay.hide()
         triggerIconController.setSpeaking(false)
+        triggerIconController.setPaused(false)
+    }
+
+    /// Natural end of a session (last block read, or a single speak
+    /// finished): hide the indicator and clear the icon speaking state.
+    /// Unlike `stop()` this does not call the player (it is already
+    /// idle — the unit finished on its own).
+    private func endSession() {
+        isChaining = false
+        currentBlock = nil
+        currentSingleText = nil
+        sentenceRanges = []
+        currentSentenceRange = nil
+        currentSentenceFrame = nil
+        overlay.hide()
+        triggerIconController.setSpeaking(false)
+        triggerIconController.setPaused(false)
     }
 
     /// A spoken word's range arrived: map it to its sentence and update
@@ -151,7 +220,8 @@ final class ContinuousSpeakController {
     /// cached and only re-read when the sentence changes; the word
     /// frame is read every time (it moves with every word). Either
     /// level may be nil (the app does not expose range bounds) — the
-    /// overlay simply skips that level.
+    /// overlay simply skips that level. Ignored for a single speak (no
+    /// overlay, no block).
     private func handleWordRange(_ wordRange: NSRange) {
         guard let block = currentBlock else { return }
         guard let sentenceRange = Self.sentence(containing: wordRange.location, in: sentenceRanges) else { return }
