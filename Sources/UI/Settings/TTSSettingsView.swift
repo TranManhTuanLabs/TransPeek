@@ -25,6 +25,13 @@ struct TTSSettingsView: View {
     @Default(.highlightBlockHex) private var highlightBlockHex
     @Default(.highlightSentenceHex) private var highlightSentenceHex
     @Default(.highlightWordHex) private var highlightWordHex
+    // Reading indicator layer visibility (Manh 2026-11-27): each layer
+    // has its own Show toggle in its Highlight colors row. The overlay
+    // reads them live, so hiding a layer applies at once.
+    @Default(.highlightLineShown) private var highlightLineShown
+    @Default(.highlightBlockShown) private var highlightBlockShown
+    @Default(.highlightSentenceShown) private var highlightSentenceShown
+    @Default(.highlightWordShown) private var highlightWordShown
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -165,24 +172,28 @@ struct TTSSettingsView: View {
                     title: "Vertical line",
                     subtitle: "Solid bar at the block's left edge",
                     hex: $highlightLineHex,
+                    isShown: $highlightLineShown,
                     defaultHex: HighlightColors.lineDefaultHex
                 )
                 HighlightColorRow(
                     title: "Block",
                     subtitle: "Highlight for the whole block being read",
                     hex: $highlightBlockHex,
+                    isShown: $highlightBlockShown,
                     defaultHex: HighlightColors.blockDefaultHex
                 )
                 HighlightColorRow(
                     title: "Sentence",
                     subtitle: "Highlight for the sentence being read",
                     hex: $highlightSentenceHex,
+                    isShown: $highlightSentenceShown,
                     defaultHex: HighlightColors.sentenceDefaultHex
                 )
                 HighlightColorRow(
                     title: "Word",
                     subtitle: "Highlight for the word being spoken",
                     hex: $highlightWordHex,
+                    isShown: $highlightWordShown,
                     defaultHex: HighlightColors.wordDefaultHex
                 )
 
@@ -191,11 +202,17 @@ struct TTSSettingsView: View {
                     highlightBlockHex = HighlightColors.blockDefaultHex
                     highlightSentenceHex = HighlightColors.sentenceDefaultHex
                     highlightWordHex = HighlightColors.wordDefaultHex
+                    // Reset all restores the default visibility too —
+                    // all four layers shown (the branch default).
+                    highlightLineShown = true
+                    highlightBlockShown = true
+                    highlightSentenceShown = true
+                    highlightWordShown = true
                 }
             } header: {
                 Text("Highlight colors")
             } footer: {
-                Text("Colors for the reading indicator shown over the page while listening. Changes apply at once — no restart needed. Opacity is fixed so the text underneath stays readable.")
+                Text("Colors for the reading indicator shown over the page while listening. Changes apply at once — no restart needed. Opacity is fixed so the text underneath stays readable. Turn a layer off with its Show switch to hide it.")
                     .font(.settingsCaption(appTextSize: appTextSize))
                     .foregroundStyle(.secondary)
             }
@@ -268,15 +285,18 @@ struct TTSSettingsView: View {
 
 /// One highlight layer's row in the Highlight colors section (Manh
 /// 2026-11-27): name + native ColorPicker + hex + per-layer Reset, with
-/// a preset swatch row underneath. The picker never edits opacity
-/// (`supportsOpacity: false`) — opacity stays fixed in code (fills
-/// 0.30, line solid 1.0), so a color can never hide the text. The hex
-/// is display-only (shown for users who want the exact value); the
-/// color is picked with the swatch or the system color panel.
+/// a preset swatch row underneath — and a Show toggle (Manh 2026-11-27)
+/// to hide that one layer without touching its color. The picker never
+/// edits opacity (`supportsOpacity: false`) — opacity stays fixed in
+/// code (fills 0.30, line solid 1.0), so a color can never hide the
+/// text. The hex is display-only (shown for users who want the exact
+/// value); the color is picked with the swatch or the system color
+/// panel.
 private struct HighlightColorRow: View {
     let title: String
     let subtitle: String
     @Binding var hex: String
+    @Binding var isShown: Bool
     let defaultHex: String
 
     var body: some View {
@@ -292,6 +312,11 @@ private struct HighlightColorRow: View {
                 Text(hex.uppercased())
                     .monospaced()
                     .foregroundStyle(.secondary)
+                // Show / hide this one layer: off hides the layer from
+                // the overlay (its color is kept, so turning it back on
+                // restores the same color). The overlay reads the toggle
+                // live, so it applies at once.
+                Toggle("Show", isOn: $isShown)
                 ColorPicker("", selection: colorBinding, supportsOpacity: false)
                     .labelsHidden()
                 Button("Reset") { hex = defaultHex }

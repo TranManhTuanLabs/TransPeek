@@ -771,11 +771,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Read the frame BEFORE dismissing (dismiss clears it).
             let indicatorFrame = self.triggerIconController.currentFrame
             self.triggerIconController.dismissSilently()
+            // Read the hovered block BEFORE stopFollowing: stopping
+            // clears the detector's current block, so reading it after
+            // would always miss and every hover speak would fall back
+            // to a single speak with no overlay — the highlight vanished
+            // when the separate-indicator split added the stop call
+            // (Manh 2026-11-27: hover + Speak showed no highlight).
+            let hoveredBlock = self.hoverTextDetector.currentBlockForReading
             // The icon is gone — stop following the hovered block (its
             // poll must not outlive the icon). The indicator never
             // follows the text; it stays where it appeared.
             self.hoverTextDetector.stopFollowing()
-            if let block = self.hoverTextDetector.currentBlockForReading,
+            if let block = hoveredBlock,
                block.text == text {
                 self.continuousSpeakController.start(from: block, indicatorFrame: indicatorFrame)
             } else {

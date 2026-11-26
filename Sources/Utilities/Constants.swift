@@ -941,5 +941,15 @@ extension Defaults.Keys {
     static let highlightBlockHex = Key<String>("transpeek_highlightBlockHex", default: HighlightColors.blockDefaultHex)
     static let highlightSentenceHex = Key<String>("transpeek_highlightSentenceHex", default: HighlightColors.sentenceDefaultHex)
     static let highlightWordHex = Key<String>("transpeek_highlightWordHex", default: HighlightColors.wordDefaultHex)
+
+    // Reading indicator layer visibility (Manh 2026-11-27): each layer
+    // has its own Show toggle in Settings (Audio tab → Highlight
+    // colors). The overlay reads them live at draw time, like the
+    // colors, so hiding a layer applies at once — no restart. On the
+    // branch all four default to shown (the branch draws all four).
+    static let highlightLineShown = Key<Bool>("transpeek_highlightLineShown", default: true)
+    static let highlightBlockShown = Key<Bool>("transpeek_highlightBlockShown", default: true)
+    static let highlightSentenceShown = Key<Bool>("transpeek_highlightSentenceShown", default: true)
+    static let highlightWordShown = Key<Bool>("transpeek_highlightWordShown", default: true)
 }
 

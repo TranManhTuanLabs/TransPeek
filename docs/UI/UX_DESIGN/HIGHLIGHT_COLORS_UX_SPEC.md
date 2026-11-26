@@ -19,29 +19,30 @@ underneath it.
 
 ```
 Highlight colors
-┌──────────────────────────────────────────────────────────────┐
-│ Vertical line                    #8CBFFF  [swatch]  Reset   │
-│ Solid bar at the block's left edge                           │
-│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 pastel presets                │
-│                                                              │
-│ Block                          #BFF2B3  [swatch]  Reset   │
-│ Highlight for the whole block being read                     │
-│ ( ) ( ) ( ) ( ) ( ) ( )                                      │
-│                                                              │
-│ Sentence                       #FFF2A6  [swatch]  Reset   │
-│ Highlight for the sentence being read                        │
-│ ( ) ( ) ( ) ( ) ( ) ( )                                      │
-│                                                              │
-│ Word                           #D9BFFA  [swatch]  Reset   │
-│ Highlight for the word being spoken                          │
-│ ( ) ( ) ( ) ( ) ( ) ( )                                      │
-│                                                              │
-│ [Reset all to default]                                       │
-│                                                              │
-│ Colors for the reading indicator shown over the page while   │
-│ listening. Changes apply at once — no restart needed.        │
-│ Opacity is fixed so the text underneath stays readable.      │
-└──────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ Vertical line                    #8CBFFF  Show [on] [swatch] Reset│
+│ Solid bar at the block's left edge                               │
+│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 pastel presets                    │
+│                                                                  │
+│ Block                          #BFF2B3  Show [on] [swatch] Reset│
+│ Highlight for the whole block being read                         │
+│ ( ) ( ) ( ) ( ) ( ) ( )                                          │
+│                                                                  │
+│ Sentence                       #FFF2A6  Show [on] [swatch] Reset│
+│ Highlight for the sentence being read                            │
+│ ( ) ( ) ( ) ( ) ( ) ( )                                          │
+│                                                                  │
+│ Word                           #D9BFFA  Show [on] [swatch] Reset│
+│ Highlight for the word being spoken                              │
+│ ( ) ( ) ( ) ( ) ( ) ( )                                          │
+│                                                                  │
+│ [Reset all to default]                                           │
+│                                                                  │
+│ Colors for the reading indicator shown over the page while       │
+│ listening. Changes apply at once — no restart needed.            │
+│ Opacity is fixed so the text underneath stays readable.          │
+│ Turn a layer off with its Show switch to hide it.                │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 Each row, left to right:
@@ -51,26 +52,32 @@ Each row, left to right:
 - **Hex** — the current color as `#RRGGBB` (monospaced, secondary
   colour). Display-only: it shows the exact value for users who want
   it, it is not an input field.
+- **Show toggle** — a native `Toggle` labelled "Show" for that one
+  layer (see §4). Off hides the layer from the overlay; the layer's
+  colour is kept, so turning it back on restores the same colour.
 - **Colour well** — the native macOS colour picker (`ColorPicker`,
   `supportsOpacity: false`). Clicking it opens the system colour panel
   (colour wheel, sliders, palettes, eyedropper).
-- **Reset** — restores that one layer to its default colour.
+- **Reset** — restores that one layer to its default colour (the Show
+  toggle is untouched — hiding a layer is a separate choice from its
+  colour).
 
 Under each row, **6 pastel preset swatches** (22 pt circles): tap one
 to set that layer's colour at once. The current colour gets a strong
 ring, so the user can see which preset (if any) is active.
 
 At the end of the section, **"Reset all to default"** restores all four
-layers at once.
+layers' colours at once — and turns all four Show toggles back on
+(the branch default).
 
 ## 3. The 4 layers + default colours
 
-| Layer | What it marks | Default | Opacity |
-|---|---|---|---|
-| Vertical line | Solid bar at the block's left edge (in the 8 pt strip beside the text) | `#8CBFFF` (light blue) | 1.0 (solid) |
-| Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 |
-| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 |
-| Word | Fill for the word being spoken | `#D9BFFA` (light purple) | 0.30 |
+| Layer | What it marks | Default | Opacity | Shown by default (branch) |
+|---|---|---|---|---|
+| Vertical line | Solid bar at the block's left edge (in the 8 pt strip beside the text) | `#8CBFFF` (light blue) | 1.0 (solid) | Yes |
+| Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | Yes |
+| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 | Yes |
+| Word | Fill for the word being spoken | `#D9BFFA` (light purple) | 0.30 | Yes |
 
 The defaults are the pastel palette from the trial (Manh 2026-11-24
 00:38), as `#RRGGBB` hex — the rounded equivalents of the RGB values
@@ -99,6 +106,20 @@ overlapping levels blend instead of hiding each other.
 - **Hex is display-only.** The hex text next to each well shows the
   current value; the colour is changed with the well (system panel) or
   a preset swatch, never by typing hex.
+- **Show / hide per layer — applies at once.** Each layer has its own
+  Show toggle, stored as a `Bool` in Defaults
+  (`transpeek_highlightLineShown`, `transpeek_highlightBlockShown`,
+  `transpeek_highlightSentenceShown`, `transpeek_highlightWordShown`),
+  all `true` by default on the branch. The overlay reads them at draw
+  time (and its follow timer redraws every 0.3 s while showing), so
+  flipping a toggle hides or shows that layer immediately — no
+  restart, and it works while the indicator is already up. A hidden
+  layer is never drawn, even when its frame arrives; hiding the line
+  also removes the 8 pt strip the window extends left of the block
+  (the window becomes exactly the block frame again). Hiding keeps
+  the layer's colour — turning it back on restores the same colour.
+  "Reset all to default" turns all four toggles back on; a per-layer
+  Reset only restores that layer's colour.
 
 ## 5. Why this design
 
@@ -124,13 +145,19 @@ overlapping levels blend instead of hiding each other.
   hexes, fixed opacities, the 6 pastel presets, hex ↔ `NSColor`
   conversion (parse `#RRGGBB`, format, fallback to default).
 - `Sources/Utilities/Constants.swift` — the 4 `Defaults.Keys`
-  (`transpeek_highlight*Hex`, `String`, default = the palette above).
+  (`transpeek_highlight*Hex`, `String`, default = the palette above)
+  plus the 4 visibility keys (`transpeek_highlight*Shown`, `Bool`,
+  default `true` on the branch).
 - `Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift` — the 4
   layer colours are computed properties reading Defaults live (was 4
-  hardcoded `NSColor` constants); `draw` is unchanged.
+  hardcoded `NSColor` constants); the 4 visibility flags are computed
+  properties the same way, and every place that gates on `layers`
+  (`leftPad`, `update`, `layoutHighlightRects`, `draw`) also requires
+  the layer to be shown. `draw` is otherwise unchanged.
 - `Sources/UI/Settings/TTSSettingsView.swift` — the "Highlight colors"
   section + `HighlightColorRow` (row + presets + Reset + the
-  `Color`-to-hex binding).
+  `Color`-to-hex binding), now with a Show `Toggle` per row and
+  "Reset all to default" also restoring all four toggles to on.
 
 ## Links
 
