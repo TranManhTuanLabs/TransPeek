@@ -22,6 +22,18 @@
 - **Menubar mac dùng được submenu (Manh 12:06):** menubar chỉ có 1 hàng nhưng mỗi mục chính mở được list con của chính nó — nên tích hợp thêm menu Tomato/Focus/Fast Read là hoàn toàn khả thi, không sợ menu dài (mục mới nằm trong submenu, không thêm mục top-level). Áp cho cả luồng vào RSVP (mục menubar/tray) và tab timer sau này.
 - **Thứ tự triển khai (§8) cập nhật theo các chốt trên** — khung multi-tab lên đầu, RSVP window ngay sau, TTS lùi xuống sau RSVP.
 
+## Cập nhật 26/11/2026 — quy tắc bấm loa TTS (Manh chốt, theo hành vi Speechify + NaturalReader)
+
+- **1 nút loa = toggle Play/Pause, KHÔNG có nút Stop riêng.** Áp dụng giống nhau cho mọi unit (1 từ, 1 câu, 1 đoạn — chỉ khác độ dài). Phạm vi: loa click-to-listen (loa panel + loa icon float). Loa trong Read mode (bật/tắt tiếng khi đọc RSVP) là control riêng, giữ nguyên.
+- **Chưa phát → bấm loa = play** từ đầu unit. **Đang phát → bấm = pause**, giữ nguyên vị trí từ/câu đang dừng. **Đang pause → bấm = resume** đúng chỗ dừng (không phát lại từ đầu). **Hết unit → stop tự động**: reset vị trí về đầu, gỡ highlight, ẩn icon loa.
+- **Dừng giữa chừng = Esc** — không có nút Stop riêng. (Đang xem lại 26/11 23:01: Manh thấy Esc hơi thừa — pause thì cứ kệ, không cần stop để ẩn icon; quyết định cuối chờ chốt.)
+- **Pause thì GIỮ NGUYÊN highlight** ở từ đang dừng (không gỡ như NaturalReader) — để user thấy đang dừng ở đâu, resume nhìn rõ.
+- **KHÔNG có timeout tự stop khi pause lâu**: pause vô thời hạn, resume lúc nào cũng được (cả 2 app đều vậy).
+- **Play mới thay play cũ**: bấm loa unit khác trong lúc đang phát/pause thì dừng cái cũ, phát unit mới từ đầu (auto-detect ON: hover block khác + click; OFF: select text mới + click). Bấm lại đúng unit đang pause thì resume.
+- **Icon loa phải HIỆN trong suốt phiên phát** (đang phát HOẶC đang pause — tức là khi chưa stop hẳn) để user luôn bấm được để tương tác. Chỉ ẩn khi đã stop hẳn (hết unit / Esc).
+- **Icon loa đổi biểu tượng theo trạng thái** (CHƯA CÓ — làm khi triển khai): chưa phát: loa thường; đang phát: ⏸ (`pause.fill`); đang pause: ▶ (`play.fill`). Áp cho cả nút loa panel lẫn icon float. Hiện tại (26/11): panel chỉ có 2 dạng loa, icon float chỉ có 1 dạng loa cho cả phiên phát.
+- Spec đầy đủ (nguồn chính): `docs/FEATURES/SPEECH_PLAYER.md` §1; glyph/auto-hide/stale: `docs/UI/UX_DESIGN/FLOAT_ICON_UX_SPEC.md` (bảng glyph, §4, §8). Đã báo sang repo Windows để làm theo (26/11 22:23).
+
 ---
 
 ## 1. Kết luận tổng — Path HỖN HỢP (không phải thuần 1 hay thuần 2)
