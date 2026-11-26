@@ -37,6 +37,12 @@ struct ProviderResultCard: View {
     @Default(.renderMarkdownResults) private var renderMarkdownResults
     @Default(.resultViewMode) private var resultViewMode
     @Environment(\.ttsCoordinator) private var ttsCoordinator
+    /// The shared click-to-listen player (Manh 2026-11-26, speaker law):
+    /// the panel speaker button plays/pauses/resumes through this one
+    /// player (one voice at a time). @Observable, so the button's glyph
+    /// redraws when the player's state changes. Nil in tests/previews —
+    /// the button then falls back to the plain coordinator speak/stop.
+    @Environment(\.speechPlayer) private var speechPlayer
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -109,6 +115,19 @@ struct ProviderResultCard: View {
 
     private func isSpeaking(_ text: String) -> Bool {
         ttsCoordinator?.isPlaying(text) ?? false
+    }
+
+    /// The speaker glyph for this card's text (Manh 2026-11-26, speaker
+    /// law): playing → ⏸ (pause.fill, click to pause); paused → ▶
+    /// (play.fill, click to resume); idle → speaker.wave.2. Without a
+    /// player (tests), fall back to the old two-state glyph.
+    private func speakerGlyphName(for text: String) -> String {
+        if let speechPlayer {
+            if speechPlayer.isPlaying(text) { return "pause.fill" }
+            if speechPlayer.isPaused(text) { return "play.fill" }
+            return "speaker.wave.2"
+        }
+        return isSpeaking(text) ? "speaker.wave.3.fill" : "speaker.wave.2"
     }
 
     // MARK: - Status Indicator
@@ -270,7 +289,21 @@ struct ProviderResultCard: View {
 
                     if canSpeak, let ttsCoordinator {
                         Button {
-                            if isSpeaking(spokenText) {
+                            // Speaker law (Manh 2026-11-26): one button =
+                            // Play/Pause toggle. Playing → pause (keep
+                            // position), paused → resume from position,
+                            // idle → play from the start. The shared
+                            // player stops any other surface's speech
+                            // first (one voice at a time).
+                            if let speechPlayer {
+                                if speechPlayer.isPlaying(spokenText) {
+                                    speechPlayer.pause()
+                                } else if speechPlayer.isPaused(spokenText) {
+                                    speechPlayer.resume()
+                                } else {
+                                    speechPlayer.play(text: spokenText, language: targetLanguage)
+                                }
+                            } else if isSpeaking(spokenText) {
                                 ttsCoordinator.stop()
                             } else {
                                 ttsCoordinator.speak(spokenText, language: targetLanguage)
@@ -279,7 +312,7 @@ struct ProviderResultCard: View {
                             HStack(spacing: 2) {
                                 // Bigger icon than the label text and the Copy
                                 // icon, so the speaker stands out in the row.
-                                Image(systemName: isSpeaking(spokenText) ? "speaker.wave.3.fill" : "speaker.wave.2")
+                                Image(systemName: speakerGlyphName(for: spokenText))
                                     .font(.popup(name: fontName, size: CGFloat(fontSize + 2)))
                                 if targetLanguage.hasPrefix("en") {
                                     Text(ttsAccent.shortLabel)

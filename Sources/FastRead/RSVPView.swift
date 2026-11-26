@@ -7,10 +7,11 @@ import SwiftUI
 /// it ships FREE for now. This is the single cut-off point — set
 /// `wordSyncEnabled` to `false` to disable word-sync (the read-along
 /// falls back to the silent WPM timer even with the speaker on), or
-/// wire it to a real Pro check (purchase / licence key) later. Each
-/// surface keeps its OWN speaker on/off state (Lite and Full do not
-/// share it — Manh 2026-11-21, simpler code); this gate only controls
-/// whether the word-sync engine itself is available. Future demo idea
+/// wire it to a real Pro check (purchase / licence key) later. The
+/// speaker on/off state is SHARED + REMEMBERED across Full + Lite +
+/// Rest window (Manh 2026-11-23, one persisted key
+/// `transpeek_rsvpTTSEnabled`); this gate only controls whether the
+/// word-sync engine itself is available. Future demo idea
 /// (NOT built yet): when gated, pressing the speaker plays a short
 /// DEMO — a different TTS voice reading a different text than the
 /// user's content, with a "this is a Pro feature" note — so the user
@@ -125,11 +126,12 @@ final class RSVPViewModel: ObservableObject {
         didSet { Defaults[.rsvpTTSEnabled] = ttsEnabled }
     }
     /// The shared TTS coordinator (Manh 2026-11-21, CI314 fix): set by
-    /// the reading view from the SwiftUI environment (the Window and
-    /// the Lite both inject it; the Rest window has none). The
-    /// read-along speaks through it. Nil means no TTS is available,
-    /// so the speaker stays off and playback always uses the WPM
-    /// timer. Not @Published — a service dependency, not UI state.
+    /// the reading view from the SwiftUI environment — the Window, the
+    /// Lite and the Rest window ALL inject it (the Rest window has one
+    /// since 71f242bb, Manh 2026-11-23). The read-along speaks through
+    /// it. Nil means no TTS is available, so the speaker stays off and
+    /// playback always uses the WPM timer. Not @Published — a service
+    /// dependency, not UI state.
     var ttsCoordinator: TTSCoordinator? {
         didSet {
             // The Lite starts playing (auto-play) before its view
