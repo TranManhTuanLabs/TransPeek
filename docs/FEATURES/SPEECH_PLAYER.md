@@ -4,7 +4,7 @@
 
 ## 1. Nút loa — play/pause/resume, hết mới stop; indicator loa TÁCH RIÊNG khỏi icon float (CHỐT 26/11/2026, thay luật cũ "bấm lần nữa là stop")
 
-Luật cũ (trước 26/11): bấm loa lần nữa là stop luôn. Luật mới theo hành vi Speechify + NaturalReader (đã đọc source thật cả 2 extension — xem `docs/RESEARCH/tts-speechify-naturalreader/`): 1 nút loa = toggle Play/Pause, KHÔNG có nút Stop riêng. Áp dụng giống nhau cho mọi unit (1 từ, 1 câu, 1 đoạn — chỉ khác độ dài). Phạm vi: loa click-to-listen (loa panel + indicator loa). Loa trong Read mode (bật/tắt tiếng khi đọc RSVP) là control riêng, giữ nguyên.
+Luật cũ (trước 26/11): bấm loa lần nữa là stop luôn. Luật mới theo hành vi Speechify + NaturalReader (đã đọc source thật cả 2 extension — xem `docs/RESEARCH/tts-speechify-naturalreader/`): 1 nút loa = toggle Play/Pause, KHÔNG có nút Stop riêng. Áp dụng giống nhau cho mọi unit (1 từ, 1 câu, 1 đoạn — chỉ khác độ dài). Phạm vi: loa click-to-listen từ icon float (indicator loa). Nút loa panel (input/output) GIỮ NGUYÊN tạm thời (Manh 27/11 00:12) — không đổi glyph, không đổi hành vi (vẫn toggle = stop như cũ), vì user không nghe ở đó là chính. Loa trong Read mode (bật/tắt tiếng khi đọc RSVP) là control riêng, giữ nguyên.
 
 - **Chưa phát → bấm loa = play** từ đầu unit.
 - **Đang phát → bấm loa = pause**, giữ nguyên vị trí từ/câu đang dừng.
@@ -19,7 +19,7 @@ Luật cũ (trước 26/11): bấm loa lần nữa là stop luôn. Luật mới 
 Lý do tách: icon float chỉ có 1 cửa sổ — lúc đang phát, nó bị phiên loa chiếm (hover text khác không dịch được, mà select mới thì làm mất nút pause của tiếng cũ — tiếng cũ vẫn phát mà không còn nút nào). Cả Speechify (Pill Player) lẫn NaturalReader (minibar) đều tách player khỏi icon trigger. Tách rồi thì 2 phần tử độc lập, mỗi cái tự quản lifecycle của mình, không biết gì về nhau; điểm chung duy nhất là phiên TTS.
 
 - **Indicator là phần tử nổi riêng** (tái dùng máy móc cửa sổ nổi của icon float), hiện ở đúng chỗ user bấm loa — vị trí tự nhiên, không bám theo text, không can thiệp vị trí thêm.
-- **Biểu tượng theo trạng thái** (theo nguyên tắc "glyph cho biết lần bấm tới sẽ làm gì"): đang phát: ⏸ (`pause.fill`, bấm để pause); đang pause: ▶ (`play.fill`, bấm để resume). Nút loa panel cũng đổi biểu tượng theo trạng thái như vậy (chưa phát: loa thường `speaker.wave.2`; đang phát: ⏸; đang pause: ▶). Icon float KHÔNG hiện trạng thái phát nhạc nữa (xem `FLOAT_ICON_UX_SPEC.md`).
+- **Biểu tượng theo trạng thái** (theo nguyên tắc "glyph cho biết lần bấm tới sẽ làm gì"): đang phát: ⏸ (`pause.fill`, bấm để pause); đang pause: ▶ (`play.fill`, bấm để resume). Nút loa panel (input/output) GIỮ NGUYÊN tạm thời — không đổi biểu tượng theo trạng thái (xem phạm vi ở đầu §1). Icon float KHÔNG hiện trạng thái phát nhạc nữa (xem `FLOAT_ICON_UX_SPEC.md`).
 - **Hiện trong lúc ĐANG PHÁT** để user luôn bấm được để pause. Trong lúc **ĐANG PAUSE**, indicator chạy theo luật ẩn bình thường (auto-hide sau 5s, hover vào thì timer tạm dừng như luật auto-hide thường); khi indicator ẩn thì phiên kết thúc lặng lẽ (stop). Resume được trong lúc indicator còn hiện.
 - **Hiện tại (26/11): CHƯA CÓ** — panel chỉ có 2 dạng loa (`speaker.wave.3.fill` khi nói / `speaker.wave.2` khi không nói), icon float chỉ có 1 dạng loa (`speaker.wave.2.fill`) cho cả phiên phát, code vẫn ghim icon lúc đang phát/pause + chặn hover lúc đang phát (sẽ bỏ khi làm indicator). (Nút Play/Pause trong Read mode đã có sẵn `play.fill`/`pause.fill` — không thuộc phạm vi này.)
 
