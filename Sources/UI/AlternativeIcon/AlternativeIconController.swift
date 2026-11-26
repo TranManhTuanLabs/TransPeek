@@ -1,5 +1,4 @@
 import AppKit
-import AVFoundation
 import Defaults
 
 /// Which Fast Read surface the alternative icon was shown from.
@@ -24,15 +23,13 @@ final class AlternativeIconController {
     /// cursor; Lite translates only (the panel follows `sourceText` to
     /// the center tab — calling showAtCursor there would move it).
     var onTranslateRequested: ((String, AlternativeIconSurface) -> Void)?
-    /// Which language to speak the selected text in. AppDelegate wires
-    /// this to its language detection (`speakLanguage(for:)`).
-    var speakLanguageProvider: ((String) -> String)?
-
-    /// True while the icon's own TTS is speaking. The icon shows a
-    /// speaker glyph and does not auto-dismiss until playback stops.
-    private(set) var isSpeaking = false {
-        didSet { iconView?.isSpeaking = isSpeaking }
-    }
+    /// Click → start a click-to-listen session (new speaker law, Manh
+    /// 2026-11-27): AppDelegate starts it through the shared chaining
+    /// controller — the same flow as the real float icon — so the
+    /// SEPARATE speak indicator appears at this icon's frame and owns
+    /// pause/resume. The icon itself never speaks and never shows
+    /// playback state (it always keeps its blue A glyph).
+    var onSpeakRequested: ((String) -> Void)?
 
     private var panel: NSPanel?
     private var iconView: AlternativeIconView?
@@ -40,20 +37,13 @@ final class AlternativeIconController {
     private var currentSurface: AlternativeIconSurface = .windowRead
     private var hoverTimer: Timer?
     private var autoDismissTimer: Timer?
-    /// The icon's own speech synthesizer (design doc §6): a SEPARATE
-    /// system-TTS path from the Read speaker button, which drives RSVP
-    /// playback sync through the shared TTSCoordinator. This one just
-    /// speaks the selected text and never touches RSVP playback state.
-    private let synthesizer = AVSpeechSynthesizer()
-    private var speechDelegate: AlternativeIconSpeechDelegate?
-    /// Delegates whose speech was stopped (or replaced) but whose
-    /// didFinish/didCancel callback has not fired yet. Kept alive so
-    /// Apple's TextToSpeech framework never retains a freed delegate
-    /// (crash 2026-11-22, build 342: EXC_BAD_ACCESS in objc_retain —
-    /// the delegate was nil-ed on stop while the framework's didCancel
-    /// was still pending). Each delegate leaves this list when its own
-    /// callback fires (speechDidFinish).
-    private var retiredDelegates: [AlternativeIconSpeechDelegate] = []
+
+    /// The icon's current frame — the speak indicator appears exactly
+    /// where the icon stood when the user clicked it (same pattern as
+    /// the real float icon's `currentFrame`).
+    var currentFrame: CGRect? {
+        panel?.frame
+    }
 
     /// Show the icon near the given screen point. Replaces any icon
     /// already visible (silently, no dismiss callback).
@@ -62,7 +52,6 @@ final class AlternativeIconController {
 
         currentText = text
         currentSurface = surface
-        isSpeaking = false
 
         // Size follows the auto-show (hover) icon size — the alternative
         // icon is an auto-show icon too, so it tracks that setting
@@ -139,7 +128,6 @@ final class AlternativeIconController {
     /// Dismiss the icon with fade-out.
     func dismiss() {
         guard let panel else { return }
-        stopSpeaking()
         cancelHoverTimer()
         cancelAutoDismissTimer()
 
@@ -158,7 +146,6 @@ final class AlternativeIconController {
     /// Dismiss silently — used when replacing with a new icon.
     func dismissSilently() {
         guard let panel else { return }
-        stopSpeaking()
         cancelHoverTimer()
         cancelAutoDismissTimer()
         panel.contentView = nil
@@ -167,7 +154,6 @@ final class AlternativeIconController {
     }
 
     private func cleanup() {
-        isSpeaking = false
         panel = nil
         iconView = nil
         currentText = ""
@@ -177,11 +163,8 @@ final class AlternativeIconController {
 
     /// Hover → translate, after the same hover delay as the real icon
     /// (Settings "Hover delay", default 500ms) — so a passing mouse
-    /// does not trigger a lookup. While speaking, hover must not
-    /// re-trigger translation (the click already consumed the
-    /// interaction).
+    /// does not trigger a lookup.
     private func startHoverTimer() {
-        guard !isSpeaking else { return }
         cancelHoverTimer()
         let delayMs = min(max(Defaults[.hoverDelayMs], 100), 1000)
         hoverTimer = Timer.scheduledTimer(withTimeInterval: Double(delayMs) / 1000, repeats: false) { [weak self] _ in
@@ -207,80 +190,29 @@ final class AlternativeIconController {
         onTranslateRequested?(text, surface)
     }
 
-    // MARK: - Click (speak, separate TTS path)
+    // MARK: - Click (speak, shared flow)
 
-    /// Click → speak the selected text through the icon's own
-    /// synthesizer. A second click while speaking stops it. There is
-    /// NO Read action here (design doc §4): the user selected one word
-    /// inside a long passage, so a Fast Read session on that fragment
-    /// would lose the long context.
+    /// Click → start a click-to-listen session through AppDelegate
+    /// (the shared chaining controller + separate speak indicator —
+    /// the same flow as the real float icon). The icon does NOT dismiss
+    /// itself here: AppDelegate reads the frame first (for the
+    /// indicator), then dismisses it. Clicking again (a new selection)
+    /// while a session plays starts a NEW session replacing the old
+    /// one — pause/resume is the indicator's job. There is NO Read
+    /// action here (design doc §4): the user selected one word inside
+    /// a long passage, so a Fast Read session on that fragment would
+    /// lose the long context.
     private func handleIconClick() {
-        if isSpeaking {
-            stopSpeaking()
-            return
-        }
-        speakCurrentText()
-    }
-
-    private func speakCurrentText() {
-        let text = currentText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        cancelAutoDismissTimer()
-        cancelHoverTimer()
-        let utterance = AVSpeechUtterance(string: text)
-        let lang = speakLanguageProvider?(text) ?? "en-US"
-        utterance.voice = AVSpeechSynthesisVoice(language: lang)
-        let delegate = AlternativeIconSpeechDelegate { [weak self] finished in
-            Task { @MainActor in
-                self?.speechDidFinish(finished)
-            }
-        }
-        // Retire the previous delegate (if its didCancel is still
-        // pending, keep it alive in retiredDelegates until its callback
-        // fires — see the property comment for the crash this prevents).
-        if let old = speechDelegate {
-            retiredDelegates.append(old)
-        }
-        speechDelegate = delegate
-        synthesizer.delegate = delegate
-        isSpeaking = true
-        synthesizer.speak(utterance)
-    }
-
-    private func stopSpeaking() {
-        guard isSpeaking else { return }
-        synthesizer.stopSpeaking(at: .immediate)
-        isSpeaking = false
-        // Do NOT nil speechDelegate here — the framework's didCancel
-        // callback is still pending (it runs later on the main queue)
-        // and retains the delegate; freeing it now is the crash
-        // (2026-11-22, build 342). speechDidFinish (from didCancel)
-        // clears it once the framework has confirmed the speech ended.
-        if panel != nil {
-            startAutoDismissTimer()
-        }
-    }
-
-    private func speechDidFinish(_ finished: AlternativeIconSpeechDelegate) {
-        // Drop the finished delegate from the retired list (if it was
-        // retired) or clear the current one — its speech is done, so
-        // the framework holds no more callbacks for it.
-        retiredDelegates.removeAll { $0 === finished }
-        if speechDelegate === finished {
-            speechDelegate = nil
-        }
-        isSpeaking = false
-        if panel != nil {
-            startAutoDismissTimer()
-        }
+        onSpeakRequested?(currentText)
     }
 
     // MARK: - Auto-dismiss
 
+    /// The icon follows its normal lifecycle at all times — the session
+    /// is owned by the separate speak indicator, not by this icon, so
+    /// the icon auto-hides after the Settings delay even while a
+    /// session plays (hover pauses the timer, like the real icon).
     private func startAutoDismissTimer() {
-        // While speaking the icon must stay visible so the user can
-        // click again to stop playback.
-        guard !isSpeaking else { return }
         cancelAutoDismissTimer()
         autoDismissTimer = Timer.scheduledTimer(withTimeInterval: Double(Defaults[.autoHideDelaySec]), repeats: false) { [weak self] _ in
             Task { @MainActor in
@@ -292,27 +224,5 @@ final class AlternativeIconController {
     private func cancelAutoDismissTimer() {
         autoDismissTimer?.invalidate()
         autoDismissTimer = nil
-    }
-}
-
-/// AVSpeechSynthesizerDelegate that reports when the utterance ends
-/// (finished or cancelled) so the icon can clear its speaking state.
-/// A tiny class because AVSpeechSynthesizer takes a delegate object.
-/// The callback passes the delegate itself, so the controller can drop
-/// exactly that delegate from its retired list (see
-/// AlternativeIconController.retiredDelegates).
-private final class AlternativeIconSpeechDelegate: NSObject, AVSpeechSynthesizerDelegate {
-    private let onFinish: (AlternativeIconSpeechDelegate) -> Void
-
-    init(onFinish: @escaping (AlternativeIconSpeechDelegate) -> Void) {
-        self.onFinish = onFinish
-    }
-
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
-        onFinish(self)
-    }
-
-    func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
-        onFinish(self)
     }
 }
