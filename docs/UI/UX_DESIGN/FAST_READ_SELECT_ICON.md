@@ -42,14 +42,15 @@ so **hover and click both work on it**, exactly like the real icon.
 | Action | What happens | Notes |
 | --- | --- | --- |
 | **Hover** | Translate (look up the selected word) | Per surface (see §5). |
-| **Click** | Speak — listen to the selected text (speaker glyph, as normal) | Uses its OWN separate system-TTS audio path (see §6). No Read. |
+| **Click** | Speak — listen to the selected text | Shared click-to-listen flow (see §6): the separate speak indicator shows ⏸/▶. No Read. |
 
 There is **no Read action** on this icon. Pressing Read here is meaningless:
 the user selected one word inside a long passage, so starting a Fast Read
 session on that fragment would lose the long context. The user only wants
 to look up one word or listen to it.
 
-The icon shows the **speaker glyph** on click (listen), and hover still opens
+The icon keeps its blue A glyph on click — the playback state shows on
+the separate speak indicator (⏸/▶), not on the icon. Hover still opens
 the translate flow for lookup. The global "Click icon for:" setting is
 ignored here — the icon is always speaker + hover in Read mode.
 
@@ -62,14 +63,20 @@ ignored here — the icon is always speaker + hover in Read mode.
 - **Window Read** (separate window, panel closed): hover **opens the panel**
   (normal icon flow: panel opens at the cursor on the translate tab).
 
-## 6. Click uses a SEPARATE system-TTS audio path
+## 6. Click uses the SHARED click-to-listen flow (Manh 2026-11-27)
 
-Clicking the alternative icon speaks the selected text through its **own
-separate system TTS path**. It does NOT share the Read-mode speaker
-button's audio path: the Read speaker button is tied to RSVP playback
-sync (TTS drives the chunk advance), while the alternative icon's click
-is a quick, independent "speak this selected text" that does not touch
-RSVP playback state.
+Clicking the alternative icon speaks the selected text through the SAME
+shared click-to-listen flow as the real float icon (`SpeechPlayer` via
+`ContinuousSpeakController`): a listening session starts, and the
+SEPARATE speak indicator appears at the icon's frame (⏸ while playing,
+▶ while paused — play/pause/resume, same law as the float icon).
+It does NOT share the Read-mode speaker button's audio path: the Read
+speaker button is tied to RSVP playback sync (TTS drives the chunk
+advance), while the alternative icon's click is a separate listening
+session. One voice at a time (Manh 2026-11-27): starting the session
+STOPS Read audio (the reading position is kept — press Play to resume
+from where it stopped). The icon itself keeps its blue A glyph while
+speaking; only the indicator shows the playback state.
 
 ## 7. When the icon appears
 

@@ -112,24 +112,9 @@ private struct TTSCoordinatorKey: EnvironmentKey {
     static let defaultValue: TTSCoordinator? = nil
 }
 
-/// The shared click-to-listen player (Manh 2026-11-26, speaker law):
-/// the panel speaker button plays/pauses/resumes through this one
-/// player, so a panel speak and an on-page speak share one voice (a
-/// new play stops the old one). Nil when no player was injected (tests
-/// / previews) — the panel speaker button then falls back to the plain
-/// coordinator speak/stop.
-private struct SpeechPlayerKey: EnvironmentKey {
-    static let defaultValue: SpeechPlayer? = nil
-}
-
 extension EnvironmentValues {
     var ttsCoordinator: TTSCoordinator? {
         get { self[TTSCoordinatorKey.self] }
         set { self[TTSCoordinatorKey.self] = newValue }
-    }
-
-    var speechPlayer: SpeechPlayer? {
-        get { self[SpeechPlayerKey.self] }
-        set { self[SpeechPlayerKey.self] = newValue }
     }
 }

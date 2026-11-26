@@ -8,6 +8,9 @@
 - Icon tròn nhỏ hiện gần text user bôi chọn (theo dõi selection tự động).
 - **Hover → mở panel dịch.** **Click → phát TTS** của text đã chọn.
 - Option-click → đọc nhanh (RSVP) thẳng. Chuột phải → menu có "Đọc nhanh".
+- Trạng thái phát nhạc hiện trên indicator loa riêng (⏸/▶ — bấm để
+  pause/resume), KHÔNG hiện trên icon (Manh 2026-11-26): icon giữ
+  lifecycle bình thường mọi lúc, phiên nghe không ghim hay chặn nó.
 
 ## 2. Cài đặt liên quan
 
@@ -53,8 +56,9 @@
 - While the icon is up, the hovered block's frame is re-read every
   0.3 s; if it moved > 10 pt (the text scrolled away) or the element
   is gone, the icon is dismissed as stale. Polling stops when the icon
-  is dismissed. While speaking, the icon is never dismissed as stale
-  (the user needs it to stop playback).
+  is dismissed. The icon dismisses as stale at all times, even while a
+  session is playing — the session is owned by the separate speak
+  indicator, so an icon hiding never stops it (Manh 2026-11-26).
 - Settings (General → Translation, inside "Show floating icon on text
   selection"): "Show icon when hovering text (default: on)". Default ON.
   Below it, "Hover text delay (default: 0.4s)" — a Picker

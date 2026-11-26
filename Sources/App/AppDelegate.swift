@@ -33,12 +33,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// the float icon — the icon keeps its own lifecycle and never shows
     /// playback state.
     var speakIndicatorController: SpeakIndicatorController!
-    /// The shared click-to-listen player for the PANEL speaker button
-    /// (Manh 2026-11-26, speaker law): the panel speaks through this
-    /// one player (play/pause/resume), so a panel speak and an on-page
-    /// speak share one voice. Injected into the panel's environment via
-    /// the panel controller.
-    lazy var panelSpeechPlayer = SpeechPlayer(ttsCoordinator: ttsCoordinator)
     /// Alternative icon (Manh 2026-11-21): a fake float icon for text
     /// selected inside Fast Read. A separate path from the real float
     /// icon — it does not touch that logic; it only delegates hover
@@ -88,7 +82,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panelController = PopupPanelController(
             coordinator: coordinator,
             ttsCoordinator: ttsCoordinator,
-            speechPlayer: panelSpeechPlayer,
             settingsController: settingsController,
             focusTimerStore: focusTimerStore
         )

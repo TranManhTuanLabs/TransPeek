@@ -929,5 +929,17 @@ extension Defaults.Keys {
     // "first" = first provider to complete; otherwise a specific provider ID
     static let ttsAutoPlayTargetProvider = Key<String>("tts_autoPlayTargetProvider", default: "first")
     static let ttsLanguageRates = Key<[String: Double]>("tts_languageRates", default: [:])
+
+    // Reading indicator highlight colors (Manh 2026-11-27): the 4
+    // layers' colors are user-customizable in Settings (Audio tab →
+    // Highlight colors) and stored as "#RRGGBB" hex strings. The overlay
+    // reads them live at draw time, so a change applies at once — no
+    // restart. Opacity stays fixed in code (fills 0.30, line solid 1.0)
+    // — the picker never edits it. Defaults are the current pastel
+    // colors (see HighlightColors).
+    static let highlightLineHex = Key<String>("transpeek_highlightLineHex", default: HighlightColors.lineDefaultHex)
+    static let highlightBlockHex = Key<String>("transpeek_highlightBlockHex", default: HighlightColors.blockDefaultHex)
+    static let highlightSentenceHex = Key<String>("transpeek_highlightSentenceHex", default: HighlightColors.sentenceDefaultHex)
+    static let highlightWordHex = Key<String>("transpeek_highlightWordHex", default: HighlightColors.wordDefaultHex)
 }
 

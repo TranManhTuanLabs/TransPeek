@@ -1,4 +1,5 @@
 import AppKit
+import Defaults
 import Foundation
 
 // MARK: - ReadingIndicatorOverlay
@@ -34,14 +35,26 @@ final class ReadingIndicatorOverlay {
         static let sentenceAndWord: Layers = [.sentence, .word]
     }
 
-    /// Trial colors (Manh 2026-11-24 00:38, pastel palette). Fills are
-    /// translucent (~30%) so the text underneath stays readable; the
-    /// line is solid so it reads as a marker, not a tint.
-    /// `fileprivate` so the content view (same file) can draw with them.
-    fileprivate static let wordFill = NSColor(red: 0.85, green: 0.75, blue: 0.98, alpha: 0.30) // tím nhạt
-    fileprivate static let sentenceFill = NSColor(red: 1.0, green: 0.95, blue: 0.65, alpha: 0.30) // vàng nhạt
-    fileprivate static let blockFill = NSColor(red: 0.75, green: 0.95, blue: 0.70, alpha: 0.30) // green nhạt
-    fileprivate static let lineFill = NSColor(red: 0.55, green: 0.75, blue: 1.0, alpha: 1.0) // blue nhạt, đặc
+    /// The 4 layer colors, read live from Defaults (Manh 2026-11-27):
+    /// user-customizable in Settings (Audio tab → Highlight colors).
+    /// Computed (not stored) so a change applies at once — `draw` reads
+    /// them every time, and the follow timer redraws every 0.3 s while
+    /// showing. The opacity stays fixed here (fills 0.30, line solid
+    /// 1.0) — the picker never edits it. A malformed hex falls back to
+    /// the layer's default color. `fileprivate` so the content view
+    /// (same file) can draw with them.
+    fileprivate static var wordFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightWordHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.wordDefaultHex)
+    }
+    fileprivate static var sentenceFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightSentenceHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.sentenceDefaultHex)
+    }
+    fileprivate static var blockFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightBlockHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.blockDefaultHex)
+    }
+    fileprivate static var lineFill: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightLineHex], alpha: HighlightColors.lineAlpha, fallbackHex: HighlightColors.lineDefaultHex)
+    }
     /// Width of the vertical line (points).
     fileprivate static let lineWidth: CGFloat = 3.5
     /// How far the window extends left of the block (points) so the

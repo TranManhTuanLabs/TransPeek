@@ -69,23 +69,25 @@ Two styles of the translate icon (Manh 2026-11-19):
 
 The icon's glyph shows what the next click will do, not what the icon "is":
 
-| Click setting | No Option held | Option held | While speaking |
-| --- | --- | --- | --- |
-| Fast Read (default) | **A+** (turmeric) | speaker (Speak preview) | speaker (`speaker.wave.2.fill`, accent) |
-| Speak | speaker | **A+** (turmeric, Fast Read preview) | speaker |
-| Translate | **A** (plain, not bold) | **A+** | speaker |
+| Click setting | No Option held | Option held |
+| --- | --- | --- |
+| Fast Read (default) | **A+** (turmeric) | speaker (Speak preview) |
+| Speak | speaker | **A+** (turmeric, Fast Read preview) |
+| Translate | **A** (plain, not bold) | **A+** |
 
 - **The default icon is A+** (Manh 2026-11-18, round 7): because the
   default click is Fast Read, the icon shows A+ by default — the user
   can tell at a glance that a plain click reads, without opening
   Settings. Holding Option flips it to the speaker (Speak preview).
-- **Speaking always wins the glyph** (Manh 2026-11-18, round 7): while
-  TTS is playing the icon shows the speaker, so the user can click
-  again to stop it — even when the click action is Read. Before this
-  fix, an Option+click to Speak (with Click = Read) left the icon on
-  A+ once Option was released, because the Read-preview branch returned
-  before the speaking check; the user had no way to tell speech was
-  playing.
+- **The icon NEVER shows playback state** (Manh 2026-11-26): while TTS
+  is playing or paused, the icon keeps its normal glyph (the click
+  preview above). Playback state lives on the SEPARATE speak indicator
+  (⏸ while playing, ▶ while paused — click it to pause/resume). This
+  replaces the old rule "Speaking always wins the glyph" (Manh
+  2026-11-18, round 7): the icon has only one window, so pinning it to
+  a session blocked hovering other text, and a new selection could drop
+  the pause button while the old audio kept playing. Separated, the
+  user can listen and look up words at the same time.
 
 - **The plain A glyph (Style 1)** is the letter "A" drawn as text (like
   A+, not an SF Symbol), regular weight — **NOT bold** — and **blue**
@@ -139,10 +141,12 @@ instead of Option).
 - The icon hides by itself after the auto-hide delay (Settings → General,
   Slider 3–10s, default **5s**, Defaults key `autoHideDelaySec`;
   `TriggerIconController.startAutoDismissTimer()` reads it).
-- The auto-hide is **PAUSED** while: the cursor is over the icon; the icon
-  is speaking; **Option is held** (so the A+ preview doesn't vanish before
+- The auto-hide is **PAUSED** while: the cursor is over the icon;
+  **Option is held** (so the A+ preview doesn't vanish before
   the user can click it); a Read open is pending (the 2.5s linger has its
   own timer). On Option release, the auto-hide restarts (fresh 5s).
+  (Speaking no longer pauses the auto-hide — Manh 2026-11-26: the icon
+  never tracks a session; the separate speak indicator owns it.)
 
 ## 5. How Option is detected — the correct mechanism (and the bug it replaces)
 
@@ -272,9 +276,10 @@ UX-spec record of the same settled behaviour.
 - **Follow / stale:** while the icon is up, the block's frame is re-read
   every 0.3 s. If it moved more than 10 pt (the text scrolled away) or
   the element is gone, the icon is dismissed as stale; moving the mouse
-  re-detects. The poll stops the moment the icon is dismissed. While
-  speaking, the icon is never dismissed as stale (the user needs it to
-  stop playback).
+  re-detects. The poll stops the moment the icon is dismissed. The icon
+  dismisses as stale at all times, even while a session is playing —
+  the session is owned by the separate speak indicator, so an icon
+  hiding never stops it (Manh 2026-11-26).
 - **Suppress after dismiss:** 500 ms after a dismiss, a tiny mouse move
   does not re-summon the icon at once.
 - **Gates (never fire):** no hit-test while dragging (a selection is in
