@@ -2,10 +2,20 @@
 
 > Trạng thái: **bản nháp** — mô tả player TTS (nút loa, auto-play, đọc nhanh RSVP).
 
-## 1. Nút loa
+## 1. Nút loa — play/pause/resume, hết mới stop (CHỐT 26/11/2026, thay luật cũ "bấm lần nữa là stop")
 
-- **Loa panel**: phát tiếng của text; bấm lần nữa để dừng (toggle).
-- **Loa icon float**: click = phát text đã chọn.
+Luật cũ (trước 26/11): bấm loa lần nữa là stop luôn. Luật mới theo hành vi Speechify + NaturalReader (đã đọc source thật cả 2 extension — xem `docs/RESEARCH/tts-speechify-naturalreader/`): 1 nút loa = toggle Play/Pause, KHÔNG có nút Stop riêng. Áp dụng giống nhau cho mọi unit (1 từ, 1 câu, 1 đoạn — chỉ khác độ dài). Phạm vi: loa click-to-listen (loa panel + loa icon float). Loa trong Read mode (bật/tắt tiếng khi đọc RSVP) là control riêng, giữ nguyên.
+
+- **Chưa phát → bấm loa = play** từ đầu unit.
+- **Đang phát → bấm loa = pause**, giữ nguyên vị trí từ/câu đang dừng.
+- **Đang pause → bấm loa = resume** đúng chỗ dừng (không phát lại từ đầu).
+- **Hết unit → stop tự động**: reset vị trí về đầu, gỡ highlight, ẩn icon loa.
+- **Dừng giữa chừng = Esc** — không có nút Stop riêng.
+- **Pause thì GIỮ NGUYÊN highlight** ở từ đang dừng (không gỡ như NaturalReader) — để user thấy đang dừng ở đâu, resume nhìn rõ.
+- **KHÔNG có timeout tự stop khi pause lâu**: pause vô thời hạn, resume lúc nào cũng được (cả 2 app đều vậy; pause là ý định của user, tự stop sẽ làm mất chỗ đang dừng).
+- **Play mới thay play cũ**: bấm loa unit khác trong lúc đang phát/pause thì dừng cái cũ, phát unit mới từ đầu (auto-detect ON: hover block khác + click; OFF: select text mới + click). Bấm lại đúng unit đang pause thì resume.
+- **Icon loa phải HIỆN trong suốt phiên phát** (đang phát HOẶC đang pause — tức là khi chưa stop hẳn) để user luôn bấm được để tương tác. Chỉ ẩn khi đã stop hẳn (hết unit / Esc). Luật cũ "loa chỉ hiện khi đang nói" sửa thành "loa hiện khi phiên phát còn hoạt động (phát hoặc pause)". Hệ quả: auto-hide tạm dừng trong suốt phiên phát (xem `FLOAT_ICON_UX_SPEC.md` §4), và icon không bị dismiss là stale trong lúc phát/pause (xem §8).
+
 - Khi click icon loa đang phát TTS, hover vào icon loa hiện panel tab 2/3 chỉnh nhanh
   tốc độ 1x/1.2x/1.5x/2x, chọn giọng, autoswitch voice nhận diện 2 ngôn ngữ — khỏi
   vào Settings; hoặc làm control riêng như Speechify/NaturalReader (định hướng 16/11).
