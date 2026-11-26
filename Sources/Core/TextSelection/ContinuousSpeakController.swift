@@ -10,9 +10,11 @@ import Foundation
 /// the Speechify-style continuous audio, not RSVP reading.
 /// The speaker law (Manh 2026-11-26, SPEECH_PLAYER.md §1) applies here
 /// too: click = pause (keep position), click again = resume, no Esc and
-/// no Stop — while paused the icon follows the normal hide law, and
-/// when it hides the session ends silently. The icon shows pause/play
-/// glyphs instead of a plain speaker.
+/// no Stop — the pause/resume control lives on the SEPARATE speak
+/// indicator (Manh 2026-11-26), not on the float icon: while paused the
+/// indicator auto-hides after 5s, and when it hides the session ends
+/// silently. The indicator shows pause/play glyphs instead of a plain
+/// speaker.
 @MainActor
 final class ContinuousSpeakController {
     /// How far below the current block to probe for the next one (AX
@@ -21,7 +23,11 @@ final class ContinuousSpeakController {
     /// first probe that lands on a different block wins.
     private static let nextBlockProbeOffsets: [CGFloat] = [4, 24, 48, 80]
 
-    private let triggerIconController: TriggerIconController
+    /// The separate speak indicator (Manh 2026-11-26): the floating ⏸/▶
+    /// button that owns pause/resume for this session. It is NOT the
+    /// float icon — the icon keeps its own lifecycle and never shows
+    /// playback state.
+    private let indicator: SpeakIndicatorController
     private let overlay: ReadingIndicatorOverlay
     /// The play/pause/resume player for the current block (Manh
     /// 2026-11-26): one unit at a time, word-tracked, so pause can keep
@@ -54,8 +60,8 @@ final class ContinuousSpeakController {
     /// simply not drawn then (the block + line still show).
     private var currentSentenceFrame: CGRect?
 
-    init(ttsCoordinator: TTSCoordinator, triggerIconController: TriggerIconController, overlay: ReadingIndicatorOverlay) {
-        self.triggerIconController = triggerIconController
+    init(ttsCoordinator: TTSCoordinator, indicator: SpeakIndicatorController, overlay: ReadingIndicatorOverlay) {
+        self.indicator = indicator
         self.overlay = overlay
         // The player owns the per-unit playback (word tracking +
         // pause/resume). The controller wires its callbacks: word ranges
@@ -74,19 +80,21 @@ final class ContinuousSpeakController {
     }
 
     /// Whether a session is live (playing OR paused). Used by
-    /// AppDelegate: when the icon hides while a session is live, the
-    /// session ends silently (no Esc, no Stop button).
+    /// AppDelegate: when the indicator hides while a session is live,
+    /// the session ends silently (no Esc, no Stop button).
     var isActive: Bool { player.isActive }
-    /// Whether the current session is paused (the icon shows ▶).
+    /// Whether the current session is paused (the indicator shows ▶).
     var isPaused: Bool { player.state == .paused }
 
     /// Start a chain from a hovered block: stop any existing speech,
     /// show the reading indicator for this block, and read it — when it
     /// finishes on its own, the next block below is read, and so on.
-    /// The icon speaking state is managed here (not via
-    /// `onPlaybackEnded`): the player deliberately does not touch it, so
-    /// a chain that ends naturally must clear it itself.
-    func start(from block: HoverBlock) {
+    /// The indicator state is managed here (not via `onPlaybackEnded`):
+    /// the player deliberately does not touch it, so a chain that ends
+    /// naturally must clear it itself. `indicatorFrame` is the float
+    /// icon's frame (the place the user clicked Speak) — the indicator
+    /// takes the icon's place; nil centres it on the mouse.
+    func start(from block: HoverBlock, indicatorFrame: CGRect?) {
         // A new chain replaces the old one — stop first so no two
         // utterances overlap (same "stop before speak" rule as
         // `TTSCoordinator.speak`).
@@ -97,8 +105,7 @@ final class ContinuousSpeakController {
         currentSentenceRange = nil
         currentSentenceFrame = nil
         isChaining = true
-        triggerIconController.setSpeaking(true)
-        triggerIconController.setPaused(false)
+        indicator.show(at: indicatorFrame)
         overlay.show(block: block)
         // The player stops any speech from elsewhere (a single speak, a
         // panel speak, a read-along) — one voice at a time — then reads
@@ -107,10 +114,10 @@ final class ContinuousSpeakController {
     }
 
     /// Speak a single text (a selection — no hover block, so no overlay
-    /// and no chaining) with the same play/pause/resume law. The icon
-    /// still shows the session (playing/paused) so the user can pause
-    /// and resume it.
-    func start(text: String) {
+    /// and no chaining) with the same play/pause/resume law. The
+    /// indicator shows the session (playing/paused) so the user can
+    /// pause and resume it — the float icon does not.
+    func start(text: String, indicatorFrame: CGRect?) {
         stop()
         currentBlock = nil
         currentSingleText = text
@@ -118,32 +125,34 @@ final class ContinuousSpeakController {
         currentSentenceRange = nil
         currentSentenceFrame = nil
         isChaining = false
-        triggerIconController.setSpeaking(true)
-        triggerIconController.setPaused(false)
+        indicator.show(at: indicatorFrame)
         player.play(text: text, language: AppDelegate.speakLanguage(for: text))
     }
 
     /// Pause the current session (Manh 2026-11-26): the voice stops but
     /// the position and the highlight stay, so resume continues from
-    /// the same word. The icon flips to ▶. No-op when not playing.
+    /// the same word. The indicator flips to ▶ and starts its 5s
+    /// auto-hide (when it hides, the session ends silently). No-op when
+    /// not playing.
     func pause() {
         guard player.state == .playing else { return }
         player.pause()
-        triggerIconController.setPaused(true)
+        indicator.setPaused(true)
     }
 
     /// Resume a paused session from the kept position (Manh 2026-11-26).
-    /// The icon flips back to ⏸. No-op when not paused.
+    /// The indicator flips back to ⏸ and its auto-hide is cancelled.
+    /// No-op when not paused.
     func resume() {
         guard player.state == .paused else { return }
         player.resume()
-        triggerIconController.setPaused(false)
+        indicator.setPaused(false)
     }
 
     /// Stop everything: the in-flight utterance, the chain, the overlay
-    /// and the icon speaking state. Idempotent — safe to call when idle.
-    /// (The icon hiding while paused, and "new play replaces old play",
-    /// both come through here. There is no Esc and no Stop button.)
+    /// and the indicator. Idempotent — safe to call when idle.
+    /// (The indicator hiding while paused, and "new play replaces old
+    /// play", both come through here. There is no Esc and no Stop button.)
     func stop() {
         isChaining = false
         currentBlock = nil
@@ -156,13 +165,12 @@ final class ContinuousSpeakController {
         // ends instead of advancing.
         player.stop()
         overlay.hide()
-        triggerIconController.setSpeaking(false)
-        triggerIconController.setPaused(false)
+        indicator.hide()
     }
 
     /// The current unit finished on its own: for a chain, advance to the
     /// next block below; for a single speak (or the last block), end the
-    /// session and clear the icon state (the player never fires
+    /// session and hide the indicator (the player never fires
     /// onPlaybackEnded, so the controller clears it itself).
     private func handleUnitEnded() {
         guard isChaining, let block = currentBlock else {
@@ -185,11 +193,11 @@ final class ContinuousSpeakController {
         player.play(text: next.text, language: AppDelegate.speakLanguage(for: next.text))
     }
 
-    /// The session was stopped or cut short from outside (the icon hid
-    /// while paused, a new play on another surface, an auto-play): end
-    /// the chain/session and clear the icon + overlay. (A pause does
-    /// NOT fire this — the player only calls onStopped for a real end,
-    /// never for a pause.)
+    /// The session was stopped or cut short from outside (the indicator
+    /// hid while paused, a new play on another surface, an auto-play):
+    /// end the chain/session and hide the indicator + overlay. (A pause
+    /// does NOT fire this — the player only calls onStopped for a real
+    /// end, never for a pause.)
     private func handleSessionStopped() {
         // If this stop came from our own stop() (which already cleared
         // everything), these are no-ops — the guards make it safe.
@@ -200,14 +208,13 @@ final class ContinuousSpeakController {
         currentSentenceRange = nil
         currentSentenceFrame = nil
         overlay.hide()
-        triggerIconController.setSpeaking(false)
-        triggerIconController.setPaused(false)
+        indicator.hide()
     }
 
     /// Natural end of a session (last block read, or a single speak
-    /// finished): hide the indicator and clear the icon speaking state.
-    /// Unlike `stop()` this does not call the player (it is already
-    /// idle — the unit finished on its own).
+    /// finished): hide the overlay + indicator. Unlike `stop()` this
+    /// does not call the player (it is already idle — the unit finished
+    /// on its own).
     private func endSession() {
         isChaining = false
         currentBlock = nil
@@ -216,8 +223,7 @@ final class ContinuousSpeakController {
         currentSentenceRange = nil
         currentSentenceFrame = nil
         overlay.hide()
-        triggerIconController.setSpeaking(false)
-        triggerIconController.setPaused(false)
+        indicator.hide()
     }
 
     /// A spoken word's range arrived: map it to its sentence and update
