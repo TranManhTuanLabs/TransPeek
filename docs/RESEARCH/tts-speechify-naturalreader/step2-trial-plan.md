@@ -164,7 +164,8 @@ anh muốn đổi theo NaturalReader.
   thì ẨN đi, khi cuộn dừng thì HIỆN LẠI** ở vị trí mới. Nhận biết: khung
   còn đổi giữa các lần poll tức đang cuộn (ẩn); khung đứng yên qua 1–2
   lần poll (khoảng 0.3–0.6 s) tức đã dừng (hiện lại ở khung mới). Tránh
-  hình ảnh lag rồi nhảy từng bước lúc cuộn nhanh.
+  hình ảnh lag rồi nhảy từng bước lúc cuộn nhanh. **(ĐÃ LÀM 2026-11-27 —
+  xem §7.)**
 
 ## 5. Pha test (tách 2 pha)
 
@@ -176,7 +177,7 @@ anh muốn đổi theo NaturalReader.
 - Nếu highlight câu không ra ở app nào đó thì vẫn còn gạch + highlight
   đoạn (không trắng tay).
 
-**Pha 2 — cuộn + dự phòng** (chỉ làm khi pha 1 xong và thấy giật):
+**Pha 2 — cuộn + dự phòng** (chỉ làm khi pha 1 xong và thấy giật — ĐÃ LÀM 2026-11-27, xem §7):
 - Cuộn nhanh: gạch/highlight có bám theo không, có giật không?
 - Nếu giật: bật dự phòng ẩn lúc cuộn / hiện lại khi dừng, test lại.
 
@@ -196,6 +197,9 @@ Test trên trang báo đơn giản trước (Safari/Chrome), rồi mới thử a
   không?
 
 ## 7. Ghi chú điều chỉnh theo thực tế
+
+- **2026-11-27 — dự phòng chống giật (phase 2) ĐÃ LÀM:** test thấy cuộn bị giật nên đã triển khai ẩn highlight lúc cuộn / hiện lại khi dừng, đúng như §4 dự phòng: follow poll 0,3 s so sánh khung block với poll trước, khung đổi → ẩn các fill + vạch dọc (cửa sổ vẫn bám theo để lúc hiện lại đã đúng chỗ), khung đứng yên 2 poll liên tiếp (~0,6 s) → hiện lại. Có toggle "Hide highlights while scrolling" trong Settings → Audio → Highlight colors, **mặc định BẬT**; tắt thì về hành vi follow-only cũ (có thể giật). Không thêm lần đọc AX nào (dùng khung poll đã đọc sẵn). Xem `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` §7.
+- **2026-11-27 — overlay thêm lớp Paragraph (cụm) + picker Line follows:** ngoài 4 lớp cũ (vạch dọc, đoạn, câu, từ), overlay nay có thêm lớp highlight **Paragraph (cụm)** — nhóm câu gần nhau, cách nhau bằng dòng trống, màu mặc định hồng nhạt `#FFC2D1` (mặc định trên main: TẮT; chỉ có highlight từ bật sẵn). Vạch dọc không còn dài cố định bằng cả block: picker "Line follows" trong hàng Vertical line cho chọn Sentence / Paragraph / Block (mặc định main: Sentence); fallback khi đơn vị chọn không có frame: đơn vị chọn → câu → cụm, không có frame nào thì không vẽ vạch (block chỉ là đơn vị được chọn, không phải fallback). Xem `HIGHLIGHT_COLORS_UX_SPEC.md` §3/§6.
 
 _(Điền sau khi thử trên máy thật — kết quả từng app, màu/độ mờ cuối cùng,
 tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi gặp phải.)_

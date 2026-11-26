@@ -964,5 +964,15 @@ extension Defaults.Keys {
     // default is "sentence" — the line follows the voice, like the
     // sentence highlight.
     static let highlightLineFollows = Key<String>("transpeek_highlightLineFollows", default: "sentence")
+
+    // Hide the highlight while the page scrolls (Manh 2026-11-27,
+    // phase 2 of the Step 2 trial plan): when on, the overlay hides
+    // its fills + line while the block's frame is moving and shows
+    // them again after the frame stands still for 2 polls (~0.6 s).
+    // The window keeps following while hidden, so the highlight
+    // reappears in the right place. Default on — a moving highlight
+    // reads as jerk; turning it off restores the old follow-only
+    // behaviour (the highlight stays, and may jerk).
+    static let highlightHideWhileScrolling = Key<Bool>("transpeek_highlightHideWhileScrolling", default: true)
 }
 

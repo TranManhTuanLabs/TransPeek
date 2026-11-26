@@ -6,7 +6,9 @@
 > is created with all five layers; which ones actually show is the
 > user's per-layer Show toggle (main defaults: only the word on — see
 > §5). The vertical line can follow the sentence, the paragraph
-> (cluster) or the whole block (main default: sentence).
+> (cluster) or the whole block (main default: sentence, see §6), and
+> the highlight hides while the page scrolls (toggle, default on, see
+> §7).
 
 ## 1. Where it lives
 
@@ -138,11 +140,12 @@ of hiding each other.
   unit's vertical span in the 8 pt strip; it moves with the voice
   when the unit is the sentence or the paragraph. When the picked
   unit has no frame (bounds unsupported) the line falls back to the
-  sentence, and only when the sentence has no frame either to the
-  whole block — the block is the last safety net, so the line never
-  disappears for a missing frame. The line still tracks its unit when
-  that unit's fill is hidden — hiding the sentence fill does not make
-  a sentence-following line jump back to the block.
+  sentence, then to the paragraph; when none of the three has a frame
+  there is no line at all — the block is only a chosen unit, never a
+  fallback, and losing the line is fine because the fills still mark
+  the text. The line still tracks its unit when that unit's fill is
+  hidden — hiding the sentence fill does not make a
+  sentence-following line jump back to the block.
 
 ## 5. Show/hide per layer
 
@@ -197,18 +200,46 @@ follows"): **Sentence / Paragraph / Block**.
   live; the follow timer redraws every 0.3 s and `update` re-lays out
   on the next word, so flipping the picker moves the line on the next
   draw.
-- **Fallback to the sentence, then the block.** When the picked unit
-  has no frame (the app did not expose its bounds), the line falls
-  back to the sentence; only when the sentence has no frame either
-  does it span the whole block — the block is the last safety net, so
-  the line never disappears for a missing frame.
+- **Fallback to the sentence, then the paragraph — never the block.**
+  When the picked unit has no frame (the app did not expose its
+  bounds), the line falls back to the sentence, then to the paragraph;
+  when none of the three has a frame there is no line at all. The
+  block is only a chosen unit (picker = Block), never a fallback —
+  losing the line is fine, the fills still mark the text.
 - **Independent of the fill toggles.** The line tracks its picked unit
   even when that unit's fill is hidden (hiding the sentence fill does
   not make a sentence-following line jump back to the block). The
   line's own Show switch still decides whether the line shows at all;
   the picker only decides how long it is.
 
-## 7. Why this design
+## 7. Hide highlights while scrolling
+
+The overlay follows the block with a 0.3 s poll. While the page
+scrolls, the block moves every poll and the highlight chases it — that
+reads as jerk. So the highlight hides while scrolling and comes back
+when the text stops (phase 2 of the Step 2 trial plan, built now that
+scrolling jerkiness is confirmed).
+
+- **Toggle in the section** — "Hide highlights while scrolling", a
+  native `Toggle` at the end of the "Highlight colors" section (after
+  "Reset all to default"). Default **on** (main).
+- **Stored as a boolean** in Defaults
+  (`transpeek_highlightHideWhileScrolling`, default `true`).
+- **How it works.** Each follow poll compares the block frame it just
+  read with the previous poll's frame (no extra AX reads — it reuses
+  the frame the poll already read). A move of more than half a point
+  on any edge means scrolling: the fills + line hide at once. The
+  window keeps repositioning while hidden, so the highlight reappears
+  in the right place. It takes **2 still polls (~0.6 s)** to show
+  again, so a brief pause mid-scroll does not flash the highlight
+  back.
+- **Toggle off = the old follow-only behaviour.** The highlight stays
+  visible while scrolling, and may jerk — the user's choice.
+- **The window never stops following.** Hiding only skips drawing;
+  the 0.3 s repositioning, the off-screen hide, and the word/sentence/
+  cluster updates all keep running while hidden.
+
+## 8. Why this design
 
 - **Native picker + presets, not hex input.** The app's users are
   English learners and older readers — most do not know what a hex
@@ -226,7 +257,7 @@ follows"): **Sentence / Paragraph / Block**.
   per-layer Reset fixes one mistake; Reset all restores the whole
   tried palette.
 
-## 8. Implementation (file map)
+## 9. Implementation (file map)
 
 - `Sources/UI/ReadingIndicator/HighlightColors.swift` — the 5 default
   hexes, fixed opacities, the 6 pastel presets, hex ↔ `NSColor`
@@ -235,9 +266,10 @@ follows"): **Sentence / Paragraph / Block**.
   colours (`transpeek_highlight*Hex`, `String`, default = the palette
   above), the 5 for visibility (`transpeek_highlight*Shown`,
   `Bool`; main defaults: only word `true`, the other four `false`),
-  and `transpeek_highlightLineFollows` (`String`,
+  `transpeek_highlightLineFollows` (`String`,
   `"sentence"` / `"paragraph"` / `"block"`, main default
-  `"sentence"`).
+  `"sentence"`), and `transpeek_highlightHideWhileScrolling`
+  (`Bool`, default `true`).
 - `Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift` — the 5
   layer colours are computed properties reading Defaults live (was 4
   hardcoded `NSColor` constants); `isShown(_:in:)` intersects the
@@ -246,8 +278,13 @@ follows"): **Sentence / Paragraph / Block**.
   (`AppDelegate`), so the toggles are the deciding source. The
   cluster frame is converted in `layoutHighlightRects` like the
   sentence/word frames; the line rect follows `LineFollows` (sentence
-  / paragraph / block, falling back to the block when the unit has no
-  frame).
+  / paragraph / block, falling back down the chain chosen unit →
+  sentence → cluster, and drawing no line when none has a frame —
+  the block is only a chosen unit, never a fallback). The
+  hide-during-scroll state (`previousBlockScreenFrame`,
+  `stablePolls`, `hideForScroll`) lives here: the follow timer
+  compares the frame it just read with the previous poll's, and
+  `ReadingIndicatorView.draw` skips everything while scrolling.
 - `Sources/Core/TextSelection/ContinuousSpeakController.swift` —
   `paragraphRanges(for:sentences:)` splits a block into paragraphs on
   blank lines (derived from the sentence ranges), `paragraph(containing:in:)`
@@ -257,8 +294,9 @@ follows"): **Sentence / Paragraph / Block**.
   paragraph changes).
 - `Sources/UI/Settings/TTSSettingsView.swift` — the "Highlight colors"
   section + `HighlightColorRow` (row + Show toggle + presets + Reset
-  + the `Color`-to-hex binding), the Paragraph row, and the segmented
-  "Line follows" picker in the Vertical line row.
+  + the `Color`-to-hex binding), the Paragraph row, the segmented
+  "Line follows" picker in the Vertical line row, and the "Hide
+  highlights while scrolling" toggle at the end of the section.
 
 ## Links
 

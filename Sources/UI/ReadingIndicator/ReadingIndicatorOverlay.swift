@@ -13,9 +13,13 @@ import Foundation
 /// window ignores mouse events (clicks pass through) and never becomes
 /// key, so reading along never steals input from the page.
 /// Follow-ONLY in this build (phase 1): a 0.3 s timer re-reads the
-/// block frame and repositions the window. The hide-during-scroll /
-/// show-when-stopped fallback is phase 2 — only if testing shows
-/// jerkiness (see the trial plan).
+/// block frame and repositions the window. The hide-during-scroll
+/// behaviour (Manh 2026-11-27, phase 2 of the trial plan — built now
+/// that scrolling jerkiness is confirmed) hides the highlight while
+/// the block moves and shows it again after 2 stable polls; it is
+/// behind the "Hide highlights while scrolling" toggle in Settings
+/// (default on) and needs no extra AX reads — it reuses the frame the
+/// follow poll already read.
 /// Which layers are drawn is user-configurable (Manh 2026-11-27): the
 /// overlay is created with all five layers, and each layer has its own
 /// Show toggle in Settings (Audio tab → Highlight colors) — the
@@ -63,6 +67,13 @@ final class ReadingIndicatorOverlay {
     /// follow timer redraws every 0.3 s while showing.
     fileprivate static var lineFollows: LineFollows {
         LineFollows(rawValue: Defaults[.highlightLineFollows]) ?? .sentence
+    }
+
+    /// Whether the highlight hides while the page scrolls, read live
+    /// from Defaults (not cached) so flipping the toggle in Settings
+    /// applies at once. Default on (Manh 2026-11-27).
+    fileprivate static var hideWhileScrolling: Bool {
+        Defaults[.highlightHideWhileScrolling]
     }
 
     /// Whether a layer draws: it must be in the creation set AND its
@@ -135,6 +146,21 @@ final class ReadingIndicatorOverlay {
     private var sentenceAXRect: CGRect?
     private var wordAXRect: CGRect?
     private var clusterAXRect: CGRect?
+    /// Hide-during-scroll state (Manh 2026-11-27): the follow timer
+    /// compares the block frame it just read with the previous poll's
+    /// frame — a move means the page is scrolling, so the highlight
+    /// hides until the frame stands still for 2 polls (~0.6 s). The
+    /// window keeps following (repositioning) while hidden, so the
+    /// highlight reappears in the right place. No extra AX reads: the
+    /// comparison reuses the frame `reposition` already read.
+    private var currentBlockScreenFrame: CGRect?
+    private var previousBlockScreenFrame: CGRect?
+    /// Consecutive polls whose frame did not move (see above).
+    private var stablePolls: Int = 0
+    /// Whether the highlight is currently hidden for scrolling (the
+    /// content view reads this to skip drawing; the window still
+    /// follows).
+    private var hideForScroll: Bool = false
     private var followTimer: Timer?
 
     init(layers: Layers = .all) {
@@ -159,6 +185,13 @@ final class ReadingIndicatorOverlay {
             hide()
             return
         }
+        // First poll compares against the frame at show time, so a
+        // scroll that starts right after show still hides the
+        // highlight; a still page counts as stable from the start.
+        previousBlockScreenFrame = currentBlockScreenFrame
+        stablePolls = 0
+        hideForScroll = false
+        contentView.hideForScroll = false
         // The fills start empty (only the enabled static layers show)
         // until `update` reports a sentence/word/cluster — reposition
         // already laid them out from the (nil) AX rects.
@@ -193,11 +226,16 @@ final class ReadingIndicatorOverlay {
         sentenceAXRect = nil
         wordAXRect = nil
         clusterAXRect = nil
+        currentBlockScreenFrame = nil
+        previousBlockScreenFrame = nil
+        stablePolls = 0
+        hideForScroll = false
         contentView.blockRect = nil
         contentView.wordRect = nil
         contentView.sentenceRect = nil
         contentView.clusterRect = nil
         contentView.lineRect = nil
+        contentView.hideForScroll = false
         panel.orderOut(nil)
     }
 
@@ -211,6 +249,10 @@ final class ReadingIndicatorOverlay {
         guard let block else { return false }
         guard let frame = HoverBlockText.frame(of: block.element) else { return false }
         guard let screenFrame = Self.appKitRect(fromAXRect: frame) else { return false }
+        // Remember the frame just read — the follow timer compares it
+        // with the previous poll's frame to tell scrolling from still
+        // (see `hideForScroll`).
+        currentBlockScreenFrame = screenFrame
         // Off-screen (scrolled out of view): hide instead of marking
         // a rectangle the user cannot see.
         guard let mainScreen = NSScreen.screens.first,
@@ -251,34 +293,35 @@ final class ReadingIndicatorOverlay {
         contentView.sentenceRect = Self.isShown(.sentence, in: layers) ? sentenceLocal : nil
         contentView.wordRect = Self.isShown(.word, in: layers) ? wordAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) } : nil
         contentView.clusterRect = Self.isShown(.cluster, in: layers) ? clusterLocal : nil
-        // The line's vertical span: the chosen unit's rect, falling
-        // back down the chain (Manh 2026-11-27 03:03) — chosen unit →
-        // sentence → block. A paragraph-following line falls back to
-        // the sentence when the paragraph has no frame; only when the
-        // sentence has no frame either does the line span the whole
-        // block — the block is the last safety net, so the line never
-        // disappears for a missing frame. Clamped to the window so a
-        // frame sticking out (rounding, a unit taller than the block)
-        // never draws outside the window.
+        // The line's vertical span (Manh 2026-11-27 03:07): the chosen
+        // unit's rect, falling back down the chain chosen unit →
+        // sentence → cluster. The block is NOT a fallback — it is only
+        // a chosen unit (picker = Block), whose frame is the window
+        // itself. When no unit has a frame there is no line at all —
+        // losing the line is fine, the fills still mark the text.
+        // Clamped to the window so a frame sticking out (rounding, a
+        // unit taller than the block) never draws outside the window.
         let unitRect: CGRect?
         switch Self.lineFollows {
-        case .sentence: unitRect = sentenceLocal
+        case .sentence: unitRect = sentenceLocal ?? clusterLocal
         case .paragraph: unitRect = clusterLocal ?? sentenceLocal
         case .block: unitRect = nil
         }
         let lineHeight = panel.frame.height
-        let lineY: CGFloat
-        let lineSpan: CGFloat
+        let lineRect: CGRect?
         if let unitRect, unitRect.height > 0 {
-            lineY = min(max(unitRect.minY, 0), lineHeight)
-            lineSpan = min(max(unitRect.maxY, lineY) - lineY, lineHeight - lineY)
+            let lineY = min(max(unitRect.minY, 0), lineHeight)
+            let lineSpan = min(max(unitRect.maxY, lineY) - lineY, lineHeight - lineY)
+            lineRect = CGRect(x: 0, y: lineY, width: Self.lineWidth, height: max(0, lineSpan))
+        } else if Self.lineFollows == .block {
+            // The block is the chosen unit: full height, always available.
+            lineRect = CGRect(x: 0, y: 0, width: Self.lineWidth, height: lineHeight)
         } else {
-            lineY = 0
-            lineSpan = lineHeight
+            // No unit has a frame — no line (the fills still show).
+            lineRect = nil
         }
-        contentView.lineRect = Self.isShown(.line, in: layers) ? CGRect(
-            x: 0, y: lineY, width: Self.lineWidth, height: max(0, lineSpan)
-        ) : nil
+        contentView.lineRect = Self.isShown(.line, in: layers) ? lineRect : nil
+        contentView.hideForScroll = hideForScroll
     }
 
     private func startFollowing() {
@@ -291,9 +334,49 @@ final class ReadingIndicatorOverlay {
                     self?.hide()
                     return
                 }
+                // Hide-during-scroll (Manh 2026-11-27): when the toggle
+                // is on, a frame that moved since the last poll means
+                // the page is scrolling — hide the highlight (the
+                // window still follows, so it reappears in the right
+                // place). It takes 2 still polls (~0.6 s) to show
+                // again, so a brief pause mid-scroll does not flash
+                // the highlight back. Toggle off = the old follow-only
+                // behaviour (the highlight stays, and may jerk).
+                if Self.hideWhileScrolling {
+                    if let prev = self.previousBlockScreenFrame,
+                       let cur = self.currentBlockScreenFrame {
+                        if Self.frameMoved(prev, cur) {
+                            self.stablePolls = 0
+                            self.hideForScroll = true
+                        } else {
+                            self.stablePolls += 1
+                            if self.stablePolls >= 2 { self.hideForScroll = false }
+                        }
+                    } else {
+                        // No previous frame (first poll after show) —
+                        // not scrolling.
+                        self.stablePolls = 0
+                        self.hideForScroll = false
+                    }
+                    self.previousBlockScreenFrame = self.currentBlockScreenFrame
+                } else {
+                    self.stablePolls = 0
+                    self.hideForScroll = false
+                    self.previousBlockScreenFrame = self.currentBlockScreenFrame
+                }
+                self.contentView.hideForScroll = self.hideForScroll
                 self.contentView.needsDisplay = true
             }
         }
+    }
+
+    /// Whether two block frames count as "moved" (scrolling): any edge
+    /// moved by more than half a point. Exact equality would flicker
+    /// on sub-pixel AX rounding; half a point is far below a visible
+    /// move, so a real scroll always counts and a still page never does.
+    private static func frameMoved(_ a: CGRect, _ b: CGRect) -> Bool {
+        abs(a.minX - b.minX) > 0.5 || abs(a.minY - b.minY) > 0.5 ||
+        abs(a.width - b.width) > 0.5 || abs(a.height - b.height) > 0.5
     }
 
     /// AX coordinates (top-left origin) → AppKit screen coordinates
@@ -369,8 +452,14 @@ private final class ReadingIndicatorView: NSView {
     /// The vertical line's rect (in the 8 pt strip at the window's
     /// left edge): its height follows the chosen unit (sentence /
     /// cluster / block, see `LineFollows`), full window height when
-    /// the unit is the block. Nil when the line layer is off.
+    /// the unit is the block. Nil when the line layer is off, or when
+    /// no unit has a frame (the line is then not drawn at all).
     var lineRect: CGRect?
+    /// Hide-during-scroll (Manh 2026-11-27): while the page scrolls
+    /// the highlight is hidden — the window still follows, so it
+    /// reappears in the right place when the text stops. Set by the
+    /// overlay; `draw` skips everything while it is true.
+    var hideForScroll: Bool = false
 
     init(layers: ReadingIndicatorOverlay.Layers) {
         self.layers = layers
@@ -382,6 +471,11 @@ private final class ReadingIndicatorView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
+        // Hide-during-scroll (Manh 2026-11-27): while the page scrolls
+        // the highlight is hidden — the window still follows, so it
+        // reappears in the right place when the text stops. A moving
+        // highlight reads as jerk; a hidden one does not.
+        guard !hideForScroll else { return }
         // Bottom to top: the broadest level first, so a narrower level
         // (cluster, then sentence, then word) reads as a stronger mark
         // inside it. The fills are translucent, so overlapping levels

@@ -39,6 +39,9 @@ struct TTSSettingsView: View {
     // "sentence" / "paragraph" / "block". The overlay reads it live,
     // so changing it applies at once.
     @Default(.highlightLineFollows) private var highlightLineFollows
+    // Hide the highlight while the page scrolls (Manh 2026-11-27):
+    // the overlay reads it live, so flipping it applies at once.
+    @Default(.highlightHideWhileScrolling) private var highlightHideWhileScrolling
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -219,6 +222,15 @@ struct TTSSettingsView: View {
                     highlightSentenceHex = HighlightColors.sentenceDefaultHex
                     highlightWordHex = HighlightColors.wordDefaultHex
                 }
+
+                // Hide-during-scroll (Manh 2026-11-27): while the page
+                // scrolls the highlight hides until the text stops
+                // moving — the window still follows, so it reappears
+                // in the right place. Off restores the old follow-only
+                // behaviour (the highlight stays while scrolling, and
+                // may jerk).
+                Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
+                    .help("Hide the reading highlight while the page scrolls, show it again when the text stops")
             } header: {
                 Text("Highlight colors")
             } footer: {
@@ -364,8 +376,9 @@ private struct HighlightColorRow: View {
             // — because there are only three choices. The overlay reads
             // the value live, so it applies at once, even mid-speech;
             // when the chosen unit has no frame (the app did not expose
-            // its bounds) the line falls back to the sentence, and only
-            // then to the whole block.
+            // its bounds) the line falls back to the sentence, then the
+            // paragraph; if none has a frame there is no line (the
+            // block is only a chosen unit, never a fallback).
             if let lineFollows {
                 Picker("Line follows", selection: lineFollows) {
                     Text("Sentence").tag("sentence")
