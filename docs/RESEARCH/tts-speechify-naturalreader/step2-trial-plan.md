@@ -165,6 +165,10 @@ anh muốn đổi theo NaturalReader.
   còn đổi giữa các lần poll tức đang cuộn (ẩn); khung đứng yên qua 1–2
   lần poll (khoảng 0.3–0.6 s) tức đã dừng (hiện lại ở khung mới). Tránh
   hình ảnh lag rồi nhảy từng bước lúc cuộn nhanh.
+- **Trạng thái 2026-11-27: ĐÃ LÀM** — dự phòng này đã triển khai (xem
+  §7): có toggle "Hide highlights while scrolling" trong Settings →
+  Audio → "Highlight colors", mặc định BẬT; ý tưởng "tăng tốc poll"
+  không dùng (ẩn khi cuộn thay vì poll nhanh hơn).
 
 ## 5. Pha test (tách 2 pha)
 
@@ -214,6 +218,27 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     cửa sổ overlay rộng hơn block 8pt về bên trái, vạch nằm trong dải
     8pt đó (bên CẠNH chữ, không che ký tự đầu dòng).
   - Màu cuối cùng sau test: (chưa test — điền sau khi thử trên máy thật).
+  - **Ẩn highlight khi cuộn — phase 2 (§4) ĐÃ LÀM (2026-11-27):** trước
+    đây chỉ làm "nếu test thấy giật"; nay đã triển khai luôn vì đã thấy
+    cần: follow poll so sánh frame block giữa các lần poll (lệch > 1pt
+    = đang cuộn → ẩn các fill + vạch dọc, cửa sổ vẫn bám theo để lúc
+    hiện lại đã đúng chỗ; đứng yên 2 poll liên tiếp ~0,6s → hiện lại).
+    Có toggle trong Settings → Audio → "Highlight colors": "Hide
+    highlights while scrolling" (key
+    `transpeek_highlightHideWhileScrolling`, mặc định BẬT). Không thêm
+    lần đọc AX nào (dùng frame đã đọc sẵn ở poll). Ý tưởng "tăng tốc
+    poll để bám sát" (§4) KHÔNG dùng — ẩn khi cuộn thay vì poll nhanh
+    hơn (poll nhanh chỉ tốn thêm lần đọc AX mà vẫn lag khi cuộn nhanh).
+  - **Overlay có thêm lớp Cluster + picker Line follows (2026-11-27):**
+    lớp thứ 5 Cluster — highlight cho đoạn văn (cụm câu) chứa câu đang
+    đọc, màu hồng nhạt `#FFC2D1`, mặc định bật; block fill mặc định
+    TẮT trên nhánh (cụm là fill rộng thay cho block). Vạch dọc có
+    picker "Line follows" (Sentence / Paragraph / Block, mặc định
+    Paragraph); fallback vạch: đơn vị chọn → câu → cụm, KHÔNG về
+    block; không có frame nào thì không vẽ vạch. Chi tiết trong
+    `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` (mặc định cuối
+    trên nhánh: line shown, line follows Paragraph, block hidden,
+    sentence + word + cluster shown).
 - ...
 
 ## Liên kết
