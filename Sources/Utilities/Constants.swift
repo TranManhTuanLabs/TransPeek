@@ -962,5 +962,13 @@ extension Defaults.Keys {
     // original behaviour). Stored as a raw string; the overlay falls
     // back to "paragraph" for an unknown value.
     static let highlightLineFollows = Key<String>("transpeek_highlightLineFollows", default: HighlightColors.LineFollows.paragraph.rawValue)
+
+    // Hide the highlight while the page scrolls (Manh 2026-11-27,
+    // trial plan phase 2): when on, the overlay draws nothing while
+    // the block's frame is moving (the window still follows, so the
+    // highlight comes back in the right place when the scroll stops).
+    // Default ON — scrolling with a lagging highlight reads as
+    // jerkiness, and the highlight is only useful once the text stops.
+    static let highlightHideWhileScrolling = Key<Bool>("transpeek_highlightHideWhileScrolling", default: true)
 }
 

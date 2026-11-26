@@ -44,6 +44,8 @@ Highlight colors
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
+│ Hide highlights while scrolling                        [on]      │
+│                                                                  │
 │ [Reset all to default]                                           │
 │                                                                  │
 │ Colors for the reading indicator shown over the page while       │
@@ -80,6 +82,10 @@ Under the Vertical line row's presets, the **"Line follows" picker**
 (a native segmented control): Sentence / Paragraph / Block. It picks
 which unit the line's height follows (§4) — the Show toggle still
 decides whether the line shows at all.
+
+After the five layer rows, the **"Hide highlights while scrolling"
+toggle** (a native `Toggle`, default ON — see §4). It is not a layer:
+it decides whether the highlight content hides while the page scrolls.
 
 At the end of the section, **"Reset all to default"** restores all
 five layers' colours at once — and restores the branch defaults for
@@ -179,6 +185,22 @@ the highlight follows the cluster around the sentence being read.
   safety net, so the line is never lost. The Show toggle still
   decides whether the line shows at all; the picker only decides how
   tall it is. An unknown stored value falls back to Paragraph.
+- **Hide highlights while scrolling — the phase 2 fallback.** The
+  follow timer (0.3 s) compares each poll's block frame with the
+  previous one. A frame that moved (more than 1 pt, so AX jitter does
+  not count as scrolling) means the page is scrolling: the overlay
+  draws nothing — no fills, no line — while the window still follows
+  (reposition runs every poll), so the highlight comes back in the
+  right place. Two stable polls in a row (~0.6 s) mean the scroll
+  stopped: the highlight shows again. No extra AX reads — the frame
+  is the one the poll already read for repositioning. The toggle
+  (`transpeek_highlightHideWhileScrolling`, `Bool`, default `true` on
+  the branch) is read live, so flipping it applies at once (the next
+  poll re-evaluates). Off keeps the old follow-only behaviour: the
+  highlight stays up while scrolling, which can read as jerkiness
+  because the 0.3 s poll lags behind the text. "Reset all to default"
+  does not touch this toggle — it is a behaviour preference, not a
+  colour or a layer default.
 
 ## 5. Why this design
 
@@ -210,6 +232,13 @@ the highlight follows the cluster around the sentence being read.
   the three ways a reader tracks the voice (word-by-word is already
   the word fill), and the paragraph default matches the cluster
   highlight, so the line and the fill mark the same unit.
+- **Hide while scrolling, instead of polling faster.** The 0.3 s poll
+  cannot keep up with a fast scroll — the highlight would lag behind
+  the text however fast the poll runs, and a faster poll just burns
+  more AX reads. Hiding while the frame moves removes the jerkiness
+  entirely, and the highlight comes back by itself once the text
+  stops. It is a toggle, not a fixed behaviour, because some readers
+  would rather see the highlight track (roughly) than vanish.
 
 ## 6. Implementation (file map)
 
@@ -223,7 +252,8 @@ the highlight follows the cluster around the sentence being read.
   plus the 5 visibility keys (`transpeek_highlight*Shown`, `Bool`,
   block default `false` on the branch, the rest `true`) plus
   `transpeek_highlightLineFollows` (`String`, default `"paragraph"`
-  on the branch).
+  on the branch) plus `transpeek_highlightHideWhileScrolling`
+  (`Bool`, default `true` on the branch).
 - `Sources/Core/TextSelection/ContinuousSpeakController.swift` —
   precomputes the block's paragraph (cluster) ranges at block start
   (same step as the sentence ranges), maps each spoken word to the
@@ -239,13 +269,18 @@ the highlight follows the cluster around the sentence being read.
   block, cluster, sentence, word, then the line. The line's rect is
   laid out in `layoutHighlightRects` from the chosen unit's frame
   (sentence / cluster / block, falling back to the full block height
-  when the unit has no frame).
+  when the unit has no frame). Hide-during-scroll: `reposition`
+  compares each poll's block frame with the previous one (1 pt
+  tolerance) and sets the view's `isScrollingHidden` flag; `draw`
+  paints nothing while the flag is set, and two stable polls clear it.
 - `Sources/UI/Settings/TTSSettingsView.swift` — the "Highlight colors"
   section + `HighlightColorRow` (row + presets + Reset + the
   `Color`-to-hex binding), now with a Show `Toggle` per row, a
   "Cluster" row, a segmented "Line follows" picker in the Vertical
-  line row, and "Reset all to default" restoring the branch defaults
-  (5 colours, 5 toggles with block off, line follows Paragraph).
+  line row, a "Hide highlights while scrolling" toggle after the rows,
+  and "Reset all to default" restoring the branch defaults
+  (5 colours, 5 toggles with block off, line follows Paragraph —
+  the scroll toggle is a behaviour preference and is not reset).
 
 ## Links
 

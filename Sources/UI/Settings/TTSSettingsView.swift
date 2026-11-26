@@ -38,6 +38,10 @@ struct TTSSettingsView: View {
     // the sentence, the paragraph (cluster), or the whole block. The
     // overlay reads it live, so a picker change applies at once.
     @Default(.highlightLineFollows) private var highlightLineFollows
+    // Hide the highlight while the page scrolls (Manh 2026-11-27,
+    // trial plan phase 2): the overlay reads it live, so flipping it
+    // applies at once (the next follow poll re-evaluates).
+    @Default(.highlightHideWhileScrolling) private var highlightHideWhileScrolling
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -210,6 +214,14 @@ struct TTSSettingsView: View {
                     isShown: $highlightWordShown,
                     defaultHex: HighlightColors.wordDefaultHex
                 )
+
+                // Hide-during-scroll (Manh 2026-11-27, trial plan phase
+                // 2): while the page scrolls, the highlight content
+                // hides (the window still follows, so it comes back in
+                // the right place when the scroll stops). Off keeps the
+                // old follow-only behaviour — the highlight stays up
+                // while scrolling, which can read as jerkiness.
+                Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
 
                 Button("Reset all to default") {
                     highlightLineHex = HighlightColors.lineDefaultHex
