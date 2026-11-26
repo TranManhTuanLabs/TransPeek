@@ -84,7 +84,12 @@ The icon's glyph shows what the next click will do, not what the icon "is":
   the speaker, so the user can click again to pause/resume it — even
   when the click action is Read. The icon stays visible for the whole
   session and only hides once the session fully stops (end of unit or
-  Esc); it does not hide on pause, so the user can always resume. Before this
+  Esc); it does not hide on pause, so the user can always resume. Within
+  the session the glyph changes with the state: while playing it shows
+  pause bars (next click pauses); while paused it shows a play triangle
+  (next click resumes) — the two states must look different. (Not built
+  yet — the current code draws one speaker glyph, `speaker.wave.2.fill`,
+  for the whole session.) Before this
   fix, an Option+click to Speak (with Click = Read) left the icon on
   A+ once Option was released, because the Read-preview branch returned
   before the speaking check; the user had no way to tell speech was
