@@ -10,11 +10,11 @@ Luật cũ (trước 26/11): bấm loa lần nữa là stop luôn. Luật mới 
 - **Đang phát → bấm loa = pause**, giữ nguyên vị trí từ/câu đang dừng.
 - **Đang pause → bấm loa = resume** đúng chỗ dừng (không phát lại từ đầu).
 - **Hết unit → stop tự động**: reset vị trí về đầu, gỡ highlight, ẩn icon loa.
-- **Dừng giữa chừng = Esc** — không có nút Stop riêng.
+- **KHÔNG có cách dừng giữa chừng** (không nút Stop, không Esc — Manh chốt bỏ Esc 26/11): pause thì cứ kệ; khi icon tự ẩn theo luật thường thì phiên kết thúc lặng lẽ (xem bullet icon bên dưới).
 - **Pause thì GIỮ NGUYÊN highlight** ở từ đang dừng (không gỡ như NaturalReader) — để user thấy đang dừng ở đâu, resume nhìn rõ.
 - **KHÔNG có timeout tự stop khi pause lâu**: pause vô thời hạn, resume lúc nào cũng được (cả 2 app đều vậy; pause là ý định của user, tự stop sẽ làm mất chỗ đang dừng).
 - **Play mới thay play cũ**: bấm loa unit khác trong lúc đang phát/pause thì dừng cái cũ, phát unit mới từ đầu (auto-detect ON: hover block khác + click; OFF: select text mới + click). Bấm lại đúng unit đang pause thì resume.
-- **Icon loa phải HIỆN trong suốt phiên phát** (đang phát HOẶC đang pause — tức là khi chưa stop hẳn) để user luôn bấm được để tương tác. Chỉ ẩn khi đã stop hẳn (hết unit / Esc). Luật cũ "loa chỉ hiện khi đang nói" sửa thành "loa hiện khi phiên phát còn hoạt động (phát hoặc pause)". Hệ quả: auto-hide tạm dừng trong suốt phiên phát (xem `FLOAT_ICON_UX_SPEC.md` §4), và icon không bị dismiss là stale trong lúc phát/pause (xem §8).
+- **Icon loa HIỆN trong lúc ĐANG PHÁT** để user luôn bấm được để pause. Trong lúc **ĐANG PAUSE**, icon chạy theo luật ẩn bình thường (auto-hide sau 5s, dismiss khi block trôi đi — xem `FLOAT_ICON_UX_SPEC.md` §4, §8); khi icon ẩn thì phiên kết thúc lặng lẽ (stop). Resume được trong lúc icon còn hiện. (Sửa 26/11: bỏ luật cũ "loa hiện suốt phiên phát" + bỏ Esc — vì pause thì cứ kệ, không cần ghim icon.)
 - **Icon loa đổi biểu tượng theo trạng thái** (CHƯA CÓ — làm khi triển khai luật mới, Manh 26/11 22:20): loa phải hiện biểu tượng khác nhau cho từng trạng thái, trên cả nút loa panel lẫn icon float — chưa phát: loa thường (`speaker.wave.2`); đang phát: ⏸ (`pause.fill`, bấm để pause); đang pause: ▶ (`play.fill`, bấm để resume). Theo đúng nguyên tắc sẵn có của icon float ("glyph cho biết lần bấm tới sẽ làm gì"). Hiện tại (26/11): panel chỉ có 2 dạng loa (`speaker.wave.3.fill` khi nói / `speaker.wave.2` khi không nói), icon float chỉ có 1 dạng loa (`speaker.wave.2.fill`) cho cả phiên phát — chưa phân biệt phát/pause. (Nút Play/Pause trong Read mode đã có sẵn `play.fill`/`pause.fill` — không thuộc phạm vi này.)
 
 - Khi click icon loa đang phát TTS, hover vào icon loa hiện panel tab 2/3 chỉnh nhanh

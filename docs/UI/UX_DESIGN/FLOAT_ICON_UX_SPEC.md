@@ -69,27 +69,26 @@ Two styles of the translate icon (Manh 2026-11-19):
 
 The icon's glyph shows what the next click will do, not what the icon "is":
 
-| Click setting | No Option held | Option held | While a playback session is active (playing or paused) |
-| --- | --- | --- | --- |
-| Fast Read (default) | **A+** (turmeric) | speaker (Speak preview) | speaker (`speaker.wave.2.fill`, accent) |
-| Speak | speaker | **A+** (turmeric, Fast Read preview) | speaker |
-| Translate | **A** (plain, not bold) | **A+** | speaker |
+| Click setting | No Option held | Option held | While playing | While paused |
+| --- | --- | --- | --- | --- |
+| Fast Read (default) | **A+** (turmeric) | speaker (Speak preview) | pause bars (`pause.fill`) | play triangle (`play.fill`) |
+| Speak | speaker | **A+** (turmeric, Fast Read preview) | pause bars | play triangle |
+| Translate | **A** (plain, not bold) | **A+** | pause bars | play triangle |
 
 - **The default icon is A+** (Manh 2026-11-18, round 7): because the
   default click is Fast Read, the icon shows A+ by default — the user
   can tell at a glance that a plain click reads, without opening
   Settings. Holding Option flips it to the speaker (Speak preview).
-- **Speaking always wins the glyph** (Manh 2026-11-18, round 7; updated 2026-11-26): while
-  a TTS playback session is active — playing or paused — the icon shows
-  the speaker, so the user can click again to pause/resume it — even
-  when the click action is Read. The icon stays visible for the whole
-  session and only hides once the session fully stops (end of unit or
-  Esc); it does not hide on pause, so the user can always resume. Within
-  the session the glyph changes with the state: while playing it shows
-  pause bars (next click pauses); while paused it shows a play triangle
-  (next click resumes) — the two states must look different. (Not built
-  yet — the current code draws one speaker glyph, `speaker.wave.2.fill`,
-  for the whole session.) Before this
+- **Playback always wins the glyph** (Manh 2026-11-18, round 7; updated 2026-11-26): while
+  a TTS playback session is active, the icon shows the playback state,
+  so the user can click again to pause/resume it — even when the click
+  action is Read: pause bars while playing (next click pauses), play
+  triangle while paused (next click resumes) — the two states must look
+  different. (Not built yet — the current code draws one speaker glyph,
+  `speaker.wave.2.fill`, for the whole session.) The icon stays visible
+  while PLAYING; while PAUSED it follows the normal auto-hide/stale
+  rules, and hiding ends the session — resume is possible only while
+  the icon is still visible. Before this
   fix, an Option+click to Speak (with Click = Read) left the icon on
   A+ once Option was released, because the Read-preview branch returned
   before the speaking check; the user had no way to tell speech was
@@ -147,12 +146,12 @@ instead of Option).
 - The icon hides by itself after the auto-hide delay (Settings → General,
   Slider 3–10s, default **5s**, Defaults key `autoHideDelaySec`;
   `TriggerIconController.startAutoDismissTimer()` reads it).
-- The auto-hide is **PAUSED** while: the cursor is over the icon; a TTS
-  playback session is active (playing **or paused** — the icon must stay
-  visible until the session fully stops, so the user can pause/resume it);
+- The auto-hide is **PAUSED** while: the cursor is over the icon; TTS is
+  playing (the icon must stay visible so the user can pause it);
   **Option is held** (so the A+ preview doesn't vanish before the user can
   click it); a Read open is pending (the 2.5s linger has its own timer).
-  On Option release, the auto-hide restarts (fresh 5s).
+  While playback is PAUSED, the normal auto-hide applies — and hiding
+  ends the session. On Option release, the auto-hide restarts (fresh 5s).
 
 ## 5. How Option is detected — the correct mechanism (and the bug it replaces)
 
@@ -282,9 +281,10 @@ UX-spec record of the same settled behaviour.
 - **Follow / stale:** while the icon is up, the block's frame is re-read
   every 0.3 s. If it moved more than 10 pt (the text scrolled away) or
   the element is gone, the icon is dismissed as stale; moving the mouse
-  re-detects. The poll stops the moment the icon is dismissed. While a
-  playback session is active (playing or paused), the icon is never
-  dismissed as stale (the user needs it to pause/resume/stop playback).
+  re-detects. The poll stops the moment the icon is dismissed. While TTS
+  is playing, the icon is never dismissed as stale (the user needs it to
+  pause playback). While playback is paused, the normal stale rule
+  applies — dismissing ends the session.
 - **Suppress after dismiss:** 500 ms after a dismiss, a tiny mouse move
   does not re-summon the icon at once.
 - **Gates (never fire):** no hit-test while dragging (a selection is in
