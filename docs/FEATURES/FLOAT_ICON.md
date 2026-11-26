@@ -53,9 +53,9 @@
 - While the icon is up, the hovered block's frame is re-read every
   0.3 s; if it moved > 10 pt (the text scrolled away) or the element
   is gone, the icon is dismissed as stale. Polling stops when the icon
-  is dismissed. While TTS is playing, the icon is never dismissed as
-  stale (the user needs it to pause playback). While playback is paused,
-  the normal stale rule applies — dismissing ends the session.
+  is dismissed. The icon is always dismissible as stale, even while a
+  speaker session is playing elsewhere — the session lives on the
+  separate speaker indicator, not on this icon (updated 2026-11-26).
 - Settings (General → Translation, inside "Show floating icon on text
   selection"): "Show icon when hovering text (default: on)". Default ON.
   Below it, "Hover text delay (default: 0.4s)" — a Picker
