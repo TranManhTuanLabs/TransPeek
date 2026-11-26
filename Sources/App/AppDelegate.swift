@@ -891,7 +891,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// float icon — nothing here touches `TriggerIconController`.
     private func setupAlternativeIcon() {
         let iconController = AlternativeIconController()
-        iconController.speakLanguageProvider = { Self.speakLanguage(for: $0) }
+        // Click → start a click-to-listen session (new speaker law,
+        // Manh 2026-11-27): the same shared flow as the real float
+        // icon — the chaining controller owns the session and the
+        // SEPARATE speak indicator appears at the icon's frame. A new
+        // click replaces the old session (one voice at a time);
+        // pause/resume is the indicator's job.
+        iconController.onSpeakRequested = { [weak self] text in
+            guard let self else { return }
+            // Read the frame BEFORE dismissing (dismiss clears it).
+            let indicatorFrame = self.alternativeIconController.currentFrame
+            self.alternativeIconController.dismissSilently()
+            // A selection inside Read is a single speak (no hover
+            // block, no chaining — the controller stops any running
+            // session first, so this replaces it).
+            self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
+        }
         // Hover → translate the selected word. Per surface (design doc
         // §5): Window Read opens the panel at the cursor (normal icon
         // flow); Lite only translates — the panel follows `sourceText`

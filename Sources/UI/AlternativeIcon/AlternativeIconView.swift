@@ -6,23 +6,14 @@ import AppKit
 /// era), reused here for the in-Read lookup icon — it looks like the
 /// float icon but is a different object with its own wiring (see
 /// docs/UI/UX_DESIGN/FAST_READ_SELECT_ICON.md). The glyph does NOT
-/// change on hover (unlike the main float icon); it only switches to
-/// the speaker while its own TTS is speaking.
+/// change on hover (unlike the main float icon) and does NOT change
+/// while speaking (Manh 2026-11-27: playback state lives only on the
+/// separate speak indicator — the icon always keeps its blue A).
 @MainActor
 final class AlternativeIconView: NSView {
     var onMouseEntered: (() -> Void)?
     var onMouseExited: (() -> Void)?
     var onMouseDown: ((NSEvent) -> Void)?
-
-    /// True while the icon's own TTS is speaking the selected text.
-    /// Shows the speaker glyph instead of the "A" (click again to stop).
-    var isSpeaking = false {
-        didSet {
-            if isSpeaking != oldValue {
-                needsDisplay = true
-            }
-        }
-    }
 
     private var trackingArea: NSTrackingArea?
 
@@ -73,41 +64,16 @@ final class AlternativeIconView: NSView {
         ctx.addPath(bubblePath)
         ctx.strokePath()
 
-        // Glyph — same on hover (no swap). Speaking shows the speaker
-        // so the user can click again to stop it.
-        if isSpeaking {
-            drawSpeakerGlyph(in: bounds)
-        } else {
-            drawPlainAGlyph(in: bounds)
-        }
+        // Glyph — always the plain blue A (same on hover, same while
+        // speaking). Playback state lives only on the separate speak
+        // indicator (Manh 2026-11-27), so the icon never swaps glyphs.
+        drawPlainAGlyph(in: bounds)
     }
 
-    /// Glyph sizes scale with the bubble (Manh 2026-11-21, same rule
-    /// as the main icon): the "A" is half the bubble size, the speaker
-    /// ~44% — a smaller bubble still shows a proportional letter.
+    /// The "A" is half the bubble size (Manh 2026-11-21, same rule as
+    /// the main icon) — a smaller bubble still shows a proportional
+    /// letter.
     private var aFontSize: CGFloat { bounds.width * 0.5 }
-    private var speakerPointSize: CGFloat { bounds.width * 0.44 }
-
-    /// Draw the speaker glyph (`speaker.wave.2.fill`, accent color) —
-    /// shown while the icon's own TTS is speaking (click again to stop).
-    private func drawSpeakerGlyph(in bounds: NSRect) {
-        let symbolName = "speaker.wave.2.fill"
-        let symbolColor = NSColor.controlAccentColor
-        let sizeConfig = NSImage.SymbolConfiguration(pointSize: speakerPointSize, weight: .medium)
-        let colorConfig = NSImage.SymbolConfiguration(hierarchicalColor: symbolColor)
-        if let image = NSImage(systemSymbolName: symbolName, accessibilityDescription: "Speak")?
-            .withSymbolConfiguration(sizeConfig.applying(colorConfig))
-        {
-            let imageSize = image.size
-            let imageRect = NSRect(
-                x: (bounds.width - imageSize.width) / 2,
-                y: (bounds.height - imageSize.height) / 2,
-                width: imageSize.width,
-                height: imageSize.height
-            )
-            image.draw(in: imageRect, from: .zero, operation: .sourceOver, fraction: 1.0)
-        }
-    }
 
     /// Draw the translate glyph: a plain "A", regular weight (NOT bold),
     /// blue (Style 1, like the main icon's idle glyph). Drawn as text
