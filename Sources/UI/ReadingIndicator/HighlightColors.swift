@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - HighlightColors
 
-/// Reading indicator highlight colors (Manh 2026-11-27): the 4 layers'
+/// Reading indicator highlight colors (Manh 2026-11-27): the 5 layers'
 /// colors are user-customizable in Settings (Audio tab → Highlight
 /// colors) and stored as "#RRGGBB" hex strings in Defaults. The overlay
 /// reads them live at draw time, so a change applies at once — no
@@ -15,11 +15,16 @@ enum HighlightColors {
     /// values are the rounded equivalents of the RGB values the overlay
     /// used before (word 0.85/0.75/0.98, sentence 1.0/0.95/0.65, block
     /// 0.75/0.95/0.70, line 0.55/0.75/1.0), so the defaults look
-    /// identical to the old hardcoded colors.
+    /// identical to the old hardcoded colors. The cluster default
+    /// (Manh 2026-11-27) is light pink — a preset already in the
+    /// palette, distinct from the other four fills — chosen by the
+    /// parent agent (Manh did not pick a colour); change it in
+    /// Settings if another pink reads better.
     static let lineDefaultHex = "#8CBFFF" // blue nhạt, đặc
     static let blockDefaultHex = "#BFF2B3" // green nhạt
     static let sentenceDefaultHex = "#FFF2A6" // vàng nhạt
     static let wordDefaultHex = "#D9BFFA" // tím nhạt
+    static let clusterDefaultHex = "#FFC2D1" // hồng nhạt
     /// Fixed opacity for the fills (translucent so the text underneath
     /// stays readable) and the line (solid so it reads as a marker,
     /// not a tint).

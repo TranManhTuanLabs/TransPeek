@@ -51,6 +51,13 @@ final class ContinuousSpeakController {
     /// text) precomputed at each block start, so the word callback can
     /// map a spoken word to its sentence without re-splitting.
     private var sentenceRanges: [NSRange] = []
+    /// Paragraph (cụm) ranges (NSRange, UTF-16 offsets in the current
+    /// block's text) precomputed at each block start: a paragraph is a
+    /// run of sentences with no blank line between them (Manh
+    /// 2026-11-27). The cluster highlight and the line's "paragraph"
+    /// length both read from this, so the word callback can map a
+    /// spoken word to its paragraph without re-splitting.
+    private var paragraphRanges: [NSRange] = []
     /// The sentence currently highlighted (cached so its frame is only
     /// re-read from AX when the sentence actually changes, not on
     /// every word).
@@ -59,6 +66,14 @@ final class ContinuousSpeakController {
     /// nil when the app did not return one — the sentence level is
     /// simply not drawn then (the block + line still show).
     private var currentSentenceFrame: CGRect?
+    /// The paragraph currently highlighted (cached like the sentence:
+    /// its frame is only re-read from AX when the paragraph actually
+    /// changes, not on every word).
+    private var currentParagraphRange: NSRange?
+    /// The cached frame (AX coordinates) of `currentParagraphRange`,
+    /// or nil when the app did not return one — the cluster level is
+    /// simply not drawn then (the other levels still show).
+    private var currentParagraphFrame: CGRect?
 
     init(ttsCoordinator: TTSCoordinator, indicator: SpeakIndicatorController, overlay: ReadingIndicatorOverlay) {
         self.indicator = indicator
@@ -102,8 +117,11 @@ final class ContinuousSpeakController {
         currentBlock = block
         currentSingleText = nil
         sentenceRanges = Self.sentenceRanges(for: block.text)
+        paragraphRanges = Self.paragraphRanges(for: block.text, sentences: sentenceRanges)
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         isChaining = true
         indicator.show(at: indicatorFrame)
         overlay.show(block: block)
@@ -122,8 +140,11 @@ final class ContinuousSpeakController {
         currentBlock = nil
         currentSingleText = text
         sentenceRanges = []
+        paragraphRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         isChaining = false
         indicator.show(at: indicatorFrame)
         player.play(text: text, language: AppDelegate.speakLanguage(for: text))
@@ -158,8 +179,11 @@ final class ContinuousSpeakController {
         currentBlock = nil
         currentSingleText = nil
         sentenceRanges = []
+        paragraphRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         // Stopping the player bumps its generation, so an in-flight
         // utterance returns without firing onEnded — the chain then
         // ends instead of advancing.
@@ -187,8 +211,11 @@ final class ContinuousSpeakController {
         }
         currentBlock = next
         sentenceRanges = Self.sentenceRanges(for: next.text)
+        paragraphRanges = Self.paragraphRanges(for: next.text, sentences: sentenceRanges)
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         overlay.show(block: next)
         player.play(text: next.text, language: AppDelegate.speakLanguage(for: next.text))
     }
@@ -205,8 +232,11 @@ final class ContinuousSpeakController {
         currentBlock = nil
         currentSingleText = nil
         sentenceRanges = []
+        paragraphRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         overlay.hide()
         indicator.hide()
     }
@@ -220,19 +250,23 @@ final class ContinuousSpeakController {
         currentBlock = nil
         currentSingleText = nil
         sentenceRanges = []
+        paragraphRanges = []
         currentSentenceRange = nil
         currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
         overlay.hide()
         indicator.hide()
     }
 
-    /// A spoken word's range arrived: map it to its sentence and update
-    /// the overlay (word + sentence frames). The sentence frame is
-    /// cached and only re-read when the sentence changes; the word
-    /// frame is read every time (it moves with every word). Either
-    /// level may be nil (the app does not expose range bounds) — the
-    /// overlay simply skips that level. Ignored for a single speak (no
-    /// overlay, no block).
+    /// A spoken word's range arrived: map it to its sentence and its
+    /// paragraph (cluster) and update the overlay (word + sentence +
+    /// cluster frames). The sentence and paragraph frames are cached
+    /// and only re-read when they actually change; the word frame is
+    /// read every time (it moves with every word). Any level may be nil
+    /// (the app does not expose range bounds) — the overlay simply
+    /// skips that level. Ignored for a single speak (no overlay, no
+    /// block).
     private func handleWordRange(_ wordRange: NSRange) {
         guard let block = currentBlock else { return }
         guard let sentenceRange = Self.sentence(containing: wordRange.location, in: sentenceRanges) else { return }
@@ -242,8 +276,19 @@ final class ContinuousSpeakController {
             sentenceFrame = HoverBlockText.bounds(for: sentenceRange, in: block.element)
             currentSentenceFrame = sentenceFrame
         }
+        // The paragraph (cluster) around this sentence: same caching
+        // as the sentence — re-read only when the paragraph changes.
+        // A block with no blank line is a single paragraph, so the
+        // cluster then covers the whole block.
+        var paragraphFrame = currentParagraphFrame
+        if let paragraphRange = Self.paragraph(containing: sentenceRange.location, in: paragraphRanges),
+           paragraphRange != currentParagraphRange {
+            currentParagraphRange = paragraphRange
+            paragraphFrame = HoverBlockText.bounds(for: paragraphRange, in: block.element)
+            currentParagraphFrame = paragraphFrame
+        }
         let wordFrame = HoverBlockText.bounds(for: wordRange, in: block.element)
-        overlay.update(wordFrame: wordFrame, sentenceFrame: sentenceFrame)
+        overlay.update(wordFrame: wordFrame, sentenceFrame: sentenceFrame, clusterFrame: paragraphFrame)
     }
 
     /// The next block below `block`: probe points just under its frame
@@ -336,6 +381,66 @@ final class ContinuousSpeakController {
         // Fallback: the last sentence starting at or before the offset,
         // else the first sentence — the overlay always has a sentence
         // to show while a word is being spoken.
+        var fallback: NSRange?
+        for range in ranges where range.location <= offset {
+            fallback = range
+        }
+        return fallback ?? ranges.first
+    }
+
+    /// Split `text` into paragraph (cụm) ranges (NSRange, UTF-16
+    /// offsets — the same indexing the TTS word callback reports).
+    /// A paragraph is a run of sentences with no blank line between
+    /// them: the gap between two consecutive sentences ends the
+    /// paragraph when it holds 2+ line breaks (a blank line), and
+    /// keeps it when it holds 0–1 (a space, or a single line break
+    /// inside the paragraph). Derived from the sentence ranges — the
+    /// splitter already ends a sentence at every newline, so every
+    /// paragraph boundary is also a sentence boundary. A block with no
+    /// blank line is a single paragraph covering the whole text. A
+    /// CRLF pair counts as ONE line break, so Windows-style endings
+    /// never split a paragraph by accident.
+    static func paragraphRanges(for text: String, sentences: [NSRange]) -> [NSRange] {
+        guard !sentences.isEmpty else { return [] }
+        let nsText = text as NSString
+        var ranges: [NSRange] = []
+        var start = sentences[0].location
+        var end = sentences[0].location + sentences[0].length
+        for i in 1..<sentences.count {
+            let prev = sentences[i - 1]
+            let cur = sentences[i]
+            // Count line breaks in the whitespace gap between the
+            // sentences: 2+ means a blank line sits between them.
+            var breaks = 0
+            var j = prev.location + prev.length
+            while j < cur.location {
+                let ch = nsText.character(at: j)
+                if ch == 0x0D { // "\r" — a CRLF pair is one break
+                    breaks += 1
+                    if j + 1 < cur.location, nsText.character(at: j + 1) == 0x0A { j += 1 }
+                } else if ch == 0x0A { // "\n"
+                    breaks += 1
+                }
+                j += 1
+            }
+            if breaks >= 2 {
+                ranges.append(NSRange(location: start, length: end - start))
+                start = cur.location
+            }
+            end = cur.location + cur.length
+        }
+        ranges.append(NSRange(location: start, length: end - start))
+        return ranges
+    }
+
+    /// The paragraph containing a UTF-16 offset, or the nearest one
+    /// when the offset falls in the whitespace between paragraphs —
+    /// same fallback as `sentence(containing:in:)`, so the overlay
+    /// always has a paragraph to show while a word is being spoken.
+    static func paragraph(containing offset: Int, in ranges: [NSRange]) -> NSRange? {
+        for range in ranges where NSLocationInRange(offset, range) {
+            return range
+        }
         var fallback: NSRange?
         for range in ranges where range.location <= offset {
             fallback = range

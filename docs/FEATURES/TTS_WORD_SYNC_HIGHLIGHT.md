@@ -12,7 +12,7 @@
 
 ## 2. Hành vi — luật highlight (CHỐT theo luật loa)
 
-- **Từ hiện tại highlight tím nhạt, câu hiện tại highlight vàng nhạt** — đúng 2 màu đã dùng ở overlay trên trang, để mắt user không phải học lại 2 bộ màu. Màu lấy từ Settings **"Highlight colors"** (4 lớp, đang làm trên nhánh `feature/continuous-reading`) — **không hardcode màu mới trong spec này**. Màu mặc định hiện tại: từ `#D9BFFA`, câu `#FFF2A6` (đoạn `#BFF2B3`, vạch dọc `#8CBFFF` — 2 lớp này chỉ dùng ở overlay trên trang, không dùng trong Read).
+- **Từ hiện tại highlight tím nhạt, câu hiện tại highlight vàng nhạt** — đúng 2 màu đã dùng ở overlay trên trang, để mắt user không phải học lại 2 bộ màu. Màu lấy từ Settings **"Highlight colors"** (5 lớp) — **không hardcode màu mới trong spec này**. Màu mặc định hiện tại: từ `#D9BFFA`, câu `#FFF2A6` (đoạn `#BFF2B3`, cụm `#FFC2D1`, vạch dọc `#8CBFFF` — 3 lớp này chỉ dùng ở overlay trên trang, không dùng trong Read).
 - **Pause thì GIỮ NGUYÊN highlight ở từ đang dừng** (không gỡ như NaturalReader) — cùng luật với `SPEECH_PLAYER.md` §1: để user thấy đang dừng ở đâu, resume nhìn rõ. Highlight chỉ gỡ khi phiên kết thúc.
 - **Hết unit thì gỡ highlight** — đọc hết đoạn/bài thì reset vị trí về đầu, gỡ highlight (cùng luật "hết unit → stop tự động" ở `SPEECH_PLAYER.md` §1).
 - **Highlight đi theo giọng (follow):** khi giọng sang từ ở slide/dòng khác thì focus + highlight chuyển theo tới slide/dòng chứa từ đó (auto-scroll/follow, không để highlight chạy ra ngoài màn hình). Style 1: chuyển slide chứa từ; Style 2: chuyển dòng chứa từ.
