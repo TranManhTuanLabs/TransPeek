@@ -178,11 +178,12 @@ the highlight follows the cluster around the sentence being read.
   original behaviour). The overlay window stays the block frame
   (the fills still need it) — only the line's height changes. The
   picker is read live (the follow timer re-lays out every 0.3 s),
-  so a tap applies at once. Fallback chain (Manh 2026-11-27): if the
-  chosen unit has no frame yet (no word spoken yet, or the app hides
-  range bounds), the line falls back to the sentence being read, and
-  only then to the full block height — the block is just the last
-  safety net, so the line is never lost. The Show toggle still
+  so a tap applies at once. Fallback chain (Manh 2026-11-27, revised
+  03:07): chosen unit → sentence → cluster. The block is NOT a
+  fallback — it is only the unit when the picker is Block. If none of
+  the three has a frame yet (no word spoken yet, or the app hides
+  range bounds), the line is not drawn at all — losing the line is
+  fine, the other highlights still show. The Show toggle still
   decides whether the line shows at all; the picker only decides how
   tall it is. An unknown stored value falls back to Paragraph.
 - **Hide highlights while scrolling — the phase 2 fallback.** The
@@ -268,8 +269,8 @@ the highlight follows the cluster around the sentence being read.
   the layer to be shown. `Layers` gains `.cluster`; `draw` order is
   block, cluster, sentence, word, then the line. The line's rect is
   laid out in `layoutHighlightRects` from the chosen unit's frame
-  (sentence / cluster / block, falling back to the full block height
-  when the unit has no frame). Hide-during-scroll: `reposition`
+  (sentence / cluster / block, with the fallback chain chosen unit →
+  sentence → cluster; no frame for any of the three means no line). Hide-during-scroll: `reposition`
   compares each poll's block frame with the previous one (1 pt
   tolerance) and sets the view's `isScrollingHidden` flag; `draw`
   paints nothing while the flag is set, and two stable polls clear it.

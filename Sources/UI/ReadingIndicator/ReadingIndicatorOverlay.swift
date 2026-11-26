@@ -199,6 +199,7 @@ final class ReadingIndicatorOverlay {
         contentView.wordRect = nil
         contentView.sentenceRect = nil
         contentView.clusterRect = nil
+        contentView.lineRect = nil
         contentView.isScrollingHidden = false
         panel.orderOut(nil)
     }
@@ -291,32 +292,35 @@ final class ReadingIndicatorOverlay {
         // the sentence, the paragraph (cluster), or the whole block.
         // The window itself stays the block frame (the fills still need
         // it) — only the line's height changes. Fallback chain (Manh
-        // 2026-11-27): chosen unit → sentence → block. The sentence is
-        // tried first because it is the unit the voice is actually on;
-        // the block is only the last safety net, so the line is never
-        // lost. A unit with no frame yet (no word spoken, or the app
-        // hides range bounds) falls through to the next step.
+        // 2026-11-27, revised 03:07): chosen unit → sentence → cluster.
+        // The block is NOT a fallback — it is only the unit when the
+        // picker is Block. If none of the three has a frame yet (no
+        // word spoken, or the app hides range bounds), the line is not
+        // drawn at all — losing the line is fine, the other highlights
+        // still show. Duplicates are skipped: when the chosen unit
+        // already is the sentence (or the cluster), it is tried once.
         // The span is clamped to the window so a partially scrolled
         // unit never draws the line outside it.
         let lineSpanRect: CGRect?
         switch Self.lineFollows {
         case .sentence:
-            // The sentence itself; no sentence frame → whole block.
-            lineSpanRect = contentView.sentenceRect
+            // The sentence, then the cluster around it.
+            lineSpanRect = contentView.sentenceRect ?? contentView.clusterRect
         case .paragraph:
-            // The cluster, falling back to the sentence the voice is
-            // on, then to the whole block.
+            // The cluster, then the sentence the voice is on.
             lineSpanRect = contentView.clusterRect ?? contentView.sentenceRect
         case .block:
-            // The whole block — no frame needed.
-            lineSpanRect = nil
+            // The whole block — it IS the chosen unit here, not a
+            // fallback, so no frame is needed.
+            lineSpanRect = CGRect(x: 0, y: 0, width: panel.frame.width, height: panel.frame.height)
         }
         if let unit = lineSpanRect {
             let y = max(0, unit.minY)
             let height = max(0, min(unit.maxY, panel.frame.height) - y)
-            contentView.lineRect = CGRect(x: 0, y: y, width: Self.lineWidth, height: height)
+            contentView.lineRect = height > 0 ? CGRect(x: 0, y: y, width: Self.lineWidth, height: height) : nil
         } else {
-            contentView.lineRect = CGRect(x: 0, y: 0, width: Self.lineWidth, height: panel.frame.height)
+            // No frame for any unit — no line this poll.
+            contentView.lineRect = nil
         }
     }
 
@@ -407,7 +411,9 @@ private final class ReadingIndicatorView: NSView {
     var clusterRect: CGRect?
     /// The vertical line's rect in the left strip (set by
     /// `layoutHighlightRects` — its height follows the chosen unit).
-    var lineRect: CGRect = .zero
+    /// Nil means no line this poll (no unit had a frame — the line is
+    /// simply not drawn, the other highlights still show).
+    var lineRect: CGRect?
     /// Hide-during-scroll flag (set by the overlay in
     /// `layoutHighlightRects`): while true, `draw` paints nothing —
     /// the fills and the line would lag behind the scrolling text.
@@ -452,14 +458,13 @@ private final class ReadingIndicatorView: NSView {
         }
         // The vertical line: a solid bar in the strip left of the text.
         // Its height follows the chosen unit (sentence / paragraph /
-        // block — see `layoutHighlightRects`); a zero-height rect (no
-        // layout yet) falls back to the full window height, so the eye
-        // finds the block being read at a glance even when the fills
-        // are faint. Only when the line layer is on and shown.
-        if layers.contains(.line), ReadingIndicatorOverlay.isLineShown {
+        // block — see `layoutHighlightRects`). A nil rect means no unit
+        // had a frame this poll, so the line is not drawn at all (the
+        // other highlights still show). Only when the line layer is on
+        // and shown.
+        if layers.contains(.line), ReadingIndicatorOverlay.isLineShown, let lineRect {
             ReadingIndicatorOverlay.lineFill.setFill()
-            let rect = lineRect.height > 0 ? lineRect : CGRect(x: 0, y: 0, width: ReadingIndicatorOverlay.lineWidth, height: bounds.height)
-            NSBezierPath(rect: rect).fill()
+            NSBezierPath(rect: lineRect).fill()
         }
     }
 }
