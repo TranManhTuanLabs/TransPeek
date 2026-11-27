@@ -434,20 +434,25 @@ private struct HighlightColorRow: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
                 Spacer()
-                // Hex + Show/Hide label, right before the toggle (Manh
-                // 2026-11-27): left to right, hex, label, switch —
-                // grouped close together on the right, so the label
-                // always says what the layer is doing. The label
-                // follows the state: "Show" while the layer is on,
-                // "Hide" while it is off. Off hides the layer from
-                // the overlay (its color is kept, so turning it back on
-                // restores the same color). The overlay reads the toggle
-                // live, so it applies at once. "Show" and "Hide" are
-                // both 4 letters, so the label never shifts the row.
-                Text(hex.uppercased())
-                    .monospaced()
-                    .foregroundStyle(.secondary)
-                Toggle(isShown ? "Show" : "Hide", isOn: $isShown)
+                // Hex + Show/Hide label + toggle as one tight group
+                // (Manh 2026-11-27): a nested HStack(spacing: 6) so
+                // the hex and the label sit immediately left of the
+                // switch and read as one control at the row's right
+                // edge — not as loose items drifting toward the
+                // middle. Order left to right: hex, label, switch.
+                // The label follows the state: "Show" while the layer
+                // is on, "Hide" while it is off. Off hides the layer
+                // from the overlay (its color is kept, so turning it
+                // back on restores the same color). The overlay reads
+                // the toggle live, so it applies at once. "Show" and
+                // "Hide" are both 4 letters, so the label never shifts
+                // the row.
+                HStack(spacing: 6) {
+                    Text(hex.uppercased())
+                        .monospaced()
+                        .foregroundStyle(.secondary)
+                    Toggle(isShown ? "Show" : "Hide", isOn: $isShown)
+                }
             }
             // Preset swatches: tap one to set this layer's color at
             // once. The current color gets a strong ring so the user

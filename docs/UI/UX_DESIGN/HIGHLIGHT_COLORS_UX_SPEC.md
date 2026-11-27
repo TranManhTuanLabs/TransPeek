@@ -317,7 +317,7 @@ counts as one break; a single-range block has no cluster.
   (`transpeek_highlightUnderlineShown`, default `true` on the branch
   and on main), in its own row at the top of the section, and
   "Reset all to default" restores it like the other layers. It draws
-  a thin solid bar (2.5 pt, opacity 1.0) at the bottom edge of the
+  a thin solid bar (1.5 pt, opacity 1.0) at the bottom edge of the
   word frame and of the sentence frame, both in the underline's own
   colour. Only the word + sentence are underlined — not the block,
   cluster, or line — so the page never shows several parallel lines.
@@ -405,7 +405,7 @@ counts as one break; a single-range block has no cluster.
   paints nothing while the flag is set, and two stable polls clear it.
   The underline: `update` also stores the word/sentence frames
   without the Show gate, `layoutHighlightRects` reduces each to a
-  2.5 pt bar at its bottom edge, and `draw` paints those bars solid
+  1.5 pt bar at its bottom edge, and `draw` paints those bars solid
   (opacity 1.0, the underline's own colour) when the underline layer
   is in `layers` and its Show toggle is on — gated only on the
   toggle, never on the fill toggles. The vertical line is 1.75 pt wide
@@ -487,7 +487,7 @@ above looks the way it does.
   outside the PDF window on the branch build.)
 - **The line and the underline are rectangles too — thin ones.**
   The vertical line (1.75 pt wide, in the 8 pt strip) and the
-  underline (2.5 pt tall, under the word/sentence) are the same
+  underline (1.5 pt tall, under the word/sentence) are the same
   `NSBezierPath(rect:).fill()` as the fills, only narrow and solid
   (opacity 1.0). A thin solid bar reads as a line, not a box, which
   is why neither of them has the border problem the fills do.
