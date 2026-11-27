@@ -300,28 +300,30 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     nil khi chỉ có 1 đoạn; overlay đã xử lý `clusterFrame` nil (không
     vẽ) nên không đổi overlay. Block có dòng trống thì cụm vẫn hiện
     bình thường.
-  - **Tách đoạn theo cả 2 tín hiệu — dòng trống / 1 lần xuống dòng /
-    thụt đầu dòng (2026-11-27, Manh duyệt):** trước đây chỉ tách đoạn
-    khi có dòng trống (2+ lần ngắt dòng), nên HỤT đoạn trong sách/PDF
-    (thường chỉ xuống dòng 1 lần hoặc thụt đầu dòng, không có dòng
-    trống). Nay ranh giới đoạn là khi khoảng trắng giữa 2 câu chứa
-    dòng trống, HOẶC 1 lần xuống dòng sau câu kết thúc bằng `.`/`!`/`?`,
-    HOẶC câu tiếp theo thụt đầu dòng (tab, hoặc 2+ khoảng trắng ở đầu
-    câu; sau 1 lần xuống dòng thì ngay cả 1 khoảng trắng ở đầu câu
-    cũng tính là thụt — 1 khoảng trắng duy nhất không kèm xuống dòng
+  - **Tách đoạn theo 3 tín hiệu — dòng trống / 1 lần xuống dòng /
+    thụt đầu dòng (2026-11-27, Manh duyệt; TẠM BỎ điều kiện dấu kết
+    câu 2026-11-27 19:38):** trước đây chỉ tách đoạn khi có dòng
+    trống (2+ lần ngắt dòng), nên HỤT đoạn trong sách/PDF (thường chỉ
+    xuống dòng 1 lần hoặc thụt đầu dòng, không có dòng trống). Nay
+    ranh giới đoạn là khi khoảng trắng giữa 2 câu chứa dòng trống,
+    HOẶC 1 lần xuống dòng (bất kể câu trước có dấu kết câu hay
+    không), HOẶC câu tiếp theo thụt đầu dòng (tab, hoặc 2+ khoảng
+    trắng ở đầu câu — 1 khoảng trắng duy nhất không kèm xuống dòng
     thì KHÔNG tính).
-    Riêng 1 lần xuống dòng sau câu KHÔNG có dấu kết câu chỉ là dòng
-    gói (wrapped line) — không tách, để không cắt 1 đoạn thành 1 cụm
-    cho mỗi dòng hiển thị trong PDF (bộ tách câu vốn đã ngắt câu ở ký
-    tự xuống dòng nên câu gói đến dưới dạng mảnh câu). CRLF tính là 1
-    lần ngắt. Đã kiểm chứng bằng mô phỏng code nhánh (2026-11-27, 12
-    mẫu): dòng trống tách; 1 lần xuống dòng sau `.`/`?`/`!` tách; 1 lần
-    xuống dòng sau câu không có dấu kết câu không tách; tab hoặc 2+
-    khoảng trắng tách; 1 khoảng trắng không kèm xuống dòng không tách;
-    1 khoảng trắng sau xuống dòng tách; CRLF tính là 1 lần ngắt; block
-    1 đoạn thì không có cụm. Triển khai: `paragraphRanges` nay nhóm câu thành cụm
-    (nhận thêm `sentences`), thay cho cách gom dòng cũ; giữ nguyên
-    sửa fallback (block chỉ có 1 đoạn → không vẽ fill cụm).
+    Điều kiện dấu kết câu (1 lần xuống dòng chỉ tách sau câu kết thúc
+    bằng `.`/`!`/`?`) đã TẠM BỎ theo quyết định của Manh 19:38 — vì
+    đoạn PDF ngắt nhiều dòng thành 1 block lớn gây lỗi hiển thị
+    (khung highlight block vượt khỏi khung PDF đang đọc). Đây là tạm
+    bỏ, không phải bác vĩnh viễn. Đánh đổi: 1 đoạn PDF gói 3 dòng nay
+    thành 3 cụm (mỗi dòng 1 cụm). CRLF tính là 1 lần ngắt. Đã kiểm
+    chứng bằng mô phỏng quy tắc đã về lại (2026-11-27, 12 mẫu): dòng
+    trống tách; 1 lần xuống dòng tách (kể cả sau câu không có dấu kết
+    câu); đoạn PDF gói 3 dòng thành 3 cụm; tab hoặc 2+ khoảng trắng
+    tách; 1 khoảng trắng không kèm xuống dòng không tách; CRLF tính
+    là 1 lần ngắt; block 1 đoạn thì không có cụm. Triển khai:
+    `paragraphRanges` nay nhóm câu thành cụm (nhận thêm `sentences`),
+    thay cho cách gom dòng cũ; giữ nguyên sửa fallback (block chỉ có
+    1 đoạn → không vẽ fill cụm).
   - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
     overlay vẽ hình chữ nhật đè lên trang nên highlight luôn có
     cạnh cứng (không phải bug); không đổi được màu chữ của trang

@@ -426,6 +426,28 @@ final class FocusTimerStore: ObservableObject {
         showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
     }
 
+    /// The on-page listen session ended (Manh 2026-11-27, 19:38):
+    /// "Nghe hết unit → reminder chờ tự hiện". If a reminder waited
+    /// while the user listened, show it now — but only when the user
+    /// is not reading anything else and no other speak has started in
+    /// the meantime. The guards, in order: a pending reminder must
+    /// exist; `isReading` must be false (a panel read, the Fast Read
+    /// window, or a NEW listen that replaced this one all count as
+    /// reading, so the reminder keeps waiting); and the coordinator
+    /// must not be speaking something else — a panel speak sets
+    /// `currentText` synchronously when it starts, so a non-nil value
+    /// means the user is listening to a translation now and the
+    /// reminder must not cut it short. When any guard fails the
+    /// reminder is NOT lost — it keeps waiting (banner + dot +
+    /// notification) until the next read/listen ends or the user taps
+    /// "Take a break".
+    func listenSessionEnded() {
+        guard let pending = pendingReminder else { return }
+        guard !isReading else { return }
+        guard ttsCoordinator?.currentText == nil else { return }
+        showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+    }
+
     // MARK: - Panel-right reading
 
     /// Start reading `text` in panel right (called by `PopupView`

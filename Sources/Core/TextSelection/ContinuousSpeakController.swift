@@ -39,6 +39,22 @@ final class ContinuousSpeakController {
     /// blocks below it). False for a single speak (selection) and when
     /// idle. The player's onEnded advances the chain; onStopped ends it.
     private var isChaining = false
+    /// Whether a new session is replacing the current one (Manh
+    /// 2026-11-27, 19:38 — the reminder auto-show hook): `start()`
+    /// stops the old session first, and that stop fires `onStopped`
+    /// synchronously — without this flag the hook would pop the
+    /// reminder mid-flow and cut the new listen short. Set before
+    /// `stop()` in `start()`, cleared once the new play has started.
+    private var isReplacingSession = false
+    /// Fires when a listen session ends — naturally (the last unit
+    /// finished) or stopped (the indicator hid while paused, or
+    /// another surface cut it short). NOT fired while a new session
+    /// is replacing this one (see `isReplacingSession`). Set by
+    /// AppDelegate: the focus timer store shows a pending reminder
+    /// from it (Manh 2026-11-27, 19:38 — "Nghe hết unit → reminder
+    /// chờ tự hiện"). Never fires on pause (the session is suspended,
+    /// not ended).
+    var onSessionEnded: (() -> Void)?
     /// The block being read right now (the controller's OWN copy — the
     /// hover detector may forget its block while speaking, so the chain
     /// must never depend on the detector after start).
@@ -112,9 +128,13 @@ final class ContinuousSpeakController {
     /// icon's frame (the place the user clicked Speak) — the indicator
     /// takes the icon's place; nil centres it on the mouse.
     func start(from block: HoverBlock, indicatorFrame: CGRect?) {
-        // A new chain replaces the old one — stop first so no two
-        // utterances overlap (same "stop before speak" rule as
-        // `TTSCoordinator.speak`).
+        // A new chain replaces the old one — mark it BEFORE stopping,
+        // so the stop's synchronous onStopped does not fire the
+        // session-ended hook (the reminder must not pop mid-flow and
+        // cut this new listen short — Manh 2026-11-27, 19:38). The
+        // stop itself still runs first, so no two utterances overlap
+        // (same "stop before speak" rule as `TTSCoordinator.speak`).
+        isReplacingSession = true
         stop()
         currentBlock = block
         currentSingleText = nil
@@ -131,6 +151,9 @@ final class ContinuousSpeakController {
         // panel speak, a read-along) — one voice at a time — then reads
         // this block; its onEnded advances the chain.
         player.play(text: block.text, language: AppDelegate.speakLanguage(for: block.text))
+        // The new session is live now — the replacement stop is over,
+        // so the flag can go (a later real end must fire the hook).
+        isReplacingSession = false
     }
 
     /// Speak a single text (a selection — no hover block, so no overlay
@@ -138,6 +161,10 @@ final class ContinuousSpeakController {
     /// indicator shows the session (playing/paused) so the user can
     /// pause and resume it — the float icon does not.
     func start(text: String, indicatorFrame: CGRect?) {
+        // Same replacement marking as `start(from:)` (Manh 2026-11-27,
+        // 19:38): a single speak also replaces the old session, so its
+        // stop must not fire the session-ended hook either.
+        isReplacingSession = true
         stop()
         currentBlock = nil
         currentSingleText = text
@@ -150,6 +177,9 @@ final class ContinuousSpeakController {
         isChaining = false
         indicator.show(at: indicatorFrame)
         player.play(text: text, language: AppDelegate.speakLanguage(for: text))
+        // The new session is live now — the replacement stop is over,
+        // so the flag can go (a later real end must fire the hook).
+        isReplacingSession = false
     }
 
     /// Pause the current session (Manh 2026-11-26): the voice stops but
@@ -241,6 +271,19 @@ final class ContinuousSpeakController {
         currentClusterFrame = nil
         overlay.hide()
         indicator.hide()
+        // The session is over — a pending reminder may show itself
+        // now (unless a new session is replacing this one).
+        notifySessionEnded()
+    }
+
+    /// The session ended (natural end or stop) — tell whoever is
+    /// listening (the focus timer store, via AppDelegate) so a pending
+    /// reminder can show itself. Skipped while a new session is
+    /// replacing this one: the stop a replacement causes must not pop
+    /// the reminder mid-flow (Manh 2026-11-27, 19:38).
+    private func notifySessionEnded() {
+        guard !isReplacingSession else { return }
+        onSessionEnded?()
     }
 
     /// Natural end of a session (last block read, or a single speak
@@ -259,6 +302,10 @@ final class ContinuousSpeakController {
         currentClusterFrame = nil
         overlay.hide()
         indicator.hide()
+        // The unit finished on its own — a pending reminder may show
+        // itself now (the "Nghe hết unit → reminder chờ tự hiện" rule,
+        // Manh 2026-11-27, 19:38).
+        notifySessionEnded()
     }
 
     /// A spoken word's range arrived: map it to its sentence and
@@ -402,94 +449,73 @@ final class ContinuousSpeakController {
     /// offsets — the same indexing as `sentenceRanges`). A cluster is a
     /// run of sentences in one paragraph; a new cluster starts at a
     /// sentence when the whitespace before it marks a paragraph
-    /// boundary (Manh 2026-11-27 — the old rule, blank line only,
-    /// missed paragraphs in books/PDFs, which usually break with a
-    /// single newline or an indent and no blank line). A boundary is:
-    /// (1) a blank line in the gap (2+ line breaks); (2) a single line
-    /// break after a sentence that ends with `.`/`!`/`?`; (3) the
-    /// sentence is indented (spaces/tab at the start of its line).
-    /// A single line break after a sentence with NO terminator is only
-    /// a wrapped line, not a new paragraph — the sentence splitter
-    /// already ends a sentence at a newline, so a wrapped sentence
-    /// arrives as a fragment, and splitting there would cut one
-    /// paragraph into one cluster per visual line (the common PDF
-    /// case). CRLF counts as one line break, so it never splits by
-    /// itself. A cluster's range runs from its first sentence's start
-    /// to its last sentence's end, so its AX bounds cover only its own
-    /// text. A block whose sentences form a single cluster yields one
-    /// range — which is NOT a cluster for highlighting (see
+    /// boundary (Manh 2026-11-27 16:14 — the ORIGINAL rule): (1) a blank
+    /// line in the gap (2+ line breaks); (2) a single line break; (3)
+    /// the sentence is indented (a tab anywhere in the gap, or 2+
+    /// spaces — a single space is ordinary inter-sentence spacing, not
+    /// a boundary). CRLF counts as one line break, so it never splits
+    /// by itself. A cluster's range runs from its first sentence's
+    /// start to its last sentence's end, so its AX bounds cover only
+    /// its own text. A block whose sentences form a single cluster
+    /// yields one range — which is NOT a cluster for highlighting (see
     /// `paragraph(containing:in:)`).
+    /// TEMPORARILY reverted (Manh 2026-11-27 19:38): the branch had
+    /// added a punctuation gate — a single line break split only after
+    /// a sentence ending in `.`/`!`/`?` — to stop a visually wrapped
+    /// PDF paragraph splitting into one cluster per line. Manh asked
+    /// to REMOVE it for now and follow main's literal rule, because a
+    /// PDF paragraph wrapped over many lines becoming ONE big block
+    /// breaks the display — the block highlight frame can exceed the
+    /// PDF frame being read. This is a TEMPORARY revert, not a
+    /// rejection of the gate: the gate may come back once the
+    /// block-frame problem is understood. Do not re-add it without
+    /// Manh's say-so.
     static func paragraphRanges(for text: String, sentences: [NSRange]) -> [NSRange] {
-        let nsText = text as NSString
         guard !sentences.isEmpty else { return [] }
-        // A gap is all whitespace (sentences start/end at
-        // non-whitespace), so counting breaks in it is just scanning
-        // raw UTF-16 units — no Unicode conversion to fail on.
+        let nsText = text as NSString
         var ranges: [NSRange] = []
-        var clusterStart = sentences[0].location
-        for i in 0..<(sentences.count - 1) {
-            let current = sentences[i]
-            let next = sentences[i + 1]
-            let gapStart = current.location + current.length
-            let gapEnd = next.location
-            // Count the line breaks in the gap ("\n", "\r", or "\r\n"
-            // as one) and note where the last one ends — the run after
-            // it is the next sentence's leading whitespace (its
-            // indent, if any).
+        var start = sentences[0].location
+        var end = sentences[0].location + sentences[0].length
+        for i in 1..<sentences.count {
+            let prev = sentences[i - 1]
+            let cur = sentences[i]
+            // A paragraph boundary is any of three signals in the
+            // whitespace gap between the sentences (Manh 2026-11-27
+            // 16:14): a blank line (2+ line breaks), a single line
+            // break (1), or an indented next sentence. Books/PDFs
+            // often separate paragraphs with just one line break or
+            // an indented first line (no blank line), and the old
+            // 2+ rule missed those. A single space is the normal
+            // sentence separator, not a boundary. A CRLF pair counts
+            // as ONE line break, so Windows-style endings never split
+            // a paragraph by accident.
             var breaks = 0
-            var afterLastBreak = gapStart
-            var idx = gapStart
-            while idx < gapEnd {
-                let ch = nsText.character(at: idx)
-                if ch == 0x0A { // "\n"
+            var hasTab = false
+            var j = prev.location + prev.length
+            while j < cur.location {
+                let ch = nsText.character(at: j)
+                if ch == 0x0D { // "\r" — a CRLF pair is one break
                     breaks += 1
-                    idx += 1
-                    afterLastBreak = idx
-                } else if ch == 0x0D { // "\r"
+                    if j + 1 < cur.location, nsText.character(at: j + 1) == 0x0A { j += 1 }
+                } else if ch == 0x0A { // "\n"
                     breaks += 1
-                    idx += 1
-                    if idx < gapEnd, nsText.character(at: idx) == 0x0A { idx += 1 } // CRLF = 1 break
-                    afterLastBreak = idx
-                } else {
-                    idx += 1
+                } else if ch == 0x09 { // "\t" — a tab before the next sentence is indentation
+                    hasTab = true
                 }
+                j += 1
             }
-            // The previous sentence ends with a terminator ("."/"!"/"?")
-            // — i.e. it really ends there, instead of being a wrapped
-            // line fragment that the splitter cut at a newline.
-            var prevEndsWithTerminator = false
-            if current.length > 0 {
-                let lastCh = nsText.character(at: current.location + current.length - 1)
-                prevEndsWithTerminator = lastCh == 0x2E || lastCh == 0x21 || lastCh == 0x3F // "." "!" "?"
+            // The gap is all whitespace (the sentence splitter skips
+            // it), so its length is the indent width when there is no
+            // line break: 2+ spaces is an indented first line, 1 space
+            // is just the separator between sentences.
+            let gapLength = cur.location - (prev.location + prev.length)
+            if breaks >= 1 || hasTab || gapLength >= 2 {
+                ranges.append(NSRange(location: start, length: end - start))
+                start = cur.location
             }
-            // Indent: spaces/tab at the start of the next sentence's
-            // line. After a line break, any leading whitespace is an
-            // indent (a plain new line starts at column 0). Without a
-            // line break, a single space is ordinary inter-sentence
-            // spacing — only a tab or 2+ spaces count as an indent.
-            var nextIsIndented = false
-            if breaks > 0 {
-                nextIsIndented = gapEnd - afterLastBreak >= 1
-            } else {
-                let gapLen = gapEnd - gapStart
-                if gapLen >= 2 {
-                    nextIsIndented = true
-                } else if gapLen == 1 {
-                    nextIsIndented = nsText.character(at: gapStart) == 0x09 // tab
-                }
-            }
-            // A blank line (2+ breaks) always splits; a single break
-            // splits only after a real sentence end; an indent splits
-            // on its own.
-            let isBoundary = breaks >= 2 || (breaks == 1 && prevEndsWithTerminator) || nextIsIndented
-            if isBoundary {
-                ranges.append(NSRange(location: clusterStart, length: (current.location + current.length) - clusterStart))
-                clusterStart = next.location
-            }
+            end = cur.location + cur.length
         }
-        // The last cluster runs to the last sentence's end.
-        let last = sentences[sentences.count - 1]
-        ranges.append(NSRange(location: clusterStart, length: (last.location + last.length) - clusterStart))
+        ranges.append(NSRange(location: start, length: end - start))
         return ranges
     }
 

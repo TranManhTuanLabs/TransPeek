@@ -203,6 +203,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             indicator: speakIndicatorController,
             overlay: readingIndicatorOverlay
         )
+        // A listen session ending shows a pending reminder (Manh
+        // 2026-11-27, 19:38): "Nghe hết unit → reminder chờ tự hiện".
+        // The store guards it (only when not reading and no other
+        // speak started), so this is just the trigger.
+        continuousSpeakController.onSessionEnded = { [weak self] in
+            self?.focusTimerStore.listenSessionEnded()
+        }
         setupAlternativeIcon()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.

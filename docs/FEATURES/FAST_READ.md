@@ -427,6 +427,16 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   playing or paused — Manh 2026-11-27, 17:35: before, a listen did
   not count as reading, so a reminder fired mid-listen ran at once
   and the conflict notification never appeared).
+  **Nghe hết unit → reminder chờ tự hiện (Manh 2026-11-27, 19:38):**
+  when an on-page listen session ends — the last unit finished, or the
+  session was stopped (the indicator hid while paused) — a pending
+  reminder shows at once, but only when the user is not reading
+  anything else and no other speak has started in the meantime. A new
+  listen replacing this one, a panel speak, or a Read starting all
+  suppress it — the hook is `ContinuousSpeakController.onSessionEnded`
+  → `FocusTimerStore.listenSessionEnded()`, guarded by a
+  replacing-session flag in the controller + `!isReading` + no live
+  panel speak (the coordinator's `currentText`) in the store.
 - **Alternative icon (Manh 2026-11-21):** selecting text inside Fast
   Read shows a fake float icon — a blue "A" in a chat bubble — for
   looking up one word or listening to it. It is a separate path

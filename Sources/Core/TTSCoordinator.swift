@@ -67,6 +67,15 @@ final class TTSCoordinator {
             }
 
             if !Task.isCancelled {
+                // The utterance finished on its own (or failed) — nothing
+                // is being spoken now, so clear the "current" text: it
+                // must mean "a whole-text speak is in flight", because
+                // the focus timer store's listen-ended hook reads it to
+                // tell a live panel speak (which the reminder must not
+                // cut short) from a finished one (Manh 2026-11-27,
+                // 19:38). Before, it stayed set after a natural finish,
+                // so the hook would have skipped every later listen end.
+                self.currentText = nil
                 self.onPlaybackEnded?()
             }
             self.speakTask = nil
