@@ -54,6 +54,11 @@ struct TTSSettingsView: View {
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
     @State private var testLanguage = "en"
+    /// Whether the "Hide highlights while scrolling" info popover is
+    /// open (Manh 2026-11-27): the toggle is not a HighlightColorRow,
+    /// so it carries its own info state — the same "i" pattern as the
+    /// layer rows (one state per popover, only the tapped one opens).
+    @State private var showingHideWhileScrollingInfo = false
 
     var body: some View {
         Form {
@@ -201,7 +206,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Vertical line",
                     subtitle: "Solid bar beside the text — its height follows the unit below",
-                    infoText: "A thin vertical bar left of the block, as tall as the unit it follows (see 'Line follows': sentence / paragraph / block). It helps the eye find the unit being read at a glance.",
+                    infoText: "A thin vertical bar left of the block, as tall as the unit it follows (see 'Line follows': sentence / paragraph / block). It helps the eye find the unit being read at a glance. How it works: 'Line follows' — Sentence / Paragraph / Block (default Paragraph). Fallback: chosen unit → sentence → cluster, never back to block; if no unit has a frame, no line is drawn. The line still follows the unit even when that unit's fill is hidden.",
                     hex: $highlightLineHex,
                     isShown: $highlightLineShown,
                     defaultHex: HighlightColors.lineDefaultHex,
@@ -226,7 +231,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Cluster",
                     subtitle: "Highlight for the paragraph (group of sentences) being read",
-                    infoText: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
+                    infoText: "Highlights the paragraph containing the current sentence. How it works: the cluster is the paragraph containing the sentence being read. A paragraph is detected by a blank line, a single line break after a sentence ending in '.', '!' or '?', or an indented line. A single line break after a sentence with no end mark is only a wrapped line, not a new paragraph. If the block has no paragraph break, the cluster is not shown — use the block's Show toggle to highlight the whole block.",
                     hex: $highlightClusterHex,
                     isShown: $highlightClusterShown,
                     defaultHex: HighlightColors.clusterDefaultHex
@@ -245,8 +250,26 @@ struct TTSSettingsView: View {
                 // hides (the window still follows, so it comes back in
                 // the right place when the scroll stops). Off keeps the
                 // old follow-only behaviour — the highlight stays up
-                // while scrolling, which can read as jerkiness.
-                Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
+                // while scrolling, which can read as jerkiness. The
+                // info button (Manh 2026-11-27) explains it in a
+                // popover — the same "i" pattern as the layer rows, so
+                // the scroll rule (threshold, reappear timing, no extra
+                // AX reads) is visible where the toggle is.
+                HStack {
+                    Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
+                    Button {
+                        showingHideWhileScrollingInfo.toggle()
+                    } label: {
+                        Image(systemName: "info.circle")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .popover(isPresented: $showingHideWhileScrollingInfo) {
+                        Text("Hides the highlights while the page scrolls, so they don't jerk. How it works: 'Hide highlights while scrolling' (default ON). While scrolling (block frame moves > 1pt), the fills, line and underline are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
+                            .frame(width: 280, alignment: .leading)
+                            .padding()
+                    }
+                }
 
                 Button("Reset all to default") {
                     highlightUnderlineHex = HighlightColors.underlineDefaultHex

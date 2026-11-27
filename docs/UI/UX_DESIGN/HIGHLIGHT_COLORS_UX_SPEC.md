@@ -50,7 +50,7 @@ Highlight colors
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Hide highlights while scrolling                        [on]      │
+│ Hide highlights while scrolling [i]                    [on]      │
 │                                                                  │
 │ [Reset all to default]                                           │
 │                                                                  │
@@ -70,16 +70,23 @@ Each row, left to right:
   marks.
 - **Info button** — a small native "i" (`info.circle`, Manh
   2026-11-27) right after the name + subtitle. Tapping it opens a
-  popover (native SwiftUI `.popover`) with 2–3 sentences explaining
-  how that layer works and how it is detected. The popover texts
-  (English, same as the behaviour in §4):
+  popover (native SwiftUI `.popover`) explaining how that layer works
+  and how it is detected. The Vertical line, Cluster, and
+  Hide-while-scrolling popovers add a "How it works" section with
+  the operational detail. The popover texts (English, same as the
+  behaviour in §4):
   - Underline: "A thin line under the word and sentence being read,
     in the underline color. It shows even when the fills are off, so
     you can use it instead of the fills. No rectangle, so no hard
     edge."
   - Vertical line: "A thin vertical bar left of the block, as tall as
     the unit it follows (see 'Line follows': sentence / paragraph /
-    block). It helps the eye find the unit being read at a glance."
+    block). It helps the eye find the unit being read at a glance.
+    How it works: 'Line follows' — Sentence / Paragraph / Block
+    (default Paragraph). Fallback: chosen unit → sentence → cluster,
+    never back to block; if no unit has a frame, no line is drawn.
+    The line still follows the unit even when that unit's fill is
+    hidden."
   - Word: "Highlights the word being spoken. It needs the app to
     provide the word's position (AXBoundsForRange); if the app does
     not provide it, the word highlight is skipped."
@@ -87,14 +94,24 @@ Each row, left to right:
     spoken. It needs the app to provide the sentence's position; if
     the app does not provide it, the sentence highlight is skipped."
   - Cluster (Paragraph): "Highlights the paragraph containing the
-    current sentence. A paragraph is detected by a blank line, a
-    single line break, or an indented line. If the block has no
-    paragraph break, the cluster is not shown — the block has its own
-    Show toggle."
+    current sentence. How it works: the cluster is the paragraph
+    containing the sentence being read. A paragraph is detected by a
+    blank line, a single line break after a sentence ending in '.',
+    '!' or '?', or an indented line. A single line break after a
+    sentence with no end mark is only a wrapped line, not a new
+    paragraph. If the block has no paragraph break, the cluster is
+    not shown — use the block's Show toggle to highlight the whole
+    block."
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected."
-  Only the six layer rows have the button — not the behaviour toggle
-  ("Hide highlights while scrolling") or "Reset all to default".
+  - Hide highlights while scrolling: "Hides the highlights while the
+    page scrolls, so they don't jerk. How it works: 'Hide highlights
+    while scrolling' (default ON). While scrolling (block frame moves
+    > 1pt), the fills, line and underline are hidden but the window
+    keeps following; when the frame is stable for 2 polls (~0.6s),
+    the highlights reappear. No extra accessibility reads."
+  The six layer rows and the behaviour toggle ("Hide highlights while
+  scrolling") have the button — "Reset all to default" does not.
 - **Colour well** — the native macOS colour picker (`ColorPicker`,
   `supportsOpacity: false`). Clicking it opens the system colour panel
   (colour wheel, sliders, palettes, eyedropper). It sits on the
@@ -183,7 +200,13 @@ paragraphs: a cluster only marks a PART of a block, and a
 single-paragraph block is the whole block (the block layer's job —
 turn its Show on to mark the whole block). A long block (several
 paragraphs) has one cluster per paragraph, and the highlight follows
-the cluster around the sentence being read.
+the cluster around the sentence being read. (Note: the terminator
+condition on a single line break — it only splits after a sentence
+ending in `.`/`!`/`?` — was added by the implementer to stop a
+visually wrapped PDF paragraph splitting into one cluster per line.
+Manh has not yet confirmed whether to keep it or to split on any
+single line break; the popover and this section describe the code as
+it is now, and will be updated if he changes the rule.)
 
 ## 4. Behaviour
 
@@ -264,7 +287,8 @@ the cluster around the sentence being read.
   follow timer (0.3 s) compares each poll's block frame with the
   previous one. A frame that moved (more than 1 pt, so AX jitter does
   not count as scrolling) means the page is scrolling: the overlay
-  draws nothing — no fills, no line — while the window still follows
+  draws nothing — no fills, no line, no underline — while the window
+  still follows
   (reposition runs every poll), so the highlight comes back in the
   right place. Two stable polls in a row (~0.6 s) mean the scroll
   stopped: the highlight shows again. No extra AX reads — the frame
@@ -275,7 +299,8 @@ the cluster around the sentence being read.
   highlight stays up while scrolling, which can read as jerkiness
   because the 0.3 s poll lags behind the text. "Reset all to default"
   does not touch this toggle — it is a behaviour preference, not a
-  colour or a layer default.
+  colour or a layer default. The toggle has its own info button ("i",
+  §2) with a popover explaining the rule.
 - **Underline — the sixth layer (Manh 2026-11-27).** The underline
   started as a branch-only trial (a standalone "Show underline"
   toggle, default OFF, drawing in each layer's colour) and was
@@ -392,7 +417,8 @@ the cluster around the sentence being read.
   Cluster, Block. Each row also has a small info button ("i",
   `info.circle`) after its name + subtitle that opens a native
   popover explaining how that layer works and how it is detected
-  (texts in §2).
+  (texts in §2); the "Hide highlights while scrolling" toggle has
+  one too (its own `@State`, same pattern).
 
 ## 7. Technical limitations
 
