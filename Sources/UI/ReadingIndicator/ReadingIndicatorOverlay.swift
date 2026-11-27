@@ -420,12 +420,14 @@ final class ReadingIndicatorOverlay {
     }
 
     /// Whether two block frames count as "moved" (scrolling): any edge
-    /// moved by more than half a point. Exact equality would flicker
-    /// on sub-pixel AX rounding; half a point is far below a visible
-    /// move, so a real scroll always counts and a still page never does.
+    /// moved by more than one point (Manh 2026-11-27 19:38 — 1pt, not
+    /// 0.5pt). A real scroll moves the frame far more than 1pt per 0.3s
+    /// poll, so hiding stays fast; AX jitter under 1pt is ignored, so
+    /// the highlight comes back at the new position without lag.
+    /// Exact equality would flicker on sub-pixel AX rounding.
     private static func frameMoved(_ a: CGRect, _ b: CGRect) -> Bool {
-        abs(a.minX - b.minX) > 0.5 || abs(a.minY - b.minY) > 0.5 ||
-        abs(a.width - b.width) > 0.5 || abs(a.height - b.height) > 0.5
+        abs(a.minX - b.minX) > 1 || abs(a.minY - b.minY) > 1 ||
+        abs(a.width - b.width) > 1 || abs(a.height - b.height) > 1
     }
 
     /// AX coordinates (top-left origin) → AppKit screen coordinates

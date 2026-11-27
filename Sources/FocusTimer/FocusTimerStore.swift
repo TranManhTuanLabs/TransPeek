@@ -427,6 +427,19 @@ final class FocusTimerStore: ObservableObject {
         showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
     }
 
+    /// The on-page listen session ended (Manh 2026-11-27 19:38 —
+    /// "Nghe hết unit → reminder chờ tự hiện"): if a reminder waited
+    /// while the user listened, show it now. The controller only calls
+    /// this for a real end (the unit finished on its own, or the
+    /// session was stopped) — never when a new listen replaces the old
+    /// one or another surface cut the listen short — and this still
+    /// checks `!isReading`, so a Read that started in the meantime
+    /// wins and the reminder keeps waiting until that Read ends.
+    func onPageListenEnded() {
+        guard let pending = pendingReminder, !isReading else { return }
+        showReminder(pending.kind, countdownSeconds: pending.countdownSeconds)
+    }
+
     // MARK: - Panel-right reading
 
     /// Start reading `text` in panel right (called by `PopupView`

@@ -210,6 +210,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focusTimerStore.isSpeakingOnPage = { [weak self] in
             self?.continuousSpeakController.isActive ?? false
         }
+        // "Nghe hết unit → reminder chờ tự hiện" (Manh 2026-11-27
+        // 19:38): when an on-page listen session ends for real, a
+        // pending reminder shows now instead of waiting for a tap. The
+        // controller only fires this for a real end (natural finish,
+        // or the indicator hid) — never when a new session replaces
+        // the old one or another surface cut the listen short — and
+        // the store still checks !isReading before showing.
+        continuousSpeakController.onSessionEnded = { [weak self] in
+            self?.focusTimerStore.onPageListenEnded()
+        }
         setupAlternativeIcon()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.

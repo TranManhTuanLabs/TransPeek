@@ -39,6 +39,24 @@ final class ContinuousSpeakController {
     /// blocks below it). False for a single speak (selection) and when
     /// idle. The player's onEnded advances the chain; onStopped ends it.
     private var isChaining = false
+    /// Fires when an on-page listen session ends for real (Manh
+    /// 2026-11-27 19:38 — "Nghe hết unit → reminder chờ tự hiện"): the
+    /// unit finished on its own, or the session was stopped (the
+    /// indicator hid while paused). The store shows a pending reminder
+    /// from it (set by AppDelegate). Never fires when a new session
+    /// replaces this one (see `isReplacingSession`) or when the session
+    /// was cut short from outside (another surface took the voice —
+    /// panel speaker, a Read starting): those end through
+    /// `handleSessionStopped`, not through here, so a reminder never
+    /// pops while the user is doing something else.
+    var onSessionEnded: (() -> Void)?
+    /// True while `start(from:)` / `start(text:)` is replacing the old
+    /// session with a new one (Manh 2026-11-27 19:38): `stop()` fires
+    /// `onStopped` SYNCHRONOUSLY, so without this flag the session-end
+    /// hook would fire mid-replacement — the reminder would pop while
+    /// the new listen is starting and cut it off. Set before `stop()`,
+    /// cleared once the new session is playing.
+    private var isReplacingSession = false
     /// The block being read right now (the controller's OWN copy — the
     /// hover detector may forget its block while speaking, so the chain
     /// must never depend on the detector after start).
@@ -112,7 +130,11 @@ final class ContinuousSpeakController {
     func start(from block: HoverBlock, indicatorFrame: CGRect?) {
         // A new chain replaces the old one — stop first so no two
         // utterances overlap (same "stop before speak" rule as
-        // `TTSCoordinator.speak`).
+        // `TTSCoordinator.speak`). The replacing flag keeps the
+        // session-end hook quiet during the swap (see
+        // `isReplacingSession`): the old session ending here is not
+        // the user finishing a listen, so no pending reminder may pop.
+        isReplacingSession = true
         stop()
         currentBlock = block
         currentSingleText = nil
@@ -129,6 +151,9 @@ final class ContinuousSpeakController {
         // panel speak, a read-along) — one voice at a time — then reads
         // this block; its onEnded advances the chain.
         player.play(text: block.text, language: AppDelegate.speakLanguage(for: block.text))
+        // The new session is playing — the swap is over, so the hook
+        // may fire again for a later real end.
+        isReplacingSession = false
     }
 
     /// Speak a single text (a selection — no hover block, so no overlay
@@ -136,6 +161,11 @@ final class ContinuousSpeakController {
     /// indicator shows the session (playing/paused) so the user can
     /// pause and resume it — the float icon does not.
     func start(text: String, indicatorFrame: CGRect?) {
+        // Same replacement as `start(from:)` — the old session ends
+        // here, but it is a swap, not the user finishing a listen, so
+        // the replacing flag keeps the session-end hook quiet (see
+        // `isReplacingSession`).
+        isReplacingSession = true
         stop()
         currentBlock = nil
         currentSingleText = text
@@ -148,6 +178,9 @@ final class ContinuousSpeakController {
         isChaining = false
         indicator.show(at: indicatorFrame)
         player.play(text: text, language: AppDelegate.speakLanguage(for: text))
+        // The new session is playing — the swap is over, so the hook
+        // may fire again for a later real end.
+        isReplacingSession = false
     }
 
     /// Pause the current session (Manh 2026-11-26): the voice stops but
@@ -190,6 +223,17 @@ final class ContinuousSpeakController {
         player.stop()
         overlay.hide()
         indicator.hide()
+        // The session ended for real (the indicator hid while paused,
+        // or an explicit stop) — not a replacement (the flag is set
+        // then) and not cut short from outside (that never calls
+        // stop()): let a pending reminder show now, if any. A Read
+        // starting never reaches here — it stops the voice at the
+        // coordinator, so its session ends through
+        // `handleSessionStopped`, where the hook deliberately does not
+        // fire (that Read must finish first).
+        if !isReplacingSession {
+            onSessionEnded?()
+        }
     }
 
     /// The current unit finished on its own: for a chain, advance to the
@@ -257,6 +301,10 @@ final class ContinuousSpeakController {
         currentParagraphFrame = nil
         overlay.hide()
         indicator.hide()
+        // Natural end of the unit ("Nghe hết unit") — the session is
+        // over and nothing replaced it, so a pending reminder can show
+        // now.
+        onSessionEnded?()
     }
 
     /// A spoken word's range arrived: map it to its sentence and its

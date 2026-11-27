@@ -322,19 +322,23 @@ scrolling jerkiness is confirmed).
 - **Info button ("i")** — a small native `info.circle` button next to
   the toggle (Manh 2026-11-27 16:39), same pattern as the layer rows.
   Its popover explains the toggle and adds a "How it works" section:
-  default ON; while scrolling (block frame changes > 0.5pt) the fills
-  + line hide but the window keeps following; 2 still polls (~0.6s)
-  bring the highlights back; no extra accessibility reads.
+  default ON; while scrolling (block frame moves > 1pt) the fills,
+  line and underline hide but the window keeps following; 2 still
+  polls (~0.6s) bring the highlights back; no extra accessibility
+  reads.
 - **Stored as a boolean** in Defaults
   (`transpeek_highlightHideWhileScrolling`, default `true`).
 - **How it works.** Each follow poll compares the block frame it just
   read with the previous poll's frame (no extra AX reads — it reuses
-  the frame the poll already read). A move of more than half a point
-  on any edge means scrolling: the fills + line hide at once. The
-  window keeps repositioning while hidden, so the highlight reappears
-  in the right place. It takes **2 still polls (~0.6 s)** to show
-  again, so a brief pause mid-scroll does not flash the highlight
-  back.
+  the frame the poll already read). A move of more than one point on
+  any edge means scrolling (Manh 2026-11-27 19:38 — 1pt, not 0.5pt: a
+  real scroll moves the frame far more than 1pt per 0.3s poll, so
+  hiding stays fast; AX jitter under 1pt is ignored, so the highlight
+  comes back at the new position without lag): the fills, line and
+  underline hide at once. The window keeps repositioning while hidden,
+  so the highlight reappears in the right place. It takes **2 still
+  polls (~0.6 s)** to show again, so a brief pause mid-scroll does not
+  flash the highlight back.
 - **Toggle off = the old follow-only behaviour.** The highlight stays
   visible while scrolling, and may jerk — the user's choice.
 - **The window never stops following.** Hiding only skips drawing;

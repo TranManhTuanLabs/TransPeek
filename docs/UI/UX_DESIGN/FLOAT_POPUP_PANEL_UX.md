@@ -650,11 +650,13 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   sau 5 phút); "Run now" thì nhắc nghỉ hiện ngay cả khi đang đọc.
   Cứ đọc tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng
   đọc (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown
-  nghỉ) thì nhắc nghỉ tự hiện. Riêng hết phiên nghe trên trang thì
-  nhắc nghỉ vẫn chờ đó (chưa có móc nối khi phiên nghe kết thúc — xem
-  §10.11), bấm "Take a break" là hiện. Không đang đọc thì hiện nhắc
-  nghỉ luôn theo setting. Áp cho cả 2 lựa chọn "Run reminder in".
-  (Vị trí hiển thị + cơ chế đầy đủ: §10.11.)
+  nghỉ) thì nhắc nghỉ tự hiện. Hết phiên nghe trên trang cũng vậy
+  (Manh 2026-11-27 19:38 — "Nghe hết unit → reminder chờ tự hiện"):
+  nghe hết unit, hoặc phiên nghe dừng (indicator tự ẩn lúc tạm dừng),
+  thì nhắc nghỉ tự hiện — trừ khi phiên nghe mới thay phiên cũ, hay
+  loa panel / Read khác cắt ngang phiên nghe (xem §10.11). Không đang
+  đọc thì hiện nhắc nghỉ luôn theo setting. Áp cho cả 2 lựa chọn "Run
+  reminder in". (Vị trí hiển thị + cơ chế đầy đủ: §10.11.)
 
 ### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
 
@@ -991,12 +993,20 @@ NOT steal the screen. All three appear at once:
 dismissed, or the panel reminder countdown finishes. Applies to BOTH
 "Run reminder in:" options. A new read replacing the old one does NOT
 trigger it (the user is still reading, so the reminder keeps waiting).
-Exception (2026-11-27): when an on-page listen ends, the reminder
-does NOT show on its own yet — there is no hook from the listen
-ending back to the store, so it stays pending (banner + dot +
-notification, with "Take a break" one tap away) until the user takes
-it or another read ends. With "Run now" there is no pending reminder
-at all — the reminder shows at once even mid-read.
+**Listening ends too (Manh 2026-11-27 19:38 — "Nghe hết unit →
+reminder chờ tự hiện"):** when an on-page listen session ends for real
+— the unit finished on its own, or the session stopped (the indicator
+auto-hid while paused) — the pending reminder shows on its own, if
+the user is not reading any more (`ContinuousSpeakController`
+`onSessionEnded` → `FocusTimerStore.onPageListenEnded`, which still
+checks `!isReading`). It does NOT fire when a new listen replaces the
+old one (the controller's replacing flag — `SpeechPlayer.stop()` fires
+`onStopped` synchronously, so a naive hook would pop the reminder
+mid-swap and cut the new listen off), nor when another surface cut the
+listen short (the panel speaker, or a Read starting — the user is
+doing something else, and that Read must finish first). With "Run
+now" there is no pending reminder at all — the reminder shows at
+once even mid-read.
 
 ## Liên kết
 

@@ -292,7 +292,7 @@ struct TTSSettingsView: View {
                             Text("Hides the highlights while the page scrolls, so they don't jerk.")
                             Text("How it works")
                                 .font(.headline)
-                            Text("'Hide highlights while scrolling' (default ON). While scrolling (block frame changes > 0.5pt), the fills + line are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
+                            Text("'Hide highlights while scrolling' (default ON). While scrolling (block frame moves > 1pt), the fills, line and underline are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
                         }
                         .padding()
                         .frame(maxWidth: 300)
