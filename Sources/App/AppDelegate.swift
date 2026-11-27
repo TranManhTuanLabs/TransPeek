@@ -810,6 +810,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             if let block = hoveredBlock,
                block.text == text {
                 self.continuousSpeakController.start(from: block, indicatorFrame: indicatorFrame)
+            } else if let block = hoveredBlock,
+                      let offset = ContinuousSpeakController.offset(of: text, in: block.text) {
+                // A selection inside the hovered block reads from the
+                // START of its sentence, then chains on (Manh
+                // 2026-11-27 22:01 — "read from the selection"): start
+                // the chain at the sentence holding the selected word.
+                // When the block has no sentence there (or the start
+                // fails), fall back to speaking just the selection.
+                if !self.continuousSpeakController.start(from: block, fromSentenceContaining: offset, indicatorFrame: indicatorFrame) {
+                    self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
+                }
             } else {
                 self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
             }

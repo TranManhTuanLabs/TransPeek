@@ -92,6 +92,16 @@ final class ContinuousSpeakController {
     /// or nil when the app did not return one — the cluster level is
     /// simply not drawn then (the other levels still show).
     private var currentParagraphFrame: CGRect?
+    /// The UTF-16 offset in `currentBlock.text` where the current
+    /// playback started (Manh 2026-11-27 22:01 — "read from the
+    /// selection"): 0 when reading from the block start, or the start
+    /// of the sentence containing the user's selection when reading
+    /// from mid-block. The TTS word callback reports ranges relative
+    /// to the text actually played (the substring from this offset),
+    /// while `sentenceRanges` / `paragraphRanges` and the AX bounds
+    /// are in full-block coordinates — `handleWordRange` adds this
+    /// offset back so the highlight lands on the right word.
+    private var playOffset = 0
 
     init(ttsCoordinator: TTSCoordinator, indicator: SpeakIndicatorController, overlay: ReadingIndicatorOverlay) {
         self.indicator = indicator
@@ -138,6 +148,7 @@ final class ContinuousSpeakController {
         stop()
         currentBlock = block
         currentSingleText = nil
+        playOffset = 0
         sentenceRanges = Self.sentenceRanges(for: block.text)
         paragraphRanges = Self.paragraphRanges(for: block.text, sentences: sentenceRanges)
         currentSentenceRange = nil
@@ -156,6 +167,72 @@ final class ContinuousSpeakController {
         isReplacingSession = false
     }
 
+    /// Start a chain from a hovered block, beginning at the sentence
+    /// that contains `offset` (a UTF-16 offset in `block.text`) — the
+    /// "read from the selection" entry (Manh 2026-11-27 22:01): the
+    /// user selected a word, so reading starts at the START of its
+    /// sentence (never mid-sentence), then chains to the blocks below
+    /// exactly like `start(from:)`. Returns false when the block has
+    /// no sentence at all (caller falls back to a single speak of the
+    /// selection). The full `block.text` is kept (not trimmed) so the
+    /// sentence/paragraph ranges and the AX bounds stay in the right
+    /// coordinates — only the played text starts mid-block, and
+    /// `playOffset` translates the word ranges back.
+    @discardableResult
+    func start(from block: HoverBlock, fromSentenceContaining offset: Int, indicatorFrame: CGRect?) -> Bool {
+        let sentences = Self.sentenceRanges(for: block.text)
+        guard let sentence = Self.sentence(containing: offset, in: sentences) else { return false }
+        // Same replacement as `start(from:)` — the old session ends
+        // here, but it is a swap, not the user finishing a listen, so
+        // the replacing flag keeps the session-end hook quiet.
+        isReplacingSession = true
+        stop()
+        currentBlock = block
+        currentSingleText = nil
+        sentenceRanges = sentences
+        paragraphRanges = Self.paragraphRanges(for: block.text, sentences: sentences)
+        currentSentenceRange = nil
+        currentSentenceFrame = nil
+        currentParagraphRange = nil
+        currentParagraphFrame = nil
+        isChaining = true
+        // The played text starts at the sentence — the word callback
+        // reports ranges in this substring, so remember where it
+        // starts in the block to translate them back.
+        playOffset = sentence.location
+        indicator.show(at: indicatorFrame)
+        overlay.show(block: block)
+        let rest = (block.text as NSString).substring(from: sentence.location)
+        player.play(text: rest, language: AppDelegate.speakLanguage(for: rest))
+        // The new session is playing — the swap is over, so the hook
+        // may fire again for a later real end.
+        isReplacingSession = false
+        return true
+    }
+
+    /// The UTF-16 offset of a selection inside a block's text, or nil
+    /// when the selection is not (wholly) in the block. The selection
+    /// and the block come from the same AX text, so an exact match is
+    /// the norm; when whitespace differs (a line break in the block
+    /// where the selection has a space, or the reverse) the first word
+    /// of the selection is tried instead — for the common "select one
+    /// word" case that IS the whole selection. A repeated word matches
+    /// its FIRST occurrence in the block.
+    static func offset(of selection: String, in blockText: String) -> Int? {
+        let trimmed = selection.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let nsBlock = blockText as NSString
+        let hit = nsBlock.range(of: trimmed)
+        if hit.location != NSNotFound { return hit.location }
+        // Fallback: the first word — whitespace between the selection
+        // and the block may differ, but the first word still locates
+        // the sentence the user selected in.
+        let firstWord = trimmed.components(separatedBy: .whitespacesAndNewlines).first ?? trimmed
+        let wordHit = nsBlock.range(of: firstWord)
+        if wordHit.location != NSNotFound { return wordHit.location }
+        return nil
+    }
+
     /// Speak a single text (a selection — no hover block, so no overlay
     /// and no chaining) with the same play/pause/resume law. The
     /// indicator shows the session (playing/paused) so the user can
@@ -169,6 +246,7 @@ final class ContinuousSpeakController {
         stop()
         currentBlock = nil
         currentSingleText = text
+        playOffset = 0
         sentenceRanges = []
         paragraphRanges = []
         currentSentenceRange = nil
@@ -213,6 +291,7 @@ final class ContinuousSpeakController {
         currentSingleText = nil
         sentenceRanges = []
         paragraphRanges = []
+        playOffset = 0
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentParagraphRange = nil
@@ -256,6 +335,7 @@ final class ContinuousSpeakController {
         currentBlock = next
         sentenceRanges = Self.sentenceRanges(for: next.text)
         paragraphRanges = Self.paragraphRanges(for: next.text, sentences: sentenceRanges)
+        playOffset = 0
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentParagraphRange = nil
@@ -277,6 +357,7 @@ final class ContinuousSpeakController {
         currentSingleText = nil
         sentenceRanges = []
         paragraphRanges = []
+        playOffset = 0
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentParagraphRange = nil
@@ -295,6 +376,7 @@ final class ContinuousSpeakController {
         currentSingleText = nil
         sentenceRanges = []
         paragraphRanges = []
+        playOffset = 0
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentParagraphRange = nil
@@ -317,7 +399,14 @@ final class ContinuousSpeakController {
     /// block).
     private func handleWordRange(_ wordRange: NSRange) {
         guard let block = currentBlock else { return }
-        guard let sentenceRange = Self.sentence(containing: wordRange.location, in: sentenceRanges) else { return }
+        // The word range is relative to the text actually played — when
+        // reading started mid-block (from a selection), that text is a
+        // substring, so translate it back to full-block coordinates
+        // before mapping it to a sentence/paragraph/word frame (all in
+        // block coordinates). playOffset is 0 for a block read from its
+        // start, so this is a no-op there.
+        let blockRange = NSRange(location: wordRange.location + playOffset, length: wordRange.length)
+        guard let sentenceRange = Self.sentence(containing: blockRange.location, in: sentenceRanges) else { return }
         var sentenceFrame = currentSentenceFrame
         if sentenceRange != currentSentenceRange {
             currentSentenceRange = sentenceRange
@@ -344,7 +433,7 @@ final class ContinuousSpeakController {
             currentParagraphFrame = nil
             paragraphFrame = nil
         }
-        let wordFrame = HoverBlockText.bounds(for: wordRange, in: block.element)
+        let wordFrame = HoverBlockText.bounds(for: blockRange, in: block.element)
         overlay.update(wordFrame: wordFrame, sentenceFrame: sentenceFrame, clusterFrame: paragraphFrame)
     }
 
