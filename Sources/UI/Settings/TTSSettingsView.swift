@@ -288,14 +288,23 @@ struct TTSSettingsView: View {
                     .buttonStyle(.plain)
                     .help("About hiding highlights while scrolling")
                     .popover(isPresented: $showHideScrollInfo) {
+                        // Fixed width + wrapping (Manh 2026-11-27 23:56):
+                        // same clipping fix as the layer rows — the old
+                        // `.frame(maxWidth: 300)` let the text measure at
+                        // its ideal (unwrapped) width and get cut off on
+                        // the right. A fixed 300 width plus
+                        // `.fixedSize(horizontal: false, vertical: true)`
+                        // makes the texts wrap at 300 and grow vertically.
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Hides the highlights while the page scrolls, so they don't jerk.")
+                                .fixedSize(horizontal: false, vertical: true)
                             Text("How it works")
                                 .font(.headline)
                             Text("'Hide highlights while scrolling' (default ON). While scrolling (block frame moves > 1pt), the fills, line and underline are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                         .padding()
-                        .frame(maxWidth: 300)
+                        .frame(width: 300)
                     }
                 }
             } header: {
@@ -389,9 +398,11 @@ struct TTSSettingsView: View {
 /// row's right edge by a Spacer (Manh 2026-11-27 21:31), so the hex +
 /// label + switch read as one control, separate from the ColorPicker
 /// + Reset on the left.
-/// A small info button ("i", `info.circle`) after the row's text
-/// opens a popover explaining how this layer works and how it is
-/// detected (Manh 2026-11-27 16:21). The Vertical line row also
+/// A small info button ("i", `info.circle`) right after the layer
+/// name (title) opens a popover explaining how this layer works and
+/// how it is detected (Manh 2026-11-27 16:21, moved next to the title
+/// 2026-11-27 23:56 so it reads as the label's icon and the popover
+/// anchors on the row's left). The Vertical line row also
 /// carries the "Line follows" picker (Manh 2026-11-27): which unit the
 /// line is as tall as — the sentence, the
 /// paragraph (cluster) or the whole block. Only that row passes
@@ -417,76 +428,100 @@ private struct HighlightColorRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                // Info button (Manh 2026-11-27 16:21): a small native
-                // "i" after the row's text, opening a popover that
-                // explains this layer. It sits between the text and
-                // the hex/Show/picker/Reset controls, so it does not
-                // move any of them.
-                Button {
-                    showInfo = true
-                } label: {
-                    Image(systemName: "info.circle")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .help("About this layer")
-                .popover(isPresented: $showInfo) {
-                    // Popover layout (Manh 2026-11-27 16:39): the short
-                    // explanation first, then — only on rows that pass
-                    // one — a "How it works" section with the detail
-                    // Manh asked for (the line's fallback, the
-                    // cluster's detection). Rows without one show the
-                    // explanation alone.
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(info)
-                        if let howItWorks {
-                            Text("How it works")
-                                .font(.headline)
-                            Text(howItWorks)
+            // Controls on the title's line, subtitle on its own line
+            // below (Manh 2026-11-27 23:58): the old code bundled the
+            // title + subtitle in a VStack inside the controls HStack,
+            // so the HStack's centre alignment made the colour well,
+            // Reset, hex and switch float in the middle of the row
+            // (between title and subtitle) instead of sitting on the
+            // title line as the spec's diagram shows. Now the controls
+            // HStack holds only one-line items, so they all sit on the
+            // title's line, and the subtitle is its own line below.
+            VStack(alignment: .leading, spacing: 2) {
+                HStack {
+                    // Title + "?" on one line (Manh 2026-11-27 23:56,
+                    // option b): the info button sits right after the
+                    // layer name ("Underline ?"), on the title's
+                    // line, so it reads as the label's explanation
+                    // icon — not floating in the middle of the row
+                    // next to the two-line text block. Anchoring the
+                    // popover on the row's left also gives it the
+                    // full window width to open to the right, so the
+                    // text is not cut off on the right.
+                    HStack(spacing: 4) {
+                        Text(title)
+                        Button {
+                            showInfo = true
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help("About this layer")
+                        .popover(isPresented: $showInfo) {
+                            // Popover layout (Manh 2026-11-27 16:39): the short
+                            // explanation first, then — only on rows that pass
+                            // one — a "How it works" section with the detail
+                            // Manh asked for (the line's fallback, the
+                            // cluster's detection). Rows without one show the
+                            // explanation alone.
+                            // Fixed width + wrapping (Manh 2026-11-27 23:56):
+                            // the old `.frame(maxWidth: 300)` let the text
+                            // measure at its ideal (unwrapped) width and get
+                            // cut off on the right. A fixed 300 width plus
+                            // `.fixedSize(horizontal: false, vertical: true)`
+                            // on the texts makes them wrap at 300 and grow
+                            // vertically, so the full description shows.
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(info)
+                                    .fixedSize(horizontal: false, vertical: true)
+                                if let howItWorks {
+                                    Text("How it works")
+                                        .font(.headline)
+                                    Text(howItWorks)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .padding()
+                            .frame(width: 300)
                         }
                     }
-                    .padding()
-                    .frame(maxWidth: 300)
-                }
-                // Colour well + Reset stay on the left/centre of the
-                // row (Manh 2026-11-27 21:31): they used to sit after
-                // the hex/Show group, which pushed that group into
-                // the middle of the row — the hex + Show/Hide label
-                // must sit at the row's right edge, immediately left
-                // of the switch, so the well + Reset move here.
-                ColorPicker("", selection: colorBinding, supportsOpacity: false)
-                    .labelsHidden()
-                Button("Reset") { hex = defaultHex }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                // Hex + Show/Hide + switch as one tight group at the
-                // row's right edge (Manh 2026-11-27 16:26, moved to
-                // the edge 2026-11-27 21:31): the hex value and the
-                // dynamic Show/Hide label sit immediately left of the
-                // switch, close together, so they read as one control
-                // — not as loose items next to the ColorPicker. The
-                // Spacer before this group pushes it to the row's
-                // right edge. Order left to right: [hex] [Show/Hide]
-                // [switch].
-                HStack(spacing: 6) {
-                    Text(hex.uppercased())
-                        .monospaced()
+                    // Colour well + Reset stay on the left/centre of the
+                    // row (Manh 2026-11-27 21:31): they used to sit after
+                    // the hex/Show group, which pushed that group into
+                    // the middle of the row — the hex + Show/Hide label
+                    // must sit at the row's right edge, immediately left
+                    // of the switch, so the well + Reset move here.
+                    ColorPicker("", selection: colorBinding, supportsOpacity: false)
+                        .labelsHidden()
+                    Button("Reset") { hex = defaultHex }
+                        .buttonStyle(.plain)
                         .foregroundStyle(.secondary)
-                    // Dynamic label (Manh 2026-11-27 16:24): the
-                    // toggle's label follows its state — "Show" while
-                    // the layer is on, "Hide" while it is off — so it
-                    // always says whether the layer is shown or hidden.
-                    Toggle(shown ? "Show" : "Hide", isOn: $shown)
-                        .help("Show this highlight layer while listening")
+                    Spacer()
+                    // Hex + Show/Hide + switch as one tight group at the
+                    // row's right edge (Manh 2026-11-27 16:26, moved to
+                    // the edge 2026-11-27 21:31): the hex value and the
+                    // dynamic Show/Hide label sit immediately left of the
+                    // switch, close together, so they read as one control
+                    // — not as loose items next to the ColorPicker. The
+                    // Spacer before this group pushes it to the row's
+                    // right edge. Order left to right: [hex] [Show/Hide]
+                    // [switch].
+                    HStack(spacing: 6) {
+                        Text(hex.uppercased())
+                            .monospaced()
+                            .foregroundStyle(.secondary)
+                        // Dynamic label (Manh 2026-11-27 16:24): the
+                        // toggle's label follows its state — "Show" while
+                        // the layer is on, "Hide" while it is off — so it
+                        // always says whether the layer is shown or hidden.
+                        Toggle(shown ? "Show" : "Hide", isOn: $shown)
+                            .help("Show this highlight layer while listening")
+                    }
                 }
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             // Preset swatches: tap one to set this layer's color at
             // once. The current color gets a strong ring so the user

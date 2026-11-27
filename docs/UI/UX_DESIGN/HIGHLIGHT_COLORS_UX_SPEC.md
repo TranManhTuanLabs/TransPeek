@@ -72,13 +72,24 @@ Each row, left to right:
 
 - **Name + subtitle** — the layer name ("Underline", "Vertical line",
   "Word", "Sentence", "Paragraph", "Block") and one line saying what it marks.
-- **Info button ("i")** — a small native `info.circle` button after the
-  row's text (Manh 2026-11-27 16:21). Tapping it opens a popover that
-  explains how this layer works and how it is detected, in 2–3
-  sentences (English, same wording as the popovers in Settings). The
-  Vertical line and Paragraph popovers add a "How it works" section
-  with the detail (see below); the other four show the explanation
-  alone:
+  The name sits on the controls' line; the subtitle is its own line
+  below it (Manh 2026-11-27 23:58 — the colour well, Reset, hex and
+  switch used to be vertically centred next to the two-line
+  name+subtitle block, so they floated in the middle of the row
+  instead of on the title's line; they now sit on the title's line).
+- **Info button ("i")** — a small native `info.circle` button right
+  after the layer name, on the title's line ("Underline ?", Manh
+  2026-11-27 23:56, option b — it used to sit after the whole
+  two-line text block, floating in the middle of the row). Tapping it
+  opens a popover that explains how this layer works and how it is
+  detected, in 2–3 sentences (English, same wording as the popovers
+  in Settings). The popover is a fixed 300 wide and its text wraps,
+  so the full description shows (the old `.frame(maxWidth: 300)` let
+  the text measure at its ideal width and get cut off on the right;
+  anchoring on the row's left also gives the popover room to open
+  right). The Vertical line and Paragraph popovers add a "How it
+  works" section with the detail (see below); the other four show
+  the explanation alone:
   - Underline: "A thin line under the word and sentence being read, in
     the underline color. It shows even when the fills are off, so you
     can use it instead of the fills. No rectangle, so no hard edge."
