@@ -330,6 +330,26 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     (nên không dùng nền đặc 1.0 như Speechify); không tô theo hình
     chữ (chỉ có khung AX); frame từ/câu/cụm phụ thuộc app có cho
     lấy `AXBoundsForRange` không.
+  - **Highlight tràn khỏi cửa sổ app — ĐÃ SỬA (2026-11-27, Manh báo
+    lúc test bản #397):** highlight blocktext tràn ra ngoài cửa sổ
+    app đang đọc (vd PDF). Nguyên nhân: khung AX của block dài là
+    toàn bộ khung của đoạn text, có thể vượt khỏi vùng nhìn thấy của
+    cửa sổ app (nội dung đã cuộn, đoạn dài hơn khung nhìn); overlay
+    trước đây chỉ kiểm tra khung block có giao với màn hình không,
+    rồi đặt cửa sổ overlay đúng bằng khung block đó. Cách sửa: cắt
+    khung cửa sổ overlay theo vùng nhìn thấy của cửa sổ app — giao
+    khung block với khung cửa sổ chứa nó (lấy qua `kAXWindowAttribute`
+    của element) rồi giao tiếp với `visibleFrame` của màn hình (trừ
+    menu bar / Dock / phần kéo ra ngoài màn hình); block không còn
+    phần nào nhìn thấy thì ẩn như block ngoài màn hình. Dải vạch dọc
+    8pt cũng kẹp theo mép trái vùng nhìn thấy (block bắt đầu sát mép
+    cửa sổ thì dải hẹp lại, vạch không thò ra ngoài). Không đổi luật
+    highlight (hide-during-scroll, follow poll 0,3s, line follows +
+    fallback, underline vẫn như cũ — chỉ cắt khung). Triển khai:
+    `HoverBlockText.windowFrame(of:)` mới + `reposition()` trong
+    `ReadingIndicatorOverlay` cắt khung trước khi đặt cửa sổ; so sánh
+    cuộn vẫn dùng khung gốc (không đổi). Chi tiết giới hạn trong UX
+    spec §7.
 - ...
 
 ## Liên kết

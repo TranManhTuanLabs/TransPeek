@@ -170,6 +170,14 @@ final class ReadingIndicatorOverlay {
     private var lastBlockScreenFrame: CGRect?
     private var stablePolls: Int = 0
     private var isScrolling: Bool = false
+    /// The line strip's ACTUAL width this poll (points) — the desired
+    /// `leftPad` (8 pt when the line layer is on) clamped so the strip
+    /// never sticks out past the host window's visible left edge (see
+    /// `reposition`, Manh 2026-11-27, 20:36 — the block may start right
+    /// at the window edge, where the full strip would draw outside
+    /// it). `layoutHighlightRects` uses this, not `leftPad`, so the
+    /// block fill stays aligned with the text. Reset on hide.
+    private var currentLeftPad: CGFloat = 0
     private var followTimer: Timer?
 
     init(layers: Layers = .all) {
@@ -177,6 +185,10 @@ final class ReadingIndicatorOverlay {
         contentView = ReadingIndicatorView(layers: layers)
         panel = ReadingIndicatorPanel()
         panel.contentView = contentView
+        // A valid strip width before the first reposition (the overlay
+        // is always repositioned in show() before anything is drawn,
+        // so this is only a safety net).
+        self.currentLeftPad = self.leftPad
     }
 
     /// Show the indicator for a block: position the window over the
@@ -242,6 +254,7 @@ final class ReadingIndicatorOverlay {
         lastBlockScreenFrame = nil
         stablePolls = 0
         isScrolling = false
+        currentLeftPad = 0
         contentView.blockRect = nil
         contentView.wordRect = nil
         contentView.sentenceRect = nil
@@ -268,6 +281,31 @@ final class ReadingIndicatorOverlay {
         // a rectangle the user cannot see.
         guard let mainScreen = NSScreen.screens.first,
               screenFrame.intersects(mainScreen.frame) else { return false }
+        // Clip to the visible area of the host app window (Manh
+        // 2026-11-27, 20:36 — the block highlight overflowed outside
+        // the app window): a long block's AX frame is the full rect of
+        // its text, which can run past the window (scrolled content,
+        // a paragraph taller than the view). The overlay window must
+        // never extend past what the user can actually see of that
+        // window, so intersect the block frame with the window's
+        // visible area — the window's own frame (from AX) clipped to
+        // the screen's visible frame (menu bar / Dock / the part
+        // dragged off-screen). When the app does not expose its
+        // window, fall back to the screen's visible frame alone. A
+        // block with no visible part at all is hidden, like an
+        // off-screen block. The scroll comparison below still uses
+        // the RAW frame (the window may be resized without the page
+        // scrolling) — only the window placement uses the clipped
+        // frame.
+        let clipFrame: CGRect
+        if let windowAXFrame = HoverBlockText.windowFrame(of: block.element),
+           let windowScreenFrame = Self.appKitRect(fromAXRect: windowAXFrame) {
+            clipFrame = windowScreenFrame.intersection(mainScreen.visibleFrame)
+        } else {
+            clipFrame = mainScreen.visibleFrame
+        }
+        let visibleFrame = screenFrame.intersection(clipFrame)
+        guard !visibleFrame.isEmpty else { return false }
         // Hide-during-scroll (Manh 2026-11-27, trial plan phase 2):
         // compare this poll's frame with the last one. A frame that
         // moved means the page is scrolling — hide the highlight
@@ -300,14 +338,21 @@ final class ReadingIndicatorOverlay {
             stablePolls = 0
         }
         lastBlockScreenFrame = screenFrame
-        // The window extends left of the block so the line sits beside
-        // the text (see leftPad); without the line layer the window is
-        // exactly the block frame.
+        // The line strip extends left of the block; never let it leave
+        // the visible host window (the block may start right at the
+        // window edge, where the full 8 pt strip would stick out).
+        // Clamp the strip to the room between the block's visible left
+        // edge and the window's visible left edge — 0 when the block
+        // starts at the edge (the line then sits on the text's edge).
+        // The window is the VISIBLE block frame (see the clip above),
+        // not the raw AX frame, so a long block never draws outside
+        // the app window.
+        currentLeftPad = min(leftPad, max(0, visibleFrame.minX - clipFrame.minX))
         let windowFrame = CGRect(
-            x: screenFrame.minX - leftPad,
-            y: screenFrame.minY,
-            width: screenFrame.width + leftPad,
-            height: screenFrame.height
+            x: visibleFrame.minX - currentLeftPad,
+            y: visibleFrame.minY,
+            width: visibleFrame.width + currentLeftPad,
+            height: visibleFrame.height
         )
         panel.setFrame(windowFrame, display: true)
         layoutHighlightRects()
@@ -327,10 +372,13 @@ final class ReadingIndicatorOverlay {
         contentView.isScrollingHidden = Self.isHideWhileScrolling && isScrolling
         // The block area in window-local coordinates: everything right
         // of the line strip (or the whole window when no line layer).
+        // Uses the CLAMPED strip width (see `reposition`): when the
+        // strip was narrowed at the window edge, the fill still starts
+        // exactly at the text's visible left edge.
         contentView.blockRect = layers.contains(.block) && Self.isBlockShown ? CGRect(
-            x: leftPad,
+            x: currentLeftPad,
             y: 0,
-            width: max(0, panel.frame.width - leftPad),
+            width: max(0, panel.frame.width - currentLeftPad),
             height: panel.frame.height
         ) : nil
         contentView.sentenceRect = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }

@@ -471,6 +471,20 @@ above looks the way it does.
   underline, no line for it; the other levels still show. This is
   by app, not by setting: the same build can show word + sentence
   in Preview and only the block in another app.
+- **The overlay never draws outside the app window it marks.**
+  A long block's Accessibility frame is the full rect of its text,
+  which can run past the window (scrolled content, a paragraph
+  taller than the view). The overlay window is clipped to the
+  visible part of the host app's window — the window's own frame
+  (from Accessibility) intersected with the screen's visible frame
+  (menu bar / Dock / the part dragged off-screen) — so a long
+  block's highlight stops at the window edge instead of spilling
+  onto the desktop or another app. A block with no visible part at
+  all is hidden, like an off-screen block. The line strip is
+  clamped the same way: when the block starts right at the window
+  edge, the 8 pt strip narrows so the line never sticks out either.
+  (Manh 2026-11-27, 20:36 — the block highlight was seen spilling
+  outside the PDF window on the branch build.)
 - **The line and the underline are rectangles too — thin ones.**
   The vertical line (1.75 pt wide, in the 8 pt strip) and the
   underline (2.5 pt tall, under the word/sentence) are the same

@@ -192,6 +192,24 @@ enum HoverBlockText {
         return CGRect(origin: position, size: size)
     }
 
+    /// The window containing an AX element (AX coordinates, top-left
+    /// origin) — the window the element's text lives in. Used by the
+    /// Step 2 reading indicator to clip its overlay to the visible
+    /// part of that window (Manh 2026-11-27, 20:36 — a long block's AX
+    /// frame can run past the window, and the highlight must never
+    /// draw outside it). Returns nil when the app does not expose the
+    /// window (the caller falls back to the screen's visible frame).
+    static func windowFrame(of element: AXUIElement) -> CGRect? {
+        var windowValue: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXWindowAttribute as CFString, &windowValue) == .success,
+              let windowRef = windowValue,
+              CFGetTypeID(windowRef) == AXUIElementGetTypeID()
+        else { return nil }
+        // Safe: CFGetTypeID verified above; as?/as! cannot express CF type casts cleanly.
+        let window = unsafeBitCast(windowRef, to: AXUIElement.self)
+        return frame(of: window)
+    }
+
     /// The on-screen frame of one character range inside an AX element
     /// (AX coordinates, top-left origin) — the frame of the sentence or
     /// word being read, for the Step 2 reading indicator (Manh
