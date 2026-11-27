@@ -30,6 +30,13 @@ struct FocusTimerCard: View {
     /// has its OWN separate setting ("Run FastRead in:", panel right,
     /// Manh 2026-11-20, 05:27).
     @Default(.focusReminderDestination) private var reminderDestination
+    /// What a reminder does when it fires while the user is reading
+    /// (Manh 2026-11-27, reminder option): the "When a reminder fires
+    /// while reading:" picker, right under "Run reminder in:".
+    /// "Notification only" (default) waits until reading stops;
+    /// "Run now" shows it at once even mid-read. Only while reading
+    /// — otherwise the reminder always shows right away.
+    @Default(.focusReminderWhileReading) private var reminderWhileReading
     /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
     /// Manh 2026-11-20, 07:25): when ON, the next session starts
     /// automatically after each rest / long break. Default ON.
@@ -330,6 +337,30 @@ struct FocusTimerCard: View {
             .labelsHidden()
             .background { InteractiveMarker() }
             .padding(.horizontal, 12)
+
+            // "When a reminder fires while reading:" (Manh 2026-11-27,
+            // reminder option) — same radio look as "Run reminder in:"
+            // above, so the two reminder choices read as one group.
+            // "Notification only" (default) waits until reading stops;
+            // "Run now" shows the reminder at once even mid-read.
+            Text("When a reminder fires while reading:")
+                .font(.callout)
+                .bold()
+                .padding(.horizontal, 12)
+            Picker("", selection: $reminderWhileReading) {
+                ForEach(FocusReminderWhileReading.allCases, id: \.self) { choice in
+                    Text(choice.displayName).tag(choice)
+                }
+            }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            .background { InteractiveMarker() }
+            .padding(.horizontal, 12)
+
+            Text("Only while you're reading — otherwise the reminder shows right away.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
 
             Text("Applies only to focus / rest-eyes reminders — not to Fast Read itself.")
                 .font(.caption)

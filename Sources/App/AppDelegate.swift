@@ -199,6 +199,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             indicator: speakIndicatorController,
             overlay: readingIndicatorOverlay
         )
+        // A reminder fired while listening on the page (Manh 2026-11-27):
+        // the store counts an on-page listen as "reading", so the
+        // conflict notification + banner appear instead of the reminder
+        // running at once and stealing the listen. Wired here (not
+        // above with isFastReadWindowOpen) because the chaining
+        // controller only exists from this point on. `isActive` is true
+        // while a session is live, playing OR paused — it turns false
+        // when the session ends (indicator hid / stopped).
+        focusTimerStore.isSpeakingOnPage = { [weak self] in
+            self?.continuousSpeakController.isActive ?? false
+        }
         setupAlternativeIcon()
         // Apply dock visibility — always set explicitly because macOS may cache
         // .regular from a previous session, ignoring LSUIElement on relaunch.
@@ -211,9 +222,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // "Auto start focus" toggle is ON, the focus timer starts on
         // its own at launch, as if the user pressed Start. Called
         // last — the store's reminder callbacks (onShowPanel,
-        // onNotifyReminder, isFastReadWindowOpen) are all wired above,
-        // so a reminder fired by this session routes correctly. The
-        // store itself guards against double-starting.
+        // onNotifyReminder, isFastReadWindowOpen, isSpeakingOnPage)
+        // are all wired above, so a reminder fired by this session
+        // routes correctly. The store itself guards against
+        // double-starting.
         focusTimerStore.autoStartFocusIfEnabled()
 
         // Show onboarding on first launch; returning users start silently as a menu bar app.

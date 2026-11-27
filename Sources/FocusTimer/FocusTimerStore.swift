@@ -149,6 +149,14 @@ final class FocusTimerStore: ObservableObject {
     /// Whether the Fast Read window is open (set by AppDelegate — it
     /// owns the window controller). Asked at fire time; no observation.
     var isFastReadWindowOpen: (() -> Bool)?
+    /// Whether an on-page listen is live (set by AppDelegate — it owns
+    /// the chaining controller). Asked at fire time; no observation.
+    /// True while a click-to-listen / Step 2 session exists, playing OR
+    /// paused — the session ends (and this turns false) when the
+    /// indicator hides or the session is stopped. Without it the
+    /// reminder fired while listening on the page ran at once and stole
+    /// the listen, with no conflict notification (Manh 2026-11-27).
+    var isSpeakingOnPage: (() -> Bool)?
     /// Snooze task ("Snooze 5 min") — cancelled when the pending
     /// reminder shows or is replaced.
     private var snoozeTask: Task<Void, Never>?
@@ -334,12 +342,17 @@ final class FocusTimerStore: ObservableObject {
     /// Fast Read has its OWN separate setting ("Run FastRead in:",
     /// Manh 2026-11-20, 05:27), so this never touches Fast Read.
     ///
-    /// If the user is actively reading (Manh 2026-11-20, 05:33), the
-    /// reminder does NOT steal the read — it waits as `pendingReminder`
+    /// If the user is actively reading (Manh 2026-11-20, 05:33), what
+    /// happens depends on "When a reminder fires while reading:"
+    /// (Manh 2026-11-27): "Notification only" (default) — the
+    /// reminder does NOT steal the read, it waits as `pendingReminder`
     /// (banner + system notification + dot on the Focus-Rest card) and
-    /// shows automatically when the read stops.
+    /// shows automatically when the read stops; "Run now" — it shows
+    /// at once even mid-read, per "Run reminder in:". When the user is
+    /// NOT reading the reminder always shows right away, whatever the
+    /// option says.
     private func fireReminder(_ kind: FocusReminderKind, countdownSeconds: Int) {
-        if isReading {
+        if isReading, Defaults[.focusReminderWhileReading] == .notificationOnly {
             pendingReminder = PendingReminder(kind: kind, countdownSeconds: countdownSeconds)
             onNotifyReminder?(kind)
         } else {
@@ -347,13 +360,16 @@ final class FocusTimerStore: ObservableObject {
         }
     }
 
-    /// Whether the user is actively reading (Manh 2026-11-20, 05:33):
-    /// a panel read is running, or the Fast Read window is open. The
-    /// window side is asked via `isFastReadWindowOpen` (set by
-    /// AppDelegate — it owns the window controller); the panel side is
-    /// this store's own state.
+    /// Whether the user is actively reading (Manh 2026-11-20, 05:33;
+    /// on-page listen added Manh 2026-11-27): a panel read is running,
+    /// the Fast Read window is open, or an on-page listen is live
+    /// (click-to-listen / Step 2 chain, playing or paused). The window
+    /// and listen sides are asked via `isFastReadWindowOpen` /
+    /// `isSpeakingOnPage` (set by AppDelegate — it owns the window
+    /// controller and the chaining controller); the panel side is this
+    /// store's own state.
     private var isReading: Bool {
-        panelReadingViewModel != nil || (isFastReadWindowOpen?() ?? false)
+        panelReadingViewModel != nil || (isFastReadWindowOpen?() ?? false) || (isSpeakingOnPage?() ?? false)
     }
 
     /// Show a reminder now, per the "Run reminder in:" setting. Clears

@@ -618,6 +618,15 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   **CHỈ áp cho reminder** — Fast Read có nút chọn RIÊNG ("Run
   FastRead in:" ở panel phải, §10.7); 2 tính năng không dùng chung
   1 setting (Manh 2026-11-20, 05:27).
+- **"When a reminder fires while reading:"** — 2 lựa chọn bằng nút
+  chọn tròn **radio** (Manh 2026-11-27, tuỳ chọn reminder — đặt ngay
+  dưới "Run reminder in:", cùng nhóm): **"Run now"** (nhắc nghỉ hiện
+  ngay cả khi đang đọc, theo "Run reminder in:") và **"Notification
+  only"** (mặc định — nhắc nghỉ chờ tới khi hết đọc, chỉ hiện banner
+  + thông báo hệ thống + chấm cam). Chỉ áp lúc đang đọc — không đang
+  đọc thì nhắc nghỉ luôn hiện ngay, bất kể chọn gì. Key
+  `focusReminderWhileReading` (`transpeek_focusReminderWhileReading`,
+  mặc định `.notificationOnly`).
 - **Cửa sổ Rest** (`Sources/FocusTimer/RestWindowController.swift`,
   tiêu đề "TransPeek — Rest", 560×400, min 480×320): RSVP-đọc câu
   nhắc ("You have read, worked, and sat for X minutes continuously.
@@ -630,16 +639,22 @@ thu/mở provider card; cỡ chữ nội dung mặc định 14 (slider 12–24).
   không copy code). Đọc xong →
   hiện countdown nghỉ (5 phút / 20 giây) rồi tự đóng; nút Done đóng
   sớm. Không đụng tới cửa sổ Read đang mở.
-- **Nhắc nghỉ lúc đang đọc** (Manh 2026-11-20, 05:33): timer tới giờ
-  mà user đang đọc (cửa sổ Read hay trong panel) thì KHÔNG cướp màn
-  hình — chỉ hiện banner trong panel (trên mọi tab) + thông báo hệ
-  thống macOS, có 2 nút "Take a break" (hiện nhắc nghỉ ngay theo
-  "Run reminder in") và "Snooze 5 min" (nhắc lại sau 5 phút). Cứ đọc
-  tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng đọc
-  (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown nghỉ)
-  thì nhắc nghỉ tự hiện. Không đang đọc thì hiện nhắc nghỉ luôn theo
-  setting. Áp cho cả 2 lựa chọn "Run reminder in". (Vị trí hiển thị +
-  cơ chế đầy đủ: §10.11.)
+- **Nhắc nghỉ lúc đang đọc** (Manh 2026-11-20, 05:33; tuỳ chọn
+  "Notification only" / "Run now" thêm Manh 2026-11-27): timer tới giờ
+  mà user đang đọc (cửa sổ Read, trong panel, HAY đang nghe trên trang
+  — bấm loa / đọc nối tiếp Step 2, đang phát hoặc tạm dừng) thì tuỳ
+  theo "When a reminder fires while reading:": "Notification only"
+  (mặc định) KHÔNG cướp màn hình — chỉ hiện banner trong panel (trên
+  mọi tab) + thông báo hệ thống macOS, có 2 nút "Take a break" (hiện
+  nhắc nghỉ ngay theo "Run reminder in") và "Snooze 5 min" (nhắc lại
+  sau 5 phút); "Run now" thì nhắc nghỉ hiện ngay cả khi đang đọc.
+  Cứ đọc tiếp thì nhắc nghỉ chờ đó (chấm cam ở thẻ Focus & Rest); dừng
+  đọc (đóng cửa sổ Read / đóng view đọc trong panel / hết countdown
+  nghỉ) thì nhắc nghỉ tự hiện. Riêng hết phiên nghe trên trang thì
+  nhắc nghỉ vẫn chờ đó (chưa có móc nối khi phiên nghe kết thúc — xem
+  §10.11), bấm "Take a break" là hiện. Không đang đọc thì hiện nhắc
+  nghỉ luôn theo setting. Áp cho cả 2 lựa chọn "Run reminder in".
+  (Vị trí hiển thị + cơ chế đầy đủ: §10.11.)
 
 ### 10.7 Panel phải — đọc trong panel + demo focus (20/11/2026, nhánh `feature/focus-timer-decor`)
 
@@ -931,10 +946,17 @@ picker applies ONLY to the reminder — Fast Read has its own separate
   countdown + "Done"; 5 min for a work break / 20 s for eye rest) and
   then returns to the demo (see §10.7 for the Read lite layout).
 
-**Reading — conflict (Manh 2026-11-20, 05:33):** "reading" means a
-panel-right read is running OR the Fast Read window is open
-(`FocusTimerStore.isReading`). The reminder does NOT steal the screen.
-All three appear at once:
+**Reading — conflict (Manh 2026-11-20, 05:33; on-page listen added
+2026-11-27):** "reading" means a panel-right read is running, the
+Fast Read window is open, OR an on-page listen is live
+(click-to-listen / Step 2 chain, playing or paused —
+`FocusTimerStore.isReading`, via `isSpeakingOnPage`). Before
+2026-11-27 the listen was NOT counted, so a reminder fired while
+listening ran at once and stole the listen with no conflict
+notification — that is why the notification seemed to disappear.
+What happens while reading depends on "When a reminder fires while
+reading:" (§10.6): "Notification only" (default) — the reminder does
+NOT steal the screen. All three appear at once:
 - **In-panel banner** (`PendingReminderBanner`,
   `Sources/FocusTimer/PendingReminderBanner.swift`): directly below the
   dots row, above the tab content, on ALL tabs (`PopupView.activeContent`:
@@ -969,6 +991,12 @@ All three appear at once:
 dismissed, or the panel reminder countdown finishes. Applies to BOTH
 "Run reminder in:" options. A new read replacing the old one does NOT
 trigger it (the user is still reading, so the reminder keeps waiting).
+Exception (2026-11-27): when an on-page listen ends, the reminder
+does NOT show on its own yet — there is no hook from the listen
+ending back to the store, so it stays pending (banner + dot +
+notification, with "Take a break" one tap away) until the user takes
+it or another read ends. With "Run now" there is no pending reminder
+at all — the reminder shows at once even mid-read.
 
 ## Liên kết
 
