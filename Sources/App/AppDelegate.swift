@@ -21,6 +21,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// mouse hovers a block of text, without selecting first. A second
     /// trigger path alongside SelectionMonitor — same icon flow.
     var hoverTextDetector: HoverTextDetector!
+    /// The block holding the last selection (read-from-selection
+    /// follow-up, Manh 2026-11-27 22:01): captured at selection time,
+    /// while the mouse is still over the selection. The hovered block
+    /// is usually GONE by Speak time — the mouse-down that starts a
+    /// selection stops the hover follow, and hover re-detection is
+    /// blocked while the icon is up (plus a 400ms debounce) — so the
+    /// hovered-block path alone would almost never fire for a normal
+    /// mouse selection. This captured block is the fallback that makes
+    /// the feature actually run. Nil when the last selection had no
+    /// block (then Speak falls back to a single speak).
+    var selectionBlock: HoverBlock?
     /// Step 2 continuous reading (Manh 2026-11-24): the chaining
     /// controller (reads one hovered block after another on the page)
     /// and its reading-indicator overlay (vertical line + sentence /
@@ -742,6 +753,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         selectionMonitor.onTextSelected = { [weak self] text, point in
             guard let self, !self.panelController.isVisible else { return }
+            // Capture the block holding this selection (read-from-
+            // selection follow-up, Manh 2026-11-27 22:01) — the mouse
+            // is over it right now, so the hit-test lands on it.
+            // Always assigned (nil when nothing is there) so a failed
+            // hit-test never leaves a stale block from an earlier
+            // selection behind.
+            self.selectionBlock = HoverBlockText.block(atScreenPoint: point)
             self.triggerIconController.show(text: text, near: point)
         }
 
@@ -821,6 +839,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                let offset = ContinuousSpeakController.offset(of: text, in: block.text),
                self.continuousSpeakController.start(from: block, fromSentenceContaining: offset, indicatorFrame: indicatorFrame) {
                 // Chaining from the sentence containing the selection.
+            } else if let block = self.selectionBlock,
+                      let offset = ContinuousSpeakController.offset(of: text, in: block.text),
+                      self.continuousSpeakController.start(from: block, fromSentenceContaining: offset, indicatorFrame: indicatorFrame) {
+                // Same chain, but from the block captured at selection
+                // time — the hovered block is usually gone by Speak
+                // time (see selectionBlock), so this is the path a
+                // normal mouse selection actually takes.
             } else {
                 self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
             }
@@ -865,6 +890,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // and the follow poll ends with the icon.
             self?.hoverTextDetector.suppressBriefly()
             self?.hoverTextDetector.stopFollowing()
+            // The icon is gone — forget the selection's block with it,
+            // so a later Speak never chains from a stale selection.
+            self?.selectionBlock = nil
             // The icon and the speak session are independent now (Manh
             // 2026-11-26: the separate indicator owns the session) — an
             // icon hiding never stops a session; only the indicator

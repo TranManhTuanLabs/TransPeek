@@ -280,7 +280,7 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     định BẬT cả nhánh lẫn main — Manh thấy gạch chân đẹp hơn tô nền,
     không bị border hình chữ nhật), Reset riêng + được \"Reset all to
     default\" reset như các lớp khác. Vẫn vẽ dưới từ + câu, nét đặc
-    2.5pt, độc lập với công tắc Show của fill (tắt hết fill mà bật
+    1.5pt, độc lập với công tắc Show của fill (tắt hết fill mà bật
     gạch chân thì vẫn thấy gạch chân — để so sánh 2 kiểu), ẩn khi
     cuộn. Lý do: fill hình chữ nhật có cạnh cứng trông như border
     (xem giới hạn kỹ thuật trong UX spec §7); gạch chân tránh hẳn
@@ -358,8 +358,12 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     câu/đoạn tiếp theo trong trang và đọc tiếp hết trang (dừng khi hết
     trang hoặc user bấm dừng). KHÔNG tự chạy ngay khi bôi đen — chỉ khi
     bấm Speak mới đọc. Cách chạy: `AppDelegate.onSpeakRequested` —
-    khi có block đang hover và text bôi đen tìm thấy trong
-    `block.text` thì gọi
+    thử block đang hover trước, rồi tới block đã bắt lúc bôi đen
+    (`AppDelegate.selectionBlock` — block đang hover thường đã mất
+    lúc bấm Speak vì chuột-down lúc kéo bôi đen đã dừng hover follow
+    và hover detect lại bị chặn khi icon đang hiện + debounce 400ms,
+    nên đây mới là đường bôi đen chuột thường đi qua); block nào có
+    text bôi đen tìm thấy trong `block.text` thì gọi
     `ContinuousSpeakController.start(from:fromSentenceContaining:)`
     (tìm câu chứa offset bằng `sentence(containing:in:)` có sẵn, đọc
     chuỗi con từ đầu câu tới hết block, `isChaining = true` để hết
@@ -377,6 +381,11 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     đầu block mới, khi đọc riêng phần bôi đen, và khi session dừng/kết
     thúc. `offset(of:in:)` trim text bôi đen trước khi tìm; không thấy
     thì thử từ đầu tiên của đoạn bôi đen; vẫn không thấy thì nil.
+    Block lúc bôi đen bắt bằng `HoverBlockText.block(atScreenPoint:)`
+    mới (hit-test AX tại điểm chuột lúc nhả chuột, đổi y theo chiều
+    cao màn hình chính như hover hit-test); `selectionBlock` luôn
+    được gán lại mỗi lần bôi đen (nil khi không có block) và xoá khi
+    icon ẩn, để không dùng block cũ.
 - ...
 
 ## Liên kết
