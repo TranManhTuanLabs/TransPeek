@@ -29,6 +29,7 @@
 | `docs/FEATURES/FLOAT_ICON.md` | Tính năng icon float | Bản nháp |
 | `docs/FEATURES/SPEECH_ENGINE.md` | Engine TTS | Bản nháp |
 | `docs/FEATURES/SPEECH_PLAYER.md` | Player TTS + RSVP | Bản nháp |
+| `docs/FEATURES/TTS_WORD_SYNC_HIGHLIGHT.md` | Highlight từ/câu theo giọng đọc (word-sync) | Bản nháp |
 | `docs/FEATURES/OCR_TEXT_CAPTURE.md` | OCR | Bản nháp |
 | `docs/FEATURES/SETTINGS.md` | Tính năng Settings | **CHƯA VIẾT** |
 | `docs/UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md` | Panel UX | **CHƯA VIẾT (chưa chốt size)** |
@@ -83,6 +84,7 @@ docs/
 │   ├── SPEECH_ENGINE.md          # engine TTS
 │   ├── SPEECH_PLAYER.md          # player TTS + RSVP
 │   ├── OCR_TEXT_CAPTURE.md       # OCR
+│   ├── TTS_WORD_SYNC_HIGHLIGHT.md  # highlight từ/câu theo giọng (word-sync)
 │   └── SETTINGS.md               # tính năng Settings (CHƯA VIẾT)
 └── UI/
     └── UX_DESIGN/
@@ -111,5 +113,6 @@ docs/
 - [Panel UX (chưa viết)](UI/UX_DESIGN/FLOAT_POPUP_PANEL_UX.md)
 - [Highlight colors](UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md)
 - [Fast Read: Theme & Style](UI/UX_DESIGN/FAST_READ_THEME_STYLE.md)
+- [TTS Word-Sync Highlight](FEATURES/TTS_WORD_SYNC_HIGHLIGHT.md)
 - [Fast Read: icon giả khi bôi đen trong Read](UI/UX_DESIGN/FAST_READ_SELECT_ICON.md)
 - [Chỉ mục UX](UI_DESIGN.md)

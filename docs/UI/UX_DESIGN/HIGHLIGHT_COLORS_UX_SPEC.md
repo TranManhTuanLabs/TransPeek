@@ -483,8 +483,7 @@ above looks the way it does.
 - [Speech Player](../../FEATURES/SPEECH_PLAYER.md) — the speaker law
   (play/pause/resume, separate indicator) the overlay belongs to.
 - [TTS word-sync highlight spec](../../FEATURES/TTS_WORD_SYNC_HIGHLIGHT.md)
-  — the word/sentence highlight the colours mark (on `main`; not yet
-  on this branch).
+  — the word/sentence highlight the colours mark.
 - [Step 2 trial plan](../../RESEARCH/tts-speechify-naturalreader/step2-trial-plan.md)
   — the chaining + overlay trial (colours, layers, scroll behaviour).
 - [Float Icon UX](FLOAT_ICON_UX_SPEC.md) — the icon whose Speak starts
