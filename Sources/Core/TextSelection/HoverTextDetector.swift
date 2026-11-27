@@ -174,6 +174,21 @@ enum HoverBlockText {
         return nil
     }
 
+    /// The text block under a screen point (Cocoa coordinates,
+    /// bottom-left origin) — for read-from-selection (Manh 2026-11-27
+    /// 22:01): the selection point is where the mouse is, so the block
+    /// there is the one holding the selection. Returns nil when
+    /// nothing hoverable is there. (AX uses a top-left origin, so the
+    /// y is flipped against the primary screen's height — the same
+    /// conversion as the hover detector's hit-test.)
+    static func block(atScreenPoint point: CGPoint) -> HoverBlock? {
+        let screenHeight = NSScreen.screens.first?.frame.height ?? 0
+        let axPoint = CGPoint(x: point.x, y: screenHeight - point.y)
+        guard let hit = element(at: axPoint),
+              let block = blockText(from: hit) else { return nil }
+        return block
+    }
+
     /// The on-screen frame of an AX element (AX coordinates, top-left
     /// origin). Same position/size read as AccessibilityGrabber.
     static func frame(of element: AXUIElement) -> CGRect? {
