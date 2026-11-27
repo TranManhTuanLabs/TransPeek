@@ -970,5 +970,16 @@ extension Defaults.Keys {
     // Default ON — scrolling with a lagging highlight reads as
     // jerkiness, and the highlight is only useful once the text stops.
     static let highlightHideWhileScrolling = Key<Bool>("transpeek_highlightHideWhileScrolling", default: true)
+
+    // Underline under the word + sentence being read (Manh
+    // 2026-11-27, branch trial): a thin solid bar at the bottom of
+    // the word/sentence frame, in that layer's color — a try-out
+    // alternative to the rectangle fills, whose hard edges read as a
+    // border. Default OFF. Independent of the layers' Show toggles:
+    // turning all fills off still shows the underline, so the two
+    // styles can be compared. Like hide-while-scrolling it is a
+    // behaviour preference, not a color or a layer default — "Reset
+    // all to default" does not touch it.
+    static let highlightUnderlineShown = Key<Bool>("transpeek_highlightUnderlineShown", default: false)
 }
 

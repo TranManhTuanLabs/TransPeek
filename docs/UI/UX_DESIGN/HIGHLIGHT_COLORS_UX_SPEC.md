@@ -14,7 +14,7 @@ Settings → **Audio** tab → section **"Highlight colors"**, after
 the indicator belongs to the listen-on-page flow (click-to-listen /
 chaining), not to the Read window's theme.
 
-## 2. Layout — 5 rows + presets + Reset all
+## 2. Layout — 5 rows + presets + toggles + Reset all
 
 Each layer gets one block: a settings row, then a preset swatch row
 underneath it. The Vertical line row has one extra control under its
@@ -25,7 +25,7 @@ Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
 │ Vertical line                    #8CBFFF  Show [on] [swatch] Reset│
 │ Solid bar beside the text — its height follows the unit below    │
-│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 pastel presets                    │
+│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │ Line follows: [Sentence | Paragraph | Block]  <- segmented       │
 │                                                                  │
 │ Block                          #BFF2B3  Show [off] [swatch] Reset│
@@ -36,15 +36,16 @@ Highlight colors
 │ Highlight for the paragraph (group of sentences) being read      │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence                       #FFF2A6  Show [on] [swatch] Reset│
+│ Sentence                       #ABB3FE  Show [on] [swatch] Reset│
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Word                           #D9BFFA  Show [on] [swatch] Reset│
+│ Word                           #5666F0  Show [on] [swatch] Reset│
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
 │ Hide highlights while scrolling                        [on]      │
+│ Show underline                                         [off]     │
 │                                                                  │
 │ [Reset all to default]                                           │
 │                                                                  │
@@ -74,7 +75,7 @@ Each row, left to right:
   toggle is untouched — hiding a layer is a separate choice from its
   colour).
 
-Under each row, **6 pastel preset swatches** (22 pt circles): tap one
+Under each row, **6 preset swatches** (22 pt circles): tap one
 to set that layer's colour at once. The current colour gets a strong
 ring, so the user can see which preset (if any) is active.
 
@@ -87,10 +88,18 @@ After the five layer rows, the **"Hide highlights while scrolling"
 toggle** (a native `Toggle`, default ON — see §4). It is not a layer:
 it decides whether the highlight content hides while the page scrolls.
 
+After it, the **"Show underline" toggle** (a native `Toggle`,
+default OFF — branch-only trial, see §4). It is not a layer either:
+it draws a thin solid underline under the word + sentence being
+read, in each layer's colour — a try-out alternative to the
+rectangle fills. Like the scroll toggle it is a behaviour
+preference, so "Reset all to default" does not touch it.
+
 At the end of the section, **"Reset all to default"** restores all
 five layers' colours at once — and restores the branch defaults for
 the Show toggles (line, cluster, sentence, word on; block off) and
-for "Line follows" (Paragraph).
+for "Line follows" (Paragraph). It does not touch the two behaviour
+toggles ("Hide highlights while scrolling", "Show underline").
 
 ## 3. The 5 layers + default colours
 
@@ -99,19 +108,28 @@ for "Line follows" (Paragraph).
 | Vertical line | Solid bar beside the text, in the 8 pt strip at the block's left edge — its height follows the unit picked in "Line follows" | `#8CBFFF` (light blue) | 1.0 (solid) | Yes |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | **No** (hidden by default since 2026-11-27 — the cluster is the broad fill now; still available to turn back on) |
 | Cluster | Fill for the paragraph (group of sentences) being read | `#FFC2D1` (light pink) | 0.30 | Yes |
-| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 | Yes |
-| Word | Fill for the word being spoken | `#D9BFFA` (light purple) | 0.30 | Yes |
+| Sentence | Fill for the sentence being read | `#ABB3FE` (light periwinkle — Speechify `highlight30`) | 0.30 | Yes |
+| Word | Fill for the word being spoken | `#5666F0` (indigo — Speechify `highlight50`) | 0.30 | Yes |
 
-The defaults are the pastel palette from the trial (Manh 2026-11-24
-00:38), as `#RRGGBB` hex — the rounded equivalents of the RGB values
-the overlay used before (word 0.85/0.75/0.98, sentence 1.0/0.95/0.65,
-block 0.75/0.95/0.70, line 0.55/0.75/1.0), so the defaults look
-identical to the old hardcoded colours. The cluster default (light
-pink `#FFC2D1`, from the preset palette) was chosen by the parent —
-Manh did not name a colour for it; it is changeable in Settings like
-the rest. Draw order (bottom to top): block, cluster, sentence, word,
-then the line — the fills are translucent, so overlapping levels blend
-instead of hiding each other.
+The word + sentence defaults follow **Speechify** (Manh 2026-11-27),
+traced from its real extension source (`highlight50` `#5666F0` for
+the word, `highlight30` `#ABB3FE` for the sentence). Speechify itself
+paints the word solid indigo with white text and the sentence solid
+pale lavender `#E0E3FF` (`highlight20`) at opacity 1.0 — but it
+highlights the text itself (CSS Highlight API) and recolors the text,
+so its fills can be opaque. The overlay draws *over* the page and
+cannot recolor the text, and an opaque fill would hide the dark text
+underneath — so the Speechify hues are used as translucent fills at
+the fixed 0.30 opacity instead. `#E0E3FF` was not used for the
+sentence because at 0.30 it is nearly invisible on a white page;
+`#ABB3FE` is the next step in Speechify's own palette. Block + line
+keep the pastel palette from the trial (Manh 2026-11-24 00:38). The
+cluster default (light pink `#FFC2D1`, from the preset palette) was
+chosen by the parent — Manh did not name a colour for it; it is
+changeable in Settings like the rest. Draw order (bottom to top):
+block, cluster, sentence, word, then the line — the fills are
+translucent, so overlapping levels blend instead of hiding each
+other.
 
 **What a "cluster" is.** A cluster is one paragraph inside the block:
 a run of sentences separated from the next group by a blank line
@@ -202,6 +220,25 @@ the highlight follows the cluster around the sentence being read.
   because the 0.3 s poll lags behind the text. "Reset all to default"
   does not touch this toggle — it is a behaviour preference, not a
   colour or a layer default.
+- **Show underline — branch-only trial (Manh 2026-11-27).** A
+  "Show underline" toggle (`transpeek_highlightUnderlineShown`,
+  `Bool`, default `false` on the branch — not on main) draws a thin
+  solid bar (2.5 pt, opacity 1.0) at the bottom edge of the word
+  frame and of the sentence frame, each in its layer's colour
+  (word colour under the word, sentence colour under the sentence).
+  Only the word + sentence are underlined — not the block, cluster,
+  or line — so the page never shows several parallel lines. The
+  underline is **independent of the layers' Show toggles**: turning
+  all fills off while the underline is on still shows the two
+  underlines, so the underline-only style can be compared with the
+  fill style. It is read live (the next draw applies it), and it
+  hides while scrolling together with the fills + line (the same
+  scroll guard — see §7 for why the fills have hard edges and the
+  underline does not). "Reset all to default" does not touch this
+  toggle — it is a behaviour preference, not a colour or a layer
+  default. If the trial is rejected, the toggle + the drawing code
+  go away; if it is kept, it may replace the fills or extend to
+  more layers.
 
 ## 5. Why this design
 
@@ -244,7 +281,7 @@ the highlight follows the cluster around the sentence being read.
 ## 6. Implementation (file map)
 
 - `Sources/UI/ReadingIndicator/HighlightColors.swift` — the 5 default
-  hexes, fixed opacities, the 6 pastel presets, hex ↔ `NSColor`
+  hexes, fixed opacities, the 6 preset swatches, hex ↔ `NSColor`
   conversion (parse `#RRGGBB`, format, fallback to default), plus the
   `LineFollows` enum (sentence / paragraph / block, raw strings for
   Defaults) for the line-height picker.
@@ -254,7 +291,9 @@ the highlight follows the cluster around the sentence being read.
   block default `false` on the branch, the rest `true`) plus
   `transpeek_highlightLineFollows` (`String`, default `"paragraph"`
   on the branch) plus `transpeek_highlightHideWhileScrolling`
-  (`Bool`, default `true` on the branch).
+  (`Bool`, default `true` on the branch) plus
+  `transpeek_highlightUnderlineShown` (`Bool`, default `false` on
+  the branch — the underline trial, not on main).
 - `Sources/Core/TextSelection/ContinuousSpeakController.swift` —
   precomputes the block's paragraph (cluster) ranges at block start
   (same step as the sentence ranges), maps each spoken word to the
@@ -274,14 +313,74 @@ the highlight follows the cluster around the sentence being read.
   compares each poll's block frame with the previous one (1 pt
   tolerance) and sets the view's `isScrollingHidden` flag; `draw`
   paints nothing while the flag is set, and two stable polls clear it.
+  The underline trial: `update` also stores the word/sentence frames
+  without the Show gate, `layoutHighlightRects` reduces each to a
+  2.5 pt bar at its bottom edge, and `draw` paints those bars solid
+  (opacity 1.0, each layer's colour) when the underline toggle is on
+  — gated only on the toggle, never on the fill toggles. The vertical
+  line is 1.75 pt wide (halved from 3.5 on 2026-11-27 — it read as
+  too thick); the 8 pt strip it sits in is unchanged.
 - `Sources/UI/Settings/TTSSettingsView.swift` — the "Highlight colors"
   section + `HighlightColorRow` (row + presets + Reset + the
   `Color`-to-hex binding), now with a Show `Toggle` per row, a
   "Cluster" row, a segmented "Line follows" picker in the Vertical
   line row, a "Hide highlights while scrolling" toggle after the rows,
+  a "Show underline" toggle after that (branch trial, default off),
   and "Reset all to default" restoring the branch defaults
   (5 colours, 5 toggles with block off, line follows Paragraph —
-  the scroll toggle is a behaviour preference and is not reset).
+  the two behaviour toggles are preferences and are not reset).
+
+## 7. Technical limitations
+
+What the overlay can and cannot do is set by how it is built — an
+`NSPanel` that draws rectangles over another app's window. These
+limits are not bugs to fix later; they are the reason the design
+above looks the way it does.
+
+- **Every highlight is a rectangle with hard edges.** The overlay
+  draws `NSBezierPath(rect:).fill()` over the page — a solid
+  rectangle whose edge is a sharp colour step against the page
+  behind it. That edge is the nature of the drawing, not a bug:
+  with several translucent fills stacked (block + cluster +
+  sentence + word) the edges read as nested borders, which is what
+  Manh saw on the branch build (2026-11-27). Paler colours make
+  the step smaller (which is why the word/sentence defaults follow
+  Speechify's pale palette), but they cannot remove it — only not
+  drawing a rectangle can. The underline trial (§4) is exactly
+  that: a thin solid bar under the text has no broad rectangle, so
+  it has no border to see.
+- **The overlay cannot recolor the page's text.** Speechify
+  highlights the text itself (CSS Highlight API) and sets both the
+  background and the text colour — its word is solid indigo with
+  white text. The overlay draws *over* the page and never touches
+  the page's text, so it cannot turn the text white. That is why
+  Speechify's opacity (1.0, solid) cannot be copied: an opaque
+  fill would hide the dark text underneath it. The fills stay
+  translucent (0.30) so the text stays readable, and the solid
+  elements (vertical line, underline) are thin bars, not fills —
+  a solid bar beside or under the text never covers it.
+- **The overlay cannot follow the shape of the letters.** Speechify
+  paints exactly the glyphs (its highlight hugs each character).
+  The overlay only gets rectangles from Accessibility
+  (`AXBoundsForRange`): one box per word, sentence, or paragraph.
+  So a highlight is always the box around the text, never the text
+  shape itself — it includes the gaps between words and the space
+  above/below the letters, and it can never be rounded to the
+  letters. Rounded corners on the box would soften the corners
+  only; the straight edges would stay.
+- **A layer only draws when the app exposes its frame.** The
+  word/sentence/cluster frames come from `AXBoundsForRange` on the
+  host app. An app that does not expose range bounds gives no
+  frame, and that level is simply not drawn — no fill, no
+  underline, no line for it; the other levels still show. This is
+  by app, not by setting: the same build can show word + sentence
+  in Preview and only the block in another app.
+- **The line and the underline are rectangles too — thin ones.**
+  The vertical line (1.75 pt wide, in the 8 pt strip) and the
+  underline (2.5 pt tall, under the word/sentence) are the same
+  `NSBezierPath(rect:).fill()` as the fills, only narrow and solid
+  (opacity 1.0). A thin solid bar reads as a line, not a box, which
+  is why neither of them has the border problem the fills do.
 
 ## Links
 

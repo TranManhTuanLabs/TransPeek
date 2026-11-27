@@ -10,16 +10,19 @@ import Foundation
 /// restart. Opacity stays fixed in code (fills 0.30, line solid 1.0) —
 /// the picker never edits it, so a color can never hide the text.
 enum HighlightColors {
-    /// Default colors — the pastel palette from the trial (Manh
-    /// 2026-11-24 00:38). Also the "Reset" targets in Settings. The hex
-    /// values are the rounded equivalents of the RGB values the overlay
-    /// used before (word 0.85/0.75/0.98, sentence 1.0/0.95/0.65, block
-    /// 0.75/0.95/0.70, line 0.55/0.75/1.0), so the defaults look
-    /// identical to the old hardcoded colors.
+    /// Default colors. Word + sentence follow Speechify (Manh
+    /// 2026-11-27): the word is Speechify's `highlight50` indigo
+    /// `#5666F0`, the sentence is its `highlight30` light periwinkle
+    /// `#ABB3FE`. Speechify's own sentence color is the paler
+    /// `highlight20` `#E0E3FF`, but at the overlay's fixed fill
+    /// opacity 0.30 that is nearly invisible, so the next step in
+    /// its palette is used instead. Block + line keep the pastel
+    /// palette from the trial (Manh 2026-11-24 00:38). Also the
+    /// "Reset" targets in Settings.
     static let lineDefaultHex = "#8CBFFF" // blue nhạt, đặc
     static let blockDefaultHex = "#BFF2B3" // green nhạt
-    static let sentenceDefaultHex = "#FFF2A6" // vàng nhạt
-    static let wordDefaultHex = "#D9BFFA" // tím nhạt
+    static let sentenceDefaultHex = "#ABB3FE" // tím nhạt (Speechify highlight30)
+    static let wordDefaultHex = "#5666F0" // chàm (Speechify highlight50)
     /// Default cluster color (Manh 2026-11-27): light pink, from the
     /// preset palette — distinct from the other four fills, so the
     /// paragraph reads as its own level. Chosen by the parent (Manh
@@ -49,14 +52,15 @@ enum HighlightColors {
     /// not a tint).
     static let fillAlpha: CGFloat = 0.30
     static let lineAlpha: CGFloat = 1.0
-    /// Pastel preset swatches shown under each layer in Settings — one
-    /// shared palette, any layer can use any pastel. Tapping a swatch
-    /// sets that layer's color at once.
+    /// Preset swatches shown under each layer in Settings — the 6
+    /// layer colors (line, block, sentence, word, cluster pink,
+    /// orange), so any layer can be reset to any of them at a tap.
+    /// Tapping a swatch sets that layer's color at once.
     static let pastelPresets: [String] = [
         "#8CBFFF", // light blue
         "#BFF2B3", // light green
-        "#FFF2A6", // light yellow
-        "#D9BFFA", // light purple
+        "#ABB3FE", // light periwinkle (Speechify sentence)
+        "#5666F0", // indigo (Speechify word)
         "#FFC2D1", // light pink
         "#FFD9A6", // light orange
     ]

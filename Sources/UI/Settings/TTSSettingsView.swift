@@ -42,6 +42,12 @@ struct TTSSettingsView: View {
     // trial plan phase 2): the overlay reads it live, so flipping it
     // applies at once (the next follow poll re-evaluates).
     @Default(.highlightHideWhileScrolling) private var highlightHideWhileScrolling
+    // Underline under the word + sentence being read (Manh
+    // 2026-11-27, branch trial): the overlay reads it live, so
+    // flipping it applies at once (the next draw shows or hides the
+    // underlines). Default OFF — a try-out alternative to the
+    // rectangle fills, whose hard edges read as a border.
+    @Default(.highlightUnderlineShown) private var highlightUnderlineShown
 
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
@@ -222,6 +228,17 @@ struct TTSSettingsView: View {
                 // old follow-only behaviour — the highlight stays up
                 // while scrolling, which can read as jerkiness.
                 Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
+
+                // Underline under the word + sentence (Manh
+                // 2026-11-27, branch trial): a thin solid bar at the
+                // bottom of the word/sentence frame, in that layer's
+                // colour — a try-out alternative to the rectangle
+                // fills, whose hard edges read as a border. Off by
+                // default; independent of the layers' Show toggles, so
+                // turning all fills off still shows the underline.
+                // Like the scroll toggle it is a behaviour preference
+                // — "Reset all to default" below does not touch it.
+                Toggle("Show underline", isOn: $highlightUnderlineShown)
 
                 Button("Reset all to default") {
                     highlightLineHex = HighlightColors.lineDefaultHex

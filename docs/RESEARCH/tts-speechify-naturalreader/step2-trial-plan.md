@@ -118,12 +118,26 @@ trang và sửa được DOM — đúng như nhận định overlay: TransPeek (
 ở NGOÀI trang) không sửa được DOM nên chỉ vẽ overlay được. Source
 extension xác nhận cơ chế này.
 
-### Speechify — màu chính xác chưa tìm được trong source extension
+### Speechify — màu thật, đã tìm được trong source extension (2026-11-27)
 
-Đã tìm trong source extension Speechify (anh gửi): file CSS chỉ có reset
-tap-highlight, màu highlight đọc-theo-giọng không nằm trong CSS mà nằm
-trong JS đã minify hoặc ở web app — chưa tìm được. Chỉ xác nhận được 2
-tầng (câu + từ) từ help/review/plugin. Nên màu Speechify vẫn chưa xác minh.
+Đã tìm được trong source extension Speechify (anh gửi): highlight
+đọc-theo-giọng dùng CSS Highlight API (`::highlight()`), màu nằm
+trong theme token, không nằm trong CSS. Theme mặc định là **purple**,
+theo trang sáng/tối (page-based). Trên trang sáng:
+
+| Tầng | Nền | Chữ | Ghi chú |
+|---|---|---|---|
+| Từ đang đọc | Chàm đậm `#5666F0` (`highlight50`) | Chữ sáng | Nền đặc (opacity 1.0) |
+| Câu đang đọc | Tím oải hương rất nhạt `#E0E3FF` (`highlight20`) | Chữ đen | Nền đặc (opacity 1.0) |
+
+**Cơ chế highlight của Speechify (từ source thật):** tô thẳng vào
+chữ bằng CSS Highlight API nên không có hình chữ nhật, không có
+"cạnh" — đó là lý do highlight Speechify không có border. Speechify
+đổi luôn màu chữ (trắng trên nền từ đậm) nên nền đặc vẫn đọc được.
+TransPeek (app macOS, ở NGOÀI trang) không sửa được DOM/chữ nên chỉ
+vẽ overlay được: nền đặc sẽ che mất chữ đen bên dưới, vì vậy overlay
+phải giữ fill MỜ (0.30) và dùng màu của Speechify ở dạng mờ — xem
+mục "Màu mặc định hiện tại" bên dưới.
 
 **Màu thử cho TransPeek (Manh chốt 2026-11-24 00:38 — bảng màu pastel, thay cho đề xuất theo NaturalReader):**
 
@@ -133,6 +147,16 @@ tầng (câu + từ) từ help/review/plugin. Nên màu Speechify vẫn chưa x�
 | Câu đang đọc | **Vàng nhạt** (mờ) | Muse chọn để hợp với tím nhạt: vàng là màu bổ sung (complementary) của tím nên từ tím nổi rõ bên trong câu vàng; vàng cũng là màu highlight câu chuẩn (NaturalReader). |
 | Đoạn đang đọc | **Green nhạt** (mờ) | Manh chọn. Tách biệt với vàng của câu. |
 | Gạch dọc sợi chỉ | **Blue nhạt** (đặc) | Manh chọn. Gạch là vạch đặc nên dùng blue nhạt vẫn nhìn rõ, khác với 2 lớp tô mờ. |
+
+**Màu mặc định hiện tại (đổi 2026-11-27, Manh duyệt):** từ + câu nay
+theo **Speechify** thay cho bảng pastel trên — từ `#5666F0` (chàm,
+`highlight50`), câu `#ABB3FE` (tím nhạt, `highlight30`), fill mờ
+0.30. KHÔNG dùng `#E0E3FF` (màu câu thật của Speechify) vì ở fill
+0.30 thì nhạt quá gần như không thấy; `#ABB3FE` là bước tiếp theo
+trong bảng màu của Speechify. Đoạn (green nhạt `#BFF2B3`), gạch
+(blue nhạt `#8CBFFF`), cụm (hồng nhạt `#FFC2D1`) giữ nguyên bảng
+pastel cũ — Speechify không có 3 lớp này. Chi tiết xem
+`docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` §3.
 
 Lưu ý: TransPeek thử 4 tầng (gạch + từ + câu + đoạn) còn Speechify/NaturalReader
 chỉ có 2 tầng (câu + từ) — vì TransPeek không lấy được vị trí từng từ một cách
@@ -239,6 +263,30 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` (mặc định cuối
     trên nhánh: line shown, line follows Paragraph, block hidden,
     sentence + word + cluster shown).
+  - **Màu mặc định từ/câu theo Speechify (2026-11-27, Manh duyệt):**
+    từ `#5666F0` (chàm, `highlight50`), câu `#ABB3FE` (tím nhạt,
+    `highlight30`), fill mờ 0.30 — thay cho tím nhạt `#D9BFFA` /
+    vàng nhạt `#FFF2A6` của bảng pastel chốt 2026-11-24. Đoạn, gạch,
+    cụm giữ màu pastel cũ. Không dùng `#E0E3FF` (màu câu thật của
+    Speechify) vì ở fill 0.30 thì nhạt quá; Speechify tô đặc (1.0)
+    và đổi màu chữ nên mới dùng được nền đặc — overlay không đổi
+    được màu chữ nên giữ fill mờ. Chi tiết §3.
+  - **Gạch chân thử trên nhánh + vạch dọc mỏng đi (2026-11-27):**
+    thêm toggle \"Show underline\" (key
+    `transpeek_highlightUnderlineShown`, mặc định TẮT, chỉ trên
+    nhánh): vẽ gạch chân đặc 2.5pt dưới từ + câu đang đọc, mỗi cái
+    màu của lớp đó, độc lập với công tắc Show của lớp (tắt hết fill
+    mà bật gạch chân thì vẫn thấy gạch chân — để so sánh 2 kiểu).
+    Lý do: fill hình chữ nhật có cạnh cứng trông như border (xem
+    giới hạn kỹ thuật trong UX spec §7); gạch chân tránh hẳn hình
+    chữ nhật. Vạch dọc mỏng đi 1/2 (3.5 → 1.75pt, Manh thấy hơi
+    to); dải 8pt bên trái giữ nguyên.
+  - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
+    overlay vẽ hình chữ nhật đè lên trang nên highlight luôn có
+    cạnh cứng (không phải bug); không đổi được màu chữ của trang
+    (nên không dùng nền đặc 1.0 như Speechify); không tô theo hình
+    chữ (chỉ có khung AX); frame từ/câu/cụm phụ thuộc app có cho
+    lấy `AXBoundsForRange` không.
 - ...
 
 ## Liên kết

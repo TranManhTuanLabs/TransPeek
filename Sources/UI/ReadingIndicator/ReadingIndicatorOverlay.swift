@@ -24,7 +24,10 @@ import Foundation
 /// line + block stay on the branch); the branch draws all five. One
 /// file, one component — the layers are a setting, not a fork. Each
 /// layer also has its own Show toggle in Settings (Manh 2026-11-27):
-/// a hidden layer is never drawn, on either side.
+/// a hidden layer is never drawn, on either side. A branch-only trial
+/// (Manh 2026-11-27) adds an underline under the word + sentence —
+/// a thin solid bar instead of a rectangle fill, because the fills'
+/// hard edges read as a border; see `isUnderlineShown`.
 @MainActor
 final class ReadingIndicatorOverlay {
     /// Which indicator layers to draw. Main = sentence + word only;
@@ -95,8 +98,32 @@ final class ReadingIndicatorOverlay {
     /// once (the next follow poll re-evaluates). Default ON on the
     /// branch — a lagging highlight reads as jerkiness.
     fileprivate static var isHideWhileScrolling: Bool { Defaults[.highlightHideWhileScrolling] }
-    /// Width of the vertical line (points).
-    fileprivate static let lineWidth: CGFloat = 3.5
+    /// Whether the underline under the word + sentence is drawn (Manh
+    /// 2026-11-27, branch trial): a Settings toggle in the Highlight
+    /// colors section ("Show underline"). Read live so flipping it
+    /// applies at once (the next draw shows or hides the underlines).
+    /// Default OFF — a try-out, not the settled style. Independent of
+    /// the word/sentence Show toggles: the underline shows even when
+    /// both fills are off, so the two styles can be compared.
+    fileprivate static var isUnderlineShown: Bool { Defaults[.highlightUnderlineShown] }
+    /// Thickness of the underline bar (points). Same idea as the
+    /// vertical line: a thin solid bar reads as a line, not a box.
+    fileprivate static let underlineThickness: CGFloat = 2.5
+    /// Solid (opacity 1.0) versions of the word/sentence colors, for
+    /// the underline (Manh 2026-11-27, branch trial): a translucent
+    /// 2.5 pt bar would be too faint to read as a line, so the
+    /// underline uses the layer's color solid — like the vertical
+    /// line, which is solid for the same reason.
+    fileprivate static var wordSolid: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightWordHex], alpha: HighlightColors.lineAlpha, fallbackHex: HighlightColors.wordDefaultHex)
+    }
+    fileprivate static var sentenceSolid: NSColor {
+        HighlightColors.nsColor(hex: Defaults[.highlightSentenceHex], alpha: HighlightColors.lineAlpha, fallbackHex: HighlightColors.sentenceDefaultHex)
+    }
+    /// Width of the vertical line (points). Halved from 3.5 to 1.75
+    /// (Manh 2026-11-27 — the line read as too thick); the 8 pt strip
+    /// it sits in is unchanged, only the bar is thinner.
+    fileprivate static let lineWidth: CGFloat = 1.75
     /// How far the window extends left of the block (points) so the
     /// line sits BESIDE the text instead of covering the first
     /// characters — the line lives in this strip, the fills start at
@@ -124,6 +151,14 @@ final class ReadingIndicatorOverlay {
     private var sentenceAXRect: CGRect?
     private var wordAXRect: CGRect?
     private var clusterAXRect: CGRect?
+    /// Word/sentence frames for the underline (Manh 2026-11-27,
+    /// branch trial): stored WITHOUT the Show gate — the underline
+    /// is independent of the fill toggles, so turning all fills off
+    /// still shows the underline. Gated only on the layer being in
+    /// `layers` (the branch has all five). Same AX coordinates as
+    /// the fill rects above, converted at layout time.
+    private var sentenceUnderlineAXRect: CGRect?
+    private var wordUnderlineAXRect: CGRect?
     /// Hide-during-scroll state (Manh 2026-11-27, trial plan phase 2):
     /// the follow timer compares each poll's block frame with the
     /// previous one. `lastBlockScreenFrame` is the screen frame from
@@ -152,6 +187,8 @@ final class ReadingIndicatorOverlay {
         sentenceAXRect = nil
         wordAXRect = nil
         clusterAXRect = nil
+        sentenceUnderlineAXRect = nil
+        wordUnderlineAXRect = nil
         // Fresh show: no scroll history yet — the highlight shows at
         // once (the first poll below establishes the baseline frame).
         lastBlockScreenFrame = nil
@@ -180,6 +217,13 @@ final class ReadingIndicatorOverlay {
         sentenceAXRect = layers.contains(.sentence) && Self.isSentenceShown ? sentenceFrame : nil
         wordAXRect = layers.contains(.word) && Self.isWordShown ? wordFrame : nil
         clusterAXRect = layers.contains(.cluster) && Self.isClusterShown ? clusterFrame : nil
+        // Underline frames (Manh 2026-11-27, branch trial): stored
+        // WITHOUT the Show gate — the underline is independent of the
+        // fill toggles, so it shows even when the word/sentence fills
+        // are off. The controller passes the frames ungated, so the
+        // only gate here is the layer being in `layers`.
+        sentenceUnderlineAXRect = layers.contains(.sentence) ? sentenceFrame : nil
+        wordUnderlineAXRect = layers.contains(.word) ? wordFrame : nil
         layoutHighlightRects()
         contentView.needsDisplay = true
     }
@@ -192,6 +236,8 @@ final class ReadingIndicatorOverlay {
         sentenceAXRect = nil
         wordAXRect = nil
         clusterAXRect = nil
+        sentenceUnderlineAXRect = nil
+        wordUnderlineAXRect = nil
         lastBlockScreenFrame = nil
         stablePolls = 0
         isScrolling = false
@@ -200,6 +246,8 @@ final class ReadingIndicatorOverlay {
         contentView.sentenceRect = nil
         contentView.clusterRect = nil
         contentView.lineRect = nil
+        contentView.wordUnderlineRect = nil
+        contentView.sentenceUnderlineRect = nil
         contentView.isScrollingHidden = false
         panel.orderOut(nil)
     }
@@ -287,8 +335,8 @@ final class ReadingIndicatorOverlay {
         contentView.sentenceRect = sentenceAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
         contentView.wordRect = wordAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
         contentView.clusterRect = clusterAXRect.flatMap { Self.windowLocalRect(fromAXRect: $0, windowFrame: windowFrame) }
-        // The vertical line lives in the left strip (x 0, width 3.5 pt)
-        // and its height follows the chosen unit (Manh 2026-11-27):
+        // The vertical line lives in the left strip (x 0, width 1.75
+        // pt) and its height follows the chosen unit (Manh 2026-11-27):
         // the sentence, the paragraph (cluster), or the whole block.
         // The window itself stays the block frame (the fills still need
         // it) — only the line's height changes. Fallback chain (Manh
@@ -322,6 +370,30 @@ final class ReadingIndicatorOverlay {
             // No frame for any unit — no line this poll.
             contentView.lineRect = nil
         }
+        // Underline rects (Manh 2026-11-27, branch trial): a thin
+        // solid bar at the bottom of the word/sentence frame, in that
+        // layer's color. Computed from the ungated AX frames above,
+        // so the underline shows even when the fills are off. Nil
+        // when the unit has no frame (the app hides range bounds) —
+        // no underline that poll, the other marks still show. The
+        // `draw` gate is the toggle, not these rects.
+        contentView.wordUnderlineRect = Self.underlineRect(fromAXRect: wordUnderlineAXRect, windowFrame: windowFrame)
+        contentView.sentenceUnderlineRect = Self.underlineRect(fromAXRect: sentenceUnderlineAXRect, windowFrame: windowFrame)
+    }
+
+    /// A thin underline rect at the bottom edge of a unit's frame
+    /// (Manh 2026-11-27, branch trial): the unit's window-local rect,
+    /// reduced to a `underlineThickness` bar at its bottom (AppKit
+    /// origin is bottom-left, so the bottom edge is `minY`). Clamped
+    /// to the window so a partially scrolled unit never draws the
+    /// underline outside it. Nil when the unit has no frame or is
+    /// outside the window.
+    private static func underlineRect(fromAXRect axRect: CGRect?, windowFrame: CGRect) -> CGRect? {
+        guard let axRect, let local = windowLocalRect(fromAXRect: axRect, windowFrame: windowFrame) else { return nil }
+        let y = max(0, local.minY)
+        let height = max(0, min(underlineThickness, windowFrame.height - y))
+        guard height > 0, local.width > 0 else { return nil }
+        return CGRect(x: local.minX, y: y, width: local.width, height: height)
     }
 
     private func startFollowing() {
@@ -401,7 +473,9 @@ private final class ReadingIndicatorPanel: NSPanel {
 /// sentence fill, word fill, vertical line) in window-local
 /// coordinates. Any level with a nil rect is simply not drawn — a
 /// missing frame never blanks the other levels. A layer that is off
-/// is never drawn.
+/// is never drawn. A branch-only trial (Manh 2026-11-27) also draws
+/// an underline under the word + sentence when its toggle is on —
+/// a thin solid bar instead of a rectangle fill.
 private final class ReadingIndicatorView: NSView {
     /// The layers this view draws (same set as the overlay).
     private let layers: ReadingIndicatorOverlay.Layers
@@ -409,6 +483,13 @@ private final class ReadingIndicatorView: NSView {
     var sentenceRect: CGRect?
     var wordRect: CGRect?
     var clusterRect: CGRect?
+    /// The underline rects under the word/sentence (set by
+    /// `layoutHighlightRects` from the ungated AX frames — their
+    /// bottom edges, 2.5 pt tall). Nil means no underline this poll
+    /// (no frame for that unit). Drawn only when the underline
+    /// toggle is on; independent of the fill toggles.
+    var wordUnderlineRect: CGRect?
+    var sentenceUnderlineRect: CGRect?
     /// The vertical line's rect in the left strip (set by
     /// `layoutHighlightRects` — its height follows the chosen unit).
     /// Nil means no line this poll (no unit had a frame — the line is
@@ -465,6 +546,25 @@ private final class ReadingIndicatorView: NSView {
         if layers.contains(.line), ReadingIndicatorOverlay.isLineShown, let lineRect {
             ReadingIndicatorOverlay.lineFill.setFill()
             NSBezierPath(rect: lineRect).fill()
+        }
+        // The underline (Manh 2026-11-27, branch trial): a thin solid
+        // bar at the bottom of the sentence + word frames, in each
+        // layer's color. Only when the "Show underline" toggle is on
+        // — and NOT gated on the fill toggles, so turning all fills
+        // off still shows the underline (the point of the trial: a
+        // line under the text instead of a rectangle around it, whose
+        // hard edges read as a border). A nil rect means that unit
+        // had no frame this poll. The scroll guard at the top already
+        // hides the underline while scrolling, with the fills + line.
+        if ReadingIndicatorOverlay.isUnderlineShown {
+            if layers.contains(.sentence), let sentenceUnderlineRect {
+                ReadingIndicatorOverlay.sentenceSolid.setFill()
+                NSBezierPath(rect: sentenceUnderlineRect).fill()
+            }
+            if layers.contains(.word), let wordUnderlineRect {
+                ReadingIndicatorOverlay.wordSolid.setFill()
+                NSBezierPath(rect: wordUnderlineRect).fill()
+            }
         }
     }
 }
