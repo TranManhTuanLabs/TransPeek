@@ -115,8 +115,10 @@ final class ReadingIndicatorOverlay {
     fileprivate static var clusterFill: NSColor {
         HighlightColors.nsColor(hex: Defaults[.highlightClusterHex], alpha: HighlightColors.fillAlpha, fallbackHex: HighlightColors.clusterDefaultHex)
     }
-    /// Width of the vertical line (points).
-    fileprivate static let lineWidth: CGFloat = 3.5
+    /// Width of the vertical line (points). Halved from 3.5 to 1.75 on
+    /// 2026-11-27 — Manh found the 3.5 pt bar too thick; the 8 pt strip
+    /// it lives in is unchanged, only the bar itself got thinner.
+    fileprivate static let lineWidth: CGFloat = 1.75
     /// How far the window extends left of the block (points) so the
     /// line sits BESIDE the text instead of covering the first
     /// characters — the line lives in this strip, the fills start at

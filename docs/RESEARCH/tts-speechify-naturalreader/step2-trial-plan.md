@@ -118,12 +118,11 @@ trang và sửa được DOM — đúng như nhận định overlay: TransPeek (
 ở NGOÀI trang) không sửa được DOM nên chỉ vẽ overlay được. Source
 extension xác nhận cơ chế này.
 
-### Speechify — màu chính xác chưa tìm được trong source extension
+### Speechify — màu chính xác ĐÃ tìm được trong source extension (2026-11-27)
 
-Đã tìm trong source extension Speechify (anh gửi): file CSS chỉ có reset
-tap-highlight, màu highlight đọc-theo-giọng không nằm trong CSS mà nằm
-trong JS đã minify hoặc ở web app — chưa tìm được. Chỉ xác nhận được 2
-tầng (câu + từ) từ help/review/plugin. Nên màu Speechify vẫn chưa xác minh.
+Đã tìm trong source extension Speechify (anh gửi): màu highlight đọc-theo-giọng không nằm trong CSS mà nằm trong JS (theme token `highlightColor`: từ dùng `hglt-prim`, câu dùng `hglt-sec`). Mặc định (theme tím, trang sáng): **từ `#5666f0`** (highlight50, chàm đậm — chữ trắng) và **câu `#e0e3ff`** (highlight20, tím oải hương rất nhạt — chữ đen). Nền ĐẶC (opacity 1.0), tô thẳng vào chữ bằng CSS Highlight API (`::highlight()`), nên không có hình chữ nhật. Bảng gốc còn có `highlight30 #abb3fe` (tím nhạt) và `highlight40 #444766` (chàm tối, cho trang tối).
+
+**Áp dụng cho TransPeek (Manh 2026-11-27 03:41):** màu mặc định từ/câu nay theo Speechify — từ `#5666F0`, câu `#ABB3FE` (dùng highlight30 thay `#e0e3ff` vì ở fill mờ 0.30 thì `#e0e3ff` nhạt quá gần như không thấy). Overlay của TransPeek vẽ đè lên trang, không đổi được màu chữ, nên KHÔNG copy opacity 1.0 của Speechify — fill vẫn mờ 0.30 để chữ đen đọc được. Đoạn (`#BFF2B3`), cụm (`#FFC2D1`), vạch (`#8CBFFF`) giữ bảng pastel cũ (Speechify không có 3 lớp này). Xem `HIGHLIGHT_COLORS_UX_SPEC.md` §3.
 
 **Màu thử cho TransPeek (Manh chốt 2026-11-24 00:38 — bảng màu pastel, thay cho đề xuất theo NaturalReader):**
 
@@ -143,8 +142,7 @@ khó phân biệt trên nền trang sáng/tối thì đổi màu và ghi lại �
 **Lưu ý thêm (từ source thật):** màu câu mặc định của NaturalReader là
 xanh lá nhạt `#B5C687` — cùng tông với màu ĐOẠN (green nhạt) mà Manh chọn
 cho TransPeek. Tức là nếu học sát NaturalReader thì câu = xanh lá nhạt,
-đoạn phải chọn màu khác. Bảng màu pastel của Manh vẫn giữ nguyên trừ khi
-anh muốn đổi theo NaturalReader.
+đoạn phải chọn màu khác. Bảng màu pastel của Manh vẫn giữ nguyên cho đoạn/vạch/cụm; riêng từ + câu đã đổi sang màu Speechify từ 2026-11-27 (xem mục trên) — bảng trên là bảng gốc 2026-11-24, chỉ còn đúng cho đoạn/vạch/cụm.
 
 ## 4. Theo dõi khi cuộn + dự phòng chống giật
 
@@ -193,12 +191,14 @@ Test trên trang báo đơn giản trước (Safari/Chrome), rồi mới thử a
 - Overlay có chặn chuột không? (phải `ignoresMouseEvents`.)
 - Đoạn cuộn khỏi màn hình thì ẩn đúng không?
 - Độ mờ 25–35% có đọc được chữ bên dưới không, hay phải chỉnh?
-- Màu vàng + xanh nhạt có phân biệt được trên cả nền sáng và nền tối
-  không?
+- Màu chàm (từ) + tím nhạt (câu) + xanh nhạt (đoạn) có phân biệt được
+  trên cả nền sáng và nền tối không?
 
 ## 7. Ghi chú điều chỉnh theo thực tế
 
 - **2026-11-27 — dự phòng chống giật (phase 2) ĐÃ LÀM:** test thấy cuộn bị giật nên đã triển khai ẩn highlight lúc cuộn / hiện lại khi dừng, đúng như §4 dự phòng: follow poll 0,3 s so sánh khung block với poll trước, khung đổi → ẩn các fill + vạch dọc (cửa sổ vẫn bám theo để lúc hiện lại đã đúng chỗ), khung đứng yên 2 poll liên tiếp (~0,6 s) → hiện lại. Có toggle "Hide highlights while scrolling" trong Settings → Audio → Highlight colors, **mặc định BẬT**; tắt thì về hành vi follow-only cũ (có thể giật). Không thêm lần đọc AX nào (dùng khung poll đã đọc sẵn). Xem `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md` §7.
+- **2026-11-27 — màu mặc định từ/câu đổi sang Speechify:** màu Speechify đã tìm được trong source extension (từ `#5666f0`, câu `#e0e3ff`, nền đặc, tô thẳng vào chữ). Mặc định TransPeek nay: từ `#5666F0`, câu `#ABB3FE` (dùng highlight30 thay `#e0e3ff` vì ở fill 0.30 thì `#e0e3ff` nhạt quá); fill vẫn mờ 0.30 vì overlay vẽ đè lên trang, không đổi được màu chữ như Speechify. Đoạn `#BFF2B3`, cụm `#FFC2D1`, vạch `#8CBFFF` giữ nguyên. Xem `HIGHLIGHT_COLORS_UX_SPEC.md` §3.
+- **2026-11-27 — vạch dọc mỏng đi 1/2 + giới hạn kỹ thuật ghi vào doc:** vạch dọc từ 3.5 pt → **1.75 pt** (Manh thấy 3.5 hơi to; dải 8 pt bên trái giữ nguyên, chỉ thanh vạch mỏng đi). Đồng thời ghi rõ giới hạn kỹ thuật của overlay vào `HIGHLIGHT_COLORS_UX_SPEC.md` §9: highlight luôn là hình chữ nhật có cạnh cứng (bản chất cách vẽ, không phải bug — màu nhạt chỉ làm cạnh mờ đi); overlay không đổi được màu chữ và không tô theo hình chữ như Speechify, nên fill phải giữ mờ 0.30; lớp nào app không cho lấy `AXBoundsForRange` thì không vẽ được.
 - **2026-11-27 — overlay thêm lớp Paragraph (cụm) + picker Line follows:** ngoài 4 lớp cũ (vạch dọc, đoạn, câu, từ), overlay nay có thêm lớp highlight **Paragraph (cụm)** — nhóm câu gần nhau, cách nhau bằng dòng trống, màu mặc định hồng nhạt `#FFC2D1` (mặc định trên main: TẮT; chỉ có highlight từ bật sẵn). Vạch dọc không còn dài cố định bằng cả block: picker "Line follows" trong hàng Vertical line cho chọn Sentence / Paragraph / Block (mặc định main: Sentence); fallback khi đơn vị chọn không có frame: đơn vị chọn → câu → cụm, không có frame nào thì không vẽ vạch (block chỉ là đơn vị được chọn, không phải fallback). Xem `HIGHLIGHT_COLORS_UX_SPEC.md` §3/§6.
 
 _(Điền sau khi thử trên máy thật — kết quả từng app, màu/độ mờ cuối cùng,

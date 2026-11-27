@@ -28,7 +28,7 @@ Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
 │ Vertical line              #8CBFFF  Show [ ]  [swatch]  Reset   │
 │ Solid bar at the block's left edge                               │
-│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 pastel presets                    │
+│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                    │
 │ Line follows: [ Sentence | Paragraph | Block ]                   │
 │                                                                  │
 │ Block                        #BFF2B3  Show [ ]  [swatch]  Reset │
@@ -39,11 +39,11 @@ Highlight colors
 │ Highlight for the paragraph (cluster) being read                 │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence                     #FFF2A6  Show [ ]  [swatch]  Reset │
+│ Sentence                     #ABB3FE  Show [ ]  [swatch]  Reset │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Word                         #D9BFFA  Show [x]  [swatch]  Reset │
+│ Word                         #5666F0  Show [x]  [swatch]  Reset │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -74,7 +74,7 @@ Each row, left to right:
   (colour wheel, sliders, palettes, eyedropper).
 - **Reset** — restores that one layer to its default colour.
 
-Under each row, **6 pastel preset swatches** (22 pt circles): tap one
+Under each row, **6 preset swatches** (22 pt circles): tap one
 to set that layer's colour at once. The current colour gets a strong
 ring, so the user can see which preset (if any) is active.
 
@@ -89,20 +89,30 @@ layers' colours at once (it does not touch the Show switches or the
 
 | Layer | What it marks | Default | Opacity | Shown by default (main) |
 |---|---|---|---|---|
-| Vertical line | Solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
+| Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
 | Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them | `#FFC2D1` (light pink) | 0.30 | No |
-| Sentence | Fill for the sentence being read | `#FFF2A6` (light yellow) | 0.30 | No |
-| Word | Fill for the word being spoken | `#D9BFFA` (light purple) | 0.30 | Yes |
+| Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
+| Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
 
-The defaults are the pastel palette from the trial (Manh 2026-11-24
-00:38), as `#RRGGBB` hex — the rounded equivalents of the RGB values
-the overlay used before (word 0.85/0.75/0.98, sentence 1.0/0.95/0.65,
-block 0.75/0.95/0.70, line 0.55/0.75/1.0), so the defaults look
+The defaults are `#RRGGBB` hex. Block, paragraph and line keep the
+pastel palette from the trial (Manh 2026-11-24 00:38): the hex values
+are the rounded equivalents of the RGB values the overlay used before
+(block 0.75/0.95/0.70, line 0.55/0.75/1.0), so those defaults look
 identical to the old hardcoded colours. The paragraph default is light
 pink — a preset already in the palette, distinct from the other four
 fills; Manh did not pick a colour for it (parent agent's choice,
-2026-11-27), change it in Settings if another pink reads better. Draw
+2026-11-27), change it in Settings if another pink reads better.
+Word and sentence follow Speechify (Manh 2026-11-27 03:41 — read from
+the Speechify extension source: default theme, light page): the word
+is Speechify's highlight50 indigo `#5666F0`, the sentence is
+Speechify's highlight30 light periwinkle `#ABB3FE`. Speechify's own
+sentence is `#e0e3ff` (highlight20), but at fill 0.30 that is so pale
+it is nearly invisible, so the sentence uses the next step up. And
+Speechify draws opaque (1.0) while recolouring the text; this overlay
+draws over the page and cannot recolour the text, so the fills stay
+translucent (0.30) and the text underneath stays readable — the
+Speechify hues are adopted, not its opacity. Draw
 order (bottom to top): block, paragraph, sentence, word, then the
 line — the fills are translucent, so overlapping levels blend instead
 of hiding each other.
@@ -257,10 +267,45 @@ scrolling jerkiness is confirmed).
   per-layer Reset fixes one mistake; Reset all restores the whole
   tried palette.
 
-## 9. Implementation (file map)
+## 9. Technical limitations
+
+What the overlay can and cannot do is set by how it is built — a
+floating `NSPanel` that draws `NSBezierPath` rectangles over the page.
+These limits are inherent to that approach, not bugs.
+
+- **Every highlight is a rectangle with a hard edge.** The overlay
+  draws one filled rectangle per layer (block, paragraph, sentence,
+  word) over the text — so each highlight has a straight, sharp
+  border, and overlapping layers stack their edges. Pale colours
+  (the Speechify hues in §3) make the edge fainter, but they cannot
+  remove it.
+- **The overlay cannot change the text colour.** Speechify highlights
+  the text itself (CSS Highlight API), so it sets both the background
+  and the text colour — a dark word background with light text. This
+  overlay draws over the page and cannot recolour the text underneath,
+  so it cannot use Speechify's opaque (1.0) fills: an opaque fill
+  would hide the text. The fills stay translucent (0.30) so the dark
+  text stays readable.
+- **The overlay cannot follow the shape of the letters.** Speechify
+  highlights each character exactly. This overlay only gets a
+  rectangle per unit from the app's accessibility tree
+  (`AXBoundsForRange`), so the highlight is always a rectangle — it
+  never hugs the glyphs, and a multi-line unit is one tall box, not
+  a shape that follows the lines.
+- **A layer draws only when the app exposes its bounds.** The
+  word/sentence/paragraph frames come from `AXBoundsForRange`. An app
+  that does not support it for a unit gives no frame — that layer is
+  simply not drawn (no fill, and the line falls back as in §6 or is
+  not drawn at all).
+- **The vertical line is a thin solid rectangle too.** It is the same
+  drawing primitive as the fills, only 1.75 pt wide (halved from 3.5
+  on 2026-11-27 — Manh found 3.5 too thick), so it reads as a line
+  rather than a frame. The 8 pt strip it lives in is unchanged.
+
+## 10. Implementation (file map)
 
 - `Sources/UI/ReadingIndicator/HighlightColors.swift` — the 5 default
-  hexes, fixed opacities, the 6 pastel presets, hex ↔ `NSColor`
+  hexes, fixed opacities, the 6 presets, hex ↔ `NSColor`
   conversion (parse `#RRGGBB`, format, fallback to default).
 - `Sources/Utilities/Constants.swift` — the 5 `Defaults.Keys` for
   colours (`transpeek_highlight*Hex`, `String`, default = the palette
@@ -276,7 +321,8 @@ scrolling jerkiness is confirmed).
   creation layers with the Show toggles, and every draw/update/layout
   check goes through it. The overlay is created with `.all`
   (`AppDelegate`), so the toggles are the deciding source. The
-  cluster frame is converted in `layoutHighlightRects` like the
+  vertical line is 1.75 pt wide (`lineWidth`, halved from 3.5 on
+  2026-11-27) in the 8 pt left strip. The cluster frame is converted in `layoutHighlightRects` like the
   sentence/word frames; the line rect follows `LineFollows` (sentence
   / paragraph / block, falling back down the chain chosen unit →
   sentence → cluster, and drawing no line when none has a frame —
