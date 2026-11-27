@@ -136,10 +136,12 @@ each other, and the two solid bars sit on top.
 
 **What a "cluster" is.** A cluster is one paragraph inside the block:
 a run of sentences separated from the next group by a blank line
-(Enter / an empty line). A block with no blank line is a single
-cluster (the whole block) — the common case for short paragraphs. A
-long block (several paragraphs) has one cluster per paragraph, and
-the highlight follows the cluster around the sentence being read.
+(Enter / an empty line). A block with no blank line has NO cluster —
+the common case for short paragraphs: a cluster only marks a PART of
+a block, and a single-paragraph block is the whole block (the block
+layer's job — turn its Show on to mark the whole block). A long block
+(several paragraphs) has one cluster per paragraph, and the highlight
+follows the cluster around the sentence being read.
 
 ## 4. Behaviour
 
@@ -187,9 +189,11 @@ the highlight follows the cluster around the sentence being read.
   (like the sentence frame); the word frame is still read on every
   word. If the app does not expose range bounds, the cluster fill is
   simply not drawn (the other levels still show) — never a crash,
-  never a wrong rectangle. A block with no blank line is one cluster,
-  so the cluster fill then covers the whole block (same area the
-  block fill would cover, in pink instead of green).
+  never a wrong rectangle. A block with no blank line has no cluster
+  at all (Manh 2026-11-27 — the cluster would be the whole block, so
+  drawing its fill would be redundant with the block fill and blur
+  where the two overlap; turn the block layer on to mark the whole
+  block instead).
 - **Line follows — what the vertical line marks.** The "Line follows"
   picker in the Vertical line row stores one string in Defaults
   (`transpeek_highlightLineFollows`: `"sentence"`, `"paragraph"`, or

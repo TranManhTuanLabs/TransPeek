@@ -290,6 +290,16 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     trước). Vạch dọc mỏng đi 1/2 (3.5 → 1.75pt, Manh thấy hơi to);
     dải 8pt bên trái giữ nguyên. Chi tiết trong
     `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md`.
+  - **Cụm không fallback về cả block (2026-11-27, Manh chốt):**
+    trước đây block không có dòng trống thì cụm = cả block (vẽ fill
+    cụm đè lên toàn bộ block); nay KHÔNG vẽ fill cụm khi block chỉ
+    có 1 đoạn (không có ranh giới đoạn nào) — cụm chỉ tô khi nó là 1
+    PHẦN của block. Muốn tô cả block thì bật lớp Block (có tuỳ chọn
+    Show riêng). Lý do: vẽ cụm = cả block là thừa và gây nhòe (2 lớp
+    fill mờ chồng nhau). Triển khai: `paragraph(containing:in:)` trả
+    nil khi chỉ có 1 đoạn; overlay đã xử lý `clusterFrame` nil (không
+    vẽ) nên không đổi overlay. Block có dòng trống thì cụm vẫn hiện
+    bình thường.
   - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
     overlay vẽ hình chữ nhật đè lên trang nên highlight luôn có
     cạnh cứng (không phải bug); không đổi được màu chữ của trang

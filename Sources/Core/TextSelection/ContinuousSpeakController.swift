@@ -56,7 +56,9 @@ final class ContinuousSpeakController {
     /// cluster is a run of sentences separated from the next by a blank
     /// line, so the word callback can map a spoken word to the cluster
     /// around its sentence without re-splitting. A block with no blank
-    /// line is a single cluster (the whole block).
+    /// line yields a single range (the whole block), which is NOT a
+    /// cluster for highlighting (Manh 2026-11-27 — see
+    /// `paragraph(containing:in:)`).
     private var clusterRanges: [NSRange] = []
     /// The sentence currently highlighted (cached so its frame is only
     /// re-read from AX when the sentence actually changes, not on
@@ -286,9 +288,11 @@ final class ContinuousSpeakController {
                 currentClusterFrame = clusterFrame
             }
         } else {
-            // No cluster for this sentence (only when the block text
-            // has no non-blank line) — clear the cluster fill instead
-            // of leaving a stale one.
+            // No cluster for this sentence — either the block text has
+            // no non-blank line, or the block is a single paragraph
+            // (Manh 2026-11-27: no boundary means no cluster, the
+            // cluster would be the whole block). Clear the cluster
+            // fill instead of leaving a stale one.
             currentClusterRange = nil
             clusterFrame = nil
             currentClusterFrame = nil
@@ -398,10 +402,13 @@ final class ContinuousSpeakController {
     /// offsets — the same indexing as `sentenceRanges`). A cluster is a
     /// run of non-blank lines: blank lines (empty, or only spaces/tabs)
     /// separate clusters, but a single newline inside a cluster (a
-    /// wrapped line) does NOT split it. A block with no blank line is
-    /// one cluster (the whole block) — the common case for short
-    /// paragraphs. The ranges exclude the blank separator lines, so a
-    /// cluster's AX bounds cover only its own text.
+    /// wrapped line) does NOT split it. A block with no blank line
+    /// yields one range (the whole block) — the common case for short
+    /// paragraphs. That single range is NOT a cluster for highlighting:
+    /// `paragraph(containing:in:)` returns nil for it (Manh 2026-11-27
+    /// — a cluster only marks part of a block; the whole block is the
+    /// block layer's job). The ranges exclude the blank separator
+    /// lines, so a cluster's AX bounds cover only its own text.
     static func paragraphRanges(for text: String) -> [NSRange] {
         let nsText = text as NSString
         let length = nsText.length
@@ -458,9 +465,19 @@ final class ContinuousSpeakController {
     /// The paragraph (cluster) containing a UTF-16 offset — same lookup
     /// as `sentence(containing:in:)`: the range holding the offset, else
     /// the last one starting at or before it, else the first. A sentence
-    /// always sits inside exactly one cluster, so this always finds one
-    /// while a word is being spoken.
+    /// always sits inside exactly one cluster, so this finds one while
+    /// a word is being spoken — EXCEPT when the block has no paragraph
+    /// boundary at all (see below).
     static func paragraph(containing offset: Int, in ranges: [NSRange]) -> NSRange? {
+        // No cluster when the block is a single paragraph (Manh
+        // 2026-11-27): one range means no blank line split the block,
+        // so the "cluster" would be the whole block — drawing its fill
+        // over the whole block is redundant (the block has its own Show
+        // toggle for that) and blurs where the two translucent fills
+        // overlap. A cluster only marks a PART of a block, so a block
+        // with no boundary has no cluster to highlight — return nil
+        // and the caller clears the cluster fill.
+        guard ranges.count > 1 else { return nil }
         for range in ranges where NSLocationInRange(offset, range) {
             return range
         }
