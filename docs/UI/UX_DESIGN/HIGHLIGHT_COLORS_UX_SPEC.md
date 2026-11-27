@@ -96,11 +96,13 @@ Each row, left to right:
   - Cluster (Paragraph): "Highlights the paragraph containing the
     current sentence. How it works: the cluster is the paragraph
     containing the sentence being read. A paragraph is detected by a
-    blank line, a single line break, or an indented line. An indented
-    line starts with a tab or 2+ spaces (a single space is just the
-    separator between sentences). If the block has no paragraph break,
-    the cluster is not shown — use the block's Show toggle to
-    highlight the whole block."
+    blank line, a single line break after a sentence ending in
+    `.` / `!` / `?`, or an indented line. A line break after a
+    sentence with no end mark is just a wrapped line, not a new
+    paragraph. An indented line starts with a tab or 2+ spaces (a
+    single space is just the separator between sentences). If the
+    block has no paragraph break, the cluster is not shown — use the
+    block's Show toggle to highlight the whole block."
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected."
   - Hide highlights while scrolling: "Hides the highlights while the
