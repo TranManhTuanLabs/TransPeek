@@ -401,7 +401,13 @@ private struct HighlightColorRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            // Top-aligned (Manh 2026-11-27 23:58): the colour well,
+            // Reset, and hex + toggle sit on the title line, as the
+            // spec diagram shows — not floating in the middle of the
+            // 2-line name + subtitle block (the HStack default
+            // .center alignment did that, which read as the toggle
+            // and colour well being in the wrong place).
+            HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
                     // Title + info button on one line (Manh 2026-11-27
                     // 23:56, option b): the "?" sits right after the
