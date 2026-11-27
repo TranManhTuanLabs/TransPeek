@@ -29,28 +29,28 @@ Paragraph, Block) — the narrow marks first, the broad fills last.
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline [i]              #5666F0  Show [x]  [swatch]  Reset   │
+│ Underline [i]              #5666F0 Show [x]  [swatch]  Reset     │
 │ Underline under the word + sentence being read                   │
-│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                    │
+│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                   │
 │                                                                  │
-│ Vertical line [i]          #8CBFFF  Show [ ]  [swatch]  Reset   │
+│ Vertical line [i]          #8CBFFF Hide [ ]  [swatch]  Reset     │
 │ Solid bar at the block's left edge                               │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │ Line follows: [ Sentence | Paragraph | Block ]                   │
 │                                                                  │
-│ Word [i]                     #5666F0  Show [x]  [swatch]  Reset │
+│ Word [i]                     #5666F0 Show [x]  [swatch]  Reset   │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence [i]                 #ABB3FE  Show [ ]  [swatch]  Reset │
+│ Sentence [i]                 #ABB3FE Hide [ ]  [swatch]  Reset   │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Paragraph [i]                #FFC2D1  Show [ ]  [swatch]  Reset │
+│ Paragraph [i]                #FFC2D1 Hide [ ]  [swatch]  Reset   │
 │ Highlight for the paragraph (cluster) being read                 │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Block [i]                    #BFF2B3  Show [ ]  [swatch]  Reset │
+│ Block [i]                    #BFF2B3 Hide [ ]  [swatch]  Reset   │
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -59,7 +59,8 @@ Highlight colors
 │ Colors for the reading indicator shown over the page while       │
 │ listening. Changes apply at once — no restart needed.            │
 │ Opacity is fixed so the text underneath stays readable.          │
-│ Use the Show switch on each row to hide a layer you don't want.  │
+│ Use the Show/Hide switch on each row to hide a layer             │
+│ you don't want.                                                  │
 │ The underline marks the word and sentence with a thin solid      │
 │ line under the text, instead of a rectangle fill. The vertical   │
 │ line can follow the sentence, the paragraph, or the whole        │
@@ -98,15 +99,19 @@ Each row, left to right:
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected." (see §3).
   The button sits between the text and the hex/Show/picker/Reset
-  controls, so it does not move any of them. The "Show" label stays
-  as-is (on = show, off = hide) — clear and standard, no change.
+  controls, so it does not move any of them.
 - **Hex** — the current color as `#RRGGBB` (monospaced, secondary
   colour). Display-only: it shows the exact value for users who want
-  it, it is not an input field.
-- **Show switch** — a native `Toggle` labelled "Show", next to the
-  colour well. It hides/shows this layer (see §5). The colour stays
-  editable while the layer is hidden, so the user can set it first
-  and show it after.
+  it, it is not an input field. It sits in a tight group with the
+  Show/Hide label and the switch immediately left of the switch
+  ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), so the three
+  read as one control, separate from the colour well.
+- **Show/Hide switch** — a native `Toggle` next to the colour well.
+  Its label follows the state (Manh 2026-11-27 16:24): "Show" while
+  the layer is on, "Hide" while it is off, so it always says whether
+  the layer is shown or hidden. It hides/shows this layer (see §5).
+  The colour stays editable while the layer is hidden, so the user
+  can set it first and show it after.
 - **Colour well** — the native macOS colour picker (`ColorPicker`,
   `supportsOpacity: false`). Clicking it opens the system colour panel
   (colour wheel, sliders, palettes, eyedropper).
@@ -120,7 +125,7 @@ Under the Vertical line row only, a **segmented "Line follows"
 picker** (see §6): Sentence / Paragraph / Block.
 
 At the end of the section, **"Reset all to default"** restores all six
-layers' colours, Show switches and the "Line follows" picker to the
+layers' colours, Show/Hide switches and the "Line follows" picker to the
 main defaults (it does not touch the "Hide highlights while scrolling"
 toggle below — that is a behaviour preference, not a layer default).
 
@@ -213,14 +218,14 @@ are solid, so they read on top.
   has a colour row in Settings like the other five, with its own Show
   switch, and "Reset all to default" restores it like them. It draws
   even when the word/sentence fills are off — the underline is gated
-  only by its own Show switch — so turning all fills off leaves just
+  only by its own Show/Hide switch — so turning all fills off leaves just
   the underline. When the app does not expose a unit's bounds
   (`AXBoundsForRange` unsupported), that unit gets no underline; the
   other one still shows.
 
 ## 5. Show/hide per layer
 
-Each layer has its own **Show switch** in its colour row (a native
+Each layer has its own **Show/Hide switch** in its colour row (a native
 `Toggle` labelled "Show", next to the colour well). Flipping it
 hides/shows that layer at once — no restart.
 
@@ -247,7 +252,7 @@ hides/shows that layer at once — no restart.
 - **Colour stays editable while hidden.** Hiding a layer does not
   disable its row: the user can pick the colour first and show the
   layer after, without losing the pick. "Reset all to default"
-  restores all six layers' colours, Show switches and the "Line
+  restores all six layers' colours, Show/Hide switches and the "Line
   follows" picker to the main defaults — it does not touch the "Hide
   highlights while scrolling" toggle.
 - **All six off is allowed.** The overlay window simply draws
@@ -283,7 +288,7 @@ follows"): **Sentence / Paragraph / Block**.
 - **Independent of the fill toggles.** The line tracks its picked unit
   even when that unit's fill is hidden (hiding the sentence fill does
   not make a sentence-following line jump back to the block). The
-  line's own Show switch still decides whether the line shows at all;
+  line's own Show/Hide switch still decides whether the line shows at all;
   the picker only decides how long it is.
 
 ## 7. Hide highlights while scrolling
@@ -369,7 +374,7 @@ These limits are inherent to that approach, not bugs.
   bar (2.5 pt) under the word + sentence, not a box around them, so
   it has no border edge — that is why it reads better than the fills
   (Manh 2026-11-27 15:57), and why it is a proper layer with its own
-  colour and Show switch, default on. It is still a rectangle in
+  colour and Show/Hide switch, default on. It is still a rectangle in
   code (the same drawing primitive), only too thin to read as one.
 
 ## 10. Implementation (file map)
@@ -420,7 +425,7 @@ These limits are inherent to that approach, not bugs.
   Vertical line row, then Word, Sentence, Paragraph, Block (row order
   2026-11-27 15:57), the segmented "Line follows" picker in the
   Vertical line row, "Reset all to default" (restores all six colours,
-  Show switches and the line's unit), and the "Hide highlights while
+  Show/Hide switches and the line's unit), and the "Hide highlights while
   scrolling" toggle at the end of the section.
 
 ## Links

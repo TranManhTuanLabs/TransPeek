@@ -339,21 +339,25 @@ struct TTSSettingsView: View {
 // MARK: - HighlightColorRow
 
 /// One highlight layer's row in the Highlight colors section (Manh
-/// 2026-11-27): name + Show toggle + native ColorPicker + hex +
+/// 2026-11-27): name + Show/Hide toggle + native ColorPicker + hex +
 /// per-layer Reset, with a preset swatch row underneath. The picker
 /// never edits opacity (`supportsOpacity: false`) — opacity stays
 /// fixed in code (fills 0.30, line + underline solid 1.0), so a color
 /// can never hide the text. The hex is display-only (shown for users
 /// who want the exact value); the color is picked with the swatch or
-/// the system color panel. The Show switch hides/shows this layer (the
-/// overlay reads it live, so it applies at once); the color stays
+/// the system color panel. The Show/Hide switch hides/shows this layer
+/// (the overlay reads it live, so it applies at once); the color stays
 /// editable while hidden, so the user can set it first and show it
-/// after. A small info button ("i", `info.circle`) after the row's
-/// text opens a popover explaining how this layer works and how it is
-/// detected (Manh 2026-11-27 16:21) — the "Show" label stays as-is
-/// (on = show, off = hide), clear and standard. The Vertical line row
-/// also carries the "Line follows" picker (Manh 2026-11-27): which
-/// unit the line is as tall as — the sentence, the
+/// after. Its label follows the state — "Show" while the layer is on,
+/// "Hide" while it is off (Manh 2026-11-27 16:24) — and it sits in a
+/// tight group with the hex value immediately left of the switch
+/// ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), so the hex +
+/// label + switch read as one control, separate from the ColorPicker.
+/// A small info button ("i", `info.circle`) after the row's text
+/// opens a popover explaining how this layer works and how it is
+/// detected (Manh 2026-11-27 16:21). The Vertical line row also
+/// carries the "Line follows" picker (Manh 2026-11-27): which unit the
+/// line is as tall as — the sentence, the
 /// paragraph (cluster) or the whole block. Only that row passes
 /// `lineFollows`; the other rows leave it nil and show no picker.
 private struct HighlightColorRow: View {
@@ -382,8 +386,7 @@ private struct HighlightColorRow: View {
                 // "i" after the row's text, opening a popover that
                 // explains this layer. It sits between the text and
                 // the hex/Show/picker/Reset controls, so it does not
-                // move any of them. The "Show" label stays as-is —
-                // on = show, off = hide — clear and standard.
+                // move any of them.
                 Button {
                     showInfo = true
                 } label: {
@@ -398,11 +401,23 @@ private struct HighlightColorRow: View {
                         .frame(maxWidth: 300)
                 }
                 Spacer()
-                Text(hex.uppercased())
-                    .monospaced()
-                    .foregroundStyle(.secondary)
-                Toggle("Show", isOn: $shown)
-                    .help("Show this highlight layer while listening")
+                // Hex + Show/Hide + switch as one tight group (Manh
+                // 2026-11-27 16:26): the hex value and the dynamic
+                // Show/Hide label sit immediately left of the switch,
+                // close together, so they read as one control — not
+                // as loose items next to the ColorPicker. Order left
+                // to right: [hex] [Show/Hide] [switch].
+                HStack(spacing: 6) {
+                    Text(hex.uppercased())
+                        .monospaced()
+                        .foregroundStyle(.secondary)
+                    // Dynamic label (Manh 2026-11-27 16:24): the
+                    // toggle's label follows its state — "Show" while
+                    // the layer is on, "Hide" while it is off — so it
+                    // always says whether the layer is shown or hidden.
+                    Toggle(shown ? "Show" : "Hide", isOn: $shown)
+                        .help("Show this highlight layer while listening")
+                }
                 ColorPicker("", selection: colorBinding, supportsOpacity: false)
                     .labelsHidden()
                 Button("Reset") { hex = defaultHex }
