@@ -75,7 +75,10 @@ Each row, left to right:
 - **Info button ("i")** — a small native `info.circle` button after the
   row's text (Manh 2026-11-27 16:21). Tapping it opens a popover that
   explains how this layer works and how it is detected, in 2–3
-  sentences (English, same wording as the popovers in Settings):
+  sentences (English, same wording as the popovers in Settings). The
+  Vertical line and Paragraph popovers add a "How it works" section
+  with the detail (see below); the other four show the explanation
+  alone:
   - Underline: "A thin line under the word and sentence being read, in
     the underline color. It shows even when the fills are off, so you
     can use it instead of the fills. No rectangle, so no hard edge."
@@ -83,7 +86,11 @@ Each row, left to right:
   - Vertical line: "A thin vertical bar left of the block, as tall as
     the unit it follows (see 'Line follows': sentence / paragraph /
     block). It helps the eye find the unit being read at a glance."
-    (see §6).
+    Its popover adds a "How it works" section: the "Line follows"
+    picker (Sentence / Paragraph / Block, default Sentence on main);
+    fallback chosen unit → sentence → cluster, never back to block;
+    no frame anywhere means no line; the line still follows the unit
+    even when that unit's fill is hidden. (see §6).
   - Word: "Highlights the word being spoken. It needs the app to
     provide the word's position (AXBoundsForRange); if the app does
     not provide it, the word highlight is skipped." (see §4).
@@ -95,7 +102,11 @@ Each row, left to right:
     sentence. A paragraph is detected by a blank line, a single line
     break, or an indented line. If the block has no paragraph break,
     the cluster is not shown — the block has its own Show toggle."
-    (see §4).
+    Its popover adds a "How it works" section: the cluster is the
+    paragraph containing the sentence being read (blank line, single
+    line break, or indented line); a block with no paragraph break
+    has no cluster fill — use the block's Show toggle to highlight
+    the whole block. (see §4).
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected." (see §3).
   The button sits between the text and the hex/Show/picker/Reset
@@ -302,6 +313,12 @@ scrolling jerkiness is confirmed).
 - **Toggle in the section** — "Hide highlights while scrolling", a
   native `Toggle` at the end of the "Highlight colors" section (after
   "Reset all to default"). Default **on** (main).
+- **Info button ("i")** — a small native `info.circle` button next to
+  the toggle (Manh 2026-11-27 16:39), same pattern as the layer rows.
+  Its popover explains the toggle and adds a "How it works" section:
+  default ON; while scrolling (block frame changes > 0.5pt) the fills
+  + line hide but the window keeps following; 2 still polls (~0.6s)
+  bring the highlights back; no extra accessibility reads.
 - **Stored as a boolean** in Defaults
   (`transpeek_highlightHideWhileScrolling`, default `true`).
 - **How it works.** Each follow poll compares the block frame it just

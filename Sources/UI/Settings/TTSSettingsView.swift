@@ -48,6 +48,11 @@ struct TTSSettingsView: View {
     @State private var isLanguageRatesExpanded = false
     @State private var testText = "Hello, 你好世界"
     @State private var testLanguage = "en"
+    // Info popover for the "Hide highlights while scrolling" toggle
+    // (Manh 2026-11-27 16:39): the same "i" button + popover pattern
+    // as the layer rows, so the toggle's behaviour is explained in
+    // place instead of only in the doc.
+    @State private var showHideScrollInfo = false
 
     var body: some View {
         Form {
@@ -196,6 +201,7 @@ struct TTSSettingsView: View {
                     title: "Vertical line",
                     subtitle: "Solid bar at the block's left edge",
                     info: "A thin vertical bar left of the block, as tall as the unit it follows (see 'Line follows': sentence / paragraph / block). It helps the eye find the unit being read at a glance.",
+                    howItWorks: "'Line follows' — Sentence / Paragraph / Block (default Sentence). Fallback: chosen unit → sentence → cluster, never back to block; if no unit has a frame, no line is drawn. The line still follows the unit even when that unit's fill is hidden.",
                     hex: $highlightLineHex,
                     shown: $highlightLineShown,
                     defaultHex: HighlightColors.lineDefaultHex,
@@ -221,6 +227,7 @@ struct TTSSettingsView: View {
                     title: "Paragraph",
                     subtitle: "Highlight for the paragraph (cluster) being read",
                     info: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
+                    howItWorks: "The cluster is the paragraph containing the sentence being read. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — use the block's Show toggle to highlight the whole block.",
                     hex: $highlightClusterHex,
                     shown: $highlightClusterShown,
                     defaultHex: HighlightColors.clusterDefaultHex
@@ -262,8 +269,35 @@ struct TTSSettingsView: View {
                 // in the right place. Off restores the old follow-only
                 // behaviour (the highlight stays while scrolling, and
                 // may jerk).
-                Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
-                    .help("Hide the reading highlight while the page scrolls, show it again when the text stops")
+                // Info button (Manh 2026-11-27 16:39): the same native
+                // "i" + popover as the layer rows, explaining the
+                // toggle and its "How it works" detail in place. The
+                // button sits after the toggle (the toggle keeps its
+                // full-width layout, switch at the trailing edge), so
+                // it does not move the switch.
+                HStack {
+                    Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .help("Hide the reading highlight while the page scrolls, show it again when the text stops")
+                    Button {
+                        showHideScrollInfo = true
+                    } label: {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("About hiding highlights while scrolling")
+                    .popover(isPresented: $showHideScrollInfo) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Hides the highlights while the page scrolls, so they don't jerk.")
+                            Text("How it works")
+                                .font(.headline)
+                            Text("'Hide highlights while scrolling' (default ON). While scrolling (block frame changes > 0.5pt), the fills + line are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
+                        }
+                        .padding()
+                        .frame(maxWidth: 300)
+                    }
+                }
             } header: {
                 Text("Highlight colors")
             } footer: {
@@ -367,6 +401,12 @@ private struct HighlightColorRow: View {
     /// 2026-11-27 16:21): how this layer works and how it is detected
     /// — 2–3 sentences, English like the UX doc.
     let info: String
+    /// Optional "How it works" detail for the row's info popover
+    /// (Manh 2026-11-27 16:39): shown under a "How it works" heading
+    /// after `info`. Only the Vertical line and Paragraph rows pass
+    /// one; the other rows leave it nil and show the explanation
+    /// alone.
+    var howItWorks: String? = nil
     @Binding var hex: String
     @Binding var shown: Bool
     let defaultHex: String
@@ -396,9 +436,22 @@ private struct HighlightColorRow: View {
                 .buttonStyle(.plain)
                 .help("About this layer")
                 .popover(isPresented: $showInfo) {
-                    Text(info)
-                        .padding()
-                        .frame(maxWidth: 300)
+                    // Popover layout (Manh 2026-11-27 16:39): the short
+                    // explanation first, then — only on rows that pass
+                    // one — a "How it works" section with the detail
+                    // Manh asked for (the line's fallback, the
+                    // cluster's detection). Rows without one show the
+                    // explanation alone.
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(info)
+                        if let howItWorks {
+                            Text("How it works")
+                                .font(.headline)
+                            Text(howItWorks)
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: 300)
                 }
                 Spacer()
                 // Hex + Show/Hide + switch as one tight group (Manh
