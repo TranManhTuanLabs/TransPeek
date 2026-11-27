@@ -92,6 +92,14 @@ final class ContinuousSpeakController {
     /// nil when the app did not return one — the cluster level is
     /// simply not drawn then (the other levels still show).
     private var currentClusterFrame: CGRect?
+    /// UTF-16 offset in `currentBlock.text` where the current read
+    /// started (Manh 2026-11-27: read-continuously-from-selection).
+    /// 0 = from the start of the block; otherwise the start of the
+    /// sentence containing the selection. The player only reads the
+    /// tail from this offset, so its word ranges arrive relative to
+    /// that tail — `handleWordRange` adds this back to map them to
+    /// the full block text (sentence/cluster ranges + AX bounds).
+    private var playOffset = 0
 
     init(ttsCoordinator: TTSCoordinator, indicator: SpeakIndicatorController, overlay: ReadingIndicatorOverlay) {
         self.indicator = indicator
@@ -144,6 +152,9 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // This chain reads the block from its start, so word ranges
+        // from the player already line up with the full block text.
+        playOffset = 0
         isChaining = true
         indicator.show(at: indicatorFrame)
         overlay.show(block: block)
@@ -154,6 +165,79 @@ final class ContinuousSpeakController {
         // The new session is live now — the replacement stop is over,
         // so the flag can go (a later real end must fire the hook).
         isReplacingSession = false
+    }
+
+    /// Start a chain from the sentence containing a selection inside a
+    /// hovered block (Manh 2026-11-27 22:01/22:04 — read continuously
+    /// from the selection, Speechify-style): the user selects text
+    /// (even one word) and clicks Speak, and reading starts at the
+    /// START of the sentence holding the selection — never mid-sentence
+    /// — then reads to the end of the block and chains to the next
+    /// blocks below it, like `start(from:)`. Nothing starts on
+    /// selection alone; this only runs when Speak is clicked.
+    /// Returns false when the block has no sentence at that offset
+    /// (empty block text) — the caller then falls back to speaking
+    /// just the selection (`start(text:)`), so nothing breaks.
+    /// `indicatorFrame` is the float icon's frame, as in `start(from:)`.
+    func start(from block: HoverBlock, fromSentenceContaining offset: Int, indicatorFrame: CGRect?) -> Bool {
+        // Find the sentence FIRST, before stopping anything — if there
+        // is none, return false and leave the current session alone.
+        let sentences = Self.sentenceRanges(for: block.text)
+        guard let sentence = Self.sentence(containing: offset, in: sentences) else { return false }
+        // Same replacement marking as `start(from:)` (Manh 2026-11-27,
+        // 19:38): a new chain replaces the old session, so its stop
+        // must not fire the session-ended hook.
+        isReplacingSession = true
+        stop()
+        currentBlock = block
+        currentSingleText = nil
+        sentenceRanges = sentences
+        clusterRanges = Self.paragraphRanges(for: block.text, sentences: sentences)
+        currentSentenceRange = nil
+        currentSentenceFrame = nil
+        currentClusterRange = nil
+        currentClusterFrame = nil
+        // The read starts at the sentence start, not at the selection
+        // itself — the player reads only the tail from here, and
+        // `handleWordRange` adds this offset back so the highlight
+        // maps to the full block text.
+        playOffset = sentence.location
+        isChaining = true
+        indicator.show(at: indicatorFrame)
+        overlay.show(block: block)
+        // Read from the sentence start to the end of the block; when
+        // this tail finishes, onEnded advances the chain to the next
+        // block below, exactly as `start(from:)` does. Language is
+        // detected on the whole block (more context than the tail).
+        let tail = (block.text as NSString).substring(from: sentence.location)
+        player.play(text: tail, language: AppDelegate.speakLanguage(for: block.text))
+        // The new session is live now — the replacement stop is over,
+        // so the flag can go (a later real end must fire the hook).
+        isReplacingSession = false
+        return true
+    }
+
+    /// The UTF-16 offset of a selection inside a block's text, or nil
+    /// when the selection is not in the block (Manh 2026-11-27:
+    /// read-continuously-from-selection). The caller falls back to
+    /// speaking just the selection when this returns nil.
+    static func offset(of selection: String, in blockText: String) -> Int? {
+        // Trim first: a selection dragged from the page usually carries
+        // leading/trailing whitespace the block text does not have at
+        // that spot, and the raw selection would never match.
+        let trimmed = selection.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let nsBlock = blockText as NSString
+        let found = nsBlock.range(of: trimmed)
+        if found.location != NSNotFound { return found.location }
+        // Second try: the selection's first word — the selection may
+        // end mid-word or carry trailing punctuation the block splits
+        // differently, but its first word still pins the sentence.
+        let firstWord = trimmed.components(separatedBy: .whitespacesAndNewlines).first(where: { !$0.isEmpty })
+        guard let firstWord else { return nil }
+        let wordFound = nsBlock.range(of: firstWord)
+        guard wordFound.location != NSNotFound else { return nil }
+        return wordFound.location
     }
 
     /// Speak a single text (a selection — no hover block, so no overlay
@@ -174,6 +258,8 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // A single speak has no block text to map word ranges onto.
+        playOffset = 0
         isChaining = false
         indicator.show(at: indicatorFrame)
         player.play(text: text, language: AppDelegate.speakLanguage(for: text))
@@ -216,6 +302,9 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // No block is being read any more, so the next session must
+        // not inherit a stale start offset.
+        playOffset = 0
         // Stopping the player bumps its generation, so an in-flight
         // utterance returns without firing onEnded — the chain then
         // ends instead of advancing.
@@ -248,6 +337,9 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // A chained block is always read from its start — a start
+        // offset from the previous block must not carry over.
+        playOffset = 0
         overlay.show(block: next)
         player.play(text: next.text, language: AppDelegate.speakLanguage(for: next.text))
     }
@@ -269,6 +361,8 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // The session is over — drop the start offset with it.
+        playOffset = 0
         overlay.hide()
         indicator.hide()
         // The session is over — a pending reminder may show itself
@@ -300,6 +394,8 @@ final class ContinuousSpeakController {
         currentSentenceFrame = nil
         currentClusterRange = nil
         currentClusterFrame = nil
+        // The session is over — drop the start offset with it.
+        playOffset = 0
         overlay.hide()
         indicator.hide()
         // The unit finished on its own — a pending reminder may show
@@ -317,7 +413,15 @@ final class ContinuousSpeakController {
     /// level. Ignored for a single speak (no overlay, no block).
     private func handleWordRange(_ wordRange: NSRange) {
         guard let block = currentBlock else { return }
-        guard let sentenceRange = Self.sentence(containing: wordRange.location, in: sentenceRanges) else { return }
+        // The player reports word ranges relative to the string it is
+        // actually reading — the tail from `playOffset` when a chain
+        // started mid-block — while the sentence/cluster ranges and
+        // the AX bounds are all in full-block coordinates. Shift the
+        // word range back to the block before looking anything up, or
+        // the highlight would land on the wrong sentence (0 when the
+        // chain started at the block start, so nothing changes there).
+        let blockWordRange = NSRange(location: wordRange.location + playOffset, length: wordRange.length)
+        guard let sentenceRange = Self.sentence(containing: blockWordRange.location, in: sentenceRanges) else { return }
         var sentenceFrame = currentSentenceFrame
         if sentenceRange != currentSentenceRange {
             currentSentenceRange = sentenceRange
@@ -344,7 +448,10 @@ final class ContinuousSpeakController {
             clusterFrame = nil
             currentClusterFrame = nil
         }
-        let wordFrame = HoverBlockText.bounds(for: wordRange, in: block.element)
+        // The word frame is read in full-block coordinates too, so it
+        // uses the shifted range — otherwise the word highlight would
+        // sit `playOffset` characters too early on the page.
+        let wordFrame = HoverBlockText.bounds(for: blockWordRange, in: block.element)
         overlay.update(wordFrame: wordFrame, sentenceFrame: sentenceFrame, clusterFrame: clusterFrame)
     }
 

@@ -352,6 +352,31 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     `ReadingIndicatorOverlay` cắt khung trước khi đặt cửa sổ; so sánh
     cuộn vẫn dùng khung gốc (không đổi). Chi tiết giới hạn trong UX
     spec §7.
+  - **Đọc nối tiếp từ chỗ bôi đen (Manh 2026-11-27 22:01/22:04, kiểu
+    Speechify):** bôi đen text (1 từ cũng được) rồi bấm Speak thì đọc
+    từ ĐẦU CÂU chứa từ bôi đen (không bắt đầu từ giữa câu), rồi tự tìm
+    câu/đoạn tiếp theo trong trang và đọc tiếp hết trang (dừng khi hết
+    trang hoặc user bấm dừng). KHÔNG tự chạy ngay khi bôi đen — chỉ khi
+    bấm Speak mới đọc. Cách chạy: `AppDelegate.onSpeakRequested` —
+    khi có block đang hover và text bôi đen tìm thấy trong
+    `block.text` thì gọi
+    `ContinuousSpeakController.start(from:fromSentenceContaining:)`
+    (tìm câu chứa offset bằng `sentence(containing:in:)` có sẵn, đọc
+    chuỗi con từ đầu câu tới hết block, `isChaining = true` để hết
+    block thì dò block tiếp theo như `start(from:)`); không tìm thấy
+    thì rớt về `start(text:)` cũ (chỉ đọc phần bôi đen rồi dừng).
+    Điểm bắt đầu = đầu câu chứa từ bôi đen; fallback = đọc riêng phần
+    bôi đen khi không tìm thấy trong block. Highlight theo từng
+    từ/câu/cụm như đang đọc trên trang (đã cắt theo vùng nhìn thấy) —
+    không sửa overlay. Kỹ thuật: controller giữ thêm `playOffset`
+    (offset trong `block.text` nơi lần đọc hiện tại bắt đầu, 0 = từ
+    đầu block); `handleWordRange` cộng `playOffset` vào word range
+    trước khi tra câu/cụm/khung từ (vì word range TTS báo theo chuỗi
+    con đang đọc, còn `sentenceRanges`/`clusterRanges` và AX bounds
+    tính theo `block.text` đầy đủ); `playOffset` reset về 0 khi bắt
+    đầu block mới, khi đọc riêng phần bôi đen, và khi session dừng/kết
+    thúc. `offset(of:in:)` trim text bôi đen trước khi tìm; không thấy
+    thì thử từ đầu tiên của đoạn bôi đen; vẫn không thấy thì nil.
 - ...
 
 ## Liên kết

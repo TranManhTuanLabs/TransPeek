@@ -777,7 +777,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // blocks below it (continuous on-page reading); otherwise
         // (a selection, no hover block) it speaks once. Both go through
         // the chaining controller, so both get play/pause/resume (the
-        // controller owns the player).
+        // controller owns the player). When the selection sits inside
+        // the hovered block, the chain starts at the sentence holding
+        // the selection (Manh 2026-11-27 22:01/22:04), not at the
+        // block start and not at the selection itself.
         // The click only STARTS the session: the separate speak
         // indicator takes this icon's frame (the place the user clicked
         // Speak) and the icon dismisses, so the two never overlap — a
@@ -801,9 +804,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // poll must not outlive the icon). The indicator never
             // follows the text; it stays where it appeared.
             self.hoverTextDetector.stopFollowing()
+            // Read continuously from the selection (Manh 2026-11-27
+            // 22:01/22:04, Speechify-style): when the icon is up for a
+            // hovered block and the selected text is found inside that
+            // block, start at the START of the sentence holding the
+            // selection (even a single selected word) and chain on to
+            // the next blocks below it — never start mid-sentence, and
+            // never stop after just the selection. When the selection
+            // is not in the hovered block (or the block has no
+            // sentence there), fall back to speaking just the selection
+            // once, exactly as before — nothing breaks. A hover with
+            // no selection still reads the whole block: the selection
+            // then IS the block text, so its offset is 0 and the chain
+            // starts at the first sentence.
             if let block = hoveredBlock,
-               block.text == text {
-                self.continuousSpeakController.start(from: block, indicatorFrame: indicatorFrame)
+               let offset = ContinuousSpeakController.offset(of: text, in: block.text),
+               self.continuousSpeakController.start(from: block, fromSentenceContaining: offset, indicatorFrame: indicatorFrame) {
+                // Chaining from the sentence containing the selection.
             } else {
                 self.continuousSpeakController.start(text: text, indicatorFrame: indicatorFrame)
             }
