@@ -103,7 +103,7 @@ toggle below — that is a behaviour preference, not a layer default).
 | Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
 | Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
-| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them. A block with no blank line has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
+| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no paragraph boundary between them (blank line, single line break, or indented next sentence). A block with no boundary has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
 
 The defaults are `#RRGGBB` hex. Block, paragraph and line keep the
@@ -153,11 +153,15 @@ are solid, so they read on top.
   current value; the colour is changed with the well (system panel) or
   a preset swatch, never by typing hex.
 - **The paragraph (cluster) is the group of sentences around the
-  sentence being read, split on blank lines.** The controller splits
-  the block's text into paragraphs at blank lines (2+ line breaks
-  between sentences); the cluster fill covers the paragraph holding
-  the current sentence and moves with the voice. A block with no
-  blank line has NO cluster fill — its single paragraph IS the whole
+  sentence being read, split on paragraph boundaries.** The controller
+  splits the block's text into paragraphs at a blank line (2+ line
+  breaks between sentences), a single line break (1), or an indented
+  next sentence (a tab, or 2+ spaces — a single space is just the
+  separator between sentences); books/PDFs often separate paragraphs
+  with just one line break or an indented first line, no blank line
+  (Manh 2026-11-27 16:14). The cluster fill covers the paragraph
+  holding the current sentence and moves with the voice. A block with
+  no boundary has NO cluster fill — its single paragraph IS the whole
   block, so there is no cluster to highlight (turn on the block layer
   to mark the whole block; drawing the cluster over it would just
   double the fill — Manh 2026-11-27 16:09). When the app does not

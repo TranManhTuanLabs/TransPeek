@@ -399,14 +399,18 @@ final class ContinuousSpeakController {
 
     /// Split `text` into paragraph (cụm) ranges (NSRange, UTF-16
     /// offsets — the same indexing the TTS word callback reports).
-    /// A paragraph is a run of sentences with no blank line between
-    /// them: the gap between two consecutive sentences ends the
-    /// paragraph when it holds 2+ line breaks (a blank line), and
-    /// keeps it when it holds 0–1 (a space, or a single line break
-    /// inside the paragraph). Derived from the sentence ranges — the
-    /// splitter already ends a sentence at every newline, so every
-    /// paragraph boundary is also a sentence boundary. A block with no
-    /// blank line is a single paragraph covering the whole text — and
+    /// A paragraph is a run of sentences with no paragraph boundary
+    /// between them. A boundary is any of three signals in the
+    /// whitespace gap between two sentences (Manh 2026-11-27 16:14):
+    /// a blank line (2+ line breaks), a single line break (1), or an
+    /// indented next sentence (a tab, or 2+ spaces — a single space is
+    /// just the separator between sentences). Books/PDFs often
+    /// separate paragraphs with just one line break or an indented
+    /// first line (no blank line), and the old 2+ rule missed those.
+    /// Derived from the sentence ranges — the splitter already ends a
+    /// sentence at every newline, so every paragraph boundary is also
+    /// a sentence boundary. A block with no boundary is a single
+    /// paragraph covering the whole text — and
     /// `paragraph(containing:in:)` returns nil for that case, so no
     /// cluster fill is drawn (the cluster only marks a PART of a
     /// block; the whole block is the block layer's job — Manh
@@ -421,9 +425,18 @@ final class ContinuousSpeakController {
         for i in 1..<sentences.count {
             let prev = sentences[i - 1]
             let cur = sentences[i]
-            // Count line breaks in the whitespace gap between the
-            // sentences: 2+ means a blank line sits between them.
+            // A paragraph boundary is any of three signals in the
+            // whitespace gap between the sentences (Manh 2026-11-27
+            // 16:14): a blank line (2+ line breaks), a single line
+            // break (1), or an indented next sentence. Books/PDFs
+            // often separate paragraphs with just one line break or
+            // an indented first line (no blank line), and the old
+            // 2+ rule missed those. A single space is the normal
+            // sentence separator, not a boundary. A CRLF pair counts
+            // as ONE line break, so Windows-style endings never split
+            // a paragraph by accident.
             var breaks = 0
+            var hasTab = false
             var j = prev.location + prev.length
             while j < cur.location {
                 let ch = nsText.character(at: j)
@@ -432,10 +445,17 @@ final class ContinuousSpeakController {
                     if j + 1 < cur.location, nsText.character(at: j + 1) == 0x0A { j += 1 }
                 } else if ch == 0x0A { // "\n"
                     breaks += 1
+                } else if ch == 0x09 { // "\t" — a tab before the next sentence is indentation
+                    hasTab = true
                 }
                 j += 1
             }
-            if breaks >= 2 {
+            // The gap is all whitespace (the sentence splitter skips
+            // it), so its length is the indent width when there is no
+            // line break: 2+ spaces is an indented first line, 1 space
+            // is just the separator between sentences.
+            let gapLength = cur.location - (prev.location + prev.length)
+            if breaks >= 1 || hasTab || gapLength >= 2 {
                 ranges.append(NSRange(location: start, length: end - start))
                 start = cur.location
             }
