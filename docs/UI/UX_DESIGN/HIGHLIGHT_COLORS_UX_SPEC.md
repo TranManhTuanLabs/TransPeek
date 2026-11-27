@@ -2,9 +2,9 @@
 
 > Status: **settled design** (approved by Manh 2026-11-27, implemented on
 > branch `feature/continuous-reading`) — the user can change the reading
-> indicator's 5 layer colors in Settings, and pick what the vertical
+> indicator's 6 layer colors in Settings, and pick what the vertical
 > line follows (sentence / paragraph / block). The branch draws all
-> five layers; main draws only sentence + word (see the overlay's
+> six layers; main draws only sentence + word (see the overlay's
 > `Layers`).
 
 ## 1. Where it lives
@@ -14,38 +14,43 @@ Settings → **Audio** tab → section **"Highlight colors"**, after
 the indicator belongs to the listen-on-page flow (click-to-listen /
 chaining), not to the Read window's theme.
 
-## 2. Layout — 5 rows + presets + toggles + Reset all
+## 2. Layout — 6 rows + presets + toggles + Reset all
 
 Each layer gets one block: a settings row, then a preset swatch row
 underneath it. The Vertical line row has one extra control under its
-presets: the "Line follows" picker (§4).
+presets: the "Line follows" picker (§4). Row order (Manh 2026-11-27):
+Underline first, then the Vertical line, then the fills small →
+large (Word, Sentence, Cluster, Block).
 
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
+│ Underline                      #5666F0  Show [on] [swatch] Reset│
+│ Solid bar under the word + sentence being read                   │
+│ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
+│                                                                  │
 │ Vertical line                    #8CBFFF  Show [on] [swatch] Reset│
 │ Solid bar beside the text — its height follows the unit below    │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │ Line follows: [Sentence | Paragraph | Block]  <- segmented       │
 │                                                                  │
-│ Block                          #BFF2B3  Show [off] [swatch] Reset│
-│ Highlight for the whole block being read                         │
-│ ( ) ( ) ( ) ( ) ( ) ( )                                          │
-│                                                                  │
-│ Cluster                        #FFC2D1  Show [on] [swatch] Reset│
-│ Highlight for the paragraph (group of sentences) being read      │
+│ Word                           #5666F0  Show [on] [swatch] Reset│
+│ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
 │ Sentence                       #ABB3FE  Show [on] [swatch] Reset│
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Word                           #5666F0  Show [on] [swatch] Reset│
-│ Highlight for the word being spoken                              │
+│ Cluster                        #FFC2D1  Show [on] [swatch] Reset│
+│ Highlight for the paragraph (group of sentences) being read      │
+│ ( ) ( ) ( ) ( ) ( ) ( )                                          │
+│                                                                  │
+│ Block                          #BFF2B3  Show [off] [swatch] Reset│
+│ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
 │ Hide highlights while scrolling                        [on]      │
-│ Show underline                                         [off]     │
 │                                                                  │
 │ [Reset all to default]                                           │
 │                                                                  │
@@ -60,8 +65,9 @@ Highlight colors
 
 Each row, left to right:
 
-- **Name + subtitle** — the layer name ("Vertical line", "Block",
-  "Cluster", "Sentence", "Word") and one line saying what it marks.
+- **Name + subtitle** — the layer name ("Underline", "Vertical line",
+  "Word", "Sentence", "Cluster", "Block") and one line saying what it
+  marks.
 - **Hex** — the current color as `#RRGGBB` (monospaced, secondary
   colour). Display-only: it shows the exact value for users who want
   it, it is not an input field.
@@ -84,32 +90,26 @@ Under the Vertical line row's presets, the **"Line follows" picker**
 which unit the line's height follows (§4) — the Show toggle still
 decides whether the line shows at all.
 
-After the five layer rows, the **"Hide highlights while scrolling"
+After the six layer rows, the **"Hide highlights while scrolling"
 toggle** (a native `Toggle`, default ON — see §4). It is not a layer:
 it decides whether the highlight content hides while the page scrolls.
 
-After it, the **"Show underline" toggle** (a native `Toggle`,
-default OFF — branch-only trial, see §4). It is not a layer either:
-it draws a thin solid underline under the word + sentence being
-read, in each layer's colour — a try-out alternative to the
-rectangle fills. Like the scroll toggle it is a behaviour
-preference, so "Reset all to default" does not touch it.
-
 At the end of the section, **"Reset all to default"** restores all
-five layers' colours at once — and restores the branch defaults for
-the Show toggles (line, cluster, sentence, word on; block off) and
-for "Line follows" (Paragraph). It does not touch the two behaviour
-toggles ("Hide highlights while scrolling", "Show underline").
+six layers' colours at once — and restores the branch defaults for
+the Show toggles (underline, line, cluster, sentence, word on; block
+off) and for "Line follows" (Paragraph). It does not touch the
+behaviour toggle ("Hide highlights while scrolling").
 
-## 3. The 5 layers + default colours
+## 3. The 6 layers + default colours
 
 | Layer | What it marks | Default | Opacity | Shown by default (branch) |
 |---|---|---|---|---|
+| Underline | Solid bar under the word + sentence being read | `#5666F0` (indigo — same as the word) | 1.0 (solid) | Yes |
 | Vertical line | Solid bar beside the text, in the 8 pt strip at the block's left edge — its height follows the unit picked in "Line follows" | `#8CBFFF` (light blue) | 1.0 (solid) | Yes |
-| Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | **No** (hidden by default since 2026-11-27 — the cluster is the broad fill now; still available to turn back on) |
-| Cluster | Fill for the paragraph (group of sentences) being read | `#FFC2D1` (light pink) | 0.30 | Yes |
-| Sentence | Fill for the sentence being read | `#ABB3FE` (light periwinkle — Speechify `highlight30`) | 0.30 | Yes |
 | Word | Fill for the word being spoken | `#5666F0` (indigo — Speechify `highlight50`) | 0.30 | Yes |
+| Sentence | Fill for the sentence being read | `#ABB3FE` (light periwinkle — Speechify `highlight30`) | 0.30 | Yes |
+| Cluster | Fill for the paragraph (group of sentences) being read | `#FFC2D1` (light pink) | 0.30 | Yes |
+| Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | **No** (hidden by default since 2026-11-27 — the cluster is the broad fill now; still available to turn back on) |
 
 The word + sentence defaults follow **Speechify** (Manh 2026-11-27),
 traced from its real extension source (`highlight50` `#5666F0` for
@@ -126,10 +126,13 @@ sentence because at 0.30 it is nearly invisible on a white page;
 keep the pastel palette from the trial (Manh 2026-11-24 00:38). The
 cluster default (light pink `#FFC2D1`, from the preset palette) was
 chosen by the parent — Manh did not name a colour for it; it is
-changeable in Settings like the rest. Draw order (bottom to top):
-block, cluster, sentence, word, then the line — the fills are
-translucent, so overlapping levels blend instead of hiding each
-other.
+changeable in Settings like the rest. The underline default is the
+word's indigo `#5666F0` (chosen by the parent — Manh did not name a
+colour for it either); it has its own row, so it can be changed
+without touching the word fill. Draw order (bottom to top): block,
+cluster, sentence, word, then the line, then the underline — the
+fills are translucent, so overlapping levels blend instead of hiding
+each other, and the two solid bars sit on top.
 
 **What a "cluster" is.** A cluster is one paragraph inside the block:
 a run of sentences separated from the next group by a blank line
@@ -148,13 +151,14 @@ the highlight follows the cluster around the sentence being read.
 - **Stored as hex strings** in Defaults (`transpeek_highlightLineHex`,
   `transpeek_highlightBlockHex`, `transpeek_highlightClusterHex`,
   `transpeek_highlightSentenceHex`,
-  `transpeek_highlightWordHex`), one key per layer. A malformed stored
-  value (only possible by hand-editing UserDefaults) falls back to
-  that layer's default colour.
+  `transpeek_highlightWordHex`, `transpeek_highlightUnderlineHex`),
+  one key per layer. A malformed stored value (only possible by
+  hand-editing UserDefaults) falls back to that layer's default colour.
 - **Opacity is fixed and never editable.** Fills are always 0.30, the
-  line is always solid (1.0) — the picker has no opacity control, and
-  no opacity is stored. A fully opaque fill would hide the text, and
-  the line must read as a marker, not a tint.
+  line and the underline are always solid (1.0) — the picker has no
+  opacity control, and no opacity is stored. A fully opaque fill would
+  hide the text, and the line and the underline must read as markers,
+  not tints.
 - **Hex is display-only.** The hex text next to each well shows the
   current value; the colour is changed with the well (system panel) or
   a preset swatch, never by typing hex.
@@ -162,17 +166,18 @@ the highlight follows the cluster around the sentence being read.
   Show toggle, stored as a `Bool` in Defaults
   (`transpeek_highlightLineShown`, `transpeek_highlightBlockShown`,
   `transpeek_highlightClusterShown`,
-  `transpeek_highlightSentenceShown`, `transpeek_highlightWordShown`),
-  with the branch defaults in the table above (block off, the other
-  four on). The overlay reads them at draw time (and its follow timer
-  redraws every 0.3 s while showing), so flipping a toggle hides or
-  shows that layer immediately — no restart, and it works while the
-  indicator is already up. A hidden layer is never drawn, even when
-  its frame arrives; hiding the line also removes the 8 pt strip the
-  window extends left of the block (the window becomes exactly the
-  block frame again). Hiding keeps the layer's colour — turning it
-  back on restores the same colour. "Reset all to default" restores
-  the branch defaults for all five toggles; a per-layer Reset only
+  `transpeek_highlightSentenceShown`, `transpeek_highlightWordShown`,
+  `transpeek_highlightUnderlineShown`), with the branch defaults in
+  the table above (block off, the other five on). The overlay reads
+  them at draw time (and its follow timer redraws every 0.3 s while
+  showing), so flipping a toggle hides or shows that layer
+  immediately — no restart, and it works while the indicator is
+  already up. A hidden layer is never drawn, even when its frame
+  arrives; hiding the line also removes the 8 pt strip the window
+  extends left of the block (the window becomes exactly the block
+  frame again). Hiding keeps the layer's colour — turning it back on
+  restores the same colour. "Reset all to default" restores the
+  branch defaults for all six toggles; a per-layer Reset only
   restores that layer's colour.
 - **Cluster highlight — how the paragraph is found.** The controller
   splits the block's text into paragraphs by blank lines at block
@@ -220,25 +225,27 @@ the highlight follows the cluster around the sentence being read.
   because the 0.3 s poll lags behind the text. "Reset all to default"
   does not touch this toggle — it is a behaviour preference, not a
   colour or a layer default.
-- **Show underline — branch-only trial (Manh 2026-11-27).** A
-  "Show underline" toggle (`transpeek_highlightUnderlineShown`,
-  `Bool`, default `false` on the branch — not on main) draws a thin
-  solid bar (2.5 pt, opacity 1.0) at the bottom edge of the word
-  frame and of the sentence frame, each in its layer's colour
-  (word colour under the word, sentence colour under the sentence).
-  Only the word + sentence are underlined — not the block, cluster,
-  or line — so the page never shows several parallel lines. The
-  underline is **independent of the layers' Show toggles**: turning
-  all fills off while the underline is on still shows the two
-  underlines, so the underline-only style can be compared with the
-  fill style. It is read live (the next draw applies it), and it
+- **Underline — the sixth layer (Manh 2026-11-27).** The underline
+  started as a branch-only trial (a standalone "Show underline"
+  toggle, default OFF, drawing in each layer's colour) and was
+  promoted to a full layer once Manh saw it reads better than the
+  rectangle fills — no hard edges, no border. It now has its own
+  colour (`transpeek_highlightUnderlineHex`, default `#5666F0`, the
+  word's indigo) and its own Show toggle
+  (`transpeek_highlightUnderlineShown`, default `true` on the branch
+  and on main), in its own row at the top of the section, and
+  "Reset all to default" restores it like the other layers. It draws
+  a thin solid bar (2.5 pt, opacity 1.0) at the bottom edge of the
+  word frame and of the sentence frame, both in the underline's own
+  colour. Only the word + sentence are underlined — not the block,
+  cluster, or line — so the page never shows several parallel lines.
+  The underline is **independent of the layers' Show toggles**:
+  turning all fills off while the underline is on still shows the
+  two underlines, so the underline-only style can be compared with
+  the fill style. It is read live (the next draw applies it), and it
   hides while scrolling together with the fills + line (the same
   scroll guard — see §7 for why the fills have hard edges and the
-  underline does not). "Reset all to default" does not touch this
-  toggle — it is a behaviour preference, not a colour or a layer
-  default. If the trial is rejected, the toggle + the drawing code
-  go away; if it is kept, it may replace the fills or extend to
-  more layers.
+  underline does not).
 
 ## 5. Why this design
 
@@ -280,55 +287,58 @@ the highlight follows the cluster around the sentence being read.
 
 ## 6. Implementation (file map)
 
-- `Sources/UI/ReadingIndicator/HighlightColors.swift` — the 5 default
+- `Sources/UI/ReadingIndicator/HighlightColors.swift` — the 6 default
   hexes, fixed opacities, the 6 preset swatches, hex ↔ `NSColor`
   conversion (parse `#RRGGBB`, format, fallback to default), plus the
   `LineFollows` enum (sentence / paragraph / block, raw strings for
-  Defaults) for the line-height picker.
-- `Sources/Utilities/Constants.swift` — the 5 `Defaults.Keys`
+  Defaults) for the line-height picker. The underline's default is the
+  word's indigo `#5666F0`, so the same 6 presets cover all 6 layer
+  defaults.
+- `Sources/Utilities/Constants.swift` — the 6 `Defaults.Keys`
   (`transpeek_highlight*Hex`, `String`, default = the palette above)
-  plus the 5 visibility keys (`transpeek_highlight*Shown`, `Bool`,
+  plus the 6 visibility keys (`transpeek_highlight*Shown`, `Bool`,
   block default `false` on the branch, the rest `true`) plus
   `transpeek_highlightLineFollows` (`String`, default `"paragraph"`
   on the branch) plus `transpeek_highlightHideWhileScrolling`
-  (`Bool`, default `true` on the branch) plus
-  `transpeek_highlightUnderlineShown` (`Bool`, default `false` on
-  the branch — the underline trial, not on main).
+  (`Bool`, default `true` on the branch).
 - `Sources/Core/TextSelection/ContinuousSpeakController.swift` —
   precomputes the block's paragraph (cluster) ranges at block start
   (same step as the sentence ranges), maps each spoken word to the
   cluster around its sentence, and passes the cluster frame to the
   overlay in `update` (cached, re-read only when the cluster
   changes, like the sentence frame).
-- `Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift` — the 5
+- `Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift` — the 6
   layer colours are computed properties reading Defaults live (was 4
-  hardcoded `NSColor` constants); the 5 visibility flags are computed
+  hardcoded `NSColor` constants); the 6 visibility flags are computed
   properties the same way, and every place that gates on `layers`
   (`leftPad`, `update`, `layoutHighlightRects`, `draw`) also requires
-  the layer to be shown. `Layers` gains `.cluster`; `draw` order is
-  block, cluster, sentence, word, then the line. The line's rect is
-  laid out in `layoutHighlightRects` from the chosen unit's frame
-  (sentence / cluster / block, with the fallback chain chosen unit →
-  sentence → cluster; no frame for any of the three means no line). Hide-during-scroll: `reposition`
+  the layer to be shown. `Layers` gains `.cluster` and `.underline`;
+  `draw` order is block, cluster, sentence, word, then the line, then
+  the underline. The line's rect is laid out in `layoutHighlightRects`
+  from the chosen unit's frame (sentence / cluster / block, with the
+  fallback chain chosen unit → sentence → cluster; no frame for any
+  of the three means no line). Hide-during-scroll: `reposition`
   compares each poll's block frame with the previous one (1 pt
   tolerance) and sets the view's `isScrollingHidden` flag; `draw`
   paints nothing while the flag is set, and two stable polls clear it.
-  The underline trial: `update` also stores the word/sentence frames
+  The underline: `update` also stores the word/sentence frames
   without the Show gate, `layoutHighlightRects` reduces each to a
   2.5 pt bar at its bottom edge, and `draw` paints those bars solid
-  (opacity 1.0, each layer's colour) when the underline toggle is on
-  — gated only on the toggle, never on the fill toggles. The vertical
-  line is 1.75 pt wide (halved from 3.5 on 2026-11-27 — it read as
-  too thick); the 8 pt strip it sits in is unchanged.
+  (opacity 1.0, the underline's own colour) when the underline layer
+  is in `layers` and its Show toggle is on — gated only on the
+  toggle, never on the fill toggles. The vertical line is 1.75 pt wide
+  (halved from 3.5 on 2026-11-27 — it read as too thick); the 8 pt
+  strip it sits in is unchanged.
 - `Sources/UI/Settings/TTSSettingsView.swift` — the "Highlight colors"
   section + `HighlightColorRow` (row + presets + Reset + the
   `Color`-to-hex binding), now with a Show `Toggle` per row, a
-  "Cluster" row, a segmented "Line follows" picker in the Vertical
-  line row, a "Hide highlights while scrolling" toggle after the rows,
-  a "Show underline" toggle after that (branch trial, default off),
-  and "Reset all to default" restoring the branch defaults
-  (5 colours, 5 toggles with block off, line follows Paragraph —
-  the two behaviour toggles are preferences and are not reset).
+  "Cluster" row, an "Underline" row at the top, a segmented "Line
+  follows" picker in the Vertical line row, a "Hide highlights while
+  scrolling" toggle after the rows, and "Reset all to default"
+  restoring the branch defaults (6 colours, 6 toggles with block off,
+  line follows Paragraph — the scroll toggle is a preference and is
+  not reset). Row order: Underline, Vertical line, Word, Sentence,
+  Cluster, Block.
 
 ## 7. Technical limitations
 
@@ -346,9 +356,9 @@ above looks the way it does.
   Manh saw on the branch build (2026-11-27). Paler colours make
   the step smaller (which is why the word/sentence defaults follow
   Speechify's pale palette), but they cannot remove it — only not
-  drawing a rectangle can. The underline trial (§4) is exactly
-  that: a thin solid bar under the text has no broad rectangle, so
-  it has no border to see.
+  drawing a rectangle can. The underline (§4) is exactly that: a
+  thin solid bar under the text has no broad rectangle, so it has
+  no border to see.
 - **The overlay cannot recolor the page's text.** Speechify
   highlights the text itself (CSS Highlight API) and sets both the
   background and the text colour — its word is solid indigo with

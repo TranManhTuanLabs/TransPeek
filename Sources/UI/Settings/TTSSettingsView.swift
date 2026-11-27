@@ -18,7 +18,7 @@ struct TTSSettingsView: View {
     @Default(.ttsLanguageRates) private var languageRates
     @Default(.ttsVoiceEN) private var ttsVoiceEN
     @Default(.ttsVoiceVI) private var ttsVoiceVI
-    // Reading indicator highlight colors (Manh 2026-11-27): the 5
+    // Reading indicator highlight colors (Manh 2026-11-27): the 6
     // layers' colors, stored as "#RRGGBB" hex strings. The overlay
     // reads them live, so a change applies at once.
     @Default(.highlightLineHex) private var highlightLineHex
@@ -26,6 +26,7 @@ struct TTSSettingsView: View {
     @Default(.highlightSentenceHex) private var highlightSentenceHex
     @Default(.highlightWordHex) private var highlightWordHex
     @Default(.highlightClusterHex) private var highlightClusterHex
+    @Default(.highlightUnderlineHex) private var highlightUnderlineHex
     // Reading indicator layer visibility (Manh 2026-11-27): each layer
     // has its own Show toggle in its Highlight colors row. The overlay
     // reads them live, so hiding a layer applies at once.
@@ -43,10 +44,11 @@ struct TTSSettingsView: View {
     // applies at once (the next follow poll re-evaluates).
     @Default(.highlightHideWhileScrolling) private var highlightHideWhileScrolling
     // Underline under the word + sentence being read (Manh
-    // 2026-11-27, branch trial): the overlay reads it live, so
-    // flipping it applies at once (the next draw shows or hides the
-    // underlines). Default OFF — a try-out alternative to the
-    // rectangle fills, whose hard edges read as a border.
+    // 2026-11-27): the 6th layer, with its own color + its own row
+    // below. The overlay reads it live, so flipping it applies at
+    // once (the next draw shows or hides the underlines). Default ON
+    // — the underline reads better than the rectangle fills, whose
+    // hard edges look like a border.
     @Default(.highlightUnderlineShown) private var highlightUnderlineShown
 
     @State private var isLanguageRatesExpanded = false
@@ -183,7 +185,18 @@ struct TTSSettingsView: View {
 
             // MARK: - Highlight colors
 
+            // Row order (Manh 2026-11-27): Underline first, then the
+            // Vertical line, then the fills small → large (Word,
+            // Sentence, Cluster, Block) — the narrowest mark on top,
+            // the broadest at the bottom.
             Section {
+                HighlightColorRow(
+                    title: "Underline",
+                    subtitle: "Solid bar under the word + sentence being read",
+                    hex: $highlightUnderlineHex,
+                    isShown: $highlightUnderlineShown,
+                    defaultHex: HighlightColors.underlineDefaultHex
+                )
                 HighlightColorRow(
                     title: "Vertical line",
                     subtitle: "Solid bar beside the text — its height follows the unit below",
@@ -193,18 +206,11 @@ struct TTSSettingsView: View {
                     lineFollows: $highlightLineFollows
                 )
                 HighlightColorRow(
-                    title: "Block",
-                    subtitle: "Highlight for the whole block being read",
-                    hex: $highlightBlockHex,
-                    isShown: $highlightBlockShown,
-                    defaultHex: HighlightColors.blockDefaultHex
-                )
-                HighlightColorRow(
-                    title: "Cluster",
-                    subtitle: "Highlight for the paragraph (group of sentences) being read",
-                    hex: $highlightClusterHex,
-                    isShown: $highlightClusterShown,
-                    defaultHex: HighlightColors.clusterDefaultHex
+                    title: "Word",
+                    subtitle: "Highlight for the word being spoken",
+                    hex: $highlightWordHex,
+                    isShown: $highlightWordShown,
+                    defaultHex: HighlightColors.wordDefaultHex
                 )
                 HighlightColorRow(
                     title: "Sentence",
@@ -214,11 +220,18 @@ struct TTSSettingsView: View {
                     defaultHex: HighlightColors.sentenceDefaultHex
                 )
                 HighlightColorRow(
-                    title: "Word",
-                    subtitle: "Highlight for the word being spoken",
-                    hex: $highlightWordHex,
-                    isShown: $highlightWordShown,
-                    defaultHex: HighlightColors.wordDefaultHex
+                    title: "Cluster",
+                    subtitle: "Highlight for the paragraph (group of sentences) being read",
+                    hex: $highlightClusterHex,
+                    isShown: $highlightClusterShown,
+                    defaultHex: HighlightColors.clusterDefaultHex
+                )
+                HighlightColorRow(
+                    title: "Block",
+                    subtitle: "Highlight for the whole block being read",
+                    hex: $highlightBlockHex,
+                    isShown: $highlightBlockShown,
+                    defaultHex: HighlightColors.blockDefaultHex
                 )
 
                 // Hide-during-scroll (Manh 2026-11-27, trial plan phase
@@ -229,27 +242,18 @@ struct TTSSettingsView: View {
                 // while scrolling, which can read as jerkiness.
                 Toggle("Hide highlights while scrolling", isOn: $highlightHideWhileScrolling)
 
-                // Underline under the word + sentence (Manh
-                // 2026-11-27, branch trial): a thin solid bar at the
-                // bottom of the word/sentence frame, in that layer's
-                // colour — a try-out alternative to the rectangle
-                // fills, whose hard edges read as a border. Off by
-                // default; independent of the layers' Show toggles, so
-                // turning all fills off still shows the underline.
-                // Like the scroll toggle it is a behaviour preference
-                // — "Reset all to default" below does not touch it.
-                Toggle("Show underline", isOn: $highlightUnderlineShown)
-
                 Button("Reset all to default") {
+                    highlightUnderlineHex = HighlightColors.underlineDefaultHex
                     highlightLineHex = HighlightColors.lineDefaultHex
                     highlightBlockHex = HighlightColors.blockDefaultHex
                     highlightSentenceHex = HighlightColors.sentenceDefaultHex
                     highlightWordHex = HighlightColors.wordDefaultHex
                     highlightClusterHex = HighlightColors.clusterDefaultHex
                     // Reset all restores the branch defaults (Manh
-                    // 2026-11-27): the line, sentence, word and cluster
-                    // shown, the block hidden, and the line following
-                    // the paragraph (cluster).
+                    // 2026-11-27): the underline, line, sentence, word
+                    // and cluster shown, the block hidden, and the line
+                    // following the paragraph (cluster).
+                    highlightUnderlineShown = true
                     highlightLineShown = true
                     highlightBlockShown = false
                     highlightSentenceShown = true
@@ -336,10 +340,10 @@ struct TTSSettingsView: View {
 /// a preset swatch row underneath — and a Show toggle (Manh 2026-11-27)
 /// to hide that one layer without touching its color. The picker never
 /// edits opacity (`supportsOpacity: false`) — opacity stays fixed in
-/// code (fills 0.30, line solid 1.0), so a color can never hide the
-/// text. The hex is display-only (shown for users who want the exact
-/// value); the color is picked with the swatch or the system color
-/// panel.
+/// code (fills 0.30, line + underline solid 1.0), so a color can never
+/// hide the text. The hex is display-only (shown for users who want
+/// the exact value); the color is picked with the swatch or the system
+/// color panel.
 private struct HighlightColorRow: View {
     let title: String
     let subtitle: String

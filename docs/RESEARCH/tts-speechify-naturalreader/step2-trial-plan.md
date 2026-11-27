@@ -271,16 +271,25 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     Speechify) vì ở fill 0.30 thì nhạt quá; Speechify tô đặc (1.0)
     và đổi màu chữ nên mới dùng được nền đặc — overlay không đổi
     được màu chữ nên giữ fill mờ. Chi tiết §3.
-  - **Gạch chân thử trên nhánh + vạch dọc mỏng đi (2026-11-27):**
-    thêm toggle \"Show underline\" (key
-    `transpeek_highlightUnderlineShown`, mặc định TẮT, chỉ trên
-    nhánh): vẽ gạch chân đặc 2.5pt dưới từ + câu đang đọc, mỗi cái
-    màu của lớp đó, độc lập với công tắc Show của lớp (tắt hết fill
-    mà bật gạch chân thì vẫn thấy gạch chân — để so sánh 2 kiểu).
-    Lý do: fill hình chữ nhật có cạnh cứng trông như border (xem
-    giới hạn kỹ thuật trong UX spec §7); gạch chân tránh hẳn hình
-    chữ nhật. Vạch dọc mỏng đi 1/2 (3.5 → 1.75pt, Manh thấy hơi
-    to); dải 8pt bên trái giữ nguyên.
+  - **Gạch chân thành lớp riêng, mặc định BẬT + xếp lại thứ tự hàng
+    (2026-11-27, Manh duyệt):** gạch chân thử (toggle lẻ \"Show
+    underline\", mặc định TẮT, màu theo từng lớp) nay thành lớp thứ 6
+    đầy đủ như 5 lớp kia: màu riêng `#5666F0` (chàm, như màu từ — key
+    `transpeek_highlightUnderlineHex`), công tắc Show riêng trong
+    hàng lớp của nó (key `transpeek_highlightUnderlineShown`, mặc
+    định BẬT cả nhánh lẫn main — Manh thấy gạch chân đẹp hơn tô nền,
+    không bị border hình chữ nhật), Reset riêng + được \"Reset all to
+    default\" reset như các lớp khác. Vẫn vẽ dưới từ + câu, nét đặc
+    2.5pt, độc lập với công tắc Show của fill (tắt hết fill mà bật
+    gạch chân thì vẫn thấy gạch chân — để so sánh 2 kiểu), ẩn khi
+    cuộn. Lý do: fill hình chữ nhật có cạnh cứng trông như border
+    (xem giới hạn kỹ thuật trong UX spec §7); gạch chân tránh hẳn
+    hình chữ nhật. Thứ tự hàng trong Settings → Audio → \"Highlight
+    colors\" đổi thành: Underline, Vertical line, Word, Sentence,
+    Cluster, Block (fill xếp nhỏ → lớn thay cho lớn → nhỏ như
+    trước). Vạch dọc mỏng đi 1/2 (3.5 → 1.75pt, Manh thấy hơi to);
+    dải 8pt bên trái giữ nguyên. Chi tiết trong
+    `docs/UI/UX_DESIGN/HIGHLIGHT_COLORS_UX_SPEC.md`.
   - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
     overlay vẽ hình chữ nhật đè lên trang nên highlight luôn có
     cạnh cứng (không phải bug); không đổi được màu chữ của trang

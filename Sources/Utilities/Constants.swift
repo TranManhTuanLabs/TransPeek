@@ -942,6 +942,7 @@ extension Defaults.Keys {
     static let highlightSentenceHex = Key<String>("transpeek_highlightSentenceHex", default: HighlightColors.sentenceDefaultHex)
     static let highlightWordHex = Key<String>("transpeek_highlightWordHex", default: HighlightColors.wordDefaultHex)
     static let highlightClusterHex = Key<String>("transpeek_highlightClusterHex", default: HighlightColors.clusterDefaultHex)
+    static let highlightUnderlineHex = Key<String>("transpeek_highlightUnderlineHex", default: HighlightColors.underlineDefaultHex)
 
     // Reading indicator layer visibility (Manh 2026-11-27): each layer
     // has its own Show toggle in Settings (Audio tab → Highlight
@@ -972,14 +973,16 @@ extension Defaults.Keys {
     static let highlightHideWhileScrolling = Key<Bool>("transpeek_highlightHideWhileScrolling", default: true)
 
     // Underline under the word + sentence being read (Manh
-    // 2026-11-27, branch trial): a thin solid bar at the bottom of
-    // the word/sentence frame, in that layer's color — a try-out
-    // alternative to the rectangle fills, whose hard edges read as a
-    // border. Default OFF. Independent of the layers' Show toggles:
+    // 2026-11-27): a thin solid bar at the bottom of the word/sentence
+    // frame, in its OWN color (not the word/sentence colors) — a line
+    // under the text instead of a rectangle around it, whose hard
+    // edges read as a border. The underline is the 6th layer now: it
+    // has its own color key above and its own row in Settings, and
+    // "Reset all to default" restores it like the other layers.
+    // Default ON (Manh 2026-11-27 — the underline reads better than
+    // the rectangle fills). Independent of the layers' Show toggles:
     // turning all fills off still shows the underline, so the two
-    // styles can be compared. Like hide-while-scrolling it is a
-    // behaviour preference, not a color or a layer default — "Reset
-    // all to default" does not touch it.
-    static let highlightUnderlineShown = Key<Bool>("transpeek_highlightUnderlineShown", default: false)
+    // styles can be compared.
+    static let highlightUnderlineShown = Key<Bool>("transpeek_highlightUnderlineShown", default: true)
 }
 

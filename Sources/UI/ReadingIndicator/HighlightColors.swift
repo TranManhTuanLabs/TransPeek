@@ -3,12 +3,13 @@ import Foundation
 
 // MARK: - HighlightColors
 
-/// Reading indicator highlight colors (Manh 2026-11-27): the 5 layers'
+/// Reading indicator highlight colors (Manh 2026-11-27): the 6 layers'
 /// colors are user-customizable in Settings (Audio tab → Highlight
 /// colors) and stored as "#RRGGBB" hex strings in Defaults. The overlay
 /// reads them live at draw time, so a change applies at once — no
-/// restart. Opacity stays fixed in code (fills 0.30, line solid 1.0) —
-/// the picker never edits it, so a color can never hide the text.
+/// restart. Opacity stays fixed in code (fills 0.30, line + underline
+/// solid 1.0) — the picker never edits it, so a color can never hide
+/// the text.
 enum HighlightColors {
     /// Default colors. Word + sentence follow Speechify (Manh
     /// 2026-11-27): the word is Speechify's `highlight50` indigo
@@ -28,6 +29,12 @@ enum HighlightColors {
     /// paragraph reads as its own level. Chosen by the parent (Manh
     /// did not name a color); changeable in Settings like the rest.
     static let clusterDefaultHex = "#FFC2D1" // hồng nhạt
+    /// Default underline color (Manh 2026-11-27): the word's indigo
+    /// `#5666F0` — the underline marks the word + sentence being read,
+    /// so it takes the word's color. Chosen by the parent (Manh did
+    /// not name a color); changeable in Settings like the rest, in
+    /// the underline's own layer row.
+    static let underlineDefaultHex = "#5666F0" // chàm (như màu từ)
     /// What the vertical line marks (Manh 2026-11-27): the line's
     /// height can follow the sentence being read, the paragraph
     /// (cluster) around it, or the whole block (the original
@@ -48,14 +55,16 @@ enum HighlightColors {
         }
     }
     /// Fixed opacity for the fills (translucent so the text underneath
-    /// stays readable) and the line (solid so it reads as a marker,
-    /// not a tint).
+    /// stays readable) and the line + underline (solid so they read as
+    /// markers, not tints).
     static let fillAlpha: CGFloat = 0.30
     static let lineAlpha: CGFloat = 1.0
     /// Preset swatches shown under each layer in Settings — the 6
     /// layer colors (line, block, sentence, word, cluster pink,
     /// orange), so any layer can be reset to any of them at a tap.
-    /// Tapping a swatch sets that layer's color at once.
+    /// The underline's default is the word's indigo, so the same 6
+    /// presets cover all 6 layer defaults. Tapping a swatch sets
+    /// that layer's color at once.
     static let pastelPresets: [String] = [
         "#8CBFFF", // light blue
         "#BFF2B3", // light green
