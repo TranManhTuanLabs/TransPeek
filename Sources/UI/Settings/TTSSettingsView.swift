@@ -187,6 +187,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Underline",
                     subtitle: "Underline under the word + sentence being read",
+                    info: "A thin line under the word and sentence being read, in the underline color. It shows even when the fills are off, so you can use it instead of the fills. No rectangle, so no hard edge.",
                     hex: $highlightUnderlineHex,
                     shown: $highlightUnderlineShown,
                     defaultHex: HighlightColors.underlineDefaultHex
@@ -194,6 +195,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Vertical line",
                     subtitle: "Solid bar at the block's left edge",
+                    info: "A thin vertical bar left of the block, as tall as the unit it follows (see 'Line follows': sentence / paragraph / block). It helps the eye find the unit being read at a glance.",
                     hex: $highlightLineHex,
                     shown: $highlightLineShown,
                     defaultHex: HighlightColors.lineDefaultHex,
@@ -202,6 +204,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Word",
                     subtitle: "Highlight for the word being spoken",
+                    info: "Highlights the word being spoken. It needs the app to provide the word's position (AXBoundsForRange); if the app does not provide it, the word highlight is skipped.",
                     hex: $highlightWordHex,
                     shown: $highlightWordShown,
                     defaultHex: HighlightColors.wordDefaultHex
@@ -209,6 +212,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Sentence",
                     subtitle: "Highlight for the sentence being read",
+                    info: "Highlights the sentence containing the word being spoken. It needs the app to provide the sentence's position; if the app does not provide it, the sentence highlight is skipped.",
                     hex: $highlightSentenceHex,
                     shown: $highlightSentenceShown,
                     defaultHex: HighlightColors.sentenceDefaultHex
@@ -216,6 +220,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Paragraph",
                     subtitle: "Highlight for the paragraph (cluster) being read",
+                    info: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
                     hex: $highlightClusterHex,
                     shown: $highlightClusterShown,
                     defaultHex: HighlightColors.clusterDefaultHex
@@ -223,6 +228,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Block",
                     subtitle: "Highlight for the whole block being read",
+                    info: "Highlights the whole text block being read. It is always available when a block is detected.",
                     hex: $highlightBlockHex,
                     shown: $highlightBlockShown,
                     defaultHex: HighlightColors.blockDefaultHex
@@ -336,23 +342,32 @@ struct TTSSettingsView: View {
 /// 2026-11-27): name + Show toggle + native ColorPicker + hex +
 /// per-layer Reset, with a preset swatch row underneath. The picker
 /// never edits opacity (`supportsOpacity: false`) — opacity stays
-/// fixed in code (fills 0.30, line solid 1.0), so a color can never
-/// hide the text. The hex is display-only (shown for users who want
-/// the exact value); the color is picked with the swatch or the system
-/// color panel. The Show switch hides/shows this layer (the overlay
-/// reads it live, so it applies at once); the color stays editable
-/// while hidden, so the user can set it first and show it after. The
-/// Vertical line row also carries the "Line follows" picker (Manh
-/// 2026-11-27): which unit the line is as tall as — the sentence, the
+/// fixed in code (fills 0.30, line + underline solid 1.0), so a color
+/// can never hide the text. The hex is display-only (shown for users
+/// who want the exact value); the color is picked with the swatch or
+/// the system color panel. The Show switch hides/shows this layer (the
+/// overlay reads it live, so it applies at once); the color stays
+/// editable while hidden, so the user can set it first and show it
+/// after. A small info button ("i", `info.circle`) after the row's
+/// text opens a popover explaining how this layer works and how it is
+/// detected (Manh 2026-11-27 16:21) — the "Show" label stays as-is
+/// (on = show, off = hide), clear and standard. The Vertical line row
+/// also carries the "Line follows" picker (Manh 2026-11-27): which
+/// unit the line is as tall as — the sentence, the
 /// paragraph (cluster) or the whole block. Only that row passes
 /// `lineFollows`; the other rows leave it nil and show no picker.
 private struct HighlightColorRow: View {
     let title: String
     let subtitle: String
+    /// Short explanation shown in the row's info popover (Manh
+    /// 2026-11-27 16:21): how this layer works and how it is detected
+    /// — 2–3 sentences, English like the UX doc.
+    let info: String
     @Binding var hex: String
     @Binding var shown: Bool
     let defaultHex: String
     var lineFollows: Binding<String>? = nil
+    @State private var showInfo = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -362,6 +377,25 @@ private struct HighlightColorRow: View {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                // Info button (Manh 2026-11-27 16:21): a small native
+                // "i" after the row's text, opening a popover that
+                // explains this layer. It sits between the text and
+                // the hex/Show/picker/Reset controls, so it does not
+                // move any of them. The "Show" label stays as-is —
+                // on = show, off = hide — clear and standard.
+                Button {
+                    showInfo = true
+                } label: {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("About this layer")
+                .popover(isPresented: $showInfo) {
+                    Text(info)
+                        .padding()
+                        .frame(maxWidth: 300)
                 }
                 Spacer()
                 Text(hex.uppercased())

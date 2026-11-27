@@ -29,28 +29,28 @@ Paragraph, Block) — the narrow marks first, the broad fills last.
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline                  #5666F0  Show [x]  [swatch]  Reset   │
+│ Underline [i]              #5666F0  Show [x]  [swatch]  Reset   │
 │ Underline under the word + sentence being read                   │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                    │
 │                                                                  │
-│ Vertical line              #8CBFFF  Show [ ]  [swatch]  Reset   │
+│ Vertical line [i]          #8CBFFF  Show [ ]  [swatch]  Reset   │
 │ Solid bar at the block's left edge                               │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │ Line follows: [ Sentence | Paragraph | Block ]                   │
 │                                                                  │
-│ Word                         #5666F0  Show [x]  [swatch]  Reset │
+│ Word [i]                     #5666F0  Show [x]  [swatch]  Reset │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence                     #ABB3FE  Show [ ]  [swatch]  Reset │
+│ Sentence [i]                 #ABB3FE  Show [ ]  [swatch]  Reset │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Paragraph                    #FFC2D1  Show [ ]  [swatch]  Reset │
+│ Paragraph [i]                #FFC2D1  Show [ ]  [swatch]  Reset │
 │ Highlight for the paragraph (cluster) being read                 │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Block                        #BFF2B3  Show [ ]  [swatch]  Reset │
+│ Block [i]                    #BFF2B3  Show [ ]  [swatch]  Reset │
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -71,6 +71,35 @@ Each row, left to right:
 
 - **Name + subtitle** — the layer name ("Underline", "Vertical line",
   "Word", "Sentence", "Paragraph", "Block") and one line saying what it marks.
+- **Info button ("i")** — a small native `info.circle` button after the
+  row's text (Manh 2026-11-27 16:21). Tapping it opens a popover that
+  explains how this layer works and how it is detected, in 2–3
+  sentences (English, same wording as the popovers in Settings):
+  - Underline: "A thin line under the word and sentence being read, in
+    the underline color. It shows even when the fills are off, so you
+    can use it instead of the fills. No rectangle, so no hard edge."
+    (see §4).
+  - Vertical line: "A thin vertical bar left of the block, as tall as
+    the unit it follows (see 'Line follows': sentence / paragraph /
+    block). It helps the eye find the unit being read at a glance."
+    (see §6).
+  - Word: "Highlights the word being spoken. It needs the app to
+    provide the word's position (AXBoundsForRange); if the app does
+    not provide it, the word highlight is skipped." (see §4).
+  - Sentence: "Highlights the sentence containing the word being
+    spoken. It needs the app to provide the sentence's position; if
+    the app does not provide it, the sentence highlight is skipped."
+    (see §4).
+  - Paragraph: "Highlights the paragraph containing the current
+    sentence. A paragraph is detected by a blank line, a single line
+    break, or an indented line. If the block has no paragraph break,
+    the cluster is not shown — the block has its own Show toggle."
+    (see §4).
+  - Block: "Highlights the whole text block being read. It is always
+    available when a block is detected." (see §3).
+  The button sits between the text and the hex/Show/picker/Reset
+  controls, so it does not move any of them. The "Show" label stays
+  as-is (on = show, off = hide) — clear and standard, no change.
 - **Hex** — the current color as `#RRGGBB` (monospaced, secondary
   colour). Display-only: it shows the exact value for users who want
   it, it is not an input field.
