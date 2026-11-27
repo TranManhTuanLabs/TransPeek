@@ -207,18 +207,23 @@ are solid, so they read on top.
   a preset swatch, never by typing hex.
 - **The paragraph (cluster) is the group of sentences around the
   sentence being read, split on paragraph boundaries.** The controller
-  splits the block's text into paragraphs at a blank line (2+ line
-  breaks between sentences), a single line break (1) after a sentence
-  ending with . / ! / ? (the gate, Manh 2026-11-27 21:39 — a line
-  break without a terminator is just a wrapped line, not a new
-  paragraph), or an indented next sentence (a tab, or 2+ spaces — a
-  single space is just the separator between sentences); books/PDFs
+  splits the block's text into paragraphs by punctuation
+  (Manh 2026-11-27 23:51 — main and branch split the same way): a
+  paragraph boundary is (a) a blank line (2+ line breaks between
+  sentences), (b) a single line break (1) after a sentence ending
+  with . / ! / ? (the gate — a line break without a terminator is
+  just a wrapped line, not a new paragraph), or (c) an indented next
+  sentence (a tab, or 2+ spaces at the start of the next sentence).
+  A single space does NOT split: one space after a line break, with
+  no terminator, is just the separator between sentences — e.g.
+  "dòng một\n dòng hai" (one space, no terminator) stays ONE cluster
+  on both sides; books/PDFs
   often separate paragraphs with just one line break or an indented
   first line, no blank line (Manh 2026-11-27 16:14). The gate was
   removed temporarily (2026-11-27 19:38) because a multi-line cluster
   could overflow the PDF frame; the overlay now clips to the host
   window's visible area (#398/#399), so the gate is safe again and
-  was re-enabled. The cluster fill covers the paragraph
+  was re-enabled (Manh 2026-11-27 21:39). The cluster fill covers the paragraph
   holding the current sentence and moves with the voice. A block with
   no boundary has NO cluster fill — its single paragraph IS the whole
   block, so there is no cluster to highlight (turn on the block layer
