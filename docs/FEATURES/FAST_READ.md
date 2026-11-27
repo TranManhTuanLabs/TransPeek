@@ -412,11 +412,21 @@ window file `RSVPView.swift` is never edited for panel work (Manh
   A reminder to panel right opens the panel on the Fast Read tab and
   starts reading; after the read, the panel shows the rest countdown
   and returns to the demo. **The countdown screen's Done button has a
-  blue border (Manh 2026-11-21) so it is easy to see and tap.** If a reminder fires while reading (window
-  or panel), it does NOT interrupt — it waits as a banner + system
+  blue border (Manh 2026-11-21) so it is easy to see and tap.** "When
+  a reminder fires while reading:" ("Run now" / "Notification only",
+  Manh 2026-11-27, 17:35 — right under "Run reminder in:" in the
+  Focus & Rest card, default "Notification only") decides what a
+  reminder does when it fires while reading. "Notification only"
+  (default) does NOT interrupt — it waits as a banner + system
   notification ("Take a break" / "Snooze 5 min", orange dot on the
   Focus-Rest card) and shows when the read stops (Manh 2026-11-20,
-  05:33).
+  05:33); "Run now" shows the reminder at once even mid-read. The
+  setting applies ONLY while reading — when not reading, a reminder
+  always shows at once. "Reading" here means a panel read, the Fast
+  Read window, or an on-page listen (click-to-listen / Step 2 chain,
+  playing or paused — Manh 2026-11-27, 17:35: before, a listen did
+  not count as reading, so a reminder fired mid-listen ran at once
+  and the conflict notification never appeared).
 - **Alternative icon (Manh 2026-11-21):** selecting text inside Fast
   Read shows a fake float icon — a blue "A" in a chat bubble — for
   looking up one word or listening to it. It is a separate path

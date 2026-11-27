@@ -30,6 +30,12 @@ struct FocusTimerCard: View {
     /// has its OWN separate setting ("Run FastRead in:", panel right,
     /// Manh 2026-11-20, 05:27).
     @Default(.focusReminderDestination) private var reminderDestination
+    /// What a reminder does when it fires while reading (Manh
+    /// 2026-11-27, 17:35): the "When a reminder fires while
+    /// reading:" picker, right under "Run reminder in:". Default
+    /// "Notification only" — the reminder waits instead of stealing
+    /// the read; "Run now" shows it at once even mid-read.
+    @Default(.focusReminderWhileReading) private var reminderWhileReading
     /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
     /// Manh 2026-11-20, 07:25): when ON, the next session starts
     /// automatically after each rest / long break. Default ON.
@@ -332,6 +338,34 @@ struct FocusTimerCard: View {
             .padding(.horizontal, 12)
 
             Text("Applies only to focus / rest-eyes reminders — not to Fast Read itself.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 12)
+
+            // "When a reminder fires while reading:" (Manh 2026-11-27,
+            // 17:35) — the conflict choice, right under the destination:
+            // "Notification only" (default) waits as a pending reminder
+            // (banner + notification + dot); "Run now" shows the
+            // reminder at once even mid-read. Radio buttons like the
+            // destination above — the menu picker hid the choices
+            // behind a click. Applies only while reading; when not
+            // reading, a reminder always shows at once.
+            Text("When a reminder fires while reading:")
+                .font(.callout)
+                .bold()
+                .padding(.horizontal, 12)
+                .padding(.top, 6)
+            Picker("", selection: $reminderWhileReading) {
+                ForEach(FocusReminderWhileReading.allCases, id: \.self) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            .background { InteractiveMarker() }
+            .padding(.horizontal, 12)
+
+            Text("Only while reading — when not reading, a reminder always shows at once.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 12)

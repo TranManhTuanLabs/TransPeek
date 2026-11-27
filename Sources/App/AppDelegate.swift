@@ -160,6 +160,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         focusTimerStore.isFastReadWindowOpen = { [weak self] in
             self?.rsvpWindowController.isVisible ?? false
         }
+        // An on-page listen counts as reading too (Manh 2026-11-27,
+        // 17:35): a reminder fired mid-listen used to run at once
+        // (the chain was not "reading"), so the conflict notification
+        // never appeared. A session is live while playing OR paused —
+        // `ContinuousSpeakController.isActive` — and ends when the
+        // indicator hides / the session stops. Set here (before the
+        // controller exists below) because the closure is only called
+        // at fire time, by which point the controller is live.
+        focusTimerStore.isSpeakingOnPage = { [weak self] in
+            self?.continuousSpeakController.isActive ?? false
+        }
         // System notification for a pending reminder (Manh 2026-11-20,
         // 05:33): the notifier owns UserNotifications; the store only
         // asks for a notification, never touches the framework.
@@ -204,7 +215,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // "Auto start focus" toggle is ON, the focus timer starts on
         // its own at launch, as if the user pressed Start. Called
         // last — the store's reminder callbacks (onShowPanel,
-        // onNotifyReminder, isFastReadWindowOpen) are all wired above,
+        // onNotifyReminder, isFastReadWindowOpen, isSpeakingOnPage) are
+        // all wired above,
         // so a reminder fired by this session routes correctly. The
         // store itself guards against double-starting.
         focusTimerStore.autoStartFocusIfEnabled()

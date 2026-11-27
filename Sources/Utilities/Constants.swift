@@ -629,6 +629,40 @@ enum FocusReminderDestination: String, CaseIterable, Defaults.Serializable {
     }
 }
 
+/// What a focus / rest-eyes reminder does when it fires WHILE the
+/// user is reading (Manh 2026-11-27, 17:35 — the reminder must not
+/// steal the read by default, but Manh wants the choice): the
+/// "When a reminder fires while reading:" picker in the panel-left
+/// Focus & Rest card, right under "Run reminder in:". "Notification
+/// only" (default) waits as a pending reminder (banner + system
+/// notification + dot, shows when the read stops); "Run now" shows
+/// the reminder at once even mid-read (it reminds right away, but
+/// steals the focus and breaks the reading flow). Applies ONLY while
+/// reading — when the user is not reading, a reminder always shows
+/// at once, whatever this says.
+/// Case order = picker order: "Run now" first, "Notification only"
+/// second. Order is display only — the default is
+/// `.notificationOnly` (set explicitly in the Defaults key) and
+/// values are stored as Strings, so existing saved values keep
+/// working.
+enum FocusReminderWhileReading: String, CaseIterable, Defaults.Serializable {
+    /// Show the reminder at once even while reading (per "Run
+    /// reminder in:").
+    case runNow
+    /// Wait as a pending reminder (default): banner + system
+    /// notification + dot on the Focus-Rest card; shows when the
+    /// read stops, or at once from "Take a break".
+    case notificationOnly
+
+    /// Labels — the picker shows them verbatim.
+    var displayName: String {
+        switch self {
+        case .runNow: return "Run now"
+        case .notificationOnly: return "Notification only"
+        }
+    }
+}
+
 /// Where Fast Read (RSVP) runs (Manh 2026-11-20, 05:27 — the "Run
 /// FastRead in:" picker in panel right). Separate from the reminder
 /// destination: Reminder and Fast Read are two different features and
@@ -880,6 +914,10 @@ extension Defaults.Keys {
     static let focusRestMinutes = Key<Int>("transpeek_focusRestMinutes", default: 5)
     static let focusLongBreakMinutes = Key<Int>("transpeek_focusLongBreakMinutes", default: 15)
     static let focusReminderDestination = Key<FocusReminderDestination>("transpeek_focusReminderDestination", default: .newWindow)
+    /// What a reminder does when it fires while reading (Manh
+    /// 2026-11-27, 17:35): default "Notification only" — the reminder
+    /// waits instead of stealing the read.
+    static let focusReminderWhileReading = Key<FocusReminderWhileReading>("transpeek_focusReminderWhileReading", default: .notificationOnly)
     /// Continuous Pomodoro (Manh 2026-11-20, 07:12; default ON,
     /// Manh 2026-11-20, 07:25): when ON, the next session starts
     /// automatically after a rest / long break (Work → Rest →
