@@ -4,11 +4,17 @@
 >
 > Ý tưởng: khi giọng đọc tới đâu thì chữ sáng tới đó — từ đang đọc highlight một màu, câu đang đọc highlight một màu khác — để mắt theo kịp tai. Học theo NaturalReader (bọc câu trong span + 2 lớp highlight câu/từ, auto-scroll) và Speechify, làm bằng API native.
 
-## 1. Phạm vi — 1 component chung cho Read Full + Lite
+## 1. Phạm vi — 1 component chung cho Reader RSVP (Full + Lite + Nghỉ)
 
-- **Làm:** highlight từ đang đọc + câu đang đọc theo giọng, trong 2 bề mặt đọc RSVP — **Full window** (Style 1 RSVP Focus + Style 2 Basic Reading) và **Lite panel** (CompactReadingView) — bằng **1 component chung**, không làm 2 bản. Component này giữ trạng thái "từ hiện tại + câu hiện tại" và cả 2 bề mặt chỉ render lại từ cùng một trạng thái đó.
+**Tên gọi (Manh 2026-11-27): "Reader RSVP" (trình đọc RSVP).** Cửa sổ Full + panel Lite + cửa sổ Nghỉ đều là các mặt của cùng 1 trình đọc RSVP — cùng 1 engine (`RSVPEngine`) + cùng 1 ViewModel (`RSVPViewModel`), chỉ khác chỗ hiển thị. Tên "Fast Read" trên giao diện (menu, Settings) giữ nguyên — đó là tên tính năng người dùng thấy; "Reader RSVP" là tên khái niệm trong docs/code. Trình đọc file local (PDF/doc/TXT/MD, bước 3) sau này cũng là 1 mặt của cùng Reader RSVP này, không phải trình đọc khác.
+
+- **Làm:** highlight từ đang đọc + câu đang đọc theo giọng, trong 3 bề mặt đọc RSVP — **Full window** (Style 1 RSVP Focus + Style 2 Basic Reading), **Lite panel** (CompactReadingView) và **cửa sổ Nghỉ** — bằng **1 component chung**, không làm 2–3 bản. Component này giữ trạng thái "từ hiện tại + câu hiện tại" và các bề mặt chỉ render lại từ cùng một trạng thái đó.
 - **Overlay trên trang đã có sẵn — tham chiếu, KHÔNG làm lại:** khi nghe trên trang (chaining, đọc nối tiếp), `ReadingIndicatorOverlay` (`Sources/UI/ReadingIndicator/ReadingIndicatorOverlay.swift`) đã highlight câu (tím nhạt Speechify) + từ (chàm Speechify) theo giọng, qua `ContinuousSpeakController` + `onWordRange`. Spec này chỉ định nghĩa highlight cho **bề mặt Read**; overlay trên trang giữ nguyên, không sửa, không làm bản thứ hai.
-- **Ngoài phạm vi:** PDF/file reader (Step 3, làm sau, riêng); highlight trên panel dịch (panel dịch là chỗ xem bản dịch, không phải chỗ nghe-đọc theo giọng); highlight trên icon float (icon không hiện trạng thái phát nhạc — xem `SPEECH_PLAYER.md` §1).
+- **Kiến trúc highlight (Manh 2026-11-27): 1 mô hình chung + 2 cách vẽ riêng.** Highlight trong Reader RSVP và highlight overlay trên trang (bước 2, đọc nối tiếp) **dùng chung mô hình** — cùng 1 trạng thái (từ/câu/cụm/block nào đang đọc), cùng bảng màu + các lớp (đã chốt theo Speechify — xem §2), cùng luật (pause thì giữ highlight, hết unit thì gỡ). Nhưng **cách vẽ tách riêng**, vì 2 chỗ vẽ khác nhau về bản chất:
+  - Reader RSVP: chữ là của mình, tự vẽ chữ nên tô highlight trực tiếp lên chữ được — chính xác, không cần AX, không cần cửa sổ overlay.
+  - Overlay trên trang: chữ là của app khác (Safari/Chrome/Preview...), không sửa được chữ của họ nên phải vẽ 1 cửa sổ overlay trong suốt đè lên trên, vị trí lấy qua AX (rect — xem khái niệm ở §3). Rect có thể lệch/thiếu tùy app, phải ẩn khi cuộn và lấy lại rect.
+  Hệ quả: **trải nghiệm giống nhau** (cùng màu, cùng luật pause/hết — người dùng chỉ thấy highlight đi theo giọng, không phân biệt là trong Reader hay trên app khác); **trình bày nhìn giống nhau** (cùng màu, cùng lớp) nhưng **độ chính xác khác nhau** (trong Reader luôn chính xác vì chữ của mình; trên app khác phụ thuộc AX). Khi làm highlight cho trình đọc file local (bước 3) thì nối vào mô hình chung này, không viết hệ highlight mới.
+- **Ngoài phạm vi:** PDF/file reader (Step 3, làm sau, riêng — nhưng khi làm thì là 1 mặt của Reader RSVP, dùng chung mô hình highlight ở trên, không phải trình đọc khác); highlight trên panel dịch (panel dịch là chỗ xem bản dịch, không phải chỗ nghe-đọc theo giọng); highlight trên icon float (icon không hiện trạng thái phát nhạc — xem `SPEECH_PLAYER.md` §1).
 
 ## 2. Hành vi — luật highlight (CHỐT theo luật loa)
 
@@ -29,9 +35,17 @@ Hiện trạng code (đã đọc, khớp thực tế):
 Cách làm (mac):
 
 - **Dùng sẵn callback `onWordRange`**, không thêm API TTS mới: macOS cho word-range miễn phí qua `AVSpeechSynthesizer willSpeakRangeOfSpeechString` (xem `recommendation.md` §3). Mỗi lần callback bắn, component chung cập nhật (a) từ hiện tại (range của từ trong text gốc) và (b) câu hiện tại (câu chứa từ đó, tách theo cùng cách tách câu của overlay — xem `ContinuousSpeakController.sentenceRanges`).
-- **1 trạng thái chung, 2 bề mặt render:** trạng thái "từ hiện tại + câu hiện tại" sống trong `RSVPViewModel` (chủ của cả Full + Lite + Rest window), 2 view chỉ đọc trạng thái đó để vẽ highlight. Không làm 2 bộ trạng thái riêng (tránh lệch nhau khi chuyển bề mặt).
+- **1 trạng thái chung, các bề mặt render:** trạng thái "từ hiện tại + câu hiện tại" sống trong `RSVPViewModel` (chủ của cả Full + Lite + Rest window), các view chỉ đọc trạng thái đó để vẽ highlight. Không làm 2–3 bộ trạng thái riêng (tránh lệch nhau khi chuyển bề mặt).
 - **Khi provider không có word-range thì chỉ highlight theo câu/slide:** `speakContinuous` đã có fallback này — nếu provider không hỗ trợ word tracking thì không có range nào được báo, caller chỉ dịch chuyển khi utterance kết thúc (xem comment trong `TTSCoordinator.speakContinuous`). Khi đó highlight từ tắt (không có từ để highlight), chỉ highlight câu/slide hiện tại theo nhịp utterance. **Không bịa range, không ước lượng thời gian từ** — không có range thì không highlight từ.
 - **Highlight là lớp nền (background), không sửa text:** vẽ nền màu sau chữ (như overlay trên trang vẽ fill sau text), không chèn tag/sửa DOM (không có DOM để sửa — native khác extension ở điểm này), không đổi màu chữ (trừ ký tự ORP pivot cam đã có sẵn).
+
+### Khái niệm cần biết
+
+- **Rect (khung hình chữ nhật):** vị trí chính xác của 1 từ/câu/cụm trên màn hình — gồm tọa độ x, y (góc trái-trên) + chiều rộng + chiều cao. Muốn tô highlight lên 1 từ thì phải biết chính xác rect của từ đó; không biết rect thì không tô đúng chỗ được, dù biết giọng đang đọc tới từ nào.
+- **AX (Accessibility):** bộ công cụ của macOS cho phép app mình hỏi app khác "đoạn text này nằm ở khung nào trên màn hình?" — qua `AXBoundsForRange` (xem `HoverBlockText.bounds(for:in:)`). Bên Windows, công cụ tương đương là UIA (`TextPattern.GetBoundingRectangles()`). AX là cách duy nhất trên macOS để lấy khung của từ/câu/cụm trong app khác (Safari, Chrome, Preview, Word...).
+- **Speech marks / timepoints:** mốc thời gian từng từ do dịch vụ TTS cloud trả về — cho biết từ nào bắt đầu/kết thúc lúc nào trong audio. Đây là cách biết giọng đang đọc tới từ nào khi dùng giọng cloud (không có word-range trực tiếp như giọng hệ thống). Azure AI Speech gọi là "timepoints"; NaturalReader gọi là "speech marks" (audio + marks, poll mỗi 50 ms).
+- **Vì sao phải thử trên từng app:** không phải app nào cũng trả rect từ đúng. Có app trả khung từ khá chuẩn; có app chỉ trả một phần — có lúc trả khung của cả đoạn thay vì từng từ, hoặc không trả gì. Nên khi làm overlay trên trang (bước 2) phải thử thực tế trên từng app (Word/Edge/Chrome...): app nào cho rect từ chính xác thì mới vẽ highlight từ trên app đó được; app nào không cho thì rơi về chỉ tô cả đoạn.
+- **Mac khác Windows ở điểm này:** macOS cho word-range **miễn phí** qua delegate `AVSpeechSynthesizer willSpeakRangeOfSpeechString` — giọng hệ thống đang đọc tới từ nào thì biết ngay, không cần spike (xem cách làm ở trên). Windows không có tương đương (WinRT `SpeechSynthesizer` không có word-boundary callback) nên bên Windows muốn highlight theo từ thì cần spike cloud TTS trả speech marks (xem §6). Nói cách khác: trong Reader RSVP, mac lấy từ đang đọc từ delegate hệ thống; còn rect từ trên app khác (overlay) thì cả 2 nền tảng đều phải lấy qua AX/UIA và đều phải thử từng app.
 
 ## 4. Dấu phẩy — hướng sửa theo `rsvp-report.md` §6.5 (bước sau, chưa chốt số)
 
