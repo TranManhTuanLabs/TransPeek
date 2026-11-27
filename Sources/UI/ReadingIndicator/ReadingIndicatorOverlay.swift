@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Defaults
 import Foundation
 
@@ -160,6 +161,22 @@ final class ReadingIndicatorOverlay {
     /// The block being marked (the controller's copy — the overlay owns
     /// the element for its follow poll).
     private var block: HoverBlock?
+    /// The host app window containing the block (resolved once in
+    /// `show`, cached for the session — the block stays in one window
+    /// while it is read, so resolving once avoids a parent walk on
+    /// every 0.3 s poll). Its frame is re-read on every `reposition`
+    /// (the window can move), so the clip follows a dragged window.
+    /// Nil when the window could not be resolved — `reposition` then
+    /// falls back to the screen's visible frame.
+    private var hostWindow: AXUIElement?
+    /// The left strip actually in use (points): normally `leftPad` (8
+    /// when the line layer is shown, else 0), but smaller when the
+    /// block sits near the host window's left edge and there is no
+    /// room for the full strip — the strip shrinks instead of pushing
+    /// the panel outside the window. Set in `reposition`, read by
+    /// `layoutHighlightRects` for the block fill's left edge, so the
+    /// fill stays aligned with the text after the clip.
+    private var effectiveLeftPad: CGFloat = 0
     /// Sentence/word/cluster frames in AX coordinates (absolute on
     /// screen), or nil when the level is not drawn. Stored in AX
     /// coordinates and converted to window-local at draw time, so a
@@ -198,6 +215,10 @@ final class ReadingIndicatorOverlay {
     /// sentence/word/cluster.
     func show(block: HoverBlock) {
         self.block = block
+        // Resolve the host app window once for this session — the clip
+        // in `reposition` needs it, and the block stays in one window
+        // while it is read (see `hostWindow`).
+        hostWindow = HoverBlockText.windowElement(of: block.element)
         sentenceAXRect = nil
         wordAXRect = nil
         clusterAXRect = nil
@@ -245,6 +266,7 @@ final class ReadingIndicatorOverlay {
         followTimer?.invalidate()
         followTimer = nil
         block = nil
+        hostWindow = nil
         sentenceAXRect = nil
         wordAXRect = nil
         clusterAXRect = nil
@@ -275,24 +297,67 @@ final class ReadingIndicatorOverlay {
         guard let screenFrame = Self.appKitRect(fromAXRect: frame) else { return false }
         // Remember the frame just read — the follow timer compares it
         // with the previous poll's frame to tell scrolling from still
-        // (see `hideForScroll`).
+        // (see `hideForScroll`). The unclipped block frame is compared
+        // (not the clipped panel frame) — the block's movement is what
+        // means scrolling, whether or not the panel is clipped.
         currentBlockScreenFrame = screenFrame
-        // Off-screen (scrolled out of view): hide instead of marking
-        // a rectangle the user cannot see.
-        guard let mainScreen = NSScreen.screens.first,
-              screenFrame.intersects(mainScreen.frame) else { return false }
+        // Clip to the host app window's visible area (Manh 2026-11-27
+        // 20:36 — blocktext highlight overflowed outside the app
+        // window): a long block's AX frame can extend beyond the app
+        // window (a PDF paragraph taller than the visible page, text
+        // scrolled partly out of view), and the panel sized to it drew
+        // the highlight outside the window. Intersecting the panel
+        // with the visible host window frame keeps every layer inside
+        // the app the user is reading. An empty intersection means the
+        // block is not visible in the host window — hide instead of
+        // marking a rectangle the user cannot see.
+        guard let visibleHostFrame = visibleHostWindowFrame() else { return false }
+        // The line strip needs room to the left of the block; when the
+        // block sits near the host window's left edge there is less
+        // room than the full strip, so it shrinks (or vanishes) instead
+        // of pushing the panel outside the window. The block fill in
+        // `layoutHighlightRects` reads this, so it stays aligned with
+        // the text after the clip.
+        effectiveLeftPad = max(0, min(leftPad, screenFrame.minX - visibleHostFrame.minX))
         // The window extends left of the block so the line sits beside
         // the text (see leftPad); without the line layer the window is
-        // exactly the block frame.
+        // exactly the block frame. Clipped after the left pad, so the
+        // line strip is cut off too when the block sits at the window's
+        // left edge — better than drawing outside the window.
         let windowFrame = CGRect(
-            x: screenFrame.minX - leftPad,
+            x: screenFrame.minX - effectiveLeftPad,
             y: screenFrame.minY,
-            width: screenFrame.width + leftPad,
+            width: screenFrame.width + effectiveLeftPad,
             height: screenFrame.height
         )
-        panel.setFrame(windowFrame, display: true)
+        let clippedWindowFrame = windowFrame.intersection(visibleHostFrame)
+        guard !clippedWindowFrame.isNull, !clippedWindowFrame.isEmpty else { return false }
+        panel.setFrame(clippedWindowFrame, display: true)
         layoutHighlightRects()
         return true
+    }
+
+    /// The host app window's visible frame (AppKit coordinates): the
+    /// window containing the block, intersected with the screen's
+    /// visible frame (so a window dragged partly off-screen is clipped
+    /// to what the user can actually see). Falls back to the screen's
+    /// visible frame when the host window cannot be read — the
+    /// highlight then at least never leaves the visible screen.
+    /// Returns nil only when there is no screen at all, or the host
+    /// window is entirely off-screen — both mean the block is not
+    /// visible, so the caller hides the overlay. Single-screen scope,
+    /// like the rest of the overlay (`appKitRect` uses the primary
+    /// screen).
+    private func visibleHostWindowFrame() -> CGRect? {
+        guard let screen = NSScreen.screens.first else { return nil }
+        let screenVisible = screen.visibleFrame
+        guard let hostWindow,
+              let axFrame = HoverBlockText.frame(of: hostWindow),
+              let appKitFrame = Self.appKitRect(fromAXRect: axFrame) else {
+            return screenVisible
+        }
+        let clipped = appKitFrame.intersection(screenVisible)
+        return clipped.isNull || clipped.isEmpty ? nil : clipped
     }
 
     /// Convert the stored AX sentence/word/cluster frames to
@@ -303,10 +368,14 @@ final class ReadingIndicatorOverlay {
         let windowFrame = panel.frame
         // The block area in window-local coordinates: everything right
         // of the line strip (or the whole window when no line layer).
+        // The strip is `effectiveLeftPad`, not `leftPad` — when the
+        // panel was clipped at the host window's left edge the strip
+        // shrank, so the block starts at the shrunken strip, not at
+        // the full 8 pt.
         contentView.blockRect = Self.isShown(.block, in: layers) ? CGRect(
-            x: leftPad,
+            x: effectiveLeftPad,
             y: 0,
-            width: max(0, panel.frame.width - leftPad),
+            width: max(0, panel.frame.width - effectiveLeftPad),
             height: panel.frame.height
         ) : nil
         // Window-local rects for the sentence/cluster (ungated — the
@@ -445,7 +514,11 @@ final class ReadingIndicatorOverlay {
 
     /// An AX rect (absolute on screen) → window-local coordinates for
     /// drawing. Returns nil when the rect does not overlap the window
-    /// (a highlight outside the block is never drawn).
+    /// (a highlight outside the block is never drawn). The result is
+    /// clipped to the window bounds (Manh 2026-11-27 20:36): a unit
+    /// whose frame sticks out of the (clipped) panel — a sentence in a
+    /// long block, a word at the panel's edge — only draws its visible
+    /// part, never outside the panel.
     static func windowLocalRect(fromAXRect axRect: CGRect, windowFrame: CGRect) -> CGRect? {
         guard let screenRect = appKitRect(fromAXRect: axRect) else { return nil }
         let local = CGRect(
@@ -454,8 +527,10 @@ final class ReadingIndicatorOverlay {
             width: screenRect.width,
             height: screenRect.height
         )
-        guard local.intersects(CGRect(x: 0, y: 0, width: windowFrame.width, height: windowFrame.height)) else { return nil }
-        return local
+        let windowBounds = CGRect(x: 0, y: 0, width: windowFrame.width, height: windowFrame.height)
+        let clipped = local.intersection(windowBounds)
+        guard !clipped.isNull, !clipped.isEmpty else { return nil }
+        return clipped
     }
 }
 

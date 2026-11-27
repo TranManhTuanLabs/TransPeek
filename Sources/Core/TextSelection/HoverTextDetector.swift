@@ -226,6 +226,39 @@ enum HoverBlockText {
         return rect
     }
 
+    /// The window containing an AX element, or nil when it cannot be
+    /// found. Tries the element's `kAXWindowAttribute` first (the
+    /// documented shortcut: "a short cut for traversing an element's
+    /// parent hierarchy until an element of role kAXWindowRole is
+    /// found", value an AXUIElementRef of role kAXWindowRole), then
+    /// walks up the parent chain to a window role. Used by the reading
+    /// indicator to clip the highlight to the app window the user is
+    /// reading (Manh 2026-11-27 20:36 — a long block's AX frame can be
+    /// taller than the visible app window, and the overlay panel sized
+    /// to it drew the highlight outside the app window). A window is
+    /// usually only a few levels up, but the walk allows more — it runs
+    /// once per session (the overlay caches the element), not per poll.
+    static func windowElement(of element: AXUIElement) -> AXUIElement? {
+        // kAXWindowAttribute: the window containing this element.
+        var windowValue: CFTypeRef?
+        if AXUIElementCopyAttributeValue(element, kAXWindowAttribute as CFString, &windowValue) == .success,
+           let windowRef = windowValue,
+           CFGetTypeID(windowRef) == AXUIElementGetTypeID() {
+            // Safe: CFGetTypeID verified above; as?/as! cannot express CF type casts cleanly.
+            return unsafeBitCast(windowRef, to: AXUIElement.self)
+        }
+        // Fallback: walk up the parent chain to a window role.
+        var current: AXUIElement? = element
+        for _ in 0..<30 {
+            guard let el = current else { return nil }
+            if stringAttribute(el, kAXRoleAttribute as CFString) == (kAXWindowRole as String) {
+                return el
+            }
+            current = parent(of: el)
+        }
+        return nil
+    }
+
     /// Read a string attribute (value / title / description / role).
     /// Returns nil when the attribute is missing or not a string.
     private static func stringAttribute(_ element: AXUIElement, _ attribute: CFString) -> String? {

@@ -393,6 +393,20 @@ These limits are inherent to that approach, not bugs.
   that does not support it for a unit gives no frame — that layer is
   simply not drawn (no fill, and the line falls back as in §6 or is
   not drawn at all).
+- **The highlight never leaves the app window being read.** The
+  overlay panel is sized to the block's AX frame, and a long block's
+  frame can extend beyond the app window (a PDF paragraph taller than
+  the visible page, text scrolled partly out of view) — before
+  2026-11-27 the panel drew the highlight outside the app window
+  (Manh, testing build #396). Now the panel is clipped to the host
+  app window's visible frame (the window containing the block, via
+  `kAXWindowAttribute`, intersected with the screen's visible frame
+  so a window dragged partly off-screen is clipped too), and each
+  layer's rect is clipped to the panel — so a long block/cluster only
+  draws its visible part, never outside the window. The line strip
+  shrinks when the block sits at the window's left edge, instead of
+  pushing the panel outside. Single-screen scope, like the rest of
+  the overlay.
 - **The vertical line is a thin solid rectangle too.** It is the same
   drawing primitive as the fills, only 1.75 pt wide (halved from 3.5
   on 2026-11-27 — Manh found 3.5 too thick), so it reads as a line
