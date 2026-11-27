@@ -429,25 +429,11 @@ private struct HighlightColorRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Controls on the title's line, subtitle on its own line
-            // below (Manh 2026-11-27 23:58): the old code bundled the
-            // title + subtitle in a VStack inside the controls HStack,
-            // so the HStack's centre alignment made the colour well,
-            // Reset, hex and switch float in the middle of the row
-            // (between title and subtitle) instead of sitting on the
-            // title line as the spec's diagram shows. Now the controls
-            // HStack holds only one-line items, so they all sit on the
-            // title's line, and the subtitle is its own line below.
+            // below (Manh 2026-11-27 23:58).
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    // Title + "?" on one line (Manh 2026-11-27 23:56,
-                    // option b): the info button sits right after the
-                    // layer name ("Underline ?"), on the title's
-                    // line, so it reads as the label's explanation
-                    // icon — not floating in the middle of the row
-                    // next to the two-line text block. Anchoring the
-                    // popover on the row's left also gives it the
-                    // full window width to open to the right, so the
-                    // text is not cut off on the right.
+                    // "?" right after the layer name ("Underline ?",
+                    // Manh 2026-11-27 23:56, option b).
                     HStack(spacing: 4) {
                         Text(title)
                         Button {
@@ -465,13 +451,8 @@ private struct HighlightColorRow: View {
                             // Manh asked for (the line's fallback, the
                             // cluster's detection). Rows without one show the
                             // explanation alone.
-                            // Fixed width + wrapping (Manh 2026-11-27 23:56):
-                            // the old `.frame(maxWidth: 300)` let the text
-                            // measure at its ideal (unwrapped) width and get
-                            // cut off on the right. A fixed 300 width plus
-                            // `.fixedSize(horizontal: false, vertical: true)`
-                            // on the texts makes them wrap at 300 and grow
-                            // vertically, so the full description shows.
+                            // Fixed 300 width + wrapping (Manh 2026-11-27 23:56):
+                            // texts wrap at 300 so the full description shows.
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(info)
                                     .fixedSize(horizontal: false, vertical: true)
