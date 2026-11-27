@@ -385,8 +385,10 @@ struct TTSSettingsView: View {
 /// after. Its label follows the state — "Show" while the layer is on,
 /// "Hide" while it is off (Manh 2026-11-27 16:24) — and it sits in a
 /// tight group with the hex value immediately left of the switch
-/// ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), so the hex +
-/// label + switch read as one control, separate from the ColorPicker.
+/// ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), pushed to the
+/// row's right edge by a Spacer (Manh 2026-11-27 21:31), so the hex +
+/// label + switch read as one control, separate from the ColorPicker
+/// + Reset on the left.
 /// A small info button ("i", `info.circle`) after the row's text
 /// opens a popover explaining how this layer works and how it is
 /// detected (Manh 2026-11-27 16:21). The Vertical line row also
@@ -453,13 +455,27 @@ private struct HighlightColorRow: View {
                     .padding()
                     .frame(maxWidth: 300)
                 }
+                // Colour well + Reset stay on the left/centre of the
+                // row (Manh 2026-11-27 21:31): they used to sit after
+                // the hex/Show group, which pushed that group into
+                // the middle of the row — the hex + Show/Hide label
+                // must sit at the row's right edge, immediately left
+                // of the switch, so the well + Reset move here.
+                ColorPicker("", selection: colorBinding, supportsOpacity: false)
+                    .labelsHidden()
+                Button("Reset") { hex = defaultHex }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
                 Spacer()
-                // Hex + Show/Hide + switch as one tight group (Manh
-                // 2026-11-27 16:26): the hex value and the dynamic
-                // Show/Hide label sit immediately left of the switch,
-                // close together, so they read as one control — not
-                // as loose items next to the ColorPicker. Order left
-                // to right: [hex] [Show/Hide] [switch].
+                // Hex + Show/Hide + switch as one tight group at the
+                // row's right edge (Manh 2026-11-27 16:26, moved to
+                // the edge 2026-11-27 21:31): the hex value and the
+                // dynamic Show/Hide label sit immediately left of the
+                // switch, close together, so they read as one control
+                // — not as loose items next to the ColorPicker. The
+                // Spacer before this group pushes it to the row's
+                // right edge. Order left to right: [hex] [Show/Hide]
+                // [switch].
                 HStack(spacing: 6) {
                     Text(hex.uppercased())
                         .monospaced()
@@ -471,11 +487,6 @@ private struct HighlightColorRow: View {
                     Toggle(shown ? "Show" : "Hide", isOn: $shown)
                         .help("Show this highlight layer while listening")
                 }
-                ColorPicker("", selection: colorBinding, supportsOpacity: false)
-                    .labelsHidden()
-                Button("Reset") { hex = defaultHex }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
             }
             // Preset swatches: tap one to set this layer's color at
             // once. The current color gets a strong ring so the user

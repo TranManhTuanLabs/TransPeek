@@ -29,28 +29,28 @@ Paragraph, Block) — the narrow marks first, the broad fills last.
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline [i]              #5666F0 Show [x]  [swatch]  Reset     │
+│ Underline [i]  [swatch]  Reset                 #5666F0 Show [x]  │
 │ Underline under the word + sentence being read                   │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                   │
 │                                                                  │
-│ Vertical line [i]          #8CBFFF Hide [ ]  [swatch]  Reset     │
+│ Vertical line [i]  [swatch]  Reset             #8CBFFF Hide [ ]  │
 │ Solid bar at the block's left edge                               │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │ Line follows: [ Sentence | Paragraph | Block ]                   │
 │                                                                  │
-│ Word [i]                     #5666F0 Show [x]  [swatch]  Reset   │
+│ Word [i]  [swatch]  Reset                      #5666F0 Show [x]  │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence [i]                 #ABB3FE Hide [ ]  [swatch]  Reset   │
+│ Sentence [i]  [swatch]  Reset                  #ABB3FE Hide [ ]  │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Paragraph [i]                #FFC2D1 Hide [ ]  [swatch]  Reset   │
+│ Paragraph [i]  [swatch]  Reset                 #FFC2D1 Hide [ ]  │
 │ Highlight for the paragraph (cluster) being read                 │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Block [i]                    #BFF2B3 Hide [ ]  [swatch]  Reset   │
+│ Block [i]  [swatch]  Reset                     #BFF2B3 Hide [ ]  │
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -112,22 +112,25 @@ Each row, left to right:
     available when a block is detected." (see §3).
   The button sits between the text and the hex/Show/picker/Reset
   controls, so it does not move any of them.
-- **Hex** — the current color as `#RRGGBB` (monospaced, secondary
-  colour). Display-only: it shows the exact value for users who want
-  it, it is not an input field. It sits in a tight group with the
-  Show/Hide label and the switch immediately left of the switch
-  ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), so the three
-  read as one control, separate from the colour well.
-- **Show/Hide switch** — a native `Toggle` next to the colour well.
-  Its label follows the state (Manh 2026-11-27 16:24): "Show" while
-  the layer is on, "Hide" while it is off, so it always says whether
-  the layer is shown or hidden. It hides/shows this layer (see §5).
-  The colour stays editable while the layer is hidden, so the user
-  can set it first and show it after.
 - **Colour well** — the native macOS colour picker (`ColorPicker`,
   `supportsOpacity: false`). Clicking it opens the system colour panel
   (colour wheel, sliders, palettes, eyedropper).
 - **Reset** — restores that one layer to its default colour.
+- **Hex** — the current color as `#RRGGBB` (monospaced, secondary
+  colour). Display-only: it shows the exact value for users who want
+  it, it is not an input field. It sits in a tight group with the
+  Show/Hide label and the switch immediately left of the switch
+  ([hex] [Show/Hide] [switch], Manh 2026-11-27 16:26), pushed to the
+  row's right edge by a Spacer (Manh 2026-11-27 21:31), so the three
+  read as one control, separate from the colour well + Reset on the
+  left.
+- **Show/Hide switch** — a native `Toggle` at the row's right edge,
+  in the tight [hex] [Show/Hide] [switch] group. Its label follows
+  the state (Manh 2026-11-27 16:24): "Show" while the layer is on,
+  "Hide" while it is off, so it always says whether the layer is
+  shown or hidden. It hides/shows this layer (see §5). The colour
+  stays editable while the layer is hidden, so the user can set it
+  first and show it after.
 
 Under each row, **6 preset swatches** (22 pt circles): tap one
 to set that layer's colour at once. The current colour gets a strong
@@ -145,7 +148,7 @@ toggle below — that is a behaviour preference, not a layer default).
 
 | Layer | What it marks | Default | Opacity | Shown by default (main) |
 |---|---|---|---|---|
-| Underline | 2.5 pt solid bar under the word + sentence being read | `#5666F0` (indigo, same as the word) | 1.0 (solid) | Yes |
+| Underline | 1.5 pt solid bar under the word + sentence being read | `#5666F0` (indigo, same as the word) | 1.0 (solid) | Yes |
 | Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
 | Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
@@ -230,7 +233,7 @@ are solid, so they read on top.
   the text. The line still tracks its unit when that unit's fill is
   hidden — hiding the sentence fill does not make a
   sentence-following line jump back to the block.
-- **The underline is a thin solid bar (2.5 pt) under the word +
+- **The underline is a thin solid bar (1.5 pt) under the word +
   sentence being read, in its own colour.** It is its own layer: it
   has a colour row in Settings like the other five, with its own Show
   switch, and "Reset all to default" restores it like them. It draws
@@ -412,7 +415,7 @@ These limits are inherent to that approach, not bugs.
   on 2026-11-27 — Manh found 3.5 too thick), so it reads as a line
   rather than a frame. The 8 pt strip it lives in is unchanged.
 - **The underline avoids the rectangle entirely.** It is a thin solid
-  bar (2.5 pt) under the word + sentence, not a box around them, so
+  bar (1.5 pt) under the word + sentence, not a box around them, so
   it has no border edge — that is why it reads better than the fills
   (Manh 2026-11-27 15:57), and why it is a proper layer with its own
   colour and Show/Hide switch, default on. It is still a rectangle in
@@ -444,7 +447,7 @@ These limits are inherent to that approach, not bugs.
   sentence → cluster, and drawing no line when none has a frame —
   the block is only a chosen unit, never a fallback). The underline
   rects are computed in `layoutHighlightRects` too
-  (`underlineRect`, a 2.5 pt bar at the bottom of the word/sentence
+  (`underlineRect`, a 1.5 pt bar at the bottom of the word/sentence
   frames, from the ungated AX frames) and drawn in
   `ReadingIndicatorView.draw` with the underline's own solid colour,
   gated only on `isShown(.underline, in:)` — so the underline shows

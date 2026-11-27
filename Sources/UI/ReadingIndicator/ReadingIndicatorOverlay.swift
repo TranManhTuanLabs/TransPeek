@@ -127,7 +127,7 @@ final class ReadingIndicatorOverlay {
     }
     /// The underline's own color, solid (Manh 2026-11-27 15:57): the
     /// underline is its own layer now, so it no longer borrows the
-    /// word/sentence colors — a translucent 2.5 pt bar would be too
+    /// word/sentence colors — a translucent 1.5 pt bar would be too
     /// faint to read as a line, so it uses its own color solid, like
     /// the vertical line.
     fileprivate static var underlineFill: NSColor {
@@ -135,7 +135,11 @@ final class ReadingIndicatorOverlay {
     }
     /// Thickness of the underline bar (points). Same idea as the
     /// vertical line: a thin solid bar reads as a line, not a box.
-    fileprivate static let underlineThickness: CGFloat = 2.5
+    /// Thinned from 2.5 to 1.5 on 2026-11-27 — Manh found the 2.5 pt
+    /// bar too thick and ugly on the #399 build; 1.5 pt is clearly
+    /// thinner, a standard underline weight, and in the same family
+    /// as the 1.75 pt vertical line.
+    fileprivate static let underlineThickness: CGFloat = 1.5
     /// Width of the vertical line (points). Halved from 3.5 to 1.75 on
     /// 2026-11-27 — Manh found the 3.5 pt bar too thick; the 8 pt strip
     /// it lives in is unchanged, only the bar itself got thinner.
@@ -577,7 +581,7 @@ private final class ReadingIndicatorView: NSView {
     var clusterRect: CGRect?
     /// The underline rects under the word/sentence (set by
     /// `layoutHighlightRects` from the ungated AX frames — their
-    /// bottom edges, 2.5 pt tall). Nil means no underline this poll
+    /// bottom edges, 1.5 pt tall). Nil means no underline this poll
     /// (no frame for that unit). Drawn only when the underline layer
     /// is shown; independent of the fill toggles.
     var wordUnderlineRect: CGRect?
