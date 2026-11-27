@@ -930,31 +930,39 @@ extension Defaults.Keys {
     static let ttsAutoPlayTargetProvider = Key<String>("tts_autoPlayTargetProvider", default: "first")
     static let ttsLanguageRates = Key<[String: Double]>("tts_languageRates", default: [:])
 
-    // Reading indicator highlight colors (Manh 2026-11-27): the 5
+    // Reading indicator highlight colors (Manh 2026-11-27): the 6
     // layers' colors are user-customizable in Settings (Audio tab →
     // Highlight colors) and stored as "#RRGGBB" hex strings. The overlay
     // reads them live at draw time, so a change applies at once — no
-    // restart. Opacity stays fixed in code (fills 0.30, line solid 1.0)
-    // — the picker never edits it. Defaults are the current pastel
-    // colors (see HighlightColors).
+    // restart. Opacity stays fixed in code (fills 0.30, line + underline
+    // solid 1.0) — the picker never edits it. Defaults are the current
+    // palette colors (see HighlightColors).
     static let highlightLineHex = Key<String>("transpeek_highlightLineHex", default: HighlightColors.lineDefaultHex)
     static let highlightBlockHex = Key<String>("transpeek_highlightBlockHex", default: HighlightColors.blockDefaultHex)
     static let highlightSentenceHex = Key<String>("transpeek_highlightSentenceHex", default: HighlightColors.sentenceDefaultHex)
     static let highlightWordHex = Key<String>("transpeek_highlightWordHex", default: HighlightColors.wordDefaultHex)
     static let highlightClusterHex = Key<String>("transpeek_highlightClusterHex", default: HighlightColors.clusterDefaultHex)
+    static let highlightUnderlineHex = Key<String>("transpeek_highlightUnderlineHex", default: HighlightColors.underlineDefaultHex)
 
     // Reading indicator layer visibility (Manh 2026-11-27): each layer
     // has its own Show toggle in Settings (Audio tab → Highlight
     // colors, one switch per color row). The overlay reads them live
     // at draw time, so toggling applies at once — no restart. Main
-    // defaults (Manh 2026-11-27 03:03): ONLY the word on — sentence +
-    // cluster off, line + block off — so a first launch shows just
-    // the word highlight until the user turns more layers on.
+    // defaults (Manh 2026-11-27 03:03, underline 2026-11-27 15:57):
+    // ONLY the word + the underline on — sentence + cluster off, line
+    // + block off — so a first launch shows just the word highlight
+    // and its underline until the user turns more layers on.
     static let highlightLineShown = Key<Bool>("transpeek_highlightLineShown", default: false)
     static let highlightBlockShown = Key<Bool>("transpeek_highlightBlockShown", default: false)
     static let highlightSentenceShown = Key<Bool>("transpeek_highlightSentenceShown", default: false)
     static let highlightWordShown = Key<Bool>("transpeek_highlightWordShown", default: true)
     static let highlightClusterShown = Key<Bool>("transpeek_highlightClusterShown", default: false)
+    // Underline under the word + sentence being read (Manh 2026-11-27
+    // 15:57): a proper layer now, not a trial toggle — it has its own
+    // color row like the other five. Default ON: Manh found the
+    // underline reads better than the rectangle fills, whose hard
+    // edges look like a border.
+    static let highlightUnderlineShown = Key<Bool>("transpeek_highlightUnderlineShown", default: true)
 
     // Which unit the vertical line follows (Manh 2026-11-27): the line
     // can mark the sentence being read, the paragraph (cluster) around

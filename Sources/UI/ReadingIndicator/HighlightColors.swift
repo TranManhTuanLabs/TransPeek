@@ -3,12 +3,13 @@ import Foundation
 
 // MARK: - HighlightColors
 
-/// Reading indicator highlight colors (Manh 2026-11-27): the 5 layers'
+/// Reading indicator highlight colors (Manh 2026-11-27): the 6 layers'
 /// colors are user-customizable in Settings (Audio tab → Highlight
 /// colors) and stored as "#RRGGBB" hex strings in Defaults. The overlay
 /// reads them live at draw time, so a change applies at once — no
-/// restart. Opacity stays fixed in code (fills 0.30, line solid 1.0) —
-/// the picker never edits it, so a color can never hide the text.
+/// restart. Opacity stays fixed in code (fills 0.30, line + underline
+/// solid 1.0) — the picker never edits it, so a color can never hide
+/// the text.
 enum HighlightColors {
     /// Default colors — also the "Reset" targets in Settings. Block,
     /// cluster and line keep the pastel palette from the trial (Manh
@@ -32,17 +33,24 @@ enum HighlightColors {
     static let sentenceDefaultHex = "#ABB3FE" // tím nhạt (Speechify highlight30)
     static let wordDefaultHex = "#5666F0" // chàm (Speechify highlight50)
     static let clusterDefaultHex = "#FFC2D1" // hồng nhạt
+    /// Underline default (Manh 2026-11-27): the same indigo as the
+    /// word — the underline marks the word + sentence being read, so
+    /// it shares the word's colour. Parent's choice (Manh did not
+    /// pick a colour); change it in Settings if another colour reads
+    /// better. Solid 1.0 at draw time, like the vertical line.
+    static let underlineDefaultHex = "#5666F0" // chàm (như màu từ)
     /// Fixed opacity for the fills (translucent so the text underneath
-    /// stays readable) and the line (solid so it reads as a marker,
-    /// not a tint).
+    /// stays readable) and the line + underline (solid so they read as
+    /// markers, not tints).
     static let fillAlpha: CGFloat = 0.30
     static let lineAlpha: CGFloat = 1.0
     /// Preset swatches shown under each layer in Settings — one shared
     /// palette, any layer can use any color. Tapping a swatch sets that
-    /// layer's color at once. The palette holds the 5 layer defaults
-    /// plus light orange; the word and sentence swatches are
-    /// Speechify's colors (Manh 2026-11-27 03:41), the rest are the
-    /// trial pastels.
+    /// layer's color at once. The palette holds the layer defaults
+    /// (the underline shares the word's indigo, so 6 swatches still
+    /// cover all 6 layers) plus light orange; the word and sentence
+    /// swatches are Speechify's colors (Manh 2026-11-27 03:41), the
+    /// rest are the trial pastels.
     static let pastelPresets: [String] = [
         "#8CBFFF", // light blue
         "#BFF2B3", // light green
