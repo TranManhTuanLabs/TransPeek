@@ -97,11 +97,12 @@ Each row, left to right:
     current sentence. How it works: the cluster is the paragraph
     containing the sentence being read. A paragraph is detected by a
     blank line, a single line break after a sentence ending in '.',
-    '!' or '?', or an indented line. A single line break after a
-    sentence with no end mark is only a wrapped line, not a new
-    paragraph. If the block has no paragraph break, the cluster is
-    not shown — use the block's Show toggle to highlight the whole
-    block."
+    '!' or '?', or an indented line. An indented line starts with a
+    tab or 2+ spaces (after a line break, even a single leading space
+    counts). A single line break after a sentence with no end mark is
+    only a wrapped line, not a new paragraph. If the block has no
+    paragraph break, the cluster is not shown — use the block's Show
+    toggle to highlight the whole block."
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected."
   - Hide highlights while scrolling: "Hides the highlights while the
@@ -189,24 +190,32 @@ each other, and the two solid bars sit on top.
 **What a "cluster" is.** A cluster is one paragraph inside the block:
 a run of sentences up to the next paragraph boundary. A boundary is a
 blank line (Enter / an empty line), a single line break after a
-sentence that ends with `.`/`!`/`?`, or an indented next sentence
-(spaces/tab at the start of its line) — books and PDFs usually break
-paragraphs with one of the last two, not a blank line. A single line
-break after a sentence with NO terminator is only a wrapped line, not
-a new paragraph (the sentence splitter already ends a sentence at a
-newline, so a wrapped sentence arrives as a fragment). A block with
-no boundary at all has NO cluster — the common case for short
-paragraphs: a cluster only marks a PART of a block, and a
-single-paragraph block is the whole block (the block layer's job —
-turn its Show on to mark the whole block). A long block (several
-paragraphs) has one cluster per paragraph, and the highlight follows
-the cluster around the sentence being read. (Note: the terminator
-condition on a single line break — it only splits after a sentence
-ending in `.`/`!`/`?` — was added by the implementer to stop a
-visually wrapped PDF paragraph splitting into one cluster per line.
+sentence that ends with `.`/`!`/`?`, or an indented next sentence —
+a tab or 2+ spaces at the start of its line (after a line break, even
+a single leading space counts; a plain new line starts at column 0,
+so any leading whitespace after a break is an indent) — books and
+PDFs usually break paragraphs with one of the last two, not a blank
+line. A single line break after a sentence with NO terminator is only
+a wrapped line, not a new paragraph (the sentence splitter already
+ends a sentence at a newline, so a wrapped sentence arrives as a
+fragment). A block with no boundary at all has NO cluster — the
+common case for short paragraphs: a cluster only marks a PART of a
+block, and a single-paragraph block is the whole block (the block
+layer's job — turn its Show on to mark the whole block). A long block
+(several paragraphs) has one cluster per paragraph, and the highlight
+follows the cluster around the sentence being read. (Note: the
+terminator condition on a single line break — it only splits after a
+sentence ending in `.`/`!`/`?` — was added by the implementer to stop
+a visually wrapped PDF paragraph splitting into one cluster per line.
 Manh has not yet confirmed whether to keep it or to split on any
 single line break; the popover and this section describe the code as
-it is now, and will be updated if he changes the rule.)
+it is now, and will be updated if he changes the rule.) Verified by
+simulation of the branch code (2026-11-27, 12 cases): blank line
+splits; single newline after `.`/`?`/`!` splits; single newline after
+a sentence with no end mark does not split; tab or 2+ spaces split;
+a single space without a break does not split; a single space after
+a line break splits; CRLF counts as one break; a single-range block
+has no cluster.
 
 ## 4. Behaviour
 

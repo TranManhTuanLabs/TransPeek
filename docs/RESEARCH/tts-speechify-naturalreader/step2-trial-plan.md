@@ -306,12 +306,20 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     (thường chỉ xuống dòng 1 lần hoặc thụt đầu dòng, không có dòng
     trống). Nay ranh giới đoạn là khi khoảng trắng giữa 2 câu chứa
     dòng trống, HOẶC 1 lần xuống dòng sau câu kết thúc bằng `.`/`!`/`?`,
-    HOẶC câu tiếp theo thụt đầu dòng (khoảng trắng/tab ở đầu câu).
+    HOẶC câu tiếp theo thụt đầu dòng (tab, hoặc 2+ khoảng trắng ở đầu
+    câu; sau 1 lần xuống dòng thì ngay cả 1 khoảng trắng ở đầu câu
+    cũng tính là thụt — 1 khoảng trắng duy nhất không kèm xuống dòng
+    thì KHÔNG tính).
     Riêng 1 lần xuống dòng sau câu KHÔNG có dấu kết câu chỉ là dòng
     gói (wrapped line) — không tách, để không cắt 1 đoạn thành 1 cụm
     cho mỗi dòng hiển thị trong PDF (bộ tách câu vốn đã ngắt câu ở ký
     tự xuống dòng nên câu gói đến dưới dạng mảnh câu). CRLF tính là 1
-    lần ngắt. Triển khai: `paragraphRanges` nay nhóm câu thành cụm
+    lần ngắt. Đã kiểm chứng bằng mô phỏng code nhánh (2026-11-27, 12
+    mẫu): dòng trống tách; 1 lần xuống dòng sau `.`/`?`/`!` tách; 1 lần
+    xuống dòng sau câu không có dấu kết câu không tách; tab hoặc 2+
+    khoảng trắng tách; 1 khoảng trắng không kèm xuống dòng không tách;
+    1 khoảng trắng sau xuống dòng tách; CRLF tính là 1 lần ngắt; block
+    1 đoạn thì không có cụm. Triển khai: `paragraphRanges` nay nhóm câu thành cụm
     (nhận thêm `sentences`), thay cho cách gom dòng cũ; giữ nguyên
     sửa fallback (block chỉ có 1 đoạn → không vẽ fill cụm).
   - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
