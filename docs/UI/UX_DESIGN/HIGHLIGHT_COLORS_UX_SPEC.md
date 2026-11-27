@@ -103,7 +103,7 @@ toggle below — that is a behaviour preference, not a layer default).
 | Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
 | Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
-| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them | `#FFC2D1` (light pink) | 0.30 | No |
+| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no blank line between them. A block with no blank line has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
 
 The defaults are `#RRGGBB` hex. Block, paragraph and line keep the
@@ -157,11 +157,14 @@ are solid, so they read on top.
   the block's text into paragraphs at blank lines (2+ line breaks
   between sentences); the cluster fill covers the paragraph holding
   the current sentence and moves with the voice. A block with no
-  blank line is a single paragraph, so the cluster then covers the
-  whole block. When the app does not expose the paragraph's bounds
-  (`AXBoundsForRange` unsupported), the cluster fill is simply not
-  drawn — the other layers keep showing. The cluster fill is read
-  live from Defaults like the other fills (colour + Show toggle).
+  blank line has NO cluster fill — its single paragraph IS the whole
+  block, so there is no cluster to highlight (turn on the block layer
+  to mark the whole block; drawing the cluster over it would just
+  double the fill — Manh 2026-11-27 16:09). When the app does not
+  expose the paragraph's bounds (`AXBoundsForRange` unsupported), the
+  cluster fill is simply not drawn — the other layers keep showing.
+  The cluster fill is read live from Defaults like the other fills
+  (colour + Show toggle).
 - **The line follows its picked unit (§6).** Its length is the picked
   unit's vertical span in the 8 pt strip; it moves with the voice
   when the unit is the sentence or the paragraph. When the picked

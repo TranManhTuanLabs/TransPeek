@@ -278,14 +278,23 @@ final class ContinuousSpeakController {
         }
         // The paragraph (cluster) around this sentence: same caching
         // as the sentence — re-read only when the paragraph changes.
-        // A block with no blank line is a single paragraph, so the
-        // cluster then covers the whole block.
+        // A block with no blank line has no cluster (its single
+        // paragraph IS the whole block — the block layer's job, not
+        // the cluster's — Manh 2026-11-27 16:09), so
+        // `paragraph(containing:in:)` returns nil and the cached
+        // frame is cleared: a stale frame from the previous block
+        // must never be drawn.
         var paragraphFrame = currentParagraphFrame
-        if let paragraphRange = Self.paragraph(containing: sentenceRange.location, in: paragraphRanges),
-           paragraphRange != currentParagraphRange {
-            currentParagraphRange = paragraphRange
-            paragraphFrame = HoverBlockText.bounds(for: paragraphRange, in: block.element)
-            currentParagraphFrame = paragraphFrame
+        if let paragraphRange = Self.paragraph(containing: sentenceRange.location, in: paragraphRanges) {
+            if paragraphRange != currentParagraphRange {
+                currentParagraphRange = paragraphRange
+                paragraphFrame = HoverBlockText.bounds(for: paragraphRange, in: block.element)
+                currentParagraphFrame = paragraphFrame
+            }
+        } else {
+            currentParagraphRange = nil
+            currentParagraphFrame = nil
+            paragraphFrame = nil
         }
         let wordFrame = HoverBlockText.bounds(for: wordRange, in: block.element)
         overlay.update(wordFrame: wordFrame, sentenceFrame: sentenceFrame, clusterFrame: paragraphFrame)
@@ -397,9 +406,12 @@ final class ContinuousSpeakController {
     /// inside the paragraph). Derived from the sentence ranges — the
     /// splitter already ends a sentence at every newline, so every
     /// paragraph boundary is also a sentence boundary. A block with no
-    /// blank line is a single paragraph covering the whole text. A
-    /// CRLF pair counts as ONE line break, so Windows-style endings
-    /// never split a paragraph by accident.
+    /// blank line is a single paragraph covering the whole text — and
+    /// `paragraph(containing:in:)` returns nil for that case, so no
+    /// cluster fill is drawn (the cluster only marks a PART of a
+    /// block; the whole block is the block layer's job — Manh
+    /// 2026-11-27 16:09). A CRLF pair counts as ONE line break, so
+    /// Windows-style endings never split a paragraph by accident.
     static func paragraphRanges(for text: String, sentences: [NSRange]) -> [NSRange] {
         guard !sentences.isEmpty else { return [] }
         let nsText = text as NSString
@@ -437,7 +449,18 @@ final class ContinuousSpeakController {
     /// when the offset falls in the whitespace between paragraphs —
     /// same fallback as `sentence(containing:in:)`, so the overlay
     /// always has a paragraph to show while a word is being spoken.
+    /// Except when the block has only ONE paragraph (no blank line):
+    /// that single paragraph IS the whole block, so there is no
+    /// cluster to highlight — the block already has its own Show
+    /// toggle, and drawing the cluster over the whole block would
+    /// just double the fill (Manh 2026-11-27 16:09). Returns nil
+    /// then; the caller clears its cached frame and the overlay
+    /// draws no cluster fill.
     static func paragraph(containing offset: Int, in ranges: [NSRange]) -> NSRange? {
+        // A single paragraph means no blank line splits the block —
+        // the "cluster" would be the whole block, which is the
+        // block layer's job, not the cluster's.
+        guard ranges.count > 1 else { return nil }
         for range in ranges where NSLocationInRange(offset, range) {
             return range
         }
