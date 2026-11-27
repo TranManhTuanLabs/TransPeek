@@ -193,6 +193,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Underline",
                     subtitle: "Solid bar under the word + sentence being read",
+                    infoText: "A thin line under the word and sentence being read, in the underline color. It shows even when the fills are off, so you can use it instead of the fills. No rectangle, so no hard edge.",
                     hex: $highlightUnderlineHex,
                     isShown: $highlightUnderlineShown,
                     defaultHex: HighlightColors.underlineDefaultHex
@@ -200,6 +201,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Vertical line",
                     subtitle: "Solid bar beside the text — its height follows the unit below",
+                    infoText: "A thin vertical bar left of the block, as tall as the unit it follows (see 'Line follows': sentence / paragraph / block). It helps the eye find the unit being read at a glance.",
                     hex: $highlightLineHex,
                     isShown: $highlightLineShown,
                     defaultHex: HighlightColors.lineDefaultHex,
@@ -208,6 +210,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Word",
                     subtitle: "Highlight for the word being spoken",
+                    infoText: "Highlights the word being spoken. It needs the app to provide the word's position (AXBoundsForRange); if the app does not provide it, the word highlight is skipped.",
                     hex: $highlightWordHex,
                     isShown: $highlightWordShown,
                     defaultHex: HighlightColors.wordDefaultHex
@@ -215,6 +218,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Sentence",
                     subtitle: "Highlight for the sentence being read",
+                    infoText: "Highlights the sentence containing the word being spoken. It needs the app to provide the sentence's position; if the app does not provide it, the sentence highlight is skipped.",
                     hex: $highlightSentenceHex,
                     isShown: $highlightSentenceShown,
                     defaultHex: HighlightColors.sentenceDefaultHex
@@ -222,6 +226,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Cluster",
                     subtitle: "Highlight for the paragraph (group of sentences) being read",
+                    infoText: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
                     hex: $highlightClusterHex,
                     isShown: $highlightClusterShown,
                     defaultHex: HighlightColors.clusterDefaultHex
@@ -229,6 +234,7 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Block",
                     subtitle: "Highlight for the whole block being read",
+                    infoText: "Highlights the whole text block being read. It is always available when a block is detected.",
                     hex: $highlightBlockHex,
                     isShown: $highlightBlockShown,
                     defaultHex: HighlightColors.blockDefaultHex
@@ -343,10 +349,16 @@ struct TTSSettingsView: View {
 /// code (fills 0.30, line + underline solid 1.0), so a color can never
 /// hide the text. The hex is display-only (shown for users who want
 /// the exact value); the color is picked with the swatch or the system
-/// color panel.
+/// color panel. A small info button ("i", Manh 2026-11-27) after the
+/// name + subtitle opens a popover explaining how that layer works
+/// and how it is detected — each row has its own text (`infoText`).
 private struct HighlightColorRow: View {
     let title: String
     let subtitle: String
+    /// Popover text for this layer: how it works + how it is detected
+    /// (2–3 sentences, English like the UX doc). Shown by the info
+    /// button after the name + subtitle.
+    let infoText: String
     @Binding var hex: String
     @Binding var isShown: Bool
     let defaultHex: String
@@ -356,6 +368,10 @@ private struct HighlightColorRow: View {
     /// provided; other rows leave it nil.
     var lineFollows: Binding<String>? = nil
 
+    /// Whether this row's info popover is open. Per-row state, so only
+    /// the tapped row's popover opens.
+    @State private var showingInfo = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
@@ -364,6 +380,24 @@ private struct HighlightColorRow: View {
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                // Info button (Manh 2026-11-27): a small native "i"
+                // that explains this layer in a popover — how it works
+                // and how it is detected. Plain style + secondary
+                // colour so it reads as a hint, not an action; it sits
+                // right after the name + subtitle, so the hex, Show
+                // toggle, ColorPicker and Reset keep their places.
+                Button {
+                    showingInfo.toggle()
+                } label: {
+                    Image(systemName: "info.circle")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .popover(isPresented: $showingInfo) {
+                    Text(infoText)
+                        .frame(width: 280, alignment: .leading)
+                        .padding()
                 }
                 Spacer()
                 Text(hex.uppercased())

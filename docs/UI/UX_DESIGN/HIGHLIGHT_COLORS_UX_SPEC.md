@@ -25,28 +25,28 @@ large (Word, Sentence, Cluster, Block).
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline                      #5666F0  Show [on] [swatch] Reset│
+│ Underline [i]                  #5666F0  Show [on] [swatch] Reset│
 │ Solid bar under the word + sentence being read                   │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │                                                                  │
-│ Vertical line                    #8CBFFF  Show [on] [swatch] Reset│
+│ Vertical line [i]                #8CBFFF  Show [on] [swatch] Reset│
 │ Solid bar beside the text — its height follows the unit below    │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │ Line follows: [Sentence | Paragraph | Block]  <- segmented       │
 │                                                                  │
-│ Word                           #5666F0  Show [on] [swatch] Reset│
+│ Word [i]                       #5666F0  Show [on] [swatch] Reset│
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence                       #ABB3FE  Show [on] [swatch] Reset│
+│ Sentence [i]                   #ABB3FE  Show [on] [swatch] Reset│
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Cluster                        #FFC2D1  Show [on] [swatch] Reset│
+│ Cluster [i]                    #FFC2D1  Show [on] [swatch] Reset│
 │ Highlight for the paragraph (group of sentences) being read      │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Block                          #BFF2B3  Show [off] [swatch] Reset│
+│ Block [i]                      #BFF2B3  Show [off] [swatch] Reset│
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -68,6 +68,33 @@ Each row, left to right:
 - **Name + subtitle** — the layer name ("Underline", "Vertical line",
   "Word", "Sentence", "Cluster", "Block") and one line saying what it
   marks.
+- **Info button** — a small native "i" (`info.circle`, Manh
+  2026-11-27) right after the name + subtitle. Tapping it opens a
+  popover (native SwiftUI `.popover`) with 2–3 sentences explaining
+  how that layer works and how it is detected. The popover texts
+  (English, same as the behaviour in §4):
+  - Underline: "A thin line under the word and sentence being read,
+    in the underline color. It shows even when the fills are off, so
+    you can use it instead of the fills. No rectangle, so no hard
+    edge."
+  - Vertical line: "A thin vertical bar left of the block, as tall as
+    the unit it follows (see 'Line follows': sentence / paragraph /
+    block). It helps the eye find the unit being read at a glance."
+  - Word: "Highlights the word being spoken. It needs the app to
+    provide the word's position (AXBoundsForRange); if the app does
+    not provide it, the word highlight is skipped."
+  - Sentence: "Highlights the sentence containing the word being
+    spoken. It needs the app to provide the sentence's position; if
+    the app does not provide it, the sentence highlight is skipped."
+  - Cluster (Paragraph): "Highlights the paragraph containing the
+    current sentence. A paragraph is detected by a blank line, a
+    single line break, or an indented line. If the block has no
+    paragraph break, the cluster is not shown — the block has its own
+    Show toggle."
+  - Block: "Highlights the whole text block being read. It is always
+    available when a block is detected."
+  Only the six layer rows have the button — not the behaviour toggle
+  ("Hide highlights while scrolling") or "Reset all to default".
 - **Hex** — the current color as `#RRGGBB` (monospaced, secondary
   colour). Display-only: it shows the exact value for users who want
   it, it is not an input field.
@@ -354,7 +381,10 @@ the cluster around the sentence being read.
   restoring the branch defaults (6 colours, 6 toggles with block off,
   line follows Paragraph — the scroll toggle is a preference and is
   not reset). Row order: Underline, Vertical line, Word, Sentence,
-  Cluster, Block.
+  Cluster, Block. Each row also has a small info button ("i",
+  `info.circle`) after its name + subtitle that opens a native
+  popover explaining how that layer works and how it is detected
+  (texts in §2).
 
 ## 7. Technical limitations
 
