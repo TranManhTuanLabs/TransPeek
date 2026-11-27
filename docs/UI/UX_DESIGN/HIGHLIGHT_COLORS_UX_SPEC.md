@@ -104,9 +104,10 @@ Each row, left to right:
     the cluster is not shown — the block has its own Show toggle."
     Its popover adds a "How it works" section: the cluster is the
     paragraph containing the sentence being read (blank line, single
-    line break, or indented line); a block with no paragraph break
-    has no cluster fill — use the block's Show toggle to highlight
-    the whole block. (see §4).
+    line break, or indented line — an indented line means a tab or 2+
+    spaces at the start of the next sentence; a single space does not
+    count); a block with no paragraph break has no cluster fill — use
+    the block's Show toggle to highlight the whole block. (see §4).
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected." (see §3).
   The button sits between the text and the hex/Show/picker/Reset
@@ -213,7 +214,12 @@ are solid, so they read on top.
   expose the paragraph's bounds (`AXBoundsForRange` unsupported), the
   cluster fill is simply not drawn — the other layers keep showing.
   The cluster fill is read live from Defaults like the other fills
-  (colour + Show toggle).
+  (colour + Show toggle). The split rule was verified with a 9-case
+  simulation: blank line splits, a single line break splits, a tab
+  indent splits, a single space does not split, a CRLF counts as one
+  break; a CRLF blank line splits, 3 mixed paragraphs split into 3,
+  and a block with only a single space stays 1 paragraph, so it has
+  no cluster fill.
 - **The line follows its picked unit (§6).** Its length is the picked
   unit's vertical span in the 8 pt strip; it moves with the voice
   when the unit is the sentence or the paragraph. When the picked
