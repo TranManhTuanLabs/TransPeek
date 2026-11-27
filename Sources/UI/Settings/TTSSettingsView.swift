@@ -267,6 +267,9 @@ struct TTSSettingsView: View {
                     .popover(isPresented: $showingHideWhileScrollingInfo) {
                         Text("Hides the highlights while the page scrolls, so they don't jerk. How it works: 'Hide highlights while scrolling' (default ON). While scrolling (block frame moves > 1pt), the fills, line and underline are hidden but the window keeps following; when the frame is stable for 2 polls (~0.6s), the highlights reappear. No extra accessibility reads.")
                             .frame(width: 280, alignment: .leading)
+                            // Full wrapped height, like the layer rows
+                            // (Manh 2026-11-27 23:56) — no cut-off lines.
+                            .fixedSize(horizontal: false, vertical: true)
                             .padding()
                     }
                 }
@@ -372,8 +375,9 @@ struct TTSSettingsView: View {
 /// code (fills 0.30, line + underline solid 1.0), so a color can never
 /// hide the text. The hex is display-only (shown for users who want
 /// the exact value); the color is picked with the swatch or the system
-/// color panel. A small info button ("i", Manh 2026-11-27) after the
-/// name + subtitle opens a popover explaining how that layer works
+/// color panel. A small info button ("i", Manh 2026-11-27) right
+/// after the layer name ("Underline ?", Manh 2026-11-27 23:56
+/// option b) opens a popover explaining how that layer works
 /// and how it is detected — each row has its own text (`infoText`).
 private struct HighlightColorRow: View {
     let title: String
@@ -399,27 +403,41 @@ private struct HighlightColorRow: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
+                    // Title + info button on one line (Manh 2026-11-27
+                    // 23:56, option b): the "?" sits right after the
+                    // layer name ("Underline ?"), at the row's left
+                    // edge — the standard spot for the icon that
+                    // explains the label next to it. Anchoring the
+                    // popover here (far left) gives it the full window
+                    // width to open to the right, so its text is not
+                    // cut off on the right. (Before, the button sat
+                    // after the whole name + subtitle block, in the
+                    // middle of the row, and the popover could run
+                    // past the window's right edge.)
+                    HStack(spacing: 4) {
+                        Text(title)
+                        Button {
+                            showingInfo.toggle()
+                        } label: {
+                            Image(systemName: "info.circle")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.secondary)
+                        .popover(isPresented: $showingInfo) {
+                            Text(infoText)
+                                .frame(width: 280, alignment: .leading)
+                                // Take the full wrapped height (Manh
+                                // 2026-11-27 23:56): the text wraps
+                                // inside the 280pt width and grows
+                                // vertically to show every line, so no
+                                // line is cut off.
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding()
+                        }
+                    }
                     Text(subtitle)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                }
-                // Info button (Manh 2026-11-27): a small native "i"
-                // that explains this layer in a popover — how it works
-                // and how it is detected. Plain style + secondary
-                // colour so it reads as a hint, not an action; it sits
-                // right after the name + subtitle.
-                Button {
-                    showingInfo.toggle()
-                } label: {
-                    Image(systemName: "info.circle")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .popover(isPresented: $showingInfo) {
-                    Text(infoText)
-                        .frame(width: 280, alignment: .leading)
-                        .padding()
                 }
                 // Colour well + Reset live on the left/middle (Manh
                 // 2026-11-27): the right side of the row holds only

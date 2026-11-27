@@ -69,7 +69,11 @@ Each row, left to right:
   "Word", "Sentence", "Cluster", "Block") and one line saying what it
   marks.
 - **Info button** — a small native "i" (`info.circle`, Manh
-  2026-11-27) right after the name + subtitle. Tapping it opens a
+  2026-11-27) right after the layer name ("Underline ?", Manh
+  2026-11-27 23:56 option b — the icon sits next to the label it
+  explains, and anchoring the popover at the row's left edge gives
+  it the full window width to open to the right, so its text is not
+  cut off on the right). Tapping it opens a
   popover (native SwiftUI `.popover`) explaining how that layer works
   and how it is detected. The Vertical line, Cluster, and
   Hide-while-scrolling popovers add a "How it works" section with
@@ -434,10 +438,10 @@ cluster.
   line follows Paragraph — the scroll toggle is a preference and is
   not reset). Row order: Underline, Vertical line, Word, Sentence,
   Cluster, Block. Each row also has a small info button ("i",
-  `info.circle`) after its name + subtitle that opens a native
-  popover explaining how that layer works and how it is detected
-  (texts in §2); the "Hide highlights while scrolling" toggle has
-  one too (its own `@State`, same pattern).
+  `info.circle`) right after its layer name ("Underline ?") that
+  opens a native popover explaining how that layer works and how it
+  is detected (texts in §2); the "Hide highlights while scrolling"
+  toggle has one too (its own `@State`, same pattern).
 
 ## 7. Technical limitations
 
