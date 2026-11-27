@@ -473,37 +473,64 @@ final class ContinuousSpeakController {
         for i in 1..<sentences.count {
             let prev = sentences[i - 1]
             let cur = sentences[i]
-            // A paragraph boundary is any of three signals in the
+            // A paragraph boundary is any of four signals in the
             // whitespace gap between the sentences (Manh 2026-11-27
-            // 16:14): a blank line (2+ line breaks), a single line
-            // break (1), or an indented next sentence. Books/PDFs
-            // often separate paragraphs with just one line break or
-            // an indented first line (no blank line), and the old
-            // 2+ rule missed those. A single space is the normal
-            // sentence separator, not a boundary. A CRLF pair counts
-            // as ONE line break, so Windows-style endings never split
-            // a paragraph by accident.
+            // 16:14 + gate 21:39): a blank line (2+ line breaks), a
+            // single line break (1) after a sentence ending with a
+            // terminator (. / ! / ?), or an indented next sentence.
+            // Books/PDFs often separate paragraphs with just one line
+            // break or an indented first line (no blank line), and
+            // the old 2+ rule missed those. A single space is the
+            // normal sentence separator, not a boundary. A CRLF pair
+            // counts as ONE line break, so Windows-style endings
+            // never split a paragraph by accident.
             var breaks = 0
             var hasTab = false
+            // Spaces after the last line break in the gap — the next
+            // line's leading indent (the whole gap's width when there
+            // is no break). 2+ spaces is an indented first line;
+            // 1 space is just the separator between sentences.
+            var spacesAfterLastBreak = 0
             var j = prev.location + prev.length
             while j < cur.location {
                 let ch = nsText.character(at: j)
                 if ch == 0x0D { // "\r" — a CRLF pair is one break
                     breaks += 1
+                    spacesAfterLastBreak = 0
                     if j + 1 < cur.location, nsText.character(at: j + 1) == 0x0A { j += 1 }
                 } else if ch == 0x0A { // "\n"
                     breaks += 1
+                    spacesAfterLastBreak = 0
                 } else if ch == 0x09 { // "\t" — a tab before the next sentence is indentation
                     hasTab = true
+                } else if ch == 0x20 { // " " — a space after the last break is the next line's indent
+                    spacesAfterLastBreak += 1
                 }
                 j += 1
             }
-            // The gap is all whitespace (the sentence splitter skips
-            // it), so its length is the indent width when there is no
-            // line break: 2+ spaces is an indented first line, 1 space
-            // is just the separator between sentences.
-            let gapLength = cur.location - (prev.location + prev.length)
-            if breaks >= 1 || hasTab || gapLength >= 2 {
+            // The gate (Manh 2026-11-27 21:39, re-enabled after the
+            // overflow fix #398/#399): a single line break only splits
+            // a paragraph when the previous sentence ends with a
+            // terminator (. / ! / ?). A PDF paragraph wrapped over
+            // several visual lines has no terminator at the break, so
+            // it stays ONE cluster instead of splitting into one
+            // cluster per visual line. The gate was removed
+            // temporarily (2687a092) because a multi-line cluster
+            // could overflow the PDF frame — the overlay now clips to
+            // the host window's visible area, so the gate is safe
+            // again. The check trims trailing whitespace off the
+            // previous sentence before looking at its last character.
+            let prevText = (nsText.substring(with: prev) as NSString).trimmingCharacters(in: .whitespacesAndNewlines)
+            let prevEndsWithTerminator = prevText.hasSuffix(".") || prevText.hasSuffix("!") || prevText.hasSuffix("?")
+            // A paragraph boundary is any of four signals (Manh
+            // 2026-11-27 16:14 + gate 21:39): a blank line (2+ breaks)
+            // always splits; a single break splits only when the
+            // previous sentence ends with a terminator; a tab anywhere
+            // in the gap is indentation; 2+ spaces after the last
+            // break (or in the whole gap when there is no break) is
+            // an indented next line. 1 space alone is just the
+            // separator between sentences.
+            if breaks >= 2 || (breaks == 1 && prevEndsWithTerminator) || hasTab || spacesAfterLastBreak >= 2 {
                 ranges.append(NSRange(location: start, length: end - start))
                 start = cur.location
             }

@@ -100,14 +100,18 @@ Each row, left to right:
     (see §4).
   - Paragraph: "Highlights the paragraph containing the current
     sentence. A paragraph is detected by a blank line, a single line
-    break, or an indented line. If the block has no paragraph break,
-    the cluster is not shown — the block has its own Show toggle."
+    break after a sentence ending with . / ! / ?, or an indented
+    line. If the block has no paragraph break, the cluster is not
+    shown — the block has its own Show toggle."
     Its popover adds a "How it works" section: the cluster is the
-    paragraph containing the sentence being read (blank line, single
-    line break, or indented line — an indented line means a tab or 2+
-    spaces at the start of the next sentence; a single space does not
-    count); a block with no paragraph break has no cluster fill — use
-    the block's Show toggle to highlight the whole block. (see §4).
+    paragraph containing the sentence being read (blank line, a single
+    line break after a sentence ending with . / ! / ?, or an indented
+    line — an indented line means a tab or 2+ spaces at the start of
+    the next sentence; a single space does not count; a line break
+    without a terminator is just a wrapped line, not a new
+    paragraph); a block with no paragraph break has no cluster fill
+    — use the block's Show toggle to highlight the whole block.
+    (see §4).
   - Block: "Highlights the whole text block being read. It is always
     available when a block is detected." (see §3).
   The button sits between the text and the hex/Show/picker/Reset
@@ -152,7 +156,7 @@ toggle below — that is a behaviour preference, not a layer default).
 | Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
 | Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
 | Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
-| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no paragraph boundary between them (blank line, single line break, or indented next sentence). A block with no boundary has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
+| Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no paragraph boundary between them (blank line, a single line break after a sentence ending with . / ! / ?, or an indented next sentence). A block with no boundary has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
 
 The defaults are `#RRGGBB` hex. Block, paragraph and line keep the
@@ -204,11 +208,17 @@ are solid, so they read on top.
 - **The paragraph (cluster) is the group of sentences around the
   sentence being read, split on paragraph boundaries.** The controller
   splits the block's text into paragraphs at a blank line (2+ line
-  breaks between sentences), a single line break (1), or an indented
-  next sentence (a tab, or 2+ spaces — a single space is just the
-  separator between sentences); books/PDFs often separate paragraphs
-  with just one line break or an indented first line, no blank line
-  (Manh 2026-11-27 16:14). The cluster fill covers the paragraph
+  breaks between sentences), a single line break (1) after a sentence
+  ending with . / ! / ? (the gate, Manh 2026-11-27 21:39 — a line
+  break without a terminator is just a wrapped line, not a new
+  paragraph), or an indented next sentence (a tab, or 2+ spaces — a
+  single space is just the separator between sentences); books/PDFs
+  often separate paragraphs with just one line break or an indented
+  first line, no blank line (Manh 2026-11-27 16:14). The gate was
+  removed temporarily (2026-11-27 19:38) because a multi-line cluster
+  could overflow the PDF frame; the overlay now clips to the host
+  window's visible area (#398/#399), so the gate is safe again and
+  was re-enabled. The cluster fill covers the paragraph
   holding the current sentence and moves with the voice. A block with
   no boundary has NO cluster fill — its single paragraph IS the whole
   block, so there is no cluster to highlight (turn on the block layer
@@ -217,12 +227,14 @@ are solid, so they read on top.
   expose the paragraph's bounds (`AXBoundsForRange` unsupported), the
   cluster fill is simply not drawn — the other layers keep showing.
   The cluster fill is read live from Defaults like the other fills
-  (colour + Show toggle). The split rule was verified with a 9-case
-  simulation: blank line splits, a single line break splits, a tab
-  indent splits, a single space does not split, a CRLF counts as one
-  break; a CRLF blank line splits, 3 mixed paragraphs split into 3,
-  and a block with only a single space stays 1 paragraph, so it has
-  no cluster fill.
+  (colour + Show toggle). The split rule (with the gate) was verified
+  with a 15-case simulation: blank line splits, a single line break
+  after a terminator splits, a single line break without a terminator
+  does NOT split (a wrapped PDF paragraph stays one cluster), a tab
+  indent splits, 2+ spaces indent splits, a single space does not
+  split, a CRLF counts as one break; a CRLF blank line splits, 3
+  mixed paragraphs split into 3, and a block with only a single
+  space stays 1 paragraph, so it has no cluster fill.
 - **The line follows its picked unit (§6).** Its length is the picked
   unit's vertical span in the 8 pt strip; it moves with the voice
   when the unit is the sentence or the paragraph. When the picked

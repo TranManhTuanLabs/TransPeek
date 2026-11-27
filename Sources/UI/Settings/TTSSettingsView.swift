@@ -226,8 +226,8 @@ struct TTSSettingsView: View {
                 HighlightColorRow(
                     title: "Paragraph",
                     subtitle: "Highlight for the paragraph (cluster) being read",
-                    info: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
-                    howItWorks: "The cluster is the paragraph containing the sentence being read. A paragraph is detected by a blank line, a single line break, or an indented line. An indented line means a tab or 2+ spaces at the start of the next sentence; a single space does not count. If the block has no paragraph break, the cluster is not shown — use the block's Show toggle to highlight the whole block.",
+                    info: "Highlights the paragraph containing the current sentence. A paragraph is detected by a blank line, a single line break after a sentence ending with . / ! / ?, or an indented line. If the block has no paragraph break, the cluster is not shown — the block has its own Show toggle.",
+                    howItWorks: "The cluster is the paragraph containing the sentence being read. A paragraph is detected by a blank line, a single line break after a sentence ending with . / ! / ? (a line break without a terminator is just a wrapped line, not a new paragraph), or an indented line. An indented line means a tab or 2+ spaces at the start of the next sentence; a single space does not count. If the block has no paragraph break, the cluster is not shown — use the block's Show toggle to highlight the whole block.",
                     hex: $highlightClusterHex,
                     shown: $highlightClusterShown,
                     defaultHex: HighlightColors.clusterDefaultHex
