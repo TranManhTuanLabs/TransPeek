@@ -449,73 +449,99 @@ final class ContinuousSpeakController {
     /// offsets — the same indexing as `sentenceRanges`). A cluster is a
     /// run of sentences in one paragraph; a new cluster starts at a
     /// sentence when the whitespace before it marks a paragraph
-    /// boundary (Manh 2026-11-27 16:14 — the ORIGINAL rule): (1) a blank
-    /// line in the gap (2+ line breaks); (2) a single line break; (3)
-    /// the sentence is indented (a tab anywhere in the gap, or 2+
-    /// spaces — a single space is ordinary inter-sentence spacing, not
-    /// a boundary). CRLF counts as one line break, so it never splits
-    /// by itself. A cluster's range runs from its first sentence's
-    /// start to its last sentence's end, so its AX bounds cover only
-    /// its own text. A block whose sentences form a single cluster
-    /// yields one range — which is NOT a cluster for highlighting (see
-    /// `paragraph(containing:in:)`).
-    /// TEMPORARILY reverted (Manh 2026-11-27 19:38): the branch had
-    /// added a punctuation gate — a single line break split only after
-    /// a sentence ending in `.`/`!`/`?` — to stop a visually wrapped
-    /// PDF paragraph splitting into one cluster per line. Manh asked
-    /// to REMOVE it for now and follow main's literal rule, because a
-    /// PDF paragraph wrapped over many lines becoming ONE big block
-    /// breaks the display — the block highlight frame can exceed the
-    /// PDF frame being read. This is a TEMPORARY revert, not a
-    /// rejection of the gate: the gate may come back once the
-    /// block-frame problem is understood. Do not re-add it without
-    /// Manh's say-so.
+    /// boundary: (1) a blank line in the gap (2+ line breaks) — always
+    /// splits; (2) a single line break, ONLY after a sentence ending
+    /// in `.`/`!`/`?` (the punctuation gate — the previous sentence
+    /// really ends there, instead of being a wrapped line fragment
+    /// the splitter cut at a newline); (3) the next sentence is
+    /// indented (any leading whitespace after a line break, or a tab /
+    /// 2+ spaces without one — a single space is ordinary
+    /// inter-sentence spacing, not a boundary). CRLF counts as one
+    /// line break, so it never splits by itself. A cluster's range runs
+    /// from its first sentence's start to its last sentence's end, so
+    /// its AX bounds cover only its own text. A block whose sentences
+    /// form a single cluster yields one range — which is NOT a cluster
+    /// for highlighting (see `paragraph(containing:in:)`).
+    /// Punctuation gate RE-ENABLED (Manh 2026-11-27 21:39): the gate
+    /// was temporarily removed at 19:38 because a PDF paragraph
+    /// wrapped over many lines becoming ONE big block broke the
+    /// display — the block highlight frame could exceed the PDF frame
+    /// being read. The overflow is now fixed (the overlay clips to
+    /// the host window's visible area, #398/#399), so a big cluster
+    /// is safe — its highlight is clipped to the visible window.
+    /// The gate is back so a visually wrapped PDF paragraph stays
+    /// one cluster instead of splitting into one per line.
     static func paragraphRanges(for text: String, sentences: [NSRange]) -> [NSRange] {
-        guard !sentences.isEmpty else { return [] }
         let nsText = text as NSString
+        guard !sentences.isEmpty else { return [] }
+        // A gap is all whitespace (sentences start/end at
+        // non-whitespace), so counting breaks in it is just scanning
+        // raw UTF-16 units — no Unicode conversion to fail on.
         var ranges: [NSRange] = []
-        var start = sentences[0].location
-        var end = sentences[0].location + sentences[0].length
-        for i in 1..<sentences.count {
-            let prev = sentences[i - 1]
-            let cur = sentences[i]
-            // A paragraph boundary is any of three signals in the
-            // whitespace gap between the sentences (Manh 2026-11-27
-            // 16:14): a blank line (2+ line breaks), a single line
-            // break (1), or an indented next sentence. Books/PDFs
-            // often separate paragraphs with just one line break or
-            // an indented first line (no blank line), and the old
-            // 2+ rule missed those. A single space is the normal
-            // sentence separator, not a boundary. A CRLF pair counts
-            // as ONE line break, so Windows-style endings never split
-            // a paragraph by accident.
+        var clusterStart = sentences[0].location
+        for i in 0..<(sentences.count - 1) {
+            let current = sentences[i]
+            let next = sentences[i + 1]
+            let gapStart = current.location + current.length
+            let gapEnd = next.location
+            // Count the line breaks in the gap ("\n", "\r", or "\r\n"
+            // as one) and note where the last one ends — the run after
+            // it is the next sentence's leading whitespace (its
+            // indent, if any).
             var breaks = 0
-            var hasTab = false
-            var j = prev.location + prev.length
-            while j < cur.location {
-                let ch = nsText.character(at: j)
-                if ch == 0x0D { // "\r" — a CRLF pair is one break
+            var afterLastBreak = gapStart
+            var idx = gapStart
+            while idx < gapEnd {
+                let ch = nsText.character(at: idx)
+                if ch == 0x0A { // "\n"
                     breaks += 1
-                    if j + 1 < cur.location, nsText.character(at: j + 1) == 0x0A { j += 1 }
-                } else if ch == 0x0A { // "\n"
+                    idx += 1
+                    afterLastBreak = idx
+                } else if ch == 0x0D { // "\r"
                     breaks += 1
-                } else if ch == 0x09 { // "\t" — a tab before the next sentence is indentation
-                    hasTab = true
+                    idx += 1
+                    if idx < gapEnd, nsText.character(at: idx) == 0x0A { idx += 1 } // CRLF = 1 break
+                    afterLastBreak = idx
+                } else {
+                    idx += 1
                 }
-                j += 1
             }
-            // The gap is all whitespace (the sentence splitter skips
-            // it), so its length is the indent width when there is no
-            // line break: 2+ spaces is an indented first line, 1 space
-            // is just the separator between sentences.
-            let gapLength = cur.location - (prev.location + prev.length)
-            if breaks >= 1 || hasTab || gapLength >= 2 {
-                ranges.append(NSRange(location: start, length: end - start))
-                start = cur.location
+            // The previous sentence ends with a terminator ("."/"!"/"?")
+            // — i.e. it really ends there, instead of being a wrapped
+            // line fragment that the splitter cut at a newline.
+            var prevEndsWithTerminator = false
+            if current.length > 0 {
+                let lastCh = nsText.character(at: current.location + current.length - 1)
+                prevEndsWithTerminator = lastCh == 0x2E || lastCh == 0x21 || lastCh == 0x3F // "." "!" "?"
             }
-            end = cur.location + cur.length
+            // Indent: spaces/tab at the start of the next sentence's
+            // line. After a line break, any leading whitespace is an
+            // indent (a plain new line starts at column 0). Without a
+            // line break, a single space is ordinary inter-sentence
+            // spacing — only a tab or 2+ spaces count as an indent.
+            var nextIsIndented = false
+            if breaks > 0 {
+                nextIsIndented = gapEnd - afterLastBreak >= 1
+            } else {
+                let gapLen = gapEnd - gapStart
+                if gapLen >= 2 {
+                    nextIsIndented = true
+                } else if gapLen == 1 {
+                    nextIsIndented = nsText.character(at: gapStart) == 0x09 // tab
+                }
+            }
+            // A blank line (2+ breaks) always splits; a single break
+            // splits only after a real sentence end; an indent splits
+            // on its own.
+            let isBoundary = breaks >= 2 || (breaks == 1 && prevEndsWithTerminator) || nextIsIndented
+            if isBoundary {
+                ranges.append(NSRange(location: clusterStart, length: (current.location + current.length) - clusterStart))
+                clusterStart = next.location
+            }
         }
-        ranges.append(NSRange(location: start, length: end - start))
+        // The last cluster runs to the last sentence's end.
+        let last = sentences[sentences.count - 1]
+        ranges.append(NSRange(location: clusterStart, length: (last.location + last.length) - clusterStart))
         return ranges
     }
 

@@ -187,32 +187,33 @@ each other, and the two solid bars sit on top.
 
 **What a "cluster" is.** A cluster is one paragraph inside the block:
 a run of sentences up to the next paragraph boundary. A boundary is a
-blank line (Enter / an empty line), a single line break, or an
+blank line (Enter / an empty line), a single line break after a
+sentence ending in `.`/`!`/`?` (the punctuation gate), or an
 indented next sentence — a tab or 2+ spaces at the start of its line
 (a single space is just the separator between sentences) — books and
 PDFs usually break paragraphs with one of the last two, not a blank
 line. (The sentence splitter already ends a sentence at a newline, so
-a wrapped sentence arrives as a fragment — and under this rule each
-fragment is its own cluster.) A block with no boundary at all has NO
+a wrapped sentence arrives as fragments — but the gate keeps those
+fragments in ONE cluster unless the fragment ends with `.`/`!`/`?`,
+so a visually wrapped PDF paragraph stays one cluster instead of
+splitting into one per line.) A block with no boundary at all has NO
 cluster — the common case for short paragraphs: a cluster only marks a
 PART of a block, and a single-paragraph block is the whole block (the
 block layer's job — turn its Show on to mark the whole block). A long
 block (several paragraphs) has one cluster per paragraph, and the
 highlight follows the cluster around the sentence being read.
-(TEMPORARILY reverted, Manh 2026-11-27 19:38: the branch had a
-punctuation gate — a single line break split only after a sentence
-ending in `.`/`!`/`?` — to stop a visually wrapped PDF paragraph
-splitting into one cluster per line. Manh asked to REMOVE it for now
-and follow main's literal rule, because a PDF paragraph wrapped over
-many lines becoming ONE big block breaks the display — the block
-highlight frame can exceed the PDF frame being read. The gate is
-deferred, not rejected; it may come back once the block-frame problem
-is understood.) Verified by simulation of the reverted rule
+(Punctuation gate RE-ENABLED, Manh 2026-11-27 21:39: the gate was
+temporarily removed at 19:38 because a PDF paragraph wrapped over
+many lines becoming ONE big block broke the display — the block
+highlight frame could exceed the PDF frame being read. The overflow
+is now fixed (the overlay clips to the host window's visible area,
+#398/#399), so a big cluster is safe — its highlight is clipped to
+the visible window.) Verified by simulation of the gate rule
 (2026-11-27, 12 cases): blank line splits; single newline splits
-(even after a sentence with no end mark); a wrapped PDF paragraph
-over 3 lines becomes 3 clusters (the accepted trade-off); tab or 2+
-spaces split; a single space without a break does not split; CRLF
-counts as one break; a single-range block has no cluster.
+only after a sentence ending in `.`/`!`/`?`; a wrapped PDF paragraph
+over 3 lines stays 1 cluster; tab or 2+ spaces split; a single space
+without a break does not split; CRLF counts as one break; a
+single-range block has no cluster.
 
 ## 4. Behaviour
 
@@ -257,11 +258,11 @@ counts as one break; a single-range block has no cluster.
   precompute step as the sentences) and maps each spoken word to the
   paragraph around its sentence. A new paragraph starts when the
   whitespace before a sentence holds a blank line, a single line
-  break, or an indented sentence (a tab or 2+ spaces at the start of
+  break after a sentence ending in `.`/`!`/`?` (the punctuation
+  gate), or an indented sentence (a tab or 2+ spaces at the start of
   its line) — books/PDFs usually break with a single newline or an
-  indent, not a blank line. (TEMPORARILY reverted, Manh 2026-11-27
-  19:38 — see §3: the punctuation gate on a single line break was
-  removed for now.) The cluster frame is cached and
+  indent, not a blank line. (Punctuation gate RE-ENABLED, Manh
+  2026-11-27 21:39 — see §3.) The cluster frame is cached and
   only re-read from AX when the cluster actually changes (like the
   sentence frame); the word frame is still read on every word. If the
   app does not expose range bounds, the cluster fill is simply not
