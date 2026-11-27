@@ -385,8 +385,7 @@ private struct HighlightColorRow: View {
                 // that explains this layer in a popover — how it works
                 // and how it is detected. Plain style + secondary
                 // colour so it reads as a hint, not an action; it sits
-                // right after the name + subtitle, so the hex, Show
-                // toggle, ColorPicker and Reset keep their places.
+                // right after the name + subtitle.
                 Button {
                     showingInfo.toggle()
                 } label: {
@@ -399,20 +398,33 @@ private struct HighlightColorRow: View {
                         .frame(width: 280, alignment: .leading)
                         .padding()
                 }
-                Spacer()
-                Text(hex.uppercased())
-                    .monospaced()
-                    .foregroundStyle(.secondary)
-                // Show / hide this one layer: off hides the layer from
-                // the overlay (its color is kept, so turning it back on
-                // restores the same color). The overlay reads the toggle
-                // live, so it applies at once.
-                Toggle("Show", isOn: $isShown)
+                // Colour well + Reset live on the left/middle (Manh
+                // 2026-11-27): the right side of the row holds only
+                // the hex + Show/Hide label + toggle, grouped close
+                // together, so the hex reads as the toggle's value
+                // instead of the colour well's. The well still opens
+                // the system colour panel; Reset still restores only
+                // this layer's default colour.
                 ColorPicker("", selection: colorBinding, supportsOpacity: false)
                     .labelsHidden()
                 Button("Reset") { hex = defaultHex }
                     .buttonStyle(.plain)
                     .foregroundStyle(.secondary)
+                Spacer()
+                // Hex + Show/Hide label, right before the toggle (Manh
+                // 2026-11-27): left to right, hex, label, switch —
+                // grouped close together on the right, so the label
+                // always says what the layer is doing. The label
+                // follows the state: "Show" while the layer is on,
+                // "Hide" while it is off. Off hides the layer from
+                // the overlay (its color is kept, so turning it back on
+                // restores the same color). The overlay reads the toggle
+                // live, so it applies at once. "Show" and "Hide" are
+                // both 4 letters, so the label never shifts the row.
+                Text(hex.uppercased())
+                    .monospaced()
+                    .foregroundStyle(.secondary)
+                Toggle(isShown ? "Show" : "Hide", isOn: $isShown)
             }
             // Preset swatches: tap one to set this layer's color at
             // once. The current color gets a strong ring so the user

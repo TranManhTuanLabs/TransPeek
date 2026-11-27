@@ -25,28 +25,28 @@ large (Word, Sentence, Cluster, Block).
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline [i]                  #5666F0  Show [on] [swatch] Reset│
+│ Underline [i] [swatch] Reset        #5666F0 Show [on]           │
 │ Solid bar under the word + sentence being read                   │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │                                                                  │
-│ Vertical line [i]                #8CBFFF  Show [on] [swatch] Reset│
+│ Vertical line [i] [swatch] Reset    #8CBFFF Show [on]           │
 │ Solid bar beside the text — its height follows the unit below    │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                     │
 │ Line follows: [Sentence | Paragraph | Block]  <- segmented       │
 │                                                                  │
-│ Word [i]                       #5666F0  Show [on] [swatch] Reset│
+│ Word [i] [swatch] Reset             #5666F0 Show [on]           │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Sentence [i]                   #ABB3FE  Show [on] [swatch] Reset│
+│ Sentence [i] [swatch] Reset         #ABB3FE Show [on]           │
 │ Highlight for the sentence being read                            │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Cluster [i]                    #FFC2D1  Show [on] [swatch] Reset│
+│ Cluster [i] [swatch] Reset          #FFC2D1 Show [on]           │
 │ Highlight for the paragraph (group of sentences) being read      │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
-│ Block [i]                      #BFF2B3  Show [off] [swatch] Reset│
+│ Block [i] [swatch] Reset            #BFF2B3 Hide [off]          │
 │ Highlight for the whole block being read                         │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -95,18 +95,26 @@ Each row, left to right:
     available when a block is detected."
   Only the six layer rows have the button — not the behaviour toggle
   ("Hide highlights while scrolling") or "Reset all to default".
-- **Hex** — the current color as `#RRGGBB` (monospaced, secondary
-  colour). Display-only: it shows the exact value for users who want
-  it, it is not an input field.
-- **Show toggle** — a native `Toggle` labelled "Show" for that one
-  layer (see §4). Off hides the layer from the overlay; the layer's
-  colour is kept, so turning it back on restores the same colour.
 - **Colour well** — the native macOS colour picker (`ColorPicker`,
   `supportsOpacity: false`). Clicking it opens the system colour panel
-  (colour wheel, sliders, palettes, eyedropper).
+  (colour wheel, sliders, palettes, eyedropper). It sits on the
+  left/middle of the row (Manh 2026-11-27), so the right side holds
+  only the hex + Show/Hide label + toggle.
 - **Reset** — restores that one layer to its default colour (the Show
   toggle is untouched — hiding a layer is a separate choice from its
-  colour).
+  colour). It sits next to the colour well, on the left/middle.
+- **Hex** — the current color as `#RRGGBB` (monospaced, secondary
+  colour). Display-only: it shows the exact value for users who want
+  it, it is not an input field. It sits on the right, immediately
+  left of the toggle's label (Manh 2026-11-27).
+- **Show/Hide toggle** — a native `Toggle` for that one layer (see
+  §4). Its label follows the state (Manh 2026-11-27): "Show" while
+  the layer is on, "Hide" while it is off — so the label always says
+  what the layer is doing. Off hides the layer from the overlay; the
+  layer's colour is kept, so turning it back on restores the same
+  colour. On the right, the order is hex, label, switch, close
+  together; "Show" and "Hide" are both 4 letters, so the label never
+  shifts the row.
 
 Under each row, **6 preset swatches** (22 pt circles): tap one
 to set that layer's colour at once. The current colour gets a strong
