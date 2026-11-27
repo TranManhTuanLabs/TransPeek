@@ -191,10 +191,13 @@ each other, and the two solid bars sit on top.
 a run of sentences up to the next paragraph boundary. A boundary is a
 blank line (Enter / an empty line), a single line break after a
 sentence ending in `.`/`!`/`?` (the punctuation gate), or an
-indented next sentence — a tab or 2+ spaces at the start of its line
-(a single space is just the separator between sentences) — books and
-PDFs usually break paragraphs with one of the last two, not a blank
-line. (The sentence splitter already ends a sentence at a newline, so
+indented next sentence — a tab or 2+ spaces at the start of its line.
+Both sides split BY PUNCTUATION (Manh 2026-11-27 23:51): a single
+space is just the separator between sentences, so one space alone is
+never an indent — not even after a line break ("dòng một\n dòng hai"
+stays one cluster). Books and PDFs usually break paragraphs with one
+of the last two, not a blank line. (The sentence splitter already
+ends a sentence at a newline, so
 a wrapped sentence arrives as fragments — but the gate keeps those
 fragments in ONE cluster unless the fragment ends with `.`/`!`/`?`,
 so a visually wrapped PDF paragraph stays one cluster instead of
@@ -210,12 +213,19 @@ many lines becoming ONE big block broke the display — the block
 highlight frame could exceed the PDF frame being read. The overflow
 is now fixed (the overlay clips to the host window's visible area,
 #398/#399), so a big cluster is safe — its highlight is clipped to
-the visible window.) Verified by simulation of the gate rule
-(2026-11-27, 12 cases): blank line splits; single newline splits
+the visible window.) Both sides split BY PUNCTUATION (Manh
+2026-11-27 23:51): the branch had restored the gate with a looser
+indent rule (any whitespace after a break counted as an indent), so
+"dòng một\n dòng hai" split on the branch but not on main — fixed
+2026-11-27 by requiring a tab or 2+ spaces after a break
+(`nextIsIndented` >= 1 → tab-or->= 2), so one space alone never
+splits, with or without a break. Verified by simulation of the gate
+rule (2026-11-27, 12 cases): blank line splits; single newline splits
 only after a sentence ending in `.`/`!`/`?`; a wrapped PDF paragraph
-over 3 lines stays 1 cluster; tab or 2+ spaces split; a single space
-without a break does not split; CRLF counts as one break; a
-single-range block has no cluster.
+over 3 lines stays 1 cluster; tab or 2+ spaces split (with or
+without a break); a single space does not split (with or without a
+break); CRLF counts as one break; a single-range block has no
+cluster.
 
 ## 4. Behaviour
 

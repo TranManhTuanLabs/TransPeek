@@ -621,14 +621,26 @@ final class ContinuousSpeakController {
                 let lastCh = nsText.character(at: current.location + current.length - 1)
                 prevEndsWithTerminator = lastCh == 0x2E || lastCh == 0x21 || lastCh == 0x3F // "." "!" "?"
             }
-            // Indent: spaces/tab at the start of the next sentence's
-            // line. After a line break, any leading whitespace is an
-            // indent (a plain new line starts at column 0). Without a
-            // line break, a single space is ordinary inter-sentence
-            // spacing — only a tab or 2+ spaces count as an indent.
+            // Indent: a tab or 2+ spaces at the start of the next
+            // sentence's line (Manh 2026-11-27 23:51: both sides split
+            // BY PUNCTUATION — a single space after a line break is
+            // just leftover spacing, not a paragraph indent, so
+            // "dòng một\n dòng hai" must NOT split). A plain wrapped
+            // line starts at column 0; only a tab or 2+ spaces mark
+            // an indented first line. Without a line break, a single
+            // space is ordinary inter-sentence spacing — the same
+            // tab-or-2+ rule applies.
             var nextIsIndented = false
             if breaks > 0 {
-                nextIsIndented = gapEnd - afterLastBreak >= 1
+                // Leading whitespace after the last break: 2+ chars
+                // is an indent; a single char counts only if it is
+                // a tab (a single space is not an indent).
+                let indentLen = gapEnd - afterLastBreak
+                if indentLen >= 2 {
+                    nextIsIndented = true
+                } else if indentLen == 1 {
+                    nextIsIndented = nsText.character(at: afterLastBreak) == 0x09 // tab
+                }
             } else {
                 let gapLen = gapEnd - gapStart
                 if gapLen >= 2 {

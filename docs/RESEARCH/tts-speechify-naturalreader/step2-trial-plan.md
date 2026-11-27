@@ -309,8 +309,8 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     HOẶC 1 lần xuống dòng SAU câu kết thúc bằng `.`/`!`/`?` (điều
     kiện dấu kết câu — câu trước phải kết thúc thật, không phải mảnh
     dòng bị ngắt khi gói), HOẶC câu tiếp theo thụt đầu dòng (tab,
-    hoặc 2+ khoảng trắng ở đầu câu — 1 khoảng trắng duy nhất không
-    kèm xuống dòng thì KHÔNG tính).
+    hoặc 2+ khoảng trắng ở đầu câu — 1 khoảng trắng duy nhất thì
+    KHÔNG tính, dù có kèm xuống dòng hay không).
     Điều kiện dấu kết câu đã BẬT LẠI theo quyết định của Manh 21:39
     (trước đó TẠM BỎ lúc 19:38 vì đoạn PDF ngắt nhiều dòng thành 1
     block lớn gây lỗi hiển thị — khung highlight block vượt khỏi
@@ -318,11 +318,18 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     khung theo vùng nhìn thấy của cửa sổ app) nên 1 cụm lớn nay an
     toàn: highlight bị cắt theo vùng nhìn thấy, không tràn. Đoạn PDF
     gói 3 dòng nay thành 1 cụm (không còn 3 cụm). CRLF tính là 1 lần
-    ngắt. Đã kiểm chứng bằng mô phỏng quy tắc gate (2026-11-27, 12
-    mẫu): dòng trống tách; 1 lần xuống dòng chỉ tách sau câu kết thúc
-    bằng `.`/`!`/`?`; đoạn PDF gói 3 dòng thành 1 cụm; tab hoặc 2+
-    khoảng trắng tách; 1 khoảng trắng không kèm xuống dòng không
-    tách; CRLF tính là 1 lần ngắt; block 1 đoạn thì không có cụm.
+    ngắt. Cả 2 bên tách THEO DẤU (Manh 2026-11-27 23:51): nhánh trước
+    đó khôi phục gate với điều kiện thụt lỏng hơn (bất kỳ khoảng trắng
+    nào sau xuống dòng cũng tính là thụt) nên "dòng một\n dòng hai"
+    tách ở nhánh nhưng không tách ở main — đã sửa 2026-11-27
+    (`nextIsIndented` >= 1 → tab hoặc >= 2), 1 khoảng trắng đơn
+    không bao giờ tách, có hay không có xuống dòng. Đã kiểm chứng
+    bằng mô phỏng quy tắc gate (2026-11-27, 12 mẫu): dòng trống tách;
+    1 lần xuống dòng chỉ tách sau câu kết thúc bằng `.`/`!`/`?`; đoạn
+    PDF gói 3 dòng thành 1 cụm; tab hoặc 2+ khoảng trắng tách (có
+    hay không có xuống dòng); 1 khoảng trắng không tách (có hay
+    không có xuống dòng); CRLF tính là 1 lần ngắt; block 1 đoạn thì
+    không có cụm.
     Triển khai: `paragraphRanges` nay nhóm câu thành cụm (nhận thêm
     `sentences`), thay cho cách gom dòng cũ; giữ nguyên sửa fallback
     (block chỉ có 1 đoạn → không vẽ fill cụm).
