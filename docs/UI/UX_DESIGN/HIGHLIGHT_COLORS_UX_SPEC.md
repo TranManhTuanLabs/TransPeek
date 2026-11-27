@@ -135,13 +135,20 @@ fills are translucent, so overlapping levels blend instead of hiding
 each other, and the two solid bars sit on top.
 
 **What a "cluster" is.** A cluster is one paragraph inside the block:
-a run of sentences separated from the next group by a blank line
-(Enter / an empty line). A block with no blank line has NO cluster —
-the common case for short paragraphs: a cluster only marks a PART of
-a block, and a single-paragraph block is the whole block (the block
-layer's job — turn its Show on to mark the whole block). A long block
-(several paragraphs) has one cluster per paragraph, and the highlight
-follows the cluster around the sentence being read.
+a run of sentences up to the next paragraph boundary. A boundary is a
+blank line (Enter / an empty line), a single line break after a
+sentence that ends with `.`/`!`/`?`, or an indented next sentence
+(spaces/tab at the start of its line) — books and PDFs usually break
+paragraphs with one of the last two, not a blank line. A single line
+break after a sentence with NO terminator is only a wrapped line, not
+a new paragraph (the sentence splitter already ends a sentence at a
+newline, so a wrapped sentence arrives as a fragment). A block with
+no boundary at all has NO cluster — the common case for short
+paragraphs: a cluster only marks a PART of a block, and a
+single-paragraph block is the whole block (the block layer's job —
+turn its Show on to mark the whole block). A long block (several
+paragraphs) has one cluster per paragraph, and the highlight follows
+the cluster around the sentence being read.
 
 ## 4. Behaviour
 
@@ -182,18 +189,23 @@ follows the cluster around the sentence being read.
   branch defaults for all six toggles; a per-layer Reset only
   restores that layer's colour.
 - **Cluster highlight — how the paragraph is found.** The controller
-  splits the block's text into paragraphs by blank lines at block
-  start (same precompute step as the sentences) and maps each spoken
-  word to the paragraph around its sentence. The cluster frame is
-  cached and only re-read from AX when the cluster actually changes
-  (like the sentence frame); the word frame is still read on every
-  word. If the app does not expose range bounds, the cluster fill is
-  simply not drawn (the other levels still show) — never a crash,
-  never a wrong rectangle. A block with no blank line has no cluster
-  at all (Manh 2026-11-27 — the cluster would be the whole block, so
-  drawing its fill would be redundant with the block fill and blur
-  where the two overlap; turn the block layer on to mark the whole
-  block instead).
+  groups the block's sentences into paragraphs at block start (same
+  precompute step as the sentences) and maps each spoken word to the
+  paragraph around its sentence. A new paragraph starts when the
+  whitespace before a sentence holds a blank line, a single line
+  break after a sentence ending with `.`/`!`/`?`, or an indented
+  sentence (spaces/tab at the start of its line) — books/PDFs usually
+  break with a single newline or an indent, not a blank line. A
+  single line break after a sentence with NO terminator is only a
+  wrapped line, not a new paragraph. The cluster frame is cached and
+  only re-read from AX when the cluster actually changes (like the
+  sentence frame); the word frame is still read on every word. If the
+  app does not expose range bounds, the cluster fill is simply not
+  drawn (the other levels still show) — never a crash, never a wrong
+  rectangle. A block with no boundary at all has no cluster (Manh
+  2026-11-27 — the cluster would be the whole block, so drawing its
+  fill would be redundant with the block fill and blur where the two
+  overlap; turn the block layer on to mark the whole block instead).
 - **Line follows — what the vertical line marks.** The "Line follows"
   picker in the Vertical line row stores one string in Defaults
   (`transpeek_highlightLineFollows`: `"sentence"`, `"paragraph"`, or

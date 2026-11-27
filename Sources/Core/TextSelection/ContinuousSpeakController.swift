@@ -119,7 +119,7 @@ final class ContinuousSpeakController {
         currentBlock = block
         currentSingleText = nil
         sentenceRanges = Self.sentenceRanges(for: block.text)
-        clusterRanges = Self.paragraphRanges(for: block.text)
+        clusterRanges = Self.paragraphRanges(for: block.text, sentences: sentenceRanges)
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentClusterRange = nil
@@ -213,7 +213,7 @@ final class ContinuousSpeakController {
         }
         currentBlock = next
         sentenceRanges = Self.sentenceRanges(for: next.text)
-        clusterRanges = Self.paragraphRanges(for: next.text)
+        clusterRanges = Self.paragraphRanges(for: next.text, sentences: sentenceRanges)
         currentSentenceRange = nil
         currentSentenceFrame = nil
         currentClusterRange = nil
@@ -398,67 +398,98 @@ final class ContinuousSpeakController {
         return fallback ?? ranges.first
     }
 
-    /// Split `text` into paragraph (cluster) ranges (NSRange, UTF-16
+    /// Group sentences into paragraph (cluster) ranges (NSRange, UTF-16
     /// offsets — the same indexing as `sentenceRanges`). A cluster is a
-    /// run of non-blank lines: blank lines (empty, or only spaces/tabs)
-    /// separate clusters, but a single newline inside a cluster (a
-    /// wrapped line) does NOT split it. A block with no blank line
-    /// yields one range (the whole block) — the common case for short
-    /// paragraphs. That single range is NOT a cluster for highlighting:
-    /// `paragraph(containing:in:)` returns nil for it (Manh 2026-11-27
-    /// — a cluster only marks part of a block; the whole block is the
-    /// block layer's job). The ranges exclude the blank separator
-    /// lines, so a cluster's AX bounds cover only its own text.
-    static func paragraphRanges(for text: String) -> [NSRange] {
+    /// run of sentences in one paragraph; a new cluster starts at a
+    /// sentence when the whitespace before it marks a paragraph
+    /// boundary (Manh 2026-11-27 — the old rule, blank line only,
+    /// missed paragraphs in books/PDFs, which usually break with a
+    /// single newline or an indent and no blank line). A boundary is:
+    /// (1) a blank line in the gap (2+ line breaks); (2) a single line
+    /// break after a sentence that ends with `.`/`!`/`?`; (3) the
+    /// sentence is indented (spaces/tab at the start of its line).
+    /// A single line break after a sentence with NO terminator is only
+    /// a wrapped line, not a new paragraph — the sentence splitter
+    /// already ends a sentence at a newline, so a wrapped sentence
+    /// arrives as a fragment, and splitting there would cut one
+    /// paragraph into one cluster per visual line (the common PDF
+    /// case). CRLF counts as one line break, so it never splits by
+    /// itself. A cluster's range runs from its first sentence's start
+    /// to its last sentence's end, so its AX bounds cover only its own
+    /// text. A block whose sentences form a single cluster yields one
+    /// range — which is NOT a cluster for highlighting (see
+    /// `paragraph(containing:in:)`).
+    static func paragraphRanges(for text: String, sentences: [NSRange]) -> [NSRange] {
         let nsText = text as NSString
-        let length = nsText.length
-        guard length > 0 else { return [] }
-        // First, the line ranges (without their newline terminator —
-        // "\r\n" counts as one line break).
-        var lines: [NSRange] = []
-        var lineStart = 0
-        var index = 0
-        while index < length {
-            let ch = nsText.character(at: index)
-            if ch == 0x0A || ch == 0x0D { // "\n" "\r"
-                lines.append(NSRange(location: lineStart, length: index - lineStart))
-                index += 1
-                if ch == 0x0D, index < length, nsText.character(at: index) == 0x0A { index += 1 }
-                lineStart = index
-                continue
-            }
-            index += 1
-        }
-        if lineStart < length {
-            lines.append(NSRange(location: lineStart, length: length - lineStart))
-        }
-        // A line is blank when it holds only spaces/tabs (or is empty).
-        func isBlank(_ line: NSRange) -> Bool {
-            for i in line.location..<(line.location + line.length) {
-                let c = nsText.character(at: i)
-                guard c == 0x20 || c == 0x09 else { return false } // space/tab
-            }
-            return true
-        }
-        // Group consecutive non-blank lines into clusters; a blank line
-        // ends the current cluster.
+        guard !sentences.isEmpty else { return [] }
+        // A gap is all whitespace (sentences start/end at
+        // non-whitespace), so counting breaks in it is just scanning
+        // raw UTF-16 units — no Unicode conversion to fail on.
         var ranges: [NSRange] = []
-        var clusterStart: Int? = nil
-        var clusterEnd = 0
-        for line in lines {
-            if isBlank(line) {
-                if let start = clusterStart {
-                    ranges.append(NSRange(location: start, length: clusterEnd - start))
-                    clusterStart = nil
+        var clusterStart = sentences[0].location
+        for i in 0..<(sentences.count - 1) {
+            let current = sentences[i]
+            let next = sentences[i + 1]
+            let gapStart = current.location + current.length
+            let gapEnd = next.location
+            // Count the line breaks in the gap ("\n", "\r", or "\r\n"
+            // as one) and note where the last one ends — the run after
+            // it is the next sentence's leading whitespace (its
+            // indent, if any).
+            var breaks = 0
+            var afterLastBreak = gapStart
+            var idx = gapStart
+            while idx < gapEnd {
+                let ch = nsText.character(at: idx)
+                if ch == 0x0A { // "\n"
+                    breaks += 1
+                    idx += 1
+                    afterLastBreak = idx
+                } else if ch == 0x0D { // "\r"
+                    breaks += 1
+                    idx += 1
+                    if idx < gapEnd, nsText.character(at: idx) == 0x0A { idx += 1 } // CRLF = 1 break
+                    afterLastBreak = idx
+                } else {
+                    idx += 1
                 }
+            }
+            // The previous sentence ends with a terminator ("."/"!"/"?")
+            // — i.e. it really ends there, instead of being a wrapped
+            // line fragment that the splitter cut at a newline.
+            var prevEndsWithTerminator = false
+            if current.length > 0 {
+                let lastCh = nsText.character(at: current.location + current.length - 1)
+                prevEndsWithTerminator = lastCh == 0x2E || lastCh == 0x21 || lastCh == 0x3F // "." "!" "?"
+            }
+            // Indent: spaces/tab at the start of the next sentence's
+            // line. After a line break, any leading whitespace is an
+            // indent (a plain new line starts at column 0). Without a
+            // line break, a single space is ordinary inter-sentence
+            // spacing — only a tab or 2+ spaces count as an indent.
+            var nextIsIndented = false
+            if breaks > 0 {
+                nextIsIndented = gapEnd - afterLastBreak >= 1
             } else {
-                if clusterStart == nil { clusterStart = line.location }
-                clusterEnd = line.location + line.length
+                let gapLen = gapEnd - gapStart
+                if gapLen >= 2 {
+                    nextIsIndented = true
+                } else if gapLen == 1 {
+                    nextIsIndented = nsText.character(at: gapStart) == 0x09 // tab
+                }
+            }
+            // A blank line (2+ breaks) always splits; a single break
+            // splits only after a real sentence end; an indent splits
+            // on its own.
+            let isBoundary = breaks >= 2 || (breaks == 1 && prevEndsWithTerminator) || nextIsIndented
+            if isBoundary {
+                ranges.append(NSRange(location: clusterStart, length: (current.location + current.length) - clusterStart))
+                clusterStart = next.location
             }
         }
-        if let start = clusterStart {
-            ranges.append(NSRange(location: start, length: clusterEnd - start))
-        }
+        // The last cluster runs to the last sentence's end.
+        let last = sentences[sentences.count - 1]
+        ranges.append(NSRange(location: clusterStart, length: (last.location + last.length) - clusterStart))
         return ranges
     }
 

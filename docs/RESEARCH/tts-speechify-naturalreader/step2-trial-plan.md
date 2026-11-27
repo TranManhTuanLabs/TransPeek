@@ -300,6 +300,20 @@ tốc độ poll cuối cùng, có dùng dự phòng ẩn/hiện không, lỗi g
     nil khi chỉ có 1 đoạn; overlay đã xử lý `clusterFrame` nil (không
     vẽ) nên không đổi overlay. Block có dòng trống thì cụm vẫn hiện
     bình thường.
+  - **Tách đoạn theo cả 2 tín hiệu — dòng trống / 1 lần xuống dòng /
+    thụt đầu dòng (2026-11-27, Manh duyệt):** trước đây chỉ tách đoạn
+    khi có dòng trống (2+ lần ngắt dòng), nên HỤT đoạn trong sách/PDF
+    (thường chỉ xuống dòng 1 lần hoặc thụt đầu dòng, không có dòng
+    trống). Nay ranh giới đoạn là khi khoảng trắng giữa 2 câu chứa
+    dòng trống, HOẶC 1 lần xuống dòng sau câu kết thúc bằng `.`/`!`/`?`,
+    HOẶC câu tiếp theo thụt đầu dòng (khoảng trắng/tab ở đầu câu).
+    Riêng 1 lần xuống dòng sau câu KHÔNG có dấu kết câu chỉ là dòng
+    gói (wrapped line) — không tách, để không cắt 1 đoạn thành 1 cụm
+    cho mỗi dòng hiển thị trong PDF (bộ tách câu vốn đã ngắt câu ở ký
+    tự xuống dòng nên câu gói đến dưới dạng mảnh câu). CRLF tính là 1
+    lần ngắt. Triển khai: `paragraphRanges` nay nhóm câu thành cụm
+    (nhận thêm `sentences`), thay cho cách gom dòng cũ; giữ nguyên
+    sửa fallback (block chỉ có 1 đoạn → không vẽ fill cụm).
   - **Giới hạn kỹ thuật (ghi trong UX spec §7, 2026-11-27):**
     overlay vẽ hình chữ nhật đè lên trang nên highlight luôn có
     cạnh cứng (không phải bug); không đổi được màu chữ của trang
