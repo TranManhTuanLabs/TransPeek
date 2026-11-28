@@ -243,7 +243,7 @@ jobs:
           zip="TransPeek-macOS-${{ github.run_number }}.zip"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" --prerelease --title "TransPeek macOS preview — Build CI #${{ github.run_number }}" --notes "Preview build from Tests run #${{ github.run_number }} (commit ${{ github.sha }}). Download the .zip, unzip, and open TransPeek.app. For testing only — the stable release is on the Releases page." "$zip"
-          old=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --jq '[.[] | select(.prerelease and (.tag_name | test("^v0[.]1[.]4[.][0-9]+$")))] | sort_by(.created_at) | reverse | .[1:] | .[].tag_name')
+          old=$(gh api "repos/${{ github.repository }}/releases?per_page=100" --jq '[.[] | select(.prerelease and (.tag_name | test("^v0[.]1[.]5[.][0-9]+$")))] | sort_by(.created_at) | reverse | .[1:] | .[].tag_name')
           for t in $old; do echo "Deleting old pre-release $t"; gh release delete "$t" --yes --cleanup-tag; done
       # Always upload the test report (build/Tests.xcresult), even when tests
       # fail — that is how a failing test is diagnosed, because the console log
