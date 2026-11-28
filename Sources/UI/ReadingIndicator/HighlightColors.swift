@@ -20,17 +20,16 @@ enum HighlightColors {
     /// pink — a preset already in the palette, distinct from the other
     /// four fills — chosen by the parent agent (Manh did not pick a
     /// colour); change it in Settings if another pink reads better.
-    /// Sentence follows Speechify (Manh 2026-11-27 03:41): its
-    /// highlight30 light periwinkle `#ABB3FE` (NOT its sentence
-    /// `#e0e3ff` — at fill 0.30 that is nearly invisible). Word
-    /// default is light pink `#FFC2D1` (Manh 2026-11-28). Speechify
-    /// draws opaque (1.0) and recolors the text; this overlay cannot,
-    /// so fills stay translucent (0.30) and text stays readable.
+    /// Sentence default is Speechify's highlight50 indigo `#5666F0`
+    /// (Manh 2026-11-28). Word default is light pink `#FFC2D1`
+    /// (Manh 2026-11-28). Speechify draws opaque (1.0) and recolors
+    /// the text; this overlay cannot, so fills stay translucent (0.30)
+    /// and text stays readable.
     static let lineDefaultHex = "#8CBFFF" // blue nhạt, đặc
     static let blockDefaultHex = "#BFF2B3" // green nhạt
-    static let sentenceDefaultHex = "#ABB3FE" // tím nhạt (Speechify highlight30)
+    static let sentenceDefaultHex = "#5666F0" // chàm (Manh 2026-11-28)
     static let wordDefaultHex = "#FFC2D1" // hồng nhạt (Manh 2026-11-28)
-    static let clusterDefaultHex = "#FFC2D1" // hồng nhạt
+    static let clusterDefaultHex = "#8CBFFF" // xanh nhạt (Manh 2026-11-28)
     /// Underline default is light orange `#FFD9A6` (Manh 2026-11-28).
     /// Solid 1.0 at draw time, like the vertical line.
     static let underlineDefaultHex = "#FFD9A6" // cam nhạt (Manh 2026-11-28)
