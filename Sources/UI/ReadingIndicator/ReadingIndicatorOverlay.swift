@@ -17,10 +17,11 @@ import Foundation
 /// block frame and repositions the window. The hide-during-scroll
 /// behaviour (Manh 2026-11-27, phase 2 of the trial plan — built now
 /// that scrolling jerkiness is confirmed) hides the highlight while
-/// the block moves and shows it again after 2 stable polls; it is
-/// behind the "Hide highlights while scrolling" toggle in Settings
-/// (default on) and needs no extra AX reads — it reuses the frame the
-/// follow poll already read.
+/// the block moves and shows it again after 2 stable polls — a scroll
+/// event hides it at once (Manh 2026-11-28), the poll only brings it
+/// back; it is behind the "Hide highlights while scrolling" toggle in
+/// Settings (default on) and needs no extra AX reads — it reuses the
+/// frame the follow poll already read.
 /// Which layers are drawn is user-configurable (Manh 2026-11-27): the
 /// overlay is created with all six layers, and each layer has its own
 /// Show toggle in Settings (Audio tab → Highlight colors) — the
@@ -205,6 +206,8 @@ final class ReadingIndicatorOverlay {
     /// follows).
     private var hideForScroll: Bool = false
     private var followTimer: Timer?
+    /// The global scroll-wheel monitor token (removed in `hide`).
+    private var scrollMonitor: Any?
 
     init(layers: Layers = .all) {
         self.layers = layers
@@ -269,6 +272,7 @@ final class ReadingIndicatorOverlay {
     func hide() {
         followTimer?.invalidate()
         followTimer = nil
+        stopScrollMonitor()
         block = nil
         hostWindow = nil
         sentenceAXRect = nil
@@ -490,6 +494,25 @@ final class ReadingIndicatorOverlay {
                 self.contentView.needsDisplay = true
             }
         }
+        // Scroll monitor (Manh 2026-11-28): hide at once on a scroll
+        // event instead of waiting for the next 0.3 s poll.
+        stopScrollMonitor()
+        scrollMonitor = NSEvent.addGlobalMonitorForEvents(matching: .scrollWheel) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                guard Self.hideWhileScrolling else { return }
+                self.stablePolls = 0
+                self.hideForScroll = true
+                self.contentView.hideForScroll = true
+                self.contentView.needsDisplay = true
+            }
+        }
+    }
+
+    /// Stop the scroll monitor (session end, or a fresh start).
+    private func stopScrollMonitor() {
+        if let scrollMonitor { NSEvent.removeMonitor(scrollMonitor) }
+        self.scrollMonitor = nil
     }
 
     /// Whether two block frames count as "moved" (scrolling): any edge

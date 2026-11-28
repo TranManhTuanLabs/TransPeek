@@ -370,6 +370,13 @@ scrolling jerkiness is confirmed).
   so the highlight reappears in the right place. It takes **2 still
   polls (~0.6 s)** to show again, so a brief pause mid-scroll does not
   flash the highlight back.
+- **Hide at once on scroll (Manh 2026-11-28).** A global scroll-wheel
+  event monitor hides the highlight the moment a scroll event arrives
+  (only while a listen session is live and the toggle is on) — no
+  waiting up to 0.3 s for the next poll, so the highlight never draws
+  at the stale position mid-scroll. The 0.3 s poll only brings it back
+  (2 still polls). The monitor starts with the session and stops when
+  it ends; it adds no AX reads.
 - **Toggle off = the old follow-only behaviour.** The highlight stays
   visible while scrolling, and may jerk — the user's choice.
 - **The window never stops following.** Hiding only skips drawing;
@@ -481,9 +488,11 @@ These limits are inherent to that approach, not bugs.
   gated only on `isShown(.underline, in:)` — so the underline shows
   even when the word/sentence fills are off. The
   hide-during-scroll state (`previousBlockScreenFrame`,
-  `stablePolls`, `hideForScroll`) lives here: the follow timer
-  compares the frame it just read with the previous poll's, and
-  `ReadingIndicatorView.draw` skips everything while scrolling.
+  `stablePolls`, `hideForScroll`, plus a global scroll-wheel monitor
+  token) lives here: the follow timer compares the frame it just read
+  with the previous poll's, a scroll event hides at once (Manh
+  2026-11-28), and `ReadingIndicatorView.draw` skips everything while
+  scrolling.
 - `Sources/Core/TextSelection/ContinuousSpeakController.swift` —
   `paragraphRanges(for:sentences:)` splits a block into paragraphs on
   blank lines (derived from the sentence ranges), `paragraph(containing:in:)`
