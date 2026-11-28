@@ -29,7 +29,7 @@ Paragraph, Block) — the narrow marks first, the broad fills last.
 ```
 Highlight colors
 ┌──────────────────────────────────────────────────────────────────┐
-│ Underline [i]  [swatch]  Reset                 #5666F0 Show [x]  │
+│ Underline [i]  [swatch]  Reset                 #FFD9A6 Show [x]  │
 │ Underline under the word + sentence being read                   │
 │ ( ) ( ) ( ) ( ) ( ) ( )   <- 6 preset swatches                   │
 │                                                                  │
@@ -38,7 +38,7 @@ Highlight colors
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │ Line follows: [ Sentence | Paragraph | Block ]                   │
 │                                                                  │
-│ Word [i]  [swatch]  Reset                      #5666F0 Show [x]  │
+│ Word [i]  [swatch]  Reset                      #FFC2D1 Show [x]  │
 │ Highlight for the word being spoken                              │
 │ ( ) ( ) ( ) ( ) ( ) ( )                                          │
 │                                                                  │
@@ -163,9 +163,9 @@ toggle below — that is a behaviour preference, not a layer default).
 
 | Layer | What it marks | Default | Opacity | Shown by default (main) |
 |---|---|---|---|---|
-| Underline | 1.5 pt solid bar under the word + sentence being read | `#5666F0` (indigo, same as the word) | 1.0 (solid) | Yes |
+| Underline | 1.5 pt solid bar under the word + sentence being read | `#FFD9A6` (light orange) | 1.0 (solid) | Yes |
 | Vertical line | 1.75 pt wide solid bar at the block's left edge (in the 8 pt strip beside the text); its length follows the unit picked in §6 | `#8CBFFF` (light blue) | 1.0 (solid) | No |
-| Word | Fill for the word being spoken | `#5666F0` (Speechify indigo) | 0.30 | Yes |
+| Word | Fill for the word being spoken | `#FFC2D1` (light pink) | 0.30 | Yes |
 | Sentence | Fill for the sentence being read | `#ABB3FE` (Speechify light periwinkle) | 0.30 | No |
 | Paragraph (cluster) | Fill for the paragraph around the sentence being read — the group of sentences with no paragraph boundary between them (blank line, a single line break after a sentence ending with . / ! / ?, or an indented next sentence). A block with no boundary has no cluster fill (its single paragraph IS the whole block) | `#FFC2D1` (light pink) | 0.30 | No |
 | Block | Fill for the whole block being read | `#BFF2B3` (light green) | 0.30 | No |
@@ -178,19 +178,17 @@ identical to the old hardcoded colours. The paragraph default is light
 pink — a preset already in the palette, distinct from the other four
 fills; Manh did not pick a colour for it (parent agent's choice,
 2026-11-27), change it in Settings if another pink reads better.
-Word and sentence follow Speechify (Manh 2026-11-27 03:41 — read from
-the Speechify extension source: default theme, light page): the word
-is Speechify's highlight50 indigo `#5666F0`, the sentence is
-Speechify's highlight30 light periwinkle `#ABB3FE`. Speechify's own
-sentence is `#e0e3ff` (highlight20), but at fill 0.30 that is so pale
-it is nearly invisible, so the sentence uses the next step up. And
-Speechify draws opaque (1.0) while recolouring the text; this overlay
-draws over the page and cannot recolour the text, so the fills stay
-translucent (0.30) and the text underneath stays readable — the
-Speechify hues are adopted, not its opacity. The underline default is
-the word's indigo `#5666F0` — the underline marks the word + sentence,
-so it shares the word's colour (parent agent's choice, 2026-11-27;
-Manh did not pick a colour for it). Draw
+Sentence follows Speechify (Manh 2026-11-27 03:41 — read from the
+Speechify extension source: default theme, light page): Speechify's
+highlight30 light periwinkle `#ABB3FE`. Speechify's own sentence is
+`#e0e3ff` (highlight20), but at fill 0.30 that is so pale it is nearly
+invisible, so the sentence uses the next step up. The word default is
+light pink `#FFC2D1` and the underline default is light orange
+`#FFD9A6` (Manh 2026-11-28). Speechify draws opaque (1.0) while
+recolouring the text; this overlay draws over the page and cannot
+recolour the text, so the fills stay translucent (0.30) and the text
+underneath stays readable — the Speechify hue is adopted for the
+sentence, not its opacity. Draw
 order (bottom to top): block, paragraph, sentence, word, then the
 line, then the underline — the fills are translucent, so overlapping
 levels blend instead of hiding each other; the line and the underline
