@@ -22,6 +22,10 @@
   "Reading" (không phải section riêng) — bấm vào mở panel ở tab TRÁI
   (tab Focus & Rest), vì nó thuộc về việc đọc/nghỉ. Xem
   `Sources/UI/MenuBar/MenuItemView.swift`.
+- **Thứ tự sections (Manh 2026-11-28):** "Reading" lên TRÊN CÙNG (mục
+  đầu tiên, ngay dưới tiêu đề app), sau đó "Text Capture from Screen",
+  "Barcodes / QR Codes", rồi Permissions Guide / Check for Updates /
+  Settings / Quit. Các mục khác giữ nguyên thứ tự.
 
 ## 2. Cửa sổ Settings
 

@@ -39,6 +39,28 @@ struct MenuItemView: View {
 
         Divider()
 
+        sectionHeadline("Reading")
+
+        Button {
+            appDelegate.performFastRead()
+        } label: {
+            Label("Fast Read (RSVP)", systemImage: "book.pages")
+        }
+        .globalKeyboardShortcut(.fastRead)
+
+        // Focus & Rest (Manh 2026-11-21): opens the panel on the LEFT tab
+        // (Focus & Rest card), cancelling any in-flight smart translation first.
+        Button {
+            guard let panelController = appDelegate.panelController else { return }
+            appDelegate.cancelSmartTranslation()
+            appDelegate.focusTimerStore.panelLeftRequest = true
+            panelController.showAtCursor()
+        } label: {
+            Label("Focus & Rest", systemImage: "timer")
+        }
+
+        Divider()
+
         sectionHeadline("Text Capture from Screen")
 
         Button {
@@ -122,32 +144,6 @@ struct MenuItemView: View {
             Label("Screenshot Copy", systemImage: "photo")
         }
         .globalKeyboardShortcut(.screenshotCopy)
-
-        Divider()
-
-        sectionHeadline("Reading")
-
-        Button {
-            appDelegate.performFastRead()
-        } label: {
-            Label("Fast Read (RSVP)", systemImage: "book.pages")
-        }
-        .globalKeyboardShortcut(.fastRead)
-
-        // "Focus & Rest" (Manh 2026-11-21): moved into the Reading
-        // section — it opens the panel on the LEFT tab (the "Focus &
-        // Rest" card), the other panel destination next to Fast Read
-        // (right tab). `cancelSmartTranslation` first (same as the other
-        // panel openers): an in-flight smart translation would reset the
-        // tab to center when its source text arrives.
-        Button {
-            guard let panelController = appDelegate.panelController else { return }
-            appDelegate.cancelSmartTranslation()
-            appDelegate.focusTimerStore.panelLeftRequest = true
-            panelController.showAtCursor()
-        } label: {
-            Label("Focus & Rest", systemImage: "timer")
-        }
 
         Divider()
 
