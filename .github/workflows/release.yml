@@ -80,10 +80,10 @@ jobs:
         run: |
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             VERSION="${{ github.ref_name }}"
-            VERSION="${VERSION#v}"
           else
             VERSION="${{ github.event.inputs.version || '0.0.0-dev' }}"
           fi
+          VERSION="${VERSION#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       # SPARKLE_ED_PUBLIC_KEY is the Sparkle updater key (do not hardcode a
